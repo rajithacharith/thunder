@@ -25,8 +25,8 @@ import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
-// AuthnProviderManagerInterface defines the interface for the authentication provider manager.
-type AuthnProviderManagerInterface interface {
+// AuthnProviderManager defines the interface for the authentication provider manager.
+type AuthnProviderManager interface {
 	AuthenticateUser(ctx context.Context, identifiers, credentials map[string]interface{},
 		requestedAttributes *RequestedAttributes,
 		metadata *AuthnMetadata,
@@ -41,8 +41,8 @@ type AuthnProviderManagerInterface interface {
 		authUser AuthUser) (AuthUser, *AttributesResponse, *common.ServiceError)
 }
 
-// ActorProviderInterface resolves inbound actors and exposes their OAuth and membership data.
-type ActorProviderInterface interface {
+// ActorProvider resolves inbound actors and exposes their OAuth and membership data.
+type ActorProvider interface {
 	GetOAuthClientByClientID(
 		ctx context.Context, clientID string,
 	) (*OAuthClient, *common.ServiceError)
@@ -52,12 +52,15 @@ type ActorProviderInterface interface {
 	GetInboundClientByID(
 		ctx context.Context, id string,
 	) (*InboundClient, *common.ServiceError)
+	AuthenticateActor(
+		ctx context.Context, identifiers, credentials map[string]interface{},
+	) *common.ServiceError
 	GetActor(actorID string) (*Entity, *common.ServiceError)
 	GetActorGroups(actorID string) ([]EntityGroup, *common.ServiceError)
 }
 
-// I18nProviderInterface defines the interface for the i18n provider.
-type I18nProviderInterface interface {
+// I18nProvider defines the interface for the i18n provider.
+type I18nProvider interface {
 	ResolveTranslations(
 		ctx context.Context,
 		language string,
@@ -66,8 +69,8 @@ type I18nProviderInterface interface {
 	ListLanguages(ctx context.Context) ([]string, *common.ServiceError)
 }
 
-// DesignResolveProviderInterface defines the interface for the design resolve service.
-type DesignResolveProviderInterface interface {
+// DesignProvider defines the interface for the design resolve service.
+type DesignProvider interface {
 	ResolveDesign(
 		ctx context.Context, resolveType DesignResolveType, id string,
 	) (*DesignResponse, *common.ServiceError)
@@ -89,15 +92,15 @@ type OrganizationUnitProvider interface {
 	) (*OrganizationUnitListResponse, *common.ServiceError)
 }
 
-// FlowProviderInterface defines the flow management operations required for flow execution.
-type FlowProviderInterface interface {
+// FlowProvider defines the flow management operations required for flow execution.
+type FlowProvider interface {
 	GetFlowByHandle(ctx context.Context, handle string, flowType FlowType) (
 		*CompleteFlowDefinition, *common.ServiceError)
 	GetFlow(ctx context.Context, flowID string) (*CompleteFlowDefinition, *common.ServiceError)
 }
 
-// ResourceProviderInterface defines the interface for the resource provider.
-type ResourceProviderInterface interface {
+// ResourceServerProvider defines the interface for the resource provider.
+type ResourceServerProvider interface {
 	GetResourceServerByIdentifier(
 		ctx context.Context, identifier string,
 	) (*ResourceServer, *common.ServiceError)
@@ -109,16 +112,74 @@ type ResourceProviderInterface interface {
 	) ([]ResourceServer, *common.ServiceError)
 }
 
-// RoleProvider defines the interface for the role provider.
-type RoleProvider interface {
-	GetAuthorizedPermissions(
-		ctx context.Context, entityID string, groups []string, requestedPermissions []string,
-	) ([]string, *common.ServiceError)
-}
-
 // IDPProvider defines the interface for the identity provider provider.
 type IDPProvider interface {
 	GetIdentityProvidersByProperty(ctx context.Context, propertyKey,
 		propertyValue string) ([]IDPDTO, *common.ServiceError)
 	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, *common.ServiceError)
+}
+
+// ConsentProvider provides functionality to resolve consent requirements and
+// record user consent decisions during runtime authentication flows.
+type ConsentProvider interface {
+	// ResolveConsent checks whether the user has provided required consents for the given
+	// application, attribute set, and authorized permission set. Returns nil if all required
+	// consents are active; otherwise returns ConsentPromptData describing which purposes /
+	// elements still need user consent. When forceReprompt is true, consent is re-prompted for
+	// all required claims regardless of existing active consent.
+	ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
+		essentialAttributes, optionalAttributes, authorizedPermissions []string,
+		availableAttributes *AttributesResponse, forceReprompt bool,
+		runtimeMetadata map[string]string) (
+		*ConsentPromptData, *common.ServiceError)
+
+	// RecordConsent records the user's consent decisions and returns the persisted consent record.
+	// If the user denied any essential attribute, ErrorEssentialConsentDenied is returned.
+	RecordConsent(ctx context.Context, ouID, appID, userID string,
+		decisions *ConsentDecisions, sessionToken string, validityPeriod int64,
+		runtimeMetadata map[string]string) (
+		*Consent, *common.ServiceError)
+}
+
+// Executor defines the interface for executors.
+type Executor interface {
+	Execute(ctx *NodeContext) (*ExecutorResponse, error)
+	GetName() string
+	GetType() ExecutorType
+	GetDefaultInputs() []Input
+	GetPrerequisites() []Input
+	HasRequiredInputs(ctx *NodeContext, execResp *ExecutorResponse) bool
+	ValidatePrerequisites(ctx *NodeContext, execResp *ExecutorResponse,
+		authnProvider AuthnProviderManager) bool
+	GetUserIDFromContext(ctx *NodeContext, execResp *ExecutorResponse,
+		authnProvider AuthnProviderManager) string
+	GetRequiredInputs(ctx *NodeContext) []Input
+	GetExecutionPolicy(mode string) *ExecutionPolicy
+}
+
+// ObservabilityProvider defines the interface for the observability provider.
+type ObservabilityProvider interface {
+	// PublishEvent publishes an event to the observability system.
+	// This is a no-op if observability is disabled.
+	// The context carries the request trace ID used for correlated logging.
+	PublishEvent(ctx context.Context, evt *Event)
+
+	// IsEnabled returns true if observability is enabled and operational.
+	IsEnabled() bool
+}
+
+// AuthorizationProvider defines the interface for authorization operations.
+// This is the public interface exposed to external consumers.
+type AuthorizationProvider interface {
+	// EvaluateAccess evaluates a single fine-grained access request.
+	EvaluateAccess(
+		ctx context.Context,
+		request AccessEvaluationRequest,
+	) (*AccessEvaluationResponse, *common.ServiceError)
+
+	// EvaluateAccessBatch evaluates multiple fine-grained access requests.
+	EvaluateAccessBatch(
+		ctx context.Context,
+		request AccessEvaluationsRequest,
+	) (*AccessEvaluationsResponse, *common.ServiceError)
 }

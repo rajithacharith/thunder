@@ -32,11 +32,14 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
+	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
+
+// maxCallDepth is the maximum number of nested call frames allowed
+const maxCallDepth = 5
 
 // flowEngineInterface defines the interface for the flow engine.
 type flowEngineInterface interface {
@@ -47,7 +50,9 @@ type flowEngineInterface interface {
 type flowEngine struct {
 	executorRegistry  executor.ExecutorRegistryInterface
 	interceptorRunner InterceptorRunnerInterface
-	observabilitySvc  observability.ObservabilityServiceInterface
+	observabilitySvc  providers.ObservabilityProvider
+	flowProvider      providers.FlowProvider
+	graphBuilder      graphbuilder.GraphBuilderInterface
 	logger            *log.Logger
 }
 
@@ -55,12 +60,16 @@ type flowEngine struct {
 func newFlowEngine(
 	executorRegistry executor.ExecutorRegistryInterface,
 	interceptorRunner InterceptorRunnerInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
+	flowProvider providers.FlowProvider,
+	graphBuilder graphbuilder.GraphBuilderInterface,
 ) flowEngineInterface {
 	return &flowEngine{
 		executorRegistry:  executorRegistry,
 		interceptorRunner: interceptorRunner,
 		observabilitySvc:  observabilitySvc,
+		flowProvider:      flowProvider,
+		graphBuilder:      graphBuilder,
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 	}
 }
@@ -98,7 +107,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 	}
 	if !isSuccess {
 		// Check if flow failed or just incomplete
-		if flowStep.Status == common.FlowStatusError {
+		if flowStep.Status == providers.FlowStatusError {
 			publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 		}
 		if _, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, &flowStep, flowStartTime); svcErr != nil {
@@ -114,7 +123,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 		logger.Debug(ctx.Context, "Executing node", log.String("nodeID", currentNode.GetID()),
 			log.String("nodeType", string(currentNode.GetType())))
 
-		nodeCtx := &core.NodeContext{
+		nodeCtx := &providers.NodeContext{
 			Context:          ctx.Context,
 			ExecutionID:      ctx.ExecutionID,
 			FlowType:         ctx.FlowType,
@@ -131,7 +140,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 			ExecutionHistory: ctx.ExecutionHistory,
 		}
 		if nodeCtx.NodeInputs == nil {
-			nodeCtx.NodeInputs = make([]common.Input, 0)
+			nodeCtx.NodeInputs = make([]providers.Input, 0)
 		}
 		if nodeCtx.UserInputs == nil {
 			nodeCtx.UserInputs = make(map[string]string)
@@ -241,7 +250,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 	}
 
 	// If we reach here, it means the all flow nodes has been executed successfully.
-	flowStep.Status = common.FlowStatusComplete
+	flowStep.Status = providers.FlowStatusComplete
 	if ctx.Assertion != "" {
 		flowStep.Assertion = ctx.Assertion
 	}
@@ -286,7 +295,7 @@ func (fe *flowEngine) runInterceptors(
 	var currentNodeID string
 	var nodeType common.NodeType
 	var skipInterceptors []string
-	var executionPolicy *core.ExecutionPolicy
+	var executionPolicy *providers.ExecutionPolicy
 	if currentNode != nil {
 		currentNodeID = currentNode.GetID()
 		nodeType = currentNode.GetType()
@@ -366,7 +375,7 @@ func (fe *flowEngine) runPostRequestInterceptorsOnExit(
 		return false, svcErr
 	}
 	if !interceptorExecSuccess {
-		if flowStep.Status == common.FlowStatusError {
+		if flowStep.Status == providers.FlowStatusError {
 			publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 		}
 		return false, nil
@@ -428,19 +437,19 @@ func (fe *flowEngine) setCurrentExecutionNode(ctx *EngineContext,
 
 	// Initialize execution history map if needed
 	if ctx.ExecutionHistory == nil {
-		ctx.ExecutionHistory = make(map[string]*common.NodeExecutionRecord)
+		ctx.ExecutionHistory = make(map[string]*providers.NodeExecutionRecord)
 	}
 
 	return nil
 }
 
 // getNodeInputs extracts required inputs for a node.
-func getNodeInputs(node core.NodeInterface) []common.Input {
+func getNodeInputs(node core.NodeInterface) []providers.Input {
 	if execNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
 		return execNode.GetInputs()
 	}
 	if promptNode, ok := node.(core.PromptNodeInterface); ok {
-		var inputs []common.Input
+		var inputs []providers.Input
 		for _, prompt := range promptNode.GetPrompts() {
 			inputs = append(inputs, prompt.Inputs...)
 		}
@@ -489,7 +498,7 @@ func (fe *flowEngine) setNodeExecutor(
 }
 
 // getExecutorByName retrieves executor instance from the executor registry.
-func (fe *flowEngine) getExecutorByName(executorName string) (core.ExecutorInterface, error) {
+func (fe *flowEngine) getExecutorByName(executorName string) (providers.Executor, error) {
 	exec, err := fe.executorRegistry.GetExecutor(executorName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get executor '%s': %w", executorName, err)
@@ -594,10 +603,10 @@ func (fe *flowEngine) processInterceptorResponse(resp *common.InterceptorRespons
 		return true
 	case common.InterceptorStatusIncomplete:
 		fe.updateFlowStepWithInterceptorResponse(flowStep, resp)
-		flowStep.Status = common.FlowStatusIncomplete
+		flowStep.Status = providers.FlowStatusIncomplete
 		return false
 	case common.InterceptorStatusFailure:
-		flowStep.Status = common.FlowStatusError
+		flowStep.Status = providers.FlowStatusError
 		flowStep.Error = resp.Error
 		return false
 	default:
@@ -658,8 +667,17 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 			return nil, false, svcErr
 		}
 		return nextNode, true, nil
+	case common.NodeStatusCall:
+		nextNode, svcErr := fe.handleCallResponse(ctx, nodeResp, logger)
+		if svcErr != nil {
+			return nil, false, svcErr
+		}
+		return nextNode, true, nil
 	case common.NodeStatusFailure:
-		flowStep.Status = common.FlowStatusError
+		if ctx.frameDepth() > 0 {
+			return fe.handleCalleeFailure(ctx, nodeResp, flowStep, logger)
+		}
+		flowStep.Status = providers.FlowStatusError
 		flowStep.Error = nodeResp.Error
 		return nil, false, nil
 	default:
@@ -693,12 +711,12 @@ func (fe *flowEngine) handleDisplayOnlyPromptResponse(ctx *EngineContext,
 
 	// If the next node is END, complete the flow
 	if nextNode.GetType() == common.NodeTypeEnd {
-		flowStep.Status = common.FlowStatusComplete
+		flowStep.Status = providers.FlowStatusComplete
 		continueExecution = true
 	} else {
 		// Set current node to the next node so that flow can be resumed from there in the next execution
 		ctx.CurrentNode = nextNode
-		flowStep.Status = common.FlowStatusIncomplete
+		flowStep.Status = providers.FlowStatusIncomplete
 		flowStep.Type = common.StepTypeView
 
 		// Set current segment to the next node's segment if segments are defined in the graph
@@ -734,6 +752,12 @@ func (fe *flowEngine) handleDisplayOnlyPromptResponse(ctx *EngineContext,
 func (fe *flowEngine) handleCompletedResponse(ctx *EngineContext,
 	nodeResp *common.NodeResponse, logger *log.Logger) (
 	core.NodeInterface, *tidcommon.ServiceError) {
+	// If we're in a callee flow and the completed node is END, pop the frame and
+	// route to the caller call node's onSuccess
+	if ctx.frameDepth() > 0 && ctx.CurrentNode.GetType() == common.NodeTypeEnd {
+		return fe.handleCalleeReturn(ctx, logger)
+	}
+
 	nextNode, err := fe.resolveToNextNode(ctx, nodeResp)
 	if err != nil {
 		logger.Error(ctx.Context, "Error moving to the next node", log.Error(err))
@@ -790,6 +814,163 @@ func (fe *flowEngine) handleForwardResponse(ctx *EngineContext,
 	}
 	ctx.CurrentNode = nextNode
 	return nextNode, nil
+}
+
+// handleCallResponse handles a NodeStatusCall response by pushing a frame and switching
+// context to the callee flow's start node.
+func (fe *flowEngine) handleCallResponse(ctx *EngineContext,
+	nodeResp *common.NodeResponse, logger *log.Logger) (
+	core.NodeInterface, *tidcommon.ServiceError) {
+	if ctx.frameDepth() >= maxCallDepth {
+		logger.Error(ctx.Context, "Maximum call depth exceeded",
+			log.String("callNodeID", ctx.CurrentNode.GetID()),
+			log.String("targetFlowID", nodeResp.CallTargetFlowID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	flow, svcErr := fe.flowProvider.GetFlow(ctx.Context, nodeResp.CallTargetFlowID)
+	if svcErr != nil {
+		logger.Error(ctx.Context, "Failed to get call target flow",
+			log.String("targetFlowID", nodeResp.CallTargetFlowID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	calleeGraph, svcErr := fe.graphBuilder.GetGraph(ctx.Context, flow)
+	if svcErr != nil {
+		logger.Error(ctx.Context, "Failed to build call target graph",
+			log.String("targetFlowID", nodeResp.CallTargetFlowID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	return fe.switchContextToCallee(ctx, nodeResp, calleeGraph, logger)
+}
+
+// switchContextToCallee switches the engine context to the callee flow's graph and
+// sets the current node to the start node.
+func (fe *flowEngine) switchContextToCallee(ctx *EngineContext,
+	nodeResp *common.NodeResponse, calleeGraph core.GraphInterface, logger *log.Logger) (
+	core.NodeInterface, *tidcommon.ServiceError) {
+	// Push the current frame before switching to the callee
+	resumeCallNodeID := ctx.CurrentNode.GetID()
+	ctx.pushFrame(resumeCallNodeID)
+
+	// Switch context to the callee flow. Per-frame transient state is reset so the callee
+	// starts with a clean slate; shared identity/input state (UserInputs, AuthUser, etc.) is
+	// intentionally left in place
+	ctx.Graph = calleeGraph
+	ctx.FlowType = calleeGraph.GetType()
+	ctx.RuntimeData = make(map[string]string)
+	ctx.ForwardedData = nil
+	ctx.AdditionalData = make(map[string]string)
+	ctx.CurrentNodeResponse = nil
+	ctx.CurrentSegmentID = ""
+	ctx.CurrentAction = ""
+
+	// Set the current node to the start node of the callee graph
+	startNode, startErr := calleeGraph.GetStartNode()
+	if startErr != nil {
+		logger.Error(ctx.Context, "Callee flow has no start node",
+			log.String("targetFlowID", nodeResp.CallTargetFlowID), log.Error(startErr))
+		return nil, &tidcommon.InternalServerError
+	}
+	ctx.CurrentNode = startNode
+
+	return startNode, nil
+}
+
+// handleCalleeReturn is called when the callee flow's END node completes while there is a
+// caller frame on the stack. It pops the frame and routes to the caller call node's onSuccess.
+func (fe *flowEngine) handleCalleeReturn(ctx *EngineContext, logger *log.Logger) (
+	core.NodeInterface, *tidcommon.ServiceError) {
+	savedFrame := ctx.popFrame()
+	if savedFrame == nil {
+		logger.Error(ctx.Context, "Frame stack underflow on callee return")
+		return nil, &tidcommon.InternalServerError
+	}
+
+	// Find the call node in the restored caller graph
+	callNode, exists := ctx.Graph.GetNode(savedFrame.resumeCallNodeID)
+	if !exists {
+		logger.Error(ctx.Context, "Caller call node not found after frame pop",
+			log.String("callNodeID", savedFrame.resumeCallNodeID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	cn, ok := callNode.(core.CallNodeInterface)
+	if !ok {
+		logger.Error(ctx.Context, "Caller resume node is not a CallNodeInterface",
+			log.String("callNodeID", savedFrame.resumeCallNodeID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	onSuccessID := cn.GetOnSuccess()
+	if onSuccessID == "" {
+		logger.Error(ctx.Context, "call node has no onSuccess target",
+			log.String("callNodeID", savedFrame.resumeCallNodeID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	nextNode, ok := ctx.Graph.GetNode(onSuccessID)
+	if !ok {
+		logger.Error(ctx.Context, "call onSuccess node not found",
+			log.String("onSuccessID", onSuccessID))
+		return nil, &tidcommon.InternalServerError
+	}
+	ctx.CurrentNode = nextNode
+
+	return nextNode, nil
+}
+
+// handleCalleeFailure is called when the callee flow ends with NodeStatusFailure while
+// there is a caller frame on the stack. It pops the frame and either routes to the caller
+// call node's onFailure (forwarding the error) or terminates the whole flow.
+func (fe *flowEngine) handleCalleeFailure(ctx *EngineContext, nodeResp *common.NodeResponse,
+	flowStep *FlowStep, logger *log.Logger) (
+	core.NodeInterface, bool, *tidcommon.ServiceError) {
+	savedFrame := ctx.popFrame()
+	if savedFrame == nil {
+		logger.Error(ctx.Context, "Frame stack underflow on callee failure")
+		return nil, false, &tidcommon.InternalServerError
+	}
+
+	callNode, exists := ctx.Graph.GetNode(savedFrame.resumeCallNodeID)
+	if !exists {
+		logger.Error(ctx.Context, "Caller call node not found after failure frame pop",
+			log.String("callNodeID", savedFrame.resumeCallNodeID))
+		return nil, false, &tidcommon.InternalServerError
+	}
+
+	cn, ok := callNode.(core.CallNodeInterface)
+	if !ok {
+		logger.Error(ctx.Context, "Caller resume node is not a CallNodeInterface on failure",
+			log.String("callNodeID", savedFrame.resumeCallNodeID))
+		return nil, false, &tidcommon.InternalServerError
+	}
+
+	// If the call node has no onFailure target, terminate the flow with error
+	onFailureID := cn.GetOnFailure()
+	if onFailureID == "" {
+		flowStep.Status = providers.FlowStatusError
+		flowStep.Error = nodeResp.Error
+		return nil, false, nil
+	}
+
+	// If the call node has an onFailure target, forward to that node and continue execution
+	nextNode, exists := ctx.Graph.GetNode(onFailureID)
+	if !exists {
+		logger.Error(ctx.Context, "Call onFailure node not found",
+			log.String("onFailureID", onFailureID))
+		return nil, false, &tidcommon.InternalServerError
+	}
+
+	ctx.CurrentNode = nextNode
+	ctx.CurrentNodeResponse = &common.NodeResponse{
+		Status:     common.NodeStatusForward,
+		NextNodeID: onFailureID,
+		Error:      nodeResp.Error,
+	}
+
+	return nextNode, true, nil
 }
 
 // skipToNextNode skips the current node and moves to the next node. It updates the context with the
@@ -857,14 +1038,14 @@ func (fe *flowEngine) resolveStepForRedirection(ctx *EngineContext, nodeResp *co
 	flowStep.Data.RedirectURL = nodeResp.RedirectURL
 
 	if flowStep.Data.Inputs == nil {
-		flowStep.Data.Inputs = make([]common.Input, 0)
+		flowStep.Data.Inputs = make([]providers.Input, 0)
 		flowStep.Data.Inputs = nodeResp.Inputs
 	} else {
 		// Append to the existing inputs
 		flowStep.Data.Inputs = append(flowStep.Data.Inputs, nodeResp.Inputs...)
 	}
 
-	flowStep.Status = common.FlowStatusIncomplete
+	flowStep.Status = providers.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeRedirection
 	return nil
 }
@@ -881,7 +1062,7 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 
 	if len(nodeResp.Inputs) > 0 {
 		if flowStep.Data.Inputs == nil {
-			flowStep.Data.Inputs = make([]common.Input, 0)
+			flowStep.Data.Inputs = make([]providers.Input, 0)
 			flowStep.Data.Inputs = nodeResp.Inputs
 		} else {
 			// Append to the existing inputs
@@ -925,7 +1106,7 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 		flowStep.Data.FieldErrors = nodeResp.FieldErrors
 	}
 
-	flowStep.Status = common.FlowStatusIncomplete
+	flowStep.Status = providers.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeView
 	return nil
 }
@@ -977,13 +1158,13 @@ func recordNodeExecution(ctx *EngineContext, node core.NodeInterface, nodeResp *
 }
 
 // createExecutionRecord creates a new node execution record.
-func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecutionRecord {
-	record := common.NodeExecutionRecord{
+func createExecutionRecord(node core.NodeInterface, step int) providers.NodeExecutionRecord {
+	record := providers.NodeExecutionRecord{
 		NodeID:     node.GetID(),
 		NodeType:   string(node.GetType()),
 		Step:       step,
-		Status:     common.FlowStatusIncomplete,
-		Executions: make([]common.ExecutionAttempt, 0),
+		Status:     providers.FlowStatusIncomplete,
+		Executions: make([]providers.ExecutionAttempt, 0),
 		StartTime:  time.Now().Unix(),
 	}
 
@@ -1003,9 +1184,9 @@ func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecuti
 }
 
 // createExecutionAttempt creates a new execution attempt.
-func createExecutionAttempt(nodeRecord *common.NodeExecutionRecord, nodeResp *common.NodeResponse,
-	nodeErr *tidcommon.ServiceError, executionStartTime int64, executionEndTime int64) common.ExecutionAttempt {
-	attempt := common.ExecutionAttempt{
+func createExecutionAttempt(nodeRecord *providers.NodeExecutionRecord, nodeResp *common.NodeResponse,
+	nodeErr *tidcommon.ServiceError, executionStartTime int64, executionEndTime int64) providers.ExecutionAttempt {
+	attempt := providers.ExecutionAttempt{
 		Attempt:   len(nodeRecord.Executions) + 1,
 		Timestamp: executionEndTime,
 		StartTime: executionStartTime,
@@ -1014,17 +1195,17 @@ func createExecutionAttempt(nodeRecord *common.NodeExecutionRecord, nodeResp *co
 
 	// Determine status
 	if nodeErr != nil {
-		attempt.Status = common.FlowStatusError
+		attempt.Status = providers.FlowStatusError
 	} else if nodeResp != nil {
 		switch nodeResp.Status {
 		case common.NodeStatusComplete:
-			attempt.Status = common.FlowStatusComplete
+			attempt.Status = providers.FlowStatusComplete
 		case common.NodeStatusIncomplete:
-			attempt.Status = common.FlowStatusIncomplete
+			attempt.Status = providers.FlowStatusIncomplete
 		case common.NodeStatusFailure:
-			attempt.Status = common.FlowStatusError
+			attempt.Status = providers.FlowStatusError
 		default:
-			attempt.Status = common.FlowStatusIncomplete
+			attempt.Status = providers.FlowStatusIncomplete
 		}
 	}
 
@@ -1035,7 +1216,7 @@ func createExecutionAttempt(nodeRecord *common.NodeExecutionRecord, nodeResp *co
 func publishNodeExecutionStartedEvent(
 	ctx *EngineContext,
 	node core.NodeInterface,
-	obsSvc observability.ObservabilityServiceInterface,
+	obsSvc providers.ObservabilityProvider,
 ) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
@@ -1055,7 +1236,7 @@ func publishNodeExecutionStartedEvent(
 		string(event.EventTypeFlowNodeExecutionStarted),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusInProgress).
+		WithStatus(providers.StatusInProgress).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.NodeID, node.GetID()).
@@ -1070,7 +1251,7 @@ func publishNodeExecutionStartedEvent(
 // publishNodeExecutionCompletedEvent publishes an observability event when node execution completes or fails.
 func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterface,
 	nodeResp *common.NodeResponse, nodeErr *tidcommon.ServiceError,
-	executionStartTime int64, executionEndTime int64, obsSvc observability.ObservabilityServiceInterface) {
+	executionStartTime int64, executionEndTime int64, obsSvc providers.ObservabilityProvider) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
 	}
@@ -1085,37 +1266,37 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	attemptNumber := len(record.Executions)
 
 	// Determine event type and status based on outcome
-	var eventType event.EventType
+	var eventType providers.EventType
 	var status string
 	var nodeStatus string
 
 	if nodeErr != nil {
 		eventType = event.EventTypeFlowNodeExecutionFailed
-		status = event.StatusFailure
-		nodeStatus = string(common.FlowStatusError)
+		status = providers.StatusFailure
+		nodeStatus = string(providers.FlowStatusError)
 	} else if nodeResp != nil {
 		switch nodeResp.Status {
 		case common.NodeStatusComplete:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
-			status = event.StatusSuccess
-			nodeStatus = string(common.FlowStatusComplete)
+			status = providers.StatusSuccess
+			nodeStatus = string(providers.FlowStatusComplete)
 		case common.NodeStatusIncomplete:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
-			status = event.StatusSuccess
-			nodeStatus = string(common.FlowStatusIncomplete)
+			status = providers.StatusSuccess
+			nodeStatus = string(providers.FlowStatusIncomplete)
 		case common.NodeStatusFailure:
 			eventType = event.EventTypeFlowNodeExecutionFailed
-			status = event.StatusFailure
-			nodeStatus = string(common.FlowStatusError)
+			status = providers.StatusFailure
+			nodeStatus = string(providers.FlowStatusError)
 		default:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
-			status = event.StatusSuccess
+			status = providers.StatusSuccess
 			nodeStatus = string(nodeResp.Status)
 		}
 	} else {
 		eventType = event.EventTypeFlowNodeExecutionCompleted
-		status = event.StatusSuccess
-		nodeStatus = string(common.FlowStatusComplete)
+		status = providers.StatusSuccess
+		nodeStatus = string(providers.FlowStatusComplete)
 	}
 
 	// Calculate duration in milliseconds
@@ -1153,7 +1334,7 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 }
 
 // publishFlowStartedEvent publishes an observability event when flow execution starts.
-func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.ObservabilityServiceInterface) {
+func publishFlowStartedEvent(ctx *EngineContext, obsSvc providers.ObservabilityProvider) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
 	}
@@ -1163,7 +1344,7 @@ func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.Observabil
 		string(event.EventTypeFlowStarted),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusInProgress).
+		WithStatus(providers.StatusInProgress).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.EntityID, ctx.AppID)
@@ -1181,7 +1362,7 @@ func publishFlowCompletedEvent(
 	ctx *EngineContext,
 	flowStartTime int64,
 	flowEndTime int64,
-	obsSvc observability.ObservabilityServiceInterface,
+	obsSvc providers.ObservabilityProvider,
 ) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
@@ -1195,7 +1376,7 @@ func publishFlowCompletedEvent(
 		string(event.EventTypeFlowCompleted),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusSuccess).
+		WithStatus(providers.StatusSuccess).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.EntityID, ctx.AppID).
@@ -1211,7 +1392,7 @@ func publishFlowCompletedEvent(
 
 // publishFlowFailedEvent publishes an observability event when flow execution fails.
 func publishFlowFailedEvent(ctx *EngineContext, svcErr *tidcommon.ServiceError,
-	flowStartTime int64, flowEndTime int64, obsSvc observability.ObservabilityServiceInterface) {
+	flowStartTime int64, flowEndTime int64, obsSvc providers.ObservabilityProvider) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
 	}
@@ -1224,7 +1405,7 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *tidcommon.ServiceError,
 		string(event.EventTypeFlowFailed),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusFailure).
+		WithStatus(providers.StatusFailure).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.EntityID, ctx.AppID).

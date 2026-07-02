@@ -19,7 +19,6 @@
 package resolve
 
 import (
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
@@ -32,7 +31,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/application"
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/design/common"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
@@ -144,10 +142,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationServiceError(
 
 // Test ResolveDesign - Application has no design
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationHasNoDesign() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "",
 			LayoutID: "",
 		},
@@ -166,10 +164,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationHasNoDesign()
 //
 //nolint:dupl // Theme-only and layout-only resolution tests share the same structure with type-specific mocks.
 func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithThemeOnly() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "theme-123",
 			LayoutID: "",
 		},
@@ -196,10 +194,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithThemeOnly() {
 //
 //nolint:dupl // Theme-only and layout-only resolution tests share the same structure with type-specific mocks.
 func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithLayoutOnly() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "",
 			LayoutID: "layout-123",
 		},
@@ -224,10 +222,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithLayoutOnly() 
 
 // Test ResolveDesign - Success with both theme and layout
 func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithBoth() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "theme-123",
 			LayoutID: "layout-123",
 		},
@@ -258,10 +256,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithBoth() {
 
 // Test ResolveDesign - Theme not found (data integrity issue)
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeNotFound() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "theme-missing",
 			LayoutID: "",
 		},
@@ -280,10 +278,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeNotFound() {
 
 // Test ResolveDesign - Theme service error propagation
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeServiceError() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "theme-123",
 			LayoutID: "",
 		},
@@ -306,10 +304,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeServiceError() {
 // Test ResolveDesign - Nil theme service
 func (suite *ResolveServiceTestSuite) TestResolveDesign_NilThemeService() {
 	service := newDesignResolveService(nil, suite.mockLayoutService, suite.mockAppService)
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "theme-123",
 			LayoutID: "",
 		},
@@ -326,10 +324,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_NilThemeService() {
 
 // Test ResolveDesign - Layout not found (data integrity issue)
 func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutNotFound() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "",
 			LayoutID: "layout-missing",
 		},
@@ -348,10 +346,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutNotFound() {
 
 // Test ResolveDesign - Layout service error propagation
 func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutServiceError() {
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "",
 			LayoutID: "layout-123",
 		},
@@ -374,10 +372,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutServiceError() {
 // Test ResolveDesign - Nil layout service
 func (suite *ResolveServiceTestSuite) TestResolveDesign_NilLayoutService() {
 	service := newDesignResolveService(suite.mockThemeService, nil, suite.mockAppService)
-	app := &appmodel.Application{
+	app := &providers.Application{
 		ID:   "00000000-0000-0000-0000-000000000001",
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			ThemeID:  "",
 			LayoutID: "layout-123",
 		},

@@ -125,7 +125,11 @@ vi.mock('../../components/resource-tree/ResourceTree', () => ({
 }));
 
 vi.mock('../../components/resource-server-detail/AdvancedTab', () => ({
-  default: () => <div data-testid="advanced-tab" />,
+  default: ({identifier, onIdentifierChange}: {identifier: string; onIdentifierChange: (value: string) => void}) => (
+    <div data-testid="advanced-tab">
+      <input aria-label="Identifier" value={identifier} onChange={(e) => onIdentifierChange(e.target.value)} />
+    </div>
+  ),
 }));
 
 const mockResourceServer: ResourceServer = {
@@ -250,6 +254,53 @@ describe('ResourceServerEditPage', () => {
     renderWithProviders(<ResourceServerEditPage />);
 
     expect(screen.getByText(/This resource is read-only and cannot be modified/i)).toBeInTheDocument();
+  });
+
+  it('shows the unsaved changes bar when the identifier is edited in the Advanced tab', async () => {
+    renderWithProviders(<ResourceServerEditPage />);
+
+    fireEvent.click(screen.getByRole('tab', {name: 'Advanced Settings'}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('advanced-tab')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Identifier'), {target: {value: 'https://new-api.example.com'}});
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unsaved-changes-bar')).toBeInTheDocument();
+    });
+  });
+
+  it('includes the edited identifier when Save is clicked from the unsaved changes bar', async () => {
+    renderWithProviders(<ResourceServerEditPage />);
+
+    fireEvent.click(screen.getByRole('tab', {name: 'Advanced Settings'}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('advanced-tab')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Identifier'), {target: {value: 'https://new-api.example.com'}});
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unsaved-changes-bar')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      {
+        id: 'rs-1',
+        data: {
+          name: 'Dark Dodos Smash',
+          description: null,
+          identifier: 'https://new-api.example.com',
+          ouId: 'ou-1',
+        },
+      },
+      expect.any(Object),
+    );
   });
 
   it('shows the name text field when the edit icon button is clicked', async () => {

@@ -28,6 +28,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/observability/adaptermock"
 )
 
@@ -359,7 +360,7 @@ func TestFileSubscriber_OnEventMultiple(t *testing.T) {
 	numEvents := 10
 	for i := 0; i < numEvents; i++ {
 		evt := event.NewEvent("trace-multi", "test.multi", "TestComponent").
-			WithStatus(event.StatusSuccess).
+			WithStatus(providers.StatusSuccess).
 			WithData("index", i)
 
 		err := sub.OnEvent(evt)
@@ -397,13 +398,13 @@ func TestFileSubscriber_Close(t *testing.T) {
 	_ = sub.Initialize()
 
 	// Write some data
-	evt := &event.Event{
+	evt := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-123",
 		Type:      "test.event",
 		Timestamp: time.Now(),
 		Component: "TestComponent",
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data:      map[string]interface{}{},
 	}
 	_ = sub.OnEvent(evt)
@@ -459,13 +460,13 @@ func TestFileSubscriber_WriteAfterClose(t *testing.T) {
 	}
 
 	// Try to write after close
-	evt := &event.Event{
+	evt := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-123",
 		Type:      "test.event",
 		Timestamp: time.Now(),
 		Component: "TestComponent",
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data:      map[string]interface{}{},
 	}
 
@@ -564,13 +565,13 @@ func BenchmarkFileSubscriber_OnEvent(b *testing.B) {
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
-	testEvent := &event.Event{
+	testEvent := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-123",
 		Type:      "benchmark.event",
 		Timestamp: time.Now(),
 		Component: "BenchmarkComponent",
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data: map[string]interface{}{
 			"key1": "value1",
 			"key2": 123,
@@ -599,13 +600,13 @@ func BenchmarkFileSubscriber_OnEventComplex(b *testing.B) {
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
-	testEvent := &event.Event{
+	testEvent := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-123",
 		Type:      "benchmark.complex",
 		Timestamp: time.Now(),
 		Component: "BenchmarkComponent",
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data: map[string]interface{}{
 			"string": "value",
 			"int":    42,
@@ -769,7 +770,7 @@ func TestFileSubscriber_OnEventConcurrent(t *testing.T) {
 		go func(id int) {
 			for j := 0; j < eventsPerGoroutine; j++ {
 				evt := event.NewEvent("trace-concurrent", "test.concurrent", "TestComponent").
-					WithStatus(event.StatusSuccess).
+					WithStatus(providers.StatusSuccess).
 					WithData("goroutine", id).
 					WithData("event", j)
 
@@ -837,15 +838,15 @@ func TestFileSubscriber_OnEvent_DifferentEventStatuses(t *testing.T) {
 	defer func() { _ = sub.Close() }()
 
 	statuses := []string{
-		event.StatusSuccess,
-		event.StatusFailure,
-		event.StatusPending,
-		event.StatusInProgress,
+		providers.StatusSuccess,
+		providers.StatusFailure,
+		providers.StatusPending,
+		providers.StatusInProgress,
 	}
 
 	for _, status := range statuses {
 		t.Run(status, func(t *testing.T) {
-			evt := &event.Event{
+			evt := &providers.Event{
 				TraceID:   "trace-status-test",
 				EventID:   "event-status-test",
 				Type:      "test.status",
@@ -879,13 +880,13 @@ func TestFileSubscriber_OnEvent_EmptyData(t *testing.T) {
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
-	testEvent := &event.Event{
+	testEvent := &providers.Event{
 		TraceID:   "trace-empty",
 		EventID:   "event-empty",
 		Type:      "test.empty",
 		Timestamp: time.Now(),
 		Component: "TestComponent",
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data:      map[string]interface{}{},
 	}
 
@@ -922,13 +923,13 @@ func TestFileSubscriber_OnEvent_NilData(t *testing.T) {
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
-	testEvent := &event.Event{
+	testEvent := &providers.Event{
 		TraceID:   "trace-nil",
 		EventID:   "event-nil",
 		Type:      "test.nil",
 		Timestamp: time.Now(),
 		Component: "TestComponent",
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data:      nil,
 	}
 

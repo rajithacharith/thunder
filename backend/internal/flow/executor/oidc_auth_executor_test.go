@@ -19,7 +19,6 @@
 package executor
 
 import (
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
@@ -29,9 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/oidcmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -43,7 +40,7 @@ type OIDCAuthExecutorTestSuite struct {
 	mockOIDCService   *oidcmock.OIDCAuthnCoreServiceInterfaceMock
 	mockIDPService    *idpmock.IDPServiceInterfaceMock
 	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
-	mockAuthnProvider *managermock.AuthnProviderManagerInterfaceMock
+	mockAuthnProvider *managermock.AuthnProviderManagerMock
 	executor          oidcAuthExecutorInterface
 }
 
@@ -55,14 +52,14 @@ func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 	suite.mockOIDCService = oidcmock.NewOIDCAuthnCoreServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 
-	defaultInputs := []common.Input{{Identifier: "code", Type: "string", Required: true}}
+	defaultInputs := []providers.Input{{Identifier: "code", Type: "string", Required: true}}
 	mockExec := createMockAuthExecutor(suite.T(), ExecutorNameOIDCAuth)
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameOIDCAuth, common.ExecutorTypeAuthentication,
-		defaultInputs, []common.Input{}).Return(mockExec)
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameOIDCAuth, providers.ExecutorTypeAuthentication,
+		defaultInputs, []providers.Input{}).Return(mockExec)
 
-	suite.executor = newOIDCAuthExecutor(ExecutorNameOIDCAuth, defaultInputs, []common.Input{},
+	suite.executor = newOIDCAuthExecutor(ExecutorNameOIDCAuth, defaultInputs, []providers.Input{},
 		suite.mockFlowFactory, suite.mockIDPService, suite.mockOIDCService,
 		suite.mockAuthnProvider, providers.IDPTypeOIDC)
 }
@@ -78,11 +75,11 @@ func (suite *OIDCAuthExecutorTestSuite) TestNewOIDCAuthExecutor() {
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorizeURL() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
-		NodeInputs:  []common.Input{{Identifier: "code", Type: "string", Required: true}},
+		NodeInputs:  []providers.Input{{Identifier: "code", Type: "string", Required: true}},
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -98,7 +95,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecExternalRedirection, resp.Status)
+	assert.Equal(suite.T(), providers.ExecExternalRedirection, resp.Status)
 	assert.Contains(suite.T(), resp.RedirectURL, "https://oidc.provider.com/authorize")
 	assert.Equal(suite.T(), "TestOIDCProvider", resp.AdditionalData[common.DataIDPName])
 	suite.mockOIDCService.AssertExpectations(suite.T())
@@ -106,7 +103,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_AuthenticatesUser() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -130,14 +127,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_Au
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), "test@example.com", resp.RuntimeData["email"])
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken_Success() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -148,7 +145,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -164,13 +161,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -182,7 +179,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -197,13 +194,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, execResp.Status)
 	assert.Contains(suite.T(), execResp.Error.Error.DefaultValue, "Nonce mismatch")
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatch_Fails() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -215,7 +212,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatc
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -230,13 +227,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatc
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), ErrInvalidFederatedUser.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_Fails() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -250,7 +247,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -265,13 +262,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), ErrInvalidFederatedUser.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClientError() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -282,7 +279,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClie
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -297,13 +294,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClie
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), "Invalid ID token", execResp.Error.ErrorDescription.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlow_UserNotFound() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -314,7 +311,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -328,14 +325,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.False(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), "new-user-sub", execResp.RuntimeData["sub"])
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNotFound() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -346,7 +343,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_Use
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -358,12 +355,12 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_Use
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExists_RegistrationFlow() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -374,7 +371,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyE
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -389,12 +386,12 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyE
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvided() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
@@ -403,7 +400,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvid
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -415,7 +412,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvid
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUserClaimsFromIDToken() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -426,7 +423,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -444,7 +441,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	// Federated attributes are now stored in RuntimeData
 	assert.Contains(suite.T(), execResp.RuntimeData, "email")
 	assert.Contains(suite.T(), execResp.RuntimeData, "name")
@@ -459,7 +456,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDToken() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -470,7 +467,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -486,14 +483,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), "user@test.com", execResp.RuntimeData["email"])
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDToken() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -504,7 +501,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDT
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -520,14 +517,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDT
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.NotContains(suite.T(), execResp.RuntimeData, "email")
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailInIDToken() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -538,7 +535,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailIn
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -556,14 +553,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailIn
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), "", execResp.RuntimeData["email"])
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlow_WithEmail() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -574,7 +571,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -592,7 +589,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.False(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), "new-user-sub", execResp.RuntimeData["sub"])
 	assert.Equal(suite.T(), "newuser@example.com", execResp.RuntimeData["email"])
@@ -600,7 +597,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUserInfo() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -611,7 +608,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUse
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -630,14 +627,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUse
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), "fromUserInfo@example.com", execResp.RuntimeData["email"])
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDToken_NilRuntimeData() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -648,7 +645,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    nil, // Explicitly nil
 	}
@@ -666,7 +663,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.NotNil(suite.T(), execResp.RuntimeData, "RuntimeData should be initialized")
 	assert.Equal(suite.T(), "niltest@example.com", execResp.RuntimeData["email"])
@@ -674,7 +671,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithoutLocalUser() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -684,14 +681,14 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			"idpId":                               "idp-123",
 			"allowAuthenticationWithoutLocalUser": true,
 		},
-		Application: appmodel.Application{
-			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		Application: providers.Application{
+			InboundAuthProfile: providers.InboundAuthProfile{
 				AllowedUserTypes: []string{"INTERNAL"},
 			},
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -709,7 +706,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.False(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), dataValueTrue, execResp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning])
 	assert.Equal(suite.T(), "new-user-sub", execResp.RuntimeData["sub"])
@@ -717,7 +714,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWithoutLocalUser() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -729,7 +726,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthW
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -741,12 +738,12 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthW
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrationWithExistingUser() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -758,7 +755,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -777,7 +774,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
 	assert.Equal(suite.T(), dataValueTrue, execResp.RuntimeData[common.RuntimeKeyAllowRegistrationWithExistingUser])
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
@@ -785,7 +782,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 
 //nolint:dupl
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistrationWithExistingUser() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -797,7 +794,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegis
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -812,12 +809,12 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegis
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_FiltersNonUserClaims() {
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -854,7 +851,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_FiltersNonU
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_EmailAddedToRuntimeData() {
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -885,7 +882,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_EmailAddedT
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ServerError() { //nolint:dupl
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -896,7 +893,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ServerError(
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}

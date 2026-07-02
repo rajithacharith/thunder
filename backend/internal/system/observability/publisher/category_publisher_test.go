@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // mockSubscriberV2 is a mock subscriber for testing with category support
 type mockSubscriberV2 struct {
 	id          string
 	categories  []event.EventCategory
-	received    []*event.Event
+	received    []*providers.Event
 	shouldError bool
 	mu          sync.Mutex
 }
@@ -26,7 +27,7 @@ func (m *mockSubscriberV2) GetCategories() []event.EventCategory {
 	return m.categories
 }
 
-func (m *mockSubscriberV2) OnEvent(evt *event.Event) error {
+func (m *mockSubscriberV2) OnEvent(evt *providers.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.received = append(m.received, evt)
@@ -62,7 +63,7 @@ func TestCategoryPublisher_SmartPublishing(t *testing.T) {
 	pub := NewCategoryPublisher()
 
 	// Create event
-	evt := &event.Event{
+	evt := &providers.Event{
 		EventID:   "test-1",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",
@@ -80,13 +81,13 @@ func TestCategoryPublisher_SmartPublishing(t *testing.T) {
 	authSub := &mockSubscriberV2{
 		id:         "auth-sub",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	pub.Subscribe(authSub)
 
 	// Publish same event again
-	evt2 := &event.Event{
+	evt2 := &providers.Event{
 		EventID:   "test-2",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-2",
@@ -115,19 +116,19 @@ func TestCategoryPublisher_CategoryRouting(t *testing.T) {
 	authSub := &mockSubscriberV2{
 		id:         "auth-sub",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	tokenSub := &mockSubscriberV2{
 		id:         "token-sub",
 		categories: []event.EventCategory{event.CategoryFlows},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	allSub := &mockSubscriberV2{
 		id:         "all-sub",
 		categories: []event.EventCategory{event.CategoryAll},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	pub.Subscribe(authSub)
@@ -135,7 +136,7 @@ func TestCategoryPublisher_CategoryRouting(t *testing.T) {
 	pub.Subscribe(allSub)
 
 	// Publish authentication event
-	authEvent := &event.Event{
+	authEvent := &providers.Event{
 		EventID:   "auth-1",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",
@@ -146,7 +147,7 @@ func TestCategoryPublisher_CategoryRouting(t *testing.T) {
 	pub.Publish(context.Background(), authEvent)
 
 	// Publish token event
-	tokenEvent := &event.Event{
+	tokenEvent := &providers.Event{
 		EventID:   "token-1",
 		Type:      string(event.EventTypeFlowStarted),
 		TraceID:   "trace-2",
@@ -194,13 +195,13 @@ func TestCategoryPublisher_GetActiveCategories(t *testing.T) {
 	authSub := &mockSubscriberV2{
 		id:         "auth-sub",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	tokenSub := &mockSubscriberV2{
 		id:         "token-sub",
 		categories: []event.EventCategory{event.CategoryFlows},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	pub.Subscribe(authSub)
@@ -236,7 +237,7 @@ func TestCategoryPublisher_SubscribeUnsubscribe(t *testing.T) {
 	sub := &mockSubscriberV2{
 		id:         "test-sub",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	// Subscribe
@@ -268,20 +269,20 @@ func TestCategoryPublisher_MultipleSubscribersPerCategory(t *testing.T) {
 	authSub1 := &mockSubscriberV2{
 		id:         "auth-sub-1",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	authSub2 := &mockSubscriberV2{
 		id:         "auth-sub-2",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 
 	pub.Subscribe(authSub1)
 	pub.Subscribe(authSub2)
 
 	// Publish authentication event
-	evt := &event.Event{
+	evt := &providers.Event{
 		EventID:   "auth-1",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",
@@ -319,7 +320,7 @@ func TestCategoryPublisher_PublishInvalidEvent(t *testing.T) {
 	defer pub.Shutdown()
 
 	// Event missing required fields
-	invalidEvt := &event.Event{
+	invalidEvt := &providers.Event{
 		Type: "test",
 		// Missing TraceID, EventID, Component, Timestamp
 	}
@@ -334,7 +335,7 @@ func TestCategoryPublisher_PublishAfterShutdown(t *testing.T) {
 	authSub := &mockSubscriberV2{
 		id:         "auth-sub",
 		categories: []event.EventCategory{event.CategoryAuthentication},
-		received:   make([]*event.Event, 0),
+		received:   make([]*providers.Event, 0),
 	}
 	pub.Subscribe(authSub)
 
@@ -342,7 +343,7 @@ func TestCategoryPublisher_PublishAfterShutdown(t *testing.T) {
 	pub.Shutdown()
 
 	// Try to publish after shutdown
-	evt := &event.Event{
+	evt := &providers.Event{
 		EventID:   "test-1",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",
@@ -389,7 +390,7 @@ func TestCategoryPublisher_SubscriberPanic(t *testing.T) {
 
 	pub.Subscribe(panicSub)
 
-	evt := &event.Event{
+	evt := &providers.Event{
 		EventID:   "test-1",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",
@@ -413,13 +414,13 @@ func TestCategoryPublisher_SubscriberError(t *testing.T) {
 	errorSub := &mockSubscriberV2{
 		id:          "error-sub",
 		categories:  []event.EventCategory{event.CategoryAll},
-		received:    make([]*event.Event, 0),
+		received:    make([]*providers.Event, 0),
 		shouldError: true,
 	}
 
 	pub.Subscribe(errorSub)
 
-	evt := &event.Event{
+	evt := &providers.Event{
 		EventID:   "test-1",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",
@@ -457,7 +458,7 @@ func TestCategoryPublisher_UnsubscribeMultipleCategories(t *testing.T) {
 			event.CategoryAuthorization,
 			event.CategoryFlows,
 		},
-		received: make([]*event.Event, 0),
+		received: make([]*providers.Event, 0),
 	}
 
 	pub.Subscribe(multiSub)
@@ -506,7 +507,7 @@ func (m *mockSubscriberPanic) GetCategories() []event.EventCategory {
 	return m.categories
 }
 
-func (m *mockSubscriberPanic) OnEvent(evt *event.Event) error {
+func (m *mockSubscriberPanic) OnEvent(evt *providers.Event) error {
 	panic("subscriber panic!")
 }
 
@@ -536,7 +537,7 @@ func (m *mockSubscriberCloseError) GetCategories() []event.EventCategory {
 	return m.categories
 }
 
-func (m *mockSubscriberCloseError) OnEvent(evt *event.Event) error {
+func (m *mockSubscriberCloseError) OnEvent(evt *providers.Event) error {
 	return nil
 }
 
@@ -569,7 +570,7 @@ func (m *mockSubscriberBlocking) GetCategories() []event.EventCategory {
 	return m.categories
 }
 
-func (m *mockSubscriberBlocking) OnEvent(evt *event.Event) error {
+func (m *mockSubscriberBlocking) OnEvent(evt *providers.Event) error {
 	m.wasCalled = true
 	m.callCount++
 	time.Sleep(m.sleepDur)
@@ -600,7 +601,7 @@ func TestCategoryPublisher_AsyncNonBlocking(t *testing.T) {
 
 	pub.Subscribe(blockingSub)
 
-	evt := &event.Event{
+	evt := &providers.Event{
 		EventID:   "test-async",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		TraceID:   "trace-1",

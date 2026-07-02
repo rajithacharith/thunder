@@ -115,9 +115,6 @@ paths:
               assertion:
                 validityPeriod: 3600
                 userAttributes: ["email", "username"]
-              certificate:
-                type: "JWKS_URI"
-                value: "https://myapp.example.com/.well-known/jwks"
               allowedUserTypes: ["employee", "customer"]
               loginConsent:
                 validityPeriod: 3600
@@ -193,9 +190,6 @@ paths:
                 assertion:
                   validityPeriod: 3600
                   userAttributes: ["email", "username"]
-                certificate:
-                  type: "JWKS_URI"
-                  value: "https://myapp.example.com/.well-known/jwks"
                 allowedUserTypes: ["employee", "customer"]
                 loginConsent:
                   enabled: true
@@ -339,9 +333,6 @@ paths:
                 assertion:
                   validityPeriod: 3600
                   userAttributes: ["email", "username"]
-                certificate:
-                  type: "JWKS_URI"
-                  value: "https://myapp.example.com/.well-known/jwks"
                 allowedUserTypes: ["employee", "customer"]
                 loginConsent:
                   enabled: true
@@ -471,9 +462,6 @@ paths:
               assertion:
                 validityPeriod: 3600
                 userAttributes: ["email", "username"]
-              certificate:
-                type: "JWKS_URI"
-                value: "https://myapp.example.com/.well-known/jwks"
               allowedUserTypes: ["employee", "customer"]
               loginConsent:
                 validityPeriod: 3600
@@ -550,9 +538,6 @@ paths:
                 assertion:
                   validityPeriod: 3600
                   userAttributes: ["email", "username"]
-                certificate:
-                  type: "JWKS_URI"
-                  value: "https://myapp.example.com/.well-known/jwks"
                 allowedUserTypes: ["employee", "customer"]
                 loginConsent:
                   enabled: true
@@ -819,8 +804,6 @@ components:
           example: "https://myapp.example.com/logo.png"
         assertion:
           $ref: '#/components/schemas/AssertionConfig'
-        certificate:
-          $ref: '#/components/schemas/Certificate'
         inboundAuthConfig:
           type: array
           items:
@@ -863,6 +846,14 @@ components:
           example:
             env: "production"
             team: "platform"
+        flowSecret:
+          type: string
+          description: >
+            Flow Secret for backend/server-side applications — non-public clients that do not use the
+            redirect-based authorization_code flow. Used to authenticate when initiating a flow directly
+            via the Flow Execution API. When omitted on creation, a secret is generated automatically for
+            eligible applications and returned once in the creation response.
+          example: "550e8400e29b41d4a716446655440000abcdef0123456789"
 
     ApplicationCompleteResponse:
       type: object
@@ -921,6 +912,14 @@ components:
           type: string
           description: The template type of the application.
           example: "spa"
+        flowSecret:
+          type: string
+          description: >
+            Flow Secret for backend/server-side applications. Returned only in the creation response
+            for eligible applications (non-public clients that do not use the redirect-based
+            authorization_code flow). Used to authenticate when initiating a flow directly via the
+            Flow Execution API.
+          example: "550e8400e29b41d4a716446655440000abcdef0123456789"
         url:
           type: string
           format: uri
@@ -933,8 +932,6 @@ components:
           example: "https://myapp.example.com/logo.png"
         assertion:
           $ref: '#/components/schemas/AssertionConfig'
-        certificate:
-          $ref: '#/components/schemas/Certificate'
         inboundAuthConfig:
           type: array
           items:
@@ -1047,8 +1044,6 @@ components:
           example: "https://myapp.example.com/logo.png"
         assertion:
           $ref: '#/components/schemas/AssertionConfig'
-        certificate:
-          $ref: '#/components/schemas/Certificate'
         inboundAuthConfig:
           type: array
           items:

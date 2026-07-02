@@ -175,15 +175,15 @@ func (s *FlowFactoryTestSuite) TestCreateGraph() {
 }
 
 func (s *FlowFactoryTestSuite) TestCreateExecutor() {
-	defaultInputs := []common.Input{{Identifier: "input1", Required: true}}
-	prerequisites := []common.Input{{Identifier: "prereq1", Required: true}}
+	defaultInputs := []providers.Input{{Identifier: "input1", Required: true}}
+	prerequisites := []providers.Input{{Identifier: "prereq1", Required: true}}
 
-	executor := s.factory.CreateExecutor("test-executor", common.ExecutorTypeAuthentication,
+	executor := s.factory.CreateExecutor("test-executor", providers.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
 	s.NotNil(executor)
 	s.Equal("test-executor", executor.GetName())
-	s.Equal(common.ExecutorTypeAuthentication, executor.GetType())
+	s.Equal(providers.ExecutorTypeAuthentication, executor.GetType())
 	s.Equal(defaultInputs, executor.GetDefaultInputs())
 	s.Equal(prerequisites, executor.GetPrerequisites())
 }
@@ -195,7 +195,7 @@ func (s *FlowFactoryTestSuite) TestCloneNodeSuccess() {
 	node.AddPreviousNode("prev-1")
 	if execNode, ok := node.(ExecutorBackedNodeInterface); ok {
 		execNode.SetExecutorName("test-executor")
-		execNode.SetInputs([]common.Input{{Identifier: "input1", Required: true}})
+		execNode.SetInputs([]providers.Input{{Identifier: "input1", Required: true}})
 	}
 
 	clonedNode, err := s.factory.CloneNode(node)
@@ -232,7 +232,7 @@ func (s *FlowFactoryTestSuite) TestCloneNodeWithCondition() {
 	node, _ := s.factory.CreateNode("node-1", string(common.NodeTypeTaskExecution),
 		map[string]interface{}{}, false, false)
 	node.SetCondition(&NodeCondition{
-		Key:   "{{ context.status }}",
+		Key:   "{{ctx(status)}}",
 		Value: "active",
 	})
 
@@ -246,7 +246,7 @@ func (s *FlowFactoryTestSuite) TestCloneNodeWithCondition() {
 
 	// Verify deep copy - modifying cloned condition doesn't affect source
 	clonedNode.SetCondition(&NodeCondition{
-		Key:   "{{ context.newKey }}",
+		Key:   "{{ctx(newKey)}}",
 		Value: "newValue",
 	})
 	s.NotEqual(node.GetCondition().Key, clonedNode.GetCondition().Key)
@@ -376,6 +376,67 @@ func (s *FlowFactoryTestSuite) TestCloneNodesNilOrEmpty() {
 	s.Empty(clonedNodes)
 }
 
+func (s *FlowFactoryTestSuite) TestCloneNodeMismatchExecutorBacked() {
+	// source claims to be executor-backed but GetType returns Prompt which
+	// CreateNode maps to a non-executor-backed node. This should trigger the
+	// mismatch error in CloneNode.
+	src := &fakeExecutorBackedNode{id: "fake-1"}
+
+	cloned, err := s.factory.CloneNode(src)
+
+	s.Error(err)
+	s.Nil(cloned)
+	s.Contains(err.Error(), "mismatch in node types during cloning. copy is not executor-backed")
+}
+
+func (s *FlowFactoryTestSuite) TestCreateCallNode() {
+	node, err := s.factory.CreateNode("call-1", string(common.NodeTypeCall),
+		map[string]interface{}{}, false, false)
+
+	s.NoError(err)
+	s.NotNil(node)
+	s.Equal("call-1", node.GetID())
+	s.Equal(common.NodeTypeCall, node.GetType())
+	s.False(node.IsStartNode())
+	s.False(node.IsFinalNode())
+
+	callNode, ok := node.(CallNodeInterface)
+	s.True(ok, "Node should implement CallNodeInterface")
+	s.NotNil(callNode)
+}
+
+func (s *FlowFactoryTestSuite) TestCloneCallNode() {
+	node, _ := s.factory.CreateNode("call-1", string(common.NodeTypeCall),
+		map[string]interface{}{"prop": "val"}, false, false)
+	node.AddNextNode("next-1")
+	node.AddPreviousNode("prev-1")
+
+	callNode, ok := node.(CallNodeInterface)
+	s.True(ok)
+	callNode.SetReferencedFlow("target-flow-id")
+	callNode.SetOnSuccess("success-node")
+	callNode.SetOnFailure("failure-node")
+
+	clonedNode, err := s.factory.CloneNode(node)
+
+	s.NoError(err)
+	s.NotNil(clonedNode)
+	s.Equal(node.GetID(), clonedNode.GetID())
+	s.Equal(node.GetType(), clonedNode.GetType())
+	s.Equal(node.GetNextNodeList(), clonedNode.GetNextNodeList())
+	s.Equal(node.GetPreviousNodeList(), clonedNode.GetPreviousNodeList())
+
+	clonedCallNode, ok := clonedNode.(CallNodeInterface)
+	s.True(ok, "Cloned node should implement CallNodeInterface")
+	s.Equal("target-flow-id", clonedCallNode.GetReferencedFlow())
+	s.Equal("success-node", clonedCallNode.GetOnSuccess())
+	s.Equal("failure-node", clonedCallNode.GetOnFailure())
+
+	// Verify independence — mutating clone does not affect source
+	clonedCallNode.SetReferencedFlow("different-flow")
+	s.Equal("target-flow-id", callNode.GetReferencedFlow())
+}
+
 // fakeExecutorBackedNode implements ExecutorBackedNodeInterface but will report a
 // NodeType that CreateNode maps to a non-executor-backed node. This allows
 // exercising the defensive mismatch branch in CloneNode.
@@ -383,7 +444,7 @@ type fakeExecutorBackedNode struct {
 	id string
 }
 
-func (f *fakeExecutorBackedNode) Execute(ctx *NodeContext) (*common.NodeResponse, *tidcommon.ServiceError) {
+func (f *fakeExecutorBackedNode) Execute(ctx *providers.NodeContext) (*common.NodeResponse, *tidcommon.ServiceError) {
 	return nil, nil
 }
 
@@ -431,11 +492,11 @@ func (f *fakeExecutorBackedNode) AddPreviousNode(previousNodeID string) {}
 
 func (f *fakeExecutorBackedNode) RemovePreviousNode(previousNodeID string) {}
 
-func (f *fakeExecutorBackedNode) GetInputs() []common.Input {
+func (f *fakeExecutorBackedNode) GetInputs() []providers.Input {
 	return nil
 }
 
-func (f *fakeExecutorBackedNode) SetInputs(inputs []common.Input) {}
+func (f *fakeExecutorBackedNode) SetInputs(inputs []providers.Input) {}
 
 func (f *fakeExecutorBackedNode) GetCondition() *NodeCondition {
 	return nil
@@ -443,11 +504,11 @@ func (f *fakeExecutorBackedNode) GetCondition() *NodeCondition {
 
 func (f *fakeExecutorBackedNode) SetCondition(condition *NodeCondition) {}
 
-func (f *fakeExecutorBackedNode) ShouldExecute(ctx *NodeContext) bool {
+func (f *fakeExecutorBackedNode) ShouldExecute(ctx *providers.NodeContext) bool {
 	return true
 }
 
-func (f *fakeExecutorBackedNode) GetExecutionPolicy() *ExecutionPolicy {
+func (f *fakeExecutorBackedNode) GetExecutionPolicy() *providers.ExecutionPolicy {
 	return nil
 }
 
@@ -457,11 +518,11 @@ func (f *fakeExecutorBackedNode) GetExecutorName() string {
 
 func (f *fakeExecutorBackedNode) SetExecutorName(name string) {}
 
-func (f *fakeExecutorBackedNode) GetExecutor() ExecutorInterface {
+func (f *fakeExecutorBackedNode) GetExecutor() providers.Executor {
 	return nil
 }
 
-func (f *fakeExecutorBackedNode) SetExecutor(executor ExecutorInterface) {}
+func (f *fakeExecutorBackedNode) SetExecutor(executor providers.Executor) {}
 
 func (f *fakeExecutorBackedNode) GetOnSuccess() string {
 	return ""
@@ -486,16 +547,3 @@ func (f *fakeExecutorBackedNode) GetMode() string {
 }
 
 func (f *fakeExecutorBackedNode) SetMode(mode string) {}
-
-func (s *FlowFactoryTestSuite) TestCloneNodeMismatchExecutorBacked() {
-	// source claims to be executor-backed but GetType returns Prompt which
-	// CreateNode maps to a non-executor-backed node. This should trigger the
-	// mismatch error in CloneNode.
-	src := &fakeExecutorBackedNode{id: "fake-1"}
-
-	cloned, err := s.factory.CloneNode(src)
-
-	s.Error(err)
-	s.Nil(cloned)
-	s.Contains(err.Error(), "mismatch in node types during cloning. copy is not executor-backed")
-}

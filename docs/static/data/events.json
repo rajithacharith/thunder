@@ -1,0 +1,54 @@
+{
+  "events": [
+    {
+      "id": "react-nexus-2026",
+      "name": "React Nexus 2026",
+      "startDate": "2026-07-04",
+      "endDate": "2026-07-05",
+      "city": "Bangalore",
+      "location": "Bangalore, India",
+      "tags": ["Conference", "React"],
+      "link": "https://reactnexus.com/"
+    },
+    {
+      "id": "kubecon-india-2026",
+      "name": "KubeCon India",
+      "startDate": "2026-06-18",
+      "endDate": "2026-06-19",
+      "city": "Mumbai",
+      "location": "Mumbai, India",
+      "tags": [],
+      "link": "https://events.linuxfoundation.org/kubecon-cloudnativecon-india/"
+    },
+    {
+      "id": "oss-india-2026",
+      "name": "Open Source Summit India",
+      "startDate": "2026-06-17",
+      "endDate": "2026-06-17",
+      "city": "Mumbai",
+      "location": "Jio World Convention Centre, Mumbai",
+      "tags": [],
+      "link": "https://events.linuxfoundation.org/open-source-summit-india/"
+    },
+    {
+      "id": "mcp-dev-summit-mumbai-2026",
+      "name": "MCP Dev Summit",
+      "startDate": "2026-06-14",
+      "endDate": "2026-06-15",
+      "city": "Mumbai",
+      "location": "Mumbai, India",
+      "tags": [],
+      "link": "https://events.linuxfoundation.org/mcp-dev-summit-mumbai/"
+    },
+    {
+      "id": "mcp-dev-summit-bangalore-2026",
+      "name": "MCP Dev Summit",
+      "startDate": "2026-06-09",
+      "endDate": "2026-06-10",
+      "city": "Bangalore",
+      "location": "Bangalore, India",
+      "tags": [],
+      "link": "https://events.linuxfoundation.org/mcp-dev-summit-bengaluru/"
+    }
+  ]
+}

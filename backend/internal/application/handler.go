@@ -70,7 +70,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		OUID:        appRequest.OUID,
 		Name:        appRequest.Name,
 		Description: appRequest.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                appRequest.AuthFlowID,
 			RegistrationFlowID:        appRequest.RegistrationFlowID,
 			IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
@@ -79,17 +79,17 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 			ThemeID:                   appRequest.ThemeID,
 			LayoutID:                  appRequest.LayoutID,
 			Assertion:                 appRequest.Assertion,
-			Certificate:               appRequest.Certificate,
 			AllowedUserTypes:          appRequest.AllowedUserTypes,
 			LoginConsent:              appRequest.LoginConsent,
 		},
-		Template:  appRequest.Template,
-		URL:       appRequest.URL,
-		LogoURL:   appRequest.LogoURL,
-		TosURI:    appRequest.TosURI,
-		PolicyURI: appRequest.PolicyURI,
-		Contacts:  appRequest.Contacts,
-		Metadata:  appRequest.Metadata,
+		Template:   appRequest.Template,
+		FlowSecret: appRequest.FlowSecret,
+		URL:        appRequest.URL,
+		LogoURL:    appRequest.LogoURL,
+		TosURI:     appRequest.TosURI,
+		PolicyURI:  appRequest.PolicyURI,
+		Contacts:   appRequest.Contacts,
+		Metadata:   appRequest.Metadata,
 	}
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -105,7 +105,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		OUID:        createdAppDTO.OUID,
 		Name:        createdAppDTO.Name,
 		Description: createdAppDTO.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                createdAppDTO.AuthFlowID,
 			RegistrationFlowID:        createdAppDTO.RegistrationFlowID,
 			IsRegistrationFlowEnabled: createdAppDTO.IsRegistrationFlowEnabled,
@@ -114,17 +114,17 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 			ThemeID:                   createdAppDTO.ThemeID,
 			LayoutID:                  createdAppDTO.LayoutID,
 			Assertion:                 createdAppDTO.Assertion,
-			Certificate:               createdAppDTO.Certificate,
 			AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
 			LoginConsent:              createdAppDTO.LoginConsent,
 		},
-		Template:  createdAppDTO.Template,
-		URL:       createdAppDTO.URL,
-		LogoURL:   createdAppDTO.LogoURL,
-		TosURI:    createdAppDTO.TosURI,
-		PolicyURI: createdAppDTO.PolicyURI,
-		Contacts:  createdAppDTO.Contacts,
-		Metadata:  createdAppDTO.Metadata,
+		Template:   createdAppDTO.Template,
+		FlowSecret: createdAppDTO.FlowSecret,
+		URL:        createdAppDTO.URL,
+		LogoURL:    createdAppDTO.LogoURL,
+		TosURI:     createdAppDTO.TosURI,
+		PolicyURI:  createdAppDTO.PolicyURI,
+		Contacts:   createdAppDTO.Contacts,
+		Metadata:   createdAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -183,7 +183,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		OUID:        appDTO.OUID,
 		Name:        appDTO.Name,
 		Description: appDTO.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                appDTO.AuthFlowID,
 			RegistrationFlowID:        appDTO.RegistrationFlowID,
 			IsRegistrationFlowEnabled: appDTO.IsRegistrationFlowEnabled,
@@ -192,7 +192,6 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			ThemeID:                   appDTO.ThemeID,
 			LayoutID:                  appDTO.LayoutID,
 			Assertion:                 appDTO.Assertion,
-			Certificate:               appDTO.Certificate,
 			AllowedUserTypes:          appDTO.AllowedUserTypes,
 			LoginConsent:              appDTO.LoginConsent,
 		},
@@ -207,7 +206,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(appDTO.InboundAuthConfig) > 0 {
-		if appDTO.InboundAuthConfig[0].Type != inboundmodel.OAuthInboundAuthType {
+		if appDTO.InboundAuthConfig[0].Type != providers.OAuthInboundAuthType {
 			logger.Error(ctx, "Unsupported inbound authentication type returned",
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
@@ -323,7 +322,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		OUID:        appRequest.OUID,
 		Name:        appRequest.Name,
 		Description: appRequest.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                appRequest.AuthFlowID,
 			RegistrationFlowID:        appRequest.RegistrationFlowID,
 			IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
@@ -332,17 +331,17 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 			ThemeID:                   appRequest.ThemeID,
 			LayoutID:                  appRequest.LayoutID,
 			Assertion:                 appRequest.Assertion,
-			Certificate:               appRequest.Certificate,
 			AllowedUserTypes:          appRequest.AllowedUserTypes,
 			LoginConsent:              appRequest.LoginConsent,
 		},
-		Template:  appRequest.Template,
-		URL:       appRequest.URL,
-		LogoURL:   appRequest.LogoURL,
-		TosURI:    appRequest.TosURI,
-		PolicyURI: appRequest.PolicyURI,
-		Contacts:  appRequest.Contacts,
-		Metadata:  appRequest.Metadata,
+		Template:   appRequest.Template,
+		FlowSecret: appRequest.FlowSecret,
+		URL:        appRequest.URL,
+		LogoURL:    appRequest.LogoURL,
+		TosURI:     appRequest.TosURI,
+		PolicyURI:  appRequest.PolicyURI,
+		Contacts:   appRequest.Contacts,
+		Metadata:   appRequest.Metadata,
 	}
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -358,7 +357,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		OUID:        updatedAppDTO.OUID,
 		Name:        updatedAppDTO.Name,
 		Description: updatedAppDTO.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                updatedAppDTO.AuthFlowID,
 			RegistrationFlowID:        updatedAppDTO.RegistrationFlowID,
 			IsRegistrationFlowEnabled: updatedAppDTO.IsRegistrationFlowEnabled,
@@ -367,7 +366,6 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 			ThemeID:                   updatedAppDTO.ThemeID,
 			LayoutID:                  updatedAppDTO.LayoutID,
 			Assertion:                 updatedAppDTO.Assertion,
-			Certificate:               updatedAppDTO.Certificate,
 			AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
 			LoginConsent:              updatedAppDTO.LoginConsent,
 		},
@@ -425,7 +423,7 @@ func (ah *applicationHandler) processInboundAuthConfig(
 	ctx context.Context, logger *log.Logger, appDTO *model.ApplicationDTO,
 	returnApp *model.ApplicationCompleteResponse) bool {
 	if len(appDTO.InboundAuthConfig) > 0 {
-		if appDTO.InboundAuthConfig[0].Type != inboundmodel.OAuthInboundAuthType {
+		if appDTO.InboundAuthConfig[0].Type != providers.OAuthInboundAuthType {
 			logger.Error(ctx, "Unsupported inbound authentication type returned",
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
@@ -437,7 +435,7 @@ func (ah *applicationHandler) processInboundAuthConfig(
 			return false
 		}
 
-		returnInboundAuthConfigs := make([]inboundmodel.InboundAuthConfigWithSecret, 0, len(appDTO.InboundAuthConfig))
+		returnInboundAuthConfigs := make([]providers.InboundAuthConfigWithSecret, 0, len(appDTO.InboundAuthConfig))
 		for _, config := range appDTO.InboundAuthConfig {
 			if config.OAuthConfig == nil {
 				logger.Error(ctx, "OAuth application configuration is nil")
@@ -455,7 +453,7 @@ func (ah *applicationHandler) processInboundAuthConfig(
 			if len(responseTypes) == 0 {
 				responseTypes = []providers.ResponseType{}
 			}
-			oAuthAppConfig := inboundmodel.OAuthConfigWithSecret{
+			oAuthAppConfig := providers.OAuthConfigWithSecret{
 				ClientID:                           config.OAuthConfig.ClientID,
 				ClientSecret:                       config.OAuthConfig.ClientSecret,
 				RedirectURIs:                       redirectURIs,
@@ -474,7 +472,7 @@ func (ah *applicationHandler) processInboundAuthConfig(
 				Certificate:                        config.OAuthConfig.Certificate,
 				AcrValues:                          config.OAuthConfig.AcrValues,
 			}
-			returnInboundAuthConfigs = append(returnInboundAuthConfigs, inboundmodel.InboundAuthConfigWithSecret{
+			returnInboundAuthConfigs = append(returnInboundAuthConfigs, providers.InboundAuthConfigWithSecret{
 				Type:        config.Type,
 				OAuthConfig: &oAuthAppConfig,
 			})
@@ -520,20 +518,20 @@ func (ah *applicationHandler) handleError(ctx context.Context, w http.ResponseWr
 
 // processInboundAuthConfigFromRequest processes inbound auth config from request to DTO.
 func (ah *applicationHandler) processInboundAuthConfigFromRequest(
-	configs []inboundmodel.InboundAuthConfigWithSecret) []inboundmodel.InboundAuthConfigWithSecret {
+	configs []providers.InboundAuthConfigWithSecret) []providers.InboundAuthConfigWithSecret {
 	if len(configs) == 0 {
 		return nil
 	}
 
-	inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0)
+	inboundAuthConfigDTOs := make([]providers.InboundAuthConfigWithSecret, 0)
 	for _, config := range configs {
-		if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
+		if config.Type != providers.OAuthInboundAuthType || config.OAuthConfig == nil {
 			continue
 		}
 
-		inboundAuthConfigDTO := inboundmodel.InboundAuthConfigWithSecret{
+		inboundAuthConfigDTO := providers.InboundAuthConfigWithSecret{
 			Type: config.Type,
-			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+			OAuthConfig: &providers.OAuthConfigWithSecret{
 				ClientID:                           config.OAuthConfig.ClientID,
 				ClientSecret:                       config.OAuthConfig.ClientSecret,
 				RedirectURIs:                       config.OAuthConfig.RedirectURIs,

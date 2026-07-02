@@ -17,57 +17,19 @@
  */
 
 import {SettingsCard} from '@thunderid/components';
-import {useToast} from '@thunderid/contexts';
-import {useLogger} from '@thunderid/logger/react';
-import {Box, Button, Stack, TextField} from '@wso2/oxygen-ui';
-import {useState, type JSX} from 'react';
+import {FormControl, FormLabel, Stack, TextField} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import useUpdateResourceServer from '../../api/useUpdateResourceServer';
 import type {ResourceServer} from '../../models/resource-server';
 
 interface AdvancedTabProps {
   resourceServer: ResourceServer;
-  onRefresh: () => void;
+  identifier: string;
+  onIdentifierChange: (value: string) => void;
 }
 
-export default function AdvancedTab({resourceServer, onRefresh}: AdvancedTabProps): JSX.Element {
+export default function AdvancedTab({resourceServer, identifier, onIdentifierChange}: AdvancedTabProps): JSX.Element {
   const {t} = useTranslation();
-  const {showToast} = useToast();
-  const logger = useLogger('AdvancedTab');
-  const updateRs = useUpdateResourceServer();
-
-  const [identifier, setIdentifier] = useState(resourceServer.identifier ?? '');
-  const [identifierDirty, setIdentifierDirty] = useState(false);
-
-  const handleIdentifierSave = (): void => {
-    updateRs.mutate(
-      {
-        id: resourceServer.id,
-        data: {
-          name: resourceServer.name,
-          description: resourceServer.description ?? null,
-          identifier: identifier || null,
-          ouId: resourceServer.ouId,
-        },
-      },
-      {
-        onSuccess: () => {
-          showToast(t('resourceServers:edit.advanced.identifier.saved', 'Identifier saved.'), 'success');
-          setIdentifierDirty(false);
-          onRefresh();
-        },
-        onError: (err: Error) => {
-          logger.error('Failed to save identifier', {error: err});
-          showToast(t('resourceServers:edit.advanced.identifier.saveError', 'Failed to save identifier.'), 'error');
-        },
-      },
-    );
-  };
-
-  const handleIdentifierDiscard = (): void => {
-    setIdentifier(resourceServer.identifier ?? '');
-    setIdentifierDirty(false);
-  };
 
   return (
     <Stack spacing={3}>
@@ -78,14 +40,14 @@ export default function AdvancedTab({resourceServer, onRefresh}: AdvancedTabProp
           'Configuration settings for this resource server.',
         )}
       >
-        <Stack spacing={2}>
+        <FormControl fullWidth>
+          <FormLabel htmlFor="resource-server-identifier">
+            {t('resourceServers:edit.advanced.identifier.label', 'Identifier (Audience)')}
+          </FormLabel>
           <TextField
-            label={t('resourceServers:edit.advanced.identifier.label', 'Identifier (Audience)')}
+            id="resource-server-identifier"
             value={identifier}
-            onChange={(e) => {
-              setIdentifier(e.target.value);
-              setIdentifierDirty(true);
-            }}
+            onChange={(e) => onIdentifierChange(e.target.value)}
             fullWidth
             size="small"
             helperText={t(
@@ -94,17 +56,7 @@ export default function AdvancedTab({resourceServer, onRefresh}: AdvancedTabProp
             )}
             disabled={resourceServer.isReadOnly}
           />
-          {!resourceServer.isReadOnly && identifierDirty && (
-            <Box sx={{display: 'flex', gap: 1}}>
-              <Button variant="outlined" size="small" onClick={handleIdentifierDiscard} disabled={updateRs.isPending}>
-                {t('common:discard', 'Discard')}
-              </Button>
-              <Button variant="contained" size="small" onClick={handleIdentifierSave} disabled={updateRs.isPending}>
-                {updateRs.isPending ? t('common:saving', 'Saving…') : t('common:save', 'Save')}
-              </Button>
-            </Box>
-          )}
-        </Stack>
+        </FormControl>
       </SettingsCard>
     </Stack>
   );

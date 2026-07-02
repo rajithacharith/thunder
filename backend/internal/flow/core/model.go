@@ -21,33 +21,9 @@ package core
 import (
 	"context"
 
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
-
-// NodeContext holds the context for a specific node in the flow execution.
-type NodeContext struct {
-	Context context.Context
-
-	ExecutionID   string
-	FlowType      providers.FlowType
-	EntityID      string
-	Verbose       bool
-	CurrentAction string
-	CurrentNodeID string
-	ExecutorMode  string
-
-	NodeProperties map[string]interface{}
-	NodeInputs     []common.Input
-	UserInputs     map[string]string
-	RuntimeData    map[string]string
-	ForwardedData  map[string]interface{}
-
-	Application      appmodel.Application
-	AuthUser         providers.AuthUser
-	ExecutionHistory map[string]*common.NodeExecutionRecord
-}
 
 // NodeCondition represents a condition that must be met for a node to execute.
 // If specified, the node will only execute when the resolved value of key matches value.
@@ -62,12 +38,6 @@ type NodeCondition struct {
 type Segment struct {
 	ID          string
 	StartNodeID string
-}
-
-// ExecutionPolicy defines behavioral policies for node execution.
-type ExecutionPolicy struct {
-	SkipChallengeValidation bool
-	AllowSegmentRestart     bool
 }
 
 // InterceptorContext is the per-invocation context built by the InterceptorService for each
@@ -85,13 +55,13 @@ type InterceptorContext struct {
 	Mode providers.InterceptorMode
 
 	// Engine state
-	FlowStatus          common.FlowStatus
+	FlowStatus          providers.FlowStatus
 	UserInputs          map[string]string
 	CurrentNodeID       string
 	NodeType            common.NodeType
-	ExecutionPolicy     *ExecutionPolicy
+	ExecutionPolicy     *providers.ExecutionPolicy
 	AllowSegmentRestart bool
-	CurrentNodeInputs   []common.Input
+	CurrentNodeInputs   []providers.Input
 	ForwardedData       map[string]interface{}
 	AdditionalData      map[string]string
 

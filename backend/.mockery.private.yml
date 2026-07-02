@@ -189,10 +189,10 @@ packages:
       pkgname: notification
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/thunder-id/thunderid/internal/openid4vp:
+  github.com/thunder-id/thunderid/internal/authn/openid4vp:
     config:
       all: true
-      dir: internal/openid4vp
+      dir: internal/authn/openid4vp
       structname: '{{.InterfaceName}}Mock'
       pkgname: openid4vp
       filename: "{{.InterfaceName}}_mock_test.go"
@@ -205,18 +205,19 @@ packages:
       pkgname: openid4vci
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/thunder-id/thunderid/internal/openid4vp/definition:
+  github.com/thunder-id/thunderid/internal/vc/presentation:
     config:
       all: true
-      dir: internal/openid4vp/definition
+      dir: internal/vc/presentation
       structname: '{{.InterfaceName}}Mock'
-      pkgname: definition
+      pkgname: presentation
+      inpackage: true
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/thunder-id/thunderid/internal/openid4vci/credential:
+  github.com/thunder-id/thunderid/internal/vc/credential:
     config:
       all: true
-      dir: internal/openid4vci/credential
+      dir: internal/vc/credential
       structname: '{{.InterfaceName}}Mock'
       pkgname: credential
       filename: "{{.InterfaceName}}_mock_test.go"
@@ -367,7 +368,7 @@ packages:
 
   github.com/thunder-id/thunderid/pkg/thunderidengine/providers:
     interfaces:
-      FlowProviderInterface:
+      FlowProvider:
         config:
           dir: internal/flow/flowexec
           structname: '{{.InterfaceName}}Mock'

@@ -28,8 +28,6 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-
 	agentmodel "github.com/thunder-id/thunderid/internal/agent/model"
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
@@ -38,12 +36,12 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/internal/vc/credential"
+	"github.com/thunder-id/thunderid/internal/vc/presentation"
 )
 
 type applicationAdapter interface {
@@ -51,7 +49,7 @@ type applicationAdapter interface {
 		*appmodel.ApplicationDTO,
 		*tidcommon.ServiceError,
 	)
-	GetApplication(ctx context.Context, appID string) (*appmodel.Application, *tidcommon.ServiceError)
+	GetApplication(ctx context.Context, appID string) (*providers.Application, *tidcommon.ServiceError)
 	UpdateApplication(ctx context.Context, appID string, app *appmodel.ApplicationDTO) (
 		*appmodel.ApplicationDTO,
 		*tidcommon.ServiceError,
@@ -185,12 +183,12 @@ type agentAdapter interface {
 }
 
 type presentationDefinitionAdapter interface {
-	CreatePresentationDefinition(ctx context.Context, dto *definition.PresentationDefinitionDTO) (
-		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
+	CreatePresentationDefinition(ctx context.Context, dto *presentation.PresentationDefinitionDTO) (
+		*presentation.PresentationDefinitionDTO, *tidcommon.ServiceError)
 	GetPresentationDefinition(ctx context.Context, id string) (
-		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
-	UpdatePresentationDefinition(ctx context.Context, id string, dto *definition.PresentationDefinitionDTO) (
-		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
+		*presentation.PresentationDefinitionDTO, *tidcommon.ServiceError)
+	UpdatePresentationDefinition(ctx context.Context, id string, dto *presentation.PresentationDefinitionDTO) (
+		*presentation.PresentationDefinitionDTO, *tidcommon.ServiceError)
 }
 
 type credentialConfigurationAdapter interface {
@@ -851,7 +849,7 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 		OUHandle:    req.OUHandle,
 		Name:        req.Name,
 		Description: req.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                req.AuthFlowID,
 			AuthFlowHandle:            req.AuthFlowHandle,
 			RegistrationFlowID:        req.RegistrationFlowID,
@@ -865,27 +863,27 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 			Assertion:                 req.Assertion,
 			LoginConsent:              req.LoginConsent,
 			AllowedUserTypes:          req.AllowedUserTypes,
-			Certificate:               req.Certificate,
 		},
-		Template:  req.Template,
-		URL:       req.URL,
-		LogoURL:   req.LogoURL,
-		TosURI:    req.TosURI,
-		PolicyURI: req.PolicyURI,
-		Contacts:  req.Contacts,
-		Metadata:  req.Metadata,
+		Template:   req.Template,
+		FlowSecret: req.FlowSecret,
+		URL:        req.URL,
+		LogoURL:    req.LogoURL,
+		TosURI:     req.TosURI,
+		PolicyURI:  req.PolicyURI,
+		Contacts:   req.Contacts,
+		Metadata:   req.Metadata,
 	}
 
 	if len(req.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0, len(req.InboundAuthConfig))
+		inboundAuthConfigDTOs := make([]providers.InboundAuthConfigWithSecret, 0, len(req.InboundAuthConfig))
 		for _, config := range req.InboundAuthConfig {
-			if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
+			if config.Type != providers.OAuthInboundAuthType || config.OAuthConfig == nil {
 				continue
 			}
 
-			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundmodel.InboundAuthConfigWithSecret{
+			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, providers.InboundAuthConfigWithSecret{
 				Type: config.Type,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                           config.OAuthConfig.ClientID,
 					ClientSecret:                       config.OAuthConfig.ClientSecret,
 					RedirectURIs:                       config.OAuthConfig.RedirectURIs,
@@ -910,13 +908,13 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 	return appDTO
 }
 
-func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *inboundmodel.OAuthConfigWithSecret {
+func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *providers.OAuthConfigWithSecret {
 	if appDTO == nil {
 		return nil
 	}
 
 	for _, inboundAuth := range appDTO.InboundAuthConfig {
-		if inboundAuth.Type == inboundmodel.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
+		if inboundAuth.Type == providers.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
 			return inboundAuth.OAuthConfig
 		}
 	}

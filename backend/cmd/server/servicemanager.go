@@ -38,6 +38,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
 	authnOAuth "github.com/thunder-id/thunderid/internal/authn/oauth"
 	authnOIDC "github.com/thunder-id/thunderid/internal/authn/oidc"
+	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
@@ -69,9 +70,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jti"
 	"github.com/thunder-id/thunderid/internal/openid4vci"
-	openid4vcicred "github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/openid4vp"
-	openid4vpdef "github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -94,10 +92,13 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/mcp"
 	"github.com/thunder-id/thunderid/internal/system/observability"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/services"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/internal/system/template"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/internal/vc/credential"
+	"github.com/thunder-id/thunderid/internal/vc/presentation"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
@@ -105,8 +106,10 @@ import (
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
+// It also returns the import service so the bootstrap subcommand can create default
+// resources in-process through the same service instances.
 func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) (
-	jwt.JWTServiceInterface, kmprovider.RuntimeCryptoProvider) {
+	jwt.JWTServiceInterface, kmprovider.RuntimeCryptoProvider, importer.ImportServiceInterface) {
 	logger := log.GetLogger()
 
 	// Service registration runs during application startup, outside any request.
@@ -153,6 +156,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize server config service", log.Error(err))
 	}
 	exporters = append(exporters, serverConfigExporter)
+
+	// CORS origins now come from the merged server-config cors section.
+	cors.InitializeDynamicMatcher(serverConfigService)
 
 	ouAuthzService, err := sysauthz.Initialize()
 	if err != nil {
@@ -279,15 +285,13 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	oauthCfg := oauthconfig.FromServerRuntime()
 	dpopVerifier := dpop.Initialize(oauthCfg, jti.Initialize(oauthCfg))
 
-	// Initialize the verifiable-credential services (OpenID4VP verifier + OpenID4VCI issuer).
-	openid4vpVerifierSvc, openid4vpDefSvc, _, openid4vciCredSvc, exporters :=
-		initializeVCServices(
-			ctx, logger, mux, runtimeCryptoSvc, configCryptoSvc, jwtService, userService, ouService,
-			dpopVerifier, exporters)
+	openid4vpSvc, openid4vpDefSvc, openid4vciCredSvc, exporters :=
+		initializeVCServices(ctx, logger, mux, runtimeCryptoSvc, configCryptoSvc, jwtService, userService,
+			ouService, dpopVerifier, exporters)
 
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
-		magicLinkService, openid4vpVerifierSvc, federatedAuths)
+		magicLinkService, openid4vpSvc, federatedAuths)
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()
@@ -299,6 +303,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	attributeCacheService := attributecache.Initialize()
 
 	emailClient := initEmailClient(ctx, logger)
+	flowConfig := flowconfig.FromServerRuntime()
 	flowFactory, execRegistry, interceptorRegistry, graphBuilder := initializeFlowCoreAndExecutor(ctx, logger,
 		cacheManager, executor.ExecutorDependencies{
 			OUService:             ouService,
@@ -324,9 +329,10 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			OIDCSvc:               oidcAuthnService,
 			GithubSvc:             githubAuthnService,
 			GoogleSvc:             googleAuthnService,
-			OpenID4VPVerifierSvc:  openid4vpVerifierSvc,
+			OpenID4VPVerifierSvc:  openid4vpSvc,
 		},
 		interceptor.InterceptorDependencies{},
+		flowConfig,
 	)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
@@ -375,10 +381,13 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, agentExporter)
 
+	// Wire the dependency registry into the theme service (two-phase init to avoid cyclic imports).
+	registerDependencyRegistry(themeMgtService, applicationService, agentService)
+
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
 
-	actorProvider := actorprovider.Initialize(inboundClientService, entityProvider)
+	actorProvider := actorprovider.Initialize(inboundClientService, entityProvider, authnProvider)
 
 	// Initialize flow metadata service
 	_ = flowmeta.Initialize(mux, actorProvider, ouService, designResolveService, i18nService)
@@ -387,7 +396,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	_ = export.Initialize(mux, exporters)
 
 	// Initialize import service
-	_ = importer.Initialize(
+	importService := importer.Initialize(
 		mux,
 		applicationService,
 		idpService,
@@ -433,7 +442,15 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	healthSvc := healthcheckservice.Initialize(dbprovider.GetDBProvider(), dbprovider.GetRedisProvider())
 	services.NewHealthCheckService(mux, healthSvc)
 
-	return jwtService, runtimeCryptoSvc
+	return jwtService, runtimeCryptoSvc, importService
+}
+
+// registerDependencyRegistry builds the dependency registry from the given providers and wires
+// it into the theme management service.
+func registerDependencyRegistry(
+	themeMgtService thememgt.ThemeMgtServiceInterface, providers ...resourcedependency.Provider,
+) {
+	themeMgtService.SetDependencyRegistry(resourcedependency.Initialize(providers...))
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.
@@ -459,6 +476,7 @@ func initializeFlowCoreAndExecutor(
 	cacheManager cache.CacheManagerInterface,
 	execDeps executor.ExecutorDependencies,
 	interceptorDeps interceptor.InterceptorDependencies,
+	flowConfig flowconfig.Config,
 ) (flowcore.FlowFactoryInterface, executor.ExecutorRegistryInterface,
 	interceptor.InterceptorRegistryInterface, graphbuilder.GraphBuilderInterface) {
 	// Initialize flow core services.
@@ -467,11 +485,11 @@ func initializeFlowCoreAndExecutor(
 	interceptorDeps.FlowFactory = flowFactory
 
 	// Initialize flow executor registry
-	execRegistry, err := executor.Initialize(execDeps, config.GetServerRuntime().Config.Flow)
+	execRegistry, err := executor.Initialize(execDeps, flowConfig.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to register flow executors", log.Error(err))
 	}
-	interceptorRegistry, err := interceptor.Initialize(interceptorDeps, config.GetServerRuntime().Config.Flow)
+	interceptorRegistry, err := interceptor.Initialize(interceptorDeps, flowConfig.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize Interceptor registry", log.Error(err))
 	}
@@ -481,36 +499,44 @@ func initializeFlowCoreAndExecutor(
 	return flowFactory, execRegistry, interceptorRegistry, graphBuilder
 }
 
-// initializeVCServices initializes the OpenID4VP verifier and OpenID4VCI issuer
-// services, appending their declarative-resource exporters to exporters.
+// initializeVCServices initializes the OpenID4VP verifier and OpenID4VCI issuer services,
+// appending their declarative-resource exporters to exporters.
 func initializeVCServices(
 	ctx context.Context, logger *log.Logger, mux *http.ServeMux,
 	runtimeCrypto kmprovider.RuntimeCryptoProvider, configCrypto kmprovider.ConfigCryptoProvider,
 	jwtService jwt.JWTServiceInterface, userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
-	dpopVer dpop.VerifierInterface,
+	dpopVerifier dpop.VerifierInterface,
 	exporters []declarativeresource.ResourceExporter,
-) (openid4vp.OpenID4VPServiceInterface, openid4vpdef.PresentationDefinitionServiceInterface,
-	openid4vci.OpenID4VCIServiceInterface,
-	openid4vcicred.CredentialConfigurationServiceInterface, []declarativeresource.ResourceExporter) {
-	vpVerifier, vpDefSvc, vpDefExp, err := openid4vp.Initialize(mux, runtimeCrypto, configCrypto, jwtService, ouService)
+) (openid4vp.OpenID4VPServiceInterface, presentation.PresentationDefinitionServiceInterface,
+	credential.CredentialConfigurationServiceInterface, []declarativeresource.ResourceExporter) {
+	openid4vpDefSvc, vpDefExp, err := presentation.Initialize(mux, ouService)
 	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
+		logger.Fatal(ctx, "Failed to initialize presentation definition service", log.Error(err))
 	}
 	if vpDefExp != nil {
 		exporters = append(exporters, vpDefExp)
 	}
 
-	vciSvc, vciCredSvc, vciExp, err := openid4vci.Initialize(
-		mux, runtimeCrypto, jwtService, userService, dpopVer, ouService)
+	openid4vpSvc, err := openid4vp.Initialize(mux, runtimeCrypto, configCrypto, jwtService, openid4vpDefSvc)
 	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize OpenID4VCI issuer service", log.Error(err))
-	}
-	if vciExp != nil {
-		exporters = append(exporters, vciExp)
+		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
 	}
 
-	return vpVerifier, vpDefSvc, vciSvc, vciCredSvc, exporters
+	openid4vciCredSvc, vciCredExp, err := credential.Initialize(mux, ouService)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize credential configuration service", log.Error(err))
+	}
+	if vciCredExp != nil {
+		exporters = append(exporters, vciCredExp)
+	}
+
+	if _, err = openid4vci.Initialize(
+		mux, runtimeCrypto, jwtService, userService, dpopVerifier, openid4vciCredSvc); err != nil {
+		logger.Fatal(ctx, "Failed to initialize OpenID4VCI issuer service", log.Error(err))
+	}
+
+	return openid4vpSvc, openid4vpDefSvc, openid4vciCredSvc, exporters
 }
 
 // buildHashConfig constructs a cryptolib.HashConfig from the server configuration.

@@ -126,10 +126,11 @@ export default function ApplicationEditPage() {
   const handleSave = useCallback(async () => {
     if (!application || !applicationId) return;
 
-    const updatedData = {
+    const {certificate, ...updatedData} = {
       ...application,
       ...editedApp,
     };
+    void certificate;
 
     try {
       await updateApplication.mutateAsync({

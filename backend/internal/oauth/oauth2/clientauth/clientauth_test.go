@@ -59,7 +59,7 @@ type ClientAuthTestSuite struct {
 	suite.Suite
 	mockInboundClient  *inboundclientmock.InboundClientServiceInterfaceMock
 	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
-	mockAuthnProvider  *managermock.AuthnProviderManagerInterfaceMock
+	mockAuthnProvider  *managermock.AuthnProviderManagerMock
 	mockJwtService     *jwtmock.JWTServiceInterfaceMock
 }
 
@@ -67,14 +67,14 @@ func TestClientAuthTestSuite(t *testing.T) {
 	suite.Run(t, new(ClientAuthTestSuite))
 }
 
-func (suite *ClientAuthTestSuite) actorProvider() providers.ActorProviderInterface {
-	return actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider)
+func (suite *ClientAuthTestSuite) actorProvider() providers.ActorProvider {
+	return actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider, noopAuthnMgr())
 }
 
 func (suite *ClientAuthTestSuite) SetupTest() {
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
-	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 	suite.mockJwtService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 	// Default authn mock: return success for client secret authentication.
@@ -381,7 +381,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 		Return(mockApp, nil).Once()
 
 	// Create a fresh authn mock that fails for wrong secret.
-	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	failAuthnProvider := managermock.NewAuthnProviderManagerMock(suite.T())
 	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return(providers.AuthUser{}, (providers.AuthenticatedClaims)(nil),
@@ -1294,4 +1294,10 @@ func (suite *ClientAuthTestSuite) TestValidateClientAssertion_MultipleKeysMatche
 	err := validateClientAssertion(context.Background(),
 		oauthApp, suite.mockJwtService, testEndpointURL, "test-client", fakeJWT)
 	assert.Nil(suite.T(), err)
+}
+
+// noopAuthnMgr returns an authentication-provider mock with no expectations, for tests that
+// build a real actor provider but never exercise actor authentication.
+func noopAuthnMgr() *managermock.AuthnProviderManagerMock {
+	return &managermock.AuthnProviderManagerMock{}
 }

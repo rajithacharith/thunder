@@ -28,6 +28,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/github"
 	"github.com/thunder-id/thunderid/internal/authn/google"
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
+	"github.com/thunder-id/thunderid/internal/authn/nextjssdk"
 	"github.com/thunder-id/thunderid/internal/authn/oauth"
 	"github.com/thunder-id/thunderid/internal/authn/oidc"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
@@ -45,7 +46,7 @@ func Initialize(
 	mcpServer *mcp.Server,
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
-	authnProvider providers.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManager,
 	authAssertGen assert.AuthAssertGeneratorInterface,
 	passkeySvc passkey.PasskeyServiceInterface,
 	otpSvc otp.OTPAuthnServiceInterface,
@@ -91,6 +92,10 @@ func Initialize(
 		Name:    common.AuthenticatorMagicLink,
 		Factors: []common.AuthenticationFactor{common.FactorPossession},
 	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:    common.AuthenticatorOpenID4VP,
+		Factors: []common.AuthenticationFactor{common.FactorPossession, common.FactorInherence},
+	})
 
 	authnService := newAuthenticationService(
 		idpSvc,
@@ -112,6 +117,7 @@ func Initialize(
 	// Register MCP tools
 	if mcpServer != nil {
 		reactsdk.RegisterTools(mcpServer)
+		nextjssdk.RegisterTools(mcpServer)
 	}
 
 	return authnService

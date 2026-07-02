@@ -38,9 +38,10 @@ const (
 	dataSourceTypePostgres = "postgres"
 	dataSourceTypeSQLite   = "sqlite"
 
-	dbNameConfig  = "config"
-	dbNameRuntime = "runtime"
-	dbNameUser    = "user"
+	dbNameConfig    = "config"
+	dbNameRuntime   = "runtime"
+	dbNameUser      = "user"
+	dbNameOperation = "operation"
 )
 
 // dbConfig represents the local database configuration.
@@ -54,9 +55,11 @@ type DBProviderInterface interface {
 	GetConfigDBClient() (DBClientInterface, error)
 	GetRuntimeDBClient() (DBClientInterface, error)
 	GetUserDBClient() (DBClientInterface, error)
+	GetOperationDBClient() (DBClientInterface, error)
 	GetConfigDBTransactioner() (transaction.Transactioner, error)
 	GetUserDBTransactioner() (transaction.Transactioner, error)
 	GetRuntimeDBTransactioner() (transaction.Transactioner, error)
+	GetOperationDBTransactioner() (transaction.Transactioner, error)
 }
 
 // DBProviderCloser is a separate interface for closing the provider.
@@ -67,12 +70,14 @@ type DBProviderCloser interface {
 
 // dbProvider is the implementation of DBProviderInterface.
 type dbProvider struct {
-	configClient  DBClientInterface
-	configMutex   sync.RWMutex
-	runtimeClient DBClientInterface
-	runtimeMutex  sync.RWMutex
-	userClient    DBClientInterface
-	userMutex     sync.RWMutex
+	configClient    DBClientInterface
+	configMutex     sync.RWMutex
+	runtimeClient   DBClientInterface
+	runtimeMutex    sync.RWMutex
+	userClient      DBClientInterface
+	userMutex       sync.RWMutex
+	operationClient DBClientInterface
+	operationMutex  sync.RWMutex
 }
 
 var (
@@ -122,6 +127,13 @@ func (d *dbProvider) GetUserDBClient() (DBClientInterface, error) {
 	return d.getOrInitClient(&d.userClient, &d.userMutex, userDBConfig, dbNameUser)
 }
 
+// GetOperationDBClient returns a database client for the operation datasource.
+// Not required to close the returned client manually since it manages its own connection pool.
+func (d *dbProvider) GetOperationDBClient() (DBClientInterface, error) {
+	operationDBConfig := config.GetServerRuntime().Config.Database.Operation
+	return d.getOrInitClient(&d.operationClient, &d.operationMutex, operationDBConfig, dbNameOperation)
+}
+
 // GetConfigDBTransactioner returns a transactioner for the config database.
 // The transactioner manages database transactions with automatic nesting detection.
 func (d *dbProvider) GetConfigDBTransactioner() (transaction.Transactioner, error) {
@@ -142,6 +154,12 @@ func (d *dbProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, err
 		return transaction.NewNoOpTransactioner(), nil
 	}
 	return d.getTransactioner(d.GetRuntimeDBClient, dbNameRuntime)
+}
+
+// GetOperationDBTransactioner returns a transactioner for the operation database.
+// The transactioner manages database transactions with automatic nesting detection.
+func (d *dbProvider) GetOperationDBTransactioner() (transaction.Transactioner, error) {
+	return d.getTransactioner(d.GetOperationDBClient, dbNameOperation)
 }
 
 // getTransactioner is a helper method that creates a transactioner for a given database client.
@@ -181,6 +199,14 @@ func (d *dbProvider) initializeAllClients() {
 	err = d.initializeClient(&d.userClient, userDBConfig, dbNameUser)
 	if err != nil {
 		logger.Error(ctx, "Failed to initialize user database client", log.Error(err))
+	}
+
+	operationDBConfig := config.GetServerRuntime().Config.Database.Operation
+	if operationDBConfig.Type != "" {
+		err = d.initializeClient(&d.operationClient, operationDBConfig, dbNameOperation)
+		if err != nil {
+			logger.Error(ctx, "Failed to initialize operation database client", log.Error(err))
+		}
 	}
 }
 
@@ -319,6 +345,7 @@ func (d *dbProvider) Close() error {
 	configErr := d.closeClient(&d.configClient, &d.configMutex, "config")
 	runtimeErr := d.closeClient(&d.runtimeClient, &d.runtimeMutex, "runtime")
 	userErr := d.closeClient(&d.userClient, &d.userMutex, "user")
+	operationErr := d.closeClient(&d.operationClient, &d.operationMutex, "operation")
 
 	// Close the Redis runtime provider if it was initialized.
 	var redisErr error
@@ -326,7 +353,7 @@ func (d *dbProvider) Close() error {
 		redisErr = redisInstance.Close()
 	}
 
-	return errors.Join(configErr, runtimeErr, userErr, redisErr)
+	return errors.Join(configErr, runtimeErr, userErr, operationErr, redisErr)
 }
 
 // closeClient is a helper to close a DB client with locking.

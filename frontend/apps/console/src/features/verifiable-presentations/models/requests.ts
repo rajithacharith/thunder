@@ -20,7 +20,8 @@
 export interface CreateVerifiablePresentationRequest {
   handle: string;
   ouId: string;
-  displayName?: string;
+  name?: string;
+  description?: string;
   vct: string;
   format?: string;
   mandatoryClaims?: string[];

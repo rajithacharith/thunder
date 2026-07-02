@@ -26,6 +26,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -58,7 +59,7 @@ func makeToken(t *testing.T, payload map[string]any) string {
 
 func (s *OpenID4VCIHandlerTestSuite) TestNewOpenID4VCIHandler() {
 	svc := NewOpenID4VCIServiceInterfaceMock(s.T())
-	h := newOpenID4VCIHandler(svc, nil, "https://i/credential")
+	h := newOpenID4VCIHandler(svc, nil, "https://i/credential", time.Minute)
 	s.Equal(svc, h.service)
 	s.Equal("https://i/credential", h.credentialEndpoint)
 }
@@ -86,7 +87,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestBearerToken() {
 func (s *OpenID4VCIHandlerTestSuite) TestHandleMetadata() {
 	svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 	svc.EXPECT().GetMetadata(mock.Anything).Return(map[string]interface{}{"credential_issuer": "https://i"})
-	h := newOpenID4VCIHandler(svc, nil, "")
+	h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 
 	rr := httptest.NewRecorder()
 	h.HandleMetadata(rr, httptest.NewRequest(http.MethodGet, metadataPath, nil))
@@ -97,7 +98,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleMetadata() {
 func (s *OpenID4VCIHandlerTestSuite) TestHandleOffer() {
 	s.Run("MissingConfig", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleOffer(rr, httptest.NewRequest(http.MethodGet, offerPath, nil))
 		s.Equal(http.StatusBadRequest, rr.Code)
@@ -107,7 +108,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleOffer() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().GenerateCredentialOffer(mock.Anything, "eudi-pid").
 			Return(map[string]interface{}{"credential_issuer": "https://i"}, "openid-credential-offer://x", nil)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleOffer(rr, httptest.NewRequest(http.MethodGet, offerPath+"?credential_configuration_id=eudi-pid", nil))
 		s.Equal(http.StatusOK, rr.Code)
@@ -118,7 +119,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleOffer() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().GenerateCredentialOffer(mock.Anything, "x").
 			Return(nil, "", ErrUnsupportedCredential)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleOffer(rr, httptest.NewRequest(http.MethodGet, offerPath+"?credential_configuration_id=x", nil))
 		s.Equal(http.StatusBadRequest, rr.Code)
@@ -128,7 +129,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleOffer() {
 func (s *OpenID4VCIHandlerTestSuite) TestHandleCredentialOffer() {
 	s.Run("MissingID", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleCredentialOffer(rr, httptest.NewRequest(http.MethodGet, credentialOfferPath+"/", nil))
 		s.Equal(http.StatusBadRequest, rr.Code)
@@ -138,7 +139,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredentialOffer() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().GetCredentialOffer(mock.Anything, "o1").
 			Return(map[string]interface{}{"credential_issuer": "https://i"}, nil)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		req := httptest.NewRequest(http.MethodGet, credentialOfferPath+"/o1", nil)
 		req.SetPathValue("id", "o1")
 		rr := httptest.NewRecorder()
@@ -150,7 +151,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredentialOffer() {
 	s.Run("NotFound", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().GetCredentialOffer(mock.Anything, "missing").Return(nil, ErrUnsupportedCredential)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		req := httptest.NewRequest(http.MethodGet, credentialOfferPath+"/missing", nil)
 		req.SetPathValue("id", "missing")
 		rr := httptest.NewRecorder()
@@ -163,7 +164,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleNonce() {
 	s.Run("Success", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().GenerateNonce(mock.Anything).Return("the-nonce", nil)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleNonce(rr, httptest.NewRequest(http.MethodPost, noncePath, nil))
 		s.Equal(http.StatusOK, rr.Code)
@@ -173,7 +174,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleNonce() {
 	s.Run("Error", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().GenerateNonce(mock.Anything).Return("", errors.New("boom"))
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleNonce(rr, httptest.NewRequest(http.MethodPost, noncePath, nil))
 		s.Equal(http.StatusInternalServerError, rr.Code)
@@ -185,7 +186,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 
 	s.Run("AccessTokenInQuery", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleCredential(rr, httptest.NewRequest(http.MethodPost, credentialPath+"?access_token=x", nil))
 		s.Equal(http.StatusUnauthorized, rr.Code)
@@ -193,7 +194,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 
 	s.Run("MissingToken", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		rr := httptest.NewRecorder()
 		h.HandleCredential(rr, httptest.NewRequest(http.MethodPost, credentialPath, nil))
 		s.Equal(http.StatusUnauthorized, rr.Code)
@@ -203,7 +204,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().IssueCredential(mock.Anything, token, mock.Anything).
 			Return(&CredentialResponse{Credentials: []IssuedCredential{{Credential: "vc"}}}, nil)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		req := httptest.NewRequest(http.MethodPost, credentialPath, strings.NewReader("{}"))
 		req.Header.Set("Authorization", "Bearer "+token)
 		rr := httptest.NewRecorder()
@@ -216,7 +217,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().IssueCredential(mock.Anything, token, mock.Anything).Return(nil, ErrInvalidProof)
 		svc.EXPECT().GenerateNonce(mock.Anything).Return("fresh", nil)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		req := httptest.NewRequest(http.MethodPost, credentialPath, strings.NewReader("{}"))
 		req.Header.Set("Authorization", "Bearer "+token)
 		rr := httptest.NewRecorder()
@@ -228,7 +229,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 	s.Run("DPoPRequiredButMissing", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		boundToken := makeToken(s.T(), map[string]any{"sub": "u1", "cnf": map[string]any{"jkt": "abc"}})
-		h := newOpenID4VCIHandler(svc, nil, "https://i/credential")
+		h := newOpenID4VCIHandler(svc, nil, "https://i/credential", time.Minute)
 		req := httptest.NewRequest(http.MethodPost, credentialPath, strings.NewReader("{}"))
 		req.Header.Set("Authorization", "Bearer "+boundToken)
 		rr := httptest.NewRecorder()
@@ -239,7 +240,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 
 	s.Run("BodyReadError", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		req := httptest.NewRequest(http.MethodPost, credentialPath, errReader{})
 		req.Header.Set("Authorization", "Bearer "+token)
 		rr := httptest.NewRecorder()
@@ -250,7 +251,7 @@ func (s *OpenID4VCIHandlerTestSuite) TestHandleCredential() {
 	s.Run("IssueErrorOther", func() {
 		svc := NewOpenID4VCIServiceInterfaceMock(s.T())
 		svc.EXPECT().IssueCredential(mock.Anything, token, mock.Anything).Return(nil, ErrInvalidToken)
-		h := newOpenID4VCIHandler(svc, nil, "")
+		h := newOpenID4VCIHandler(svc, nil, "", time.Minute)
 		req := httptest.NewRequest(http.MethodPost, credentialPath, strings.NewReader("{}"))
 		req.Header.Set("Authorization", "Bearer "+token)
 		rr := httptest.NewRecorder()

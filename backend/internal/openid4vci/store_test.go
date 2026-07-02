@@ -93,7 +93,7 @@ func (suite *OpenID4VCIStoreTestSuite) TestSaveNonce() {
 		suite.Run(tc.name, func() {
 			suite.refreshMocks()
 			tc.setupMocks()
-			err := suite.store.SaveNonce(context.Background(), &nonceRecord{Nonce: "n1", ExpiresAt: expiry})
+			err := suite.store.SaveNonce(context.Background(), "n1", &nonceRecord{ExpiresAt: expiry})
 			if tc.shouldErr {
 				suite.Error(err)
 			} else {
@@ -163,7 +163,6 @@ func (suite *OpenID4VCIStoreTestSuite) TestGetNonce() {
 			suite.Equal(tc.wantOK, ok)
 			if tc.wantOK {
 				suite.Require().NotNil(rec)
-				suite.Equal("n1", rec.Nonce)
 				suite.True(rec.ExpiresAt.Equal(expiry))
 			} else {
 				suite.Nil(rec)
@@ -222,17 +221,16 @@ func (suite *OpenID4VCIStoreTestSuite) TestSaveOfferMarshalError() {
 	suite.refreshMocks()
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
 	rec := &offerRecord{
-		ID:        "o1",
 		Offer:     map[string]interface{}{"bad": make(chan int)},
 		ExpiresAt: time.Now().Add(time.Minute),
 	}
-	err := suite.store.SaveOffer(context.Background(), rec)
+	err := suite.store.SaveOffer(context.Background(), "o1", rec)
 	suite.Error(err)
 }
 
 func (suite *OpenID4VCIStoreTestSuite) TestSaveOffer() {
 	expiry := time.Now().Add(time.Minute)
-	rec := &offerRecord{ID: "o1", Offer: map[string]interface{}{"k": "v"}, ExpiresAt: expiry}
+	rec := &offerRecord{Offer: map[string]interface{}{"k": "v"}, ExpiresAt: expiry}
 	testCases := []struct {
 		name       string
 		setupMocks func()
@@ -269,7 +267,7 @@ func (suite *OpenID4VCIStoreTestSuite) TestSaveOffer() {
 		suite.Run(tc.name, func() {
 			suite.refreshMocks()
 			tc.setupMocks()
-			err := suite.store.SaveOffer(context.Background(), rec)
+			err := suite.store.SaveOffer(context.Background(), "o1", rec)
 			if tc.shouldErr {
 				suite.Error(err)
 			} else {
@@ -349,7 +347,6 @@ func (suite *OpenID4VCIStoreTestSuite) TestGetOffer() {
 			suite.Equal(tc.wantOK, ok)
 			if tc.wantOK {
 				suite.Require().NotNil(rec)
-				suite.Equal("o1", rec.ID)
 				suite.Equal("v", rec.Offer["k"])
 			} else {
 				suite.Nil(rec)

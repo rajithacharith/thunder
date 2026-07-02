@@ -70,17 +70,26 @@ vi.mock('../AccessSection', () => ({
 vi.mock('../DangerZoneSection', () => ({
   default: ({
     onRegenerateClick,
+    onRegenerateFlowSecretClick,
     onDeleteClick,
     showRegenerateSecret,
+    showRegenerateFlowSecret,
   }: {
     onRegenerateClick?: () => void;
+    onRegenerateFlowSecretClick?: () => void;
     onDeleteClick: () => void;
     showRegenerateSecret?: boolean;
+    showRegenerateFlowSecret?: boolean;
   }) => (
     <div data-testid="danger-zone-section">
       {showRegenerateSecret && (
         <button type="button" onClick={onRegenerateClick} data-testid="regenerate-button">
           Regenerate Client Secret
+        </button>
+      )}
+      {showRegenerateFlowSecret && (
+        <button type="button" onClick={onRegenerateFlowSecretClick} data-testid="regenerate-flow-secret-button">
+          Regenerate Flow Secret
         </button>
       )}
       <button type="button" onClick={onDeleteClick} data-testid="delete-button">
@@ -108,6 +117,34 @@ vi.mock('../../../RegenerateSecretDialog', () => ({
           Close
         </button>
         <button type="button" onClick={() => onSuccess?.('new-test-secret')} data-testid="dialog-success">
+          Trigger Success
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock('../../../RegenerateFlowSecretDialog', () => ({
+  default: ({
+    open,
+    applicationId,
+    onClose,
+    onSuccess,
+  }: {
+    open: boolean;
+    applicationId: string | null;
+    onClose: () => void;
+    onSuccess?: (flowSecret: string) => void;
+  }) =>
+    open ? (
+      <div data-testid="regenerate-app-secret-dialog" data-application-id={applicationId}>
+        <button type="button" onClick={onClose} data-testid="app-secret-dialog-close">
+          Close
+        </button>
+        <button
+          type="button"
+          onClick={() => onSuccess?.('new-test-app-secret')}
+          data-testid="app-secret-dialog-success"
+        >
           Trigger Success
         </button>
       </div>
@@ -392,6 +429,86 @@ describe('EditGeneralSettings', () => {
 
       expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
       expect(screen.queryByTestId('regenerate-button')).not.toBeInTheDocument();
+    });
+
+    it('should show regenerate Flow Secret for an embedded app (no OAuth profile)', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.getByTestId('regenerate-flow-secret-button')).toBeInTheDocument();
+    });
+
+    it('should show regenerate Flow Secret for a token-exchange capable app', () => {
+      const flowNativeConfig: OAuth2Config = {
+        clientId: 'flow-native-123',
+        tokenEndpointAuthMethod: 'client_secret_basic',
+        publicClient: false,
+        grantTypes: ['client_credentials', 'urn:ietf:params:oauth:grant-type:token-exchange'],
+      } as OAuth2Config;
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={flowNativeConfig}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.getByTestId('regenerate-flow-secret-button')).toBeInTheDocument();
+    });
+
+    it('should not show regenerate Flow Secret for an M2M (client_credentials only) app', () => {
+      const m2mConfig: OAuth2Config = {
+        clientId: 'm2m-123',
+        tokenEndpointAuthMethod: 'client_secret_basic',
+        publicClient: false,
+        grantTypes: ['client_credentials'],
+      } as OAuth2Config;
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={m2mConfig}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.queryByTestId('regenerate-flow-secret-button')).not.toBeInTheDocument();
+    });
+
+    it('should not show regenerate Flow Secret for a redirect (authorization_code) app', () => {
+      const redirectConfig: OAuth2Config = {
+        clientId: 'redirect-123',
+        tokenEndpointAuthMethod: 'client_secret_basic',
+        publicClient: false,
+        grantTypes: ['authorization_code', 'urn:ietf:params:oauth:grant-type:token-exchange'],
+      } as OAuth2Config;
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={redirectConfig}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.queryByTestId('regenerate-flow-secret-button')).not.toBeInTheDocument();
     });
 
     it('should render DangerZoneSection without regenerate for private_key_jwt auth method', () => {

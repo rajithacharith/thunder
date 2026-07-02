@@ -2,6 +2,7 @@
 CREATE DATABASE runtimedb;
 CREATE DATABASE configdb;
 CREATE DATABASE userdb;
+CREATE DATABASE operationdb;
 
 -- Run db1 initialization
 \connect runtimedb
@@ -14,3 +15,7 @@ CREATE DATABASE userdb;
 -- Run db3 initialization
 \connect userdb
 \i /docker-entrypoint-initdb.d/user-postgres.sql
+
+-- Run db4 initialization
+\connect operationdb
+\i /docker-entrypoint-initdb.d/operation-postgres.sql

@@ -28,11 +28,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	yaml "gopkg.in/yaml.v3"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cors"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/flowexecmock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
@@ -56,10 +54,6 @@ func TestInitTestSuite(t *testing.T) {
 
 func (suite *InitTestSuite) SetupTest() {
 	// Initialize Runtime config with basic test config
-	var allowedOrigins cors.OriginEntries
-	suite.Require().NoError(yaml.Unmarshal([]byte(`
-- https://example.com
-`), &allowedOrigins))
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
@@ -78,9 +72,7 @@ func (suite *InitTestSuite) SetupTest() {
 			LoginPath: "/login",
 			ErrorPath: "/error",
 		},
-		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
-	suite.Require().NoError(cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	_ = config.InitializeServerRuntime("", testConfig)
 
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
@@ -98,7 +90,9 @@ func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
 	service, err := Initialize(
-		mux, actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider), suite.mockResourceService,
+		mux,
+		actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider, noopAuthnMgr()),
+		suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil, testhelpers.OAuthConfig(),
 	)
 
@@ -111,7 +105,9 @@ func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
 	_, err := Initialize(
-		mux, actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider), suite.mockResourceService,
+		mux,
+		actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider, noopAuthnMgr()),
+		suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil, testhelpers.OAuthConfig(),
 	)
 	assert.NoError(suite.T(), err)
@@ -126,7 +122,9 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSConfiguration() {
 	mux := http.NewServeMux()
 
 	_, err := Initialize(
-		mux, actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider), suite.mockResourceService,
+		mux,
+		actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider, noopAuthnMgr()),
+		suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil, testhelpers.OAuthConfig(),
 	)
 	assert.NoError(suite.T(), err)

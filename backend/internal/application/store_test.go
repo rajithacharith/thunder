@@ -44,7 +44,7 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 		ID:          "app1",
 		Name:        "Test App 1",
 		Description: "Test application description",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                "auth_flow_1",
 			RegistrationFlowID:        "reg_flow_1",
 			IsRegistrationFlowEnabled: true,
@@ -60,7 +60,7 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 		Contacts:  []string{"contact@example.com", "support@example.com"},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ID:           "app1",
 					ClientID:     "client_app1",

@@ -20,13 +20,13 @@
 package formatter
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // FormatterInterface is the interface for formatting events into different output formats.
 type FormatterInterface interface {
 	// Format formats an event into bytes.
-	Format(evt *event.Event) ([]byte, error)
+	Format(evt *providers.Event) ([]byte, error)
 
 	// GetName returns the name of this formatter.
 	GetName() string

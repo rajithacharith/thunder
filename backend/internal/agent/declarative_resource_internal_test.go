@@ -122,7 +122,7 @@ inboundAuthConfig:
 
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), req.InboundAuthConfig, 1)
-	assert.Equal(s.T(), inboundmodel.OAuthInboundAuthType, req.InboundAuthConfig[0].Type)
+	assert.Equal(s.T(), providers.OAuthInboundAuthType, req.InboundAuthConfig[0].Type)
 	oauthCfg := req.InboundAuthConfig[0].OAuthConfig
 	assert.NotNil(s.T(), oauthCfg)
 	assert.Equal(s.T(), "client-abc", oauthCfg.ClientID)

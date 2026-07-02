@@ -1,7 +1,7 @@
 {
   "private": false,
   "name": "@thunderid/prettier-config",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Sharable Prettier configuration for ThunderID projects",
   "keywords": [
     "thunderid",
@@ -38,28 +38,19 @@
     "url": "https://github.com/thunder-id/thunderid",
     "directory": "frontend/packages/prettier-config"
   },
-  "nx": {
-    "targets": {
-      "build": {
-        "dependsOn": []
-      }
-    }
-  },
   "scripts": {
     "build": "pnpm clean:dist && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "pnpm clean:node_modules && pnpm clean:dist",
     "clean:dist": "rimraf dist",
     "clean:node_modules": "rimraf node_modules",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "node -e \"console.log('Lint is not configured for @thunderid/prettier-config')\"",
+    "lint:fix": "node -e \"console.log('Lint is not configured for @thunderid/prettier-config')\"",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
-    "@thunderid/eslint-plugin": "workspace:^",
     "@types/node": "catalog:",
-    "eslint": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "rolldown": "catalog:",

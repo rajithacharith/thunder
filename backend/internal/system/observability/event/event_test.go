@@ -3,6 +3,8 @@ package event
 import (
 	"testing"
 	"time"
+
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 func TestNewEvent(t *testing.T) {
@@ -14,6 +16,7 @@ func TestNewEvent(t *testing.T) {
 
 	if evt == nil {
 		t.Fatal("NewEvent returned nil")
+		return
 	}
 
 	if evt.TraceID != traceID {
@@ -36,8 +39,8 @@ func TestNewEvent(t *testing.T) {
 		t.Error("Timestamp should not be zero")
 	}
 
-	if evt.Status != StatusInProgress {
-		t.Errorf("Expected Status %s, got %s", StatusInProgress, evt.Status)
+	if evt.Status != providers.StatusInProgress {
+		t.Errorf("Expected Status %s, got %s", providers.StatusInProgress, evt.Status)
 	}
 
 	if evt.Data == nil {
@@ -49,7 +52,7 @@ func TestEventBuilderPattern(t *testing.T) {
 	evt := NewEvent("trace-123", string(EventTypeTokenIssuanceStarted), "test-component")
 
 	result := evt.
-		WithStatus(StatusSuccess).
+		WithStatus(providers.StatusSuccess).
 		WithData(DataKey.UserID, "user-456").
 		WithData(DataKey.ClientID, "client-789").
 		WithData(DataKey.Message, "Authentication completed successfully").
@@ -59,8 +62,8 @@ func TestEventBuilderPattern(t *testing.T) {
 		t.Error("Builder methods should return the same event instance")
 	}
 
-	if evt.Status != StatusSuccess {
-		t.Errorf("Expected Status %s, got %s", StatusSuccess, evt.Status)
+	if evt.Status != providers.StatusSuccess {
+		t.Errorf("Expected Status %s, got %s", providers.StatusSuccess, evt.Status)
 	}
 
 	if evt.Data["user_id"] != "user-456" {
@@ -104,13 +107,13 @@ func TestEventWithDataMap(t *testing.T) {
 func TestEventValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		event   *Event
+		event   *providers.Event
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid event",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      string(EventTypeTokenIssuanceStarted),
@@ -127,7 +130,7 @@ func TestEventValidate(t *testing.T) {
 		},
 		{
 			name: "missing trace ID",
-			event: &Event{
+			event: &providers.Event{
 				EventID:   "event-456",
 				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "TestComponent",
@@ -138,7 +141,7 @@ func TestEventValidate(t *testing.T) {
 		},
 		{
 			name: "missing event ID",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "TestComponent",
@@ -149,7 +152,7 @@ func TestEventValidate(t *testing.T) {
 		},
 		{
 			name: "missing event type",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Component: "TestComponent",
@@ -160,7 +163,7 @@ func TestEventValidate(t *testing.T) {
 		},
 		{
 			name: "missing component",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      string(EventTypeTokenIssuanceStarted),
@@ -171,7 +174,7 @@ func TestEventValidate(t *testing.T) {
 		},
 		{
 			name: "missing timestamp",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      string(EventTypeTokenIssuanceStarted),
@@ -197,7 +200,7 @@ func TestEventValidate(t *testing.T) {
 }
 
 func TestEventDataNilSafety(t *testing.T) {
-	evt := &Event{
+	evt := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
 		Type:      string(EventTypeTokenIssuanceStarted),
@@ -235,19 +238,19 @@ func TestEventTypeConstants(t *testing.T) {
 
 func TestStatusConstants(t *testing.T) {
 	// Verify status constants exist
-	if StatusSuccess == "" {
+	if providers.StatusSuccess == "" {
 		t.Error("StatusSuccess should not be empty")
 	}
 
-	if StatusFailure == "" {
+	if providers.StatusFailure == "" {
 		t.Error("StatusFailure should not be empty")
 	}
 
-	if StatusInProgress == "" {
+	if providers.StatusInProgress == "" {
 		t.Error("StatusInProgress should not be empty")
 	}
 
-	if StatusPending == "" {
+	if providers.StatusPending == "" {
 		t.Error("StatusPending should not be empty")
 	}
 }

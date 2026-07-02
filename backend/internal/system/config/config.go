@@ -96,9 +96,10 @@ type RedisDataSource struct {
 
 // DatabaseConfig holds the different database configuration details.
 type DatabaseConfig struct {
-	Config  DataSource `yaml:"config"  json:"config"`
-	Runtime DataSource `yaml:"runtime" json:"runtime"`
-	User    DataSource `yaml:"user"    json:"user"`
+	Config    DataSource `yaml:"config"    json:"config"`
+	Runtime   DataSource `yaml:"runtime"   json:"runtime"`
+	User      DataSource `yaml:"user"      json:"user"`
+	Operation DataSource `yaml:"operation" json:"operation"`
 }
 
 // NotificationConfig holds the notification configuration details.
@@ -183,7 +184,7 @@ type PasskeyConfig struct {
 }
 
 // OpenID4VPConfig holds the OpenID4VP verifier engine configuration. Engine
-// defaults (client_id, signing key, base URLs, response advertisement, trust
+// defaults (client_id_scheme, signing key, base URLs, response advertisement, trust
 // anchors) live at the top level; presentation definitions are managed at runtime
 // via the management API and stored in configdb, not in static configuration.
 type OpenID4VPConfig struct {
@@ -192,8 +193,11 @@ type OpenID4VPConfig struct {
 	// If not specified, falls back to global DeclarativeResources.Enabled setting:
 	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
 	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
-	Store                      string               `yaml:"store" json:"store"`
-	ClientID                   string               `yaml:"client_id" json:"client_id"`
+	Store string `yaml:"store" json:"store"`
+	// ClientIDScheme selects how the verifier's client_id is determined.
+	// Supported values: "x509_hash" (SHA-256 thumbprint of signing cert leaf),
+	// "x509_san_dns" (first DNS SAN of signing cert leaf), "redirect_uri" (response URI).
+	ClientIDScheme             string               `yaml:"client_id_scheme" json:"client_id_scheme"`
 	SigningKeyID               string               `yaml:"signing_key_id" json:"signing_key_id"`
 	ResultRedirectURI          string               `yaml:"result_redirect_uri" json:"result_redirect_uri"`
 	RequestAudience            string               `yaml:"request_audience" json:"request_audience"`
@@ -256,9 +260,10 @@ type EntityProviderConfig struct {
 
 // RestConfig holds the REST authentication provider configuration details.
 type RestConfig struct {
-	BaseURL  string             `yaml:"base_url" json:"base_url"`
-	Timeout  int                `yaml:"timeout"  json:"timeout"`
-	Security RestSecurityConfig `yaml:"security" json:"security"`
+	BaseURL             string             `yaml:"base_url" json:"base_url"`
+	Timeout             int                `yaml:"timeout" json:"timeout"`
+	CorrelationIDHeader string             `yaml:"correlation_id_header" json:"correlation_id_header"`
+	Security            RestSecurityConfig `yaml:"security" json:"security"`
 }
 
 // RestSecurityConfig holds the REST authentication provider security configuration details.
@@ -397,9 +402,15 @@ type TranslationConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// LogConfig holds logging configuration.
+type LogConfig struct {
+	Level string `yaml:"level" json:"level"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               engineconfig.ServerConfig        `yaml:"server"                json:"server"`
+	Log                  LogConfig                        `yaml:"log"                   json:"log"`
 	GateClient           engineconfig.GateClientConfig    `yaml:"gate_client"           json:"gate_client"`
 	TLS                  TLSConfig                        `yaml:"tls"                   json:"tls"`
 	Database             DatabaseConfig                   `yaml:"database"              json:"database"`
@@ -408,7 +419,6 @@ type Config struct {
 	OAuth                engineconfig.OAuthConfig         `yaml:"oauth"                 json:"oauth"`
 	Flow                 engineconfig.FlowConfig          `yaml:"flow"                  json:"flow"`
 	Crypto               CryptoConfig                     `yaml:"crypto"                json:"crypto"`
-	CORS                 engineconfig.CORSConfig          `yaml:"cors"                  json:"cors"`
 	User                 UserConfig                       `yaml:"user"                  json:"user"`
 	DeclarativeResources DeclarativeResources             `yaml:"declarative_resources" json:"declarative_resources"`
 	Resource             engineconfig.ResourceConfig      `yaml:"resource"              json:"resource"`
@@ -476,9 +486,6 @@ func LoadConfig(configPath string, defaultPath string, serverHome string) (*Conf
 	}
 
 	if err := cfg.Server.SecurityConfig.Validate(); err != nil {
-		return nil, err
-	}
-	if err := cfg.CORS.Validate(); err != nil {
 		return nil, err
 	}
 

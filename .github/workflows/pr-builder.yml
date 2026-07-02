@@ -21,6 +21,7 @@ env:
   PRODUCT_NAME: "ThunderID"
   PRODUCT_NAME_LOWER: "thunderid"
   NODE_VERSION: "lts/*"
+  PNPM_VERSION: "latest"
 
 jobs:
   security-audit:
@@ -110,7 +111,7 @@ jobs:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          # We need to fetch all branches and commits so that Nx affected has a base to compare against.
+          # We need to fetch all branches and commits so that Turbo's --affected has a base to compare against.
           fetch-depth: 0
 
       - name: ⚙️ Set up Node.js and pnpm
@@ -118,14 +119,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: 🔄 Fetch main branch for Nx affected base
+      - name: 🔄 Fetch main branch for Turbo affected base
         run: git fetch origin main:main --update-head-ok || true
-
-      - name: 🐳 Set SHAs for Nx
-        id: set-shas
-        uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
-        with:
-          main-branch-name: "main"
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
@@ -142,7 +137,9 @@ jobs:
 
       - name: 🔍 Run Frontend Linter
         run: |
-          pnpm nx affected --target=lint --parallel=3 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }} --exclude=tests/**
+          pnpm turbo run lint --affected --filter=!./tests/**
+        env:
+          TURBO_SCM_BASE: main
 
       - name: 🎨 Check Frontend Formatting
         run: |
@@ -187,8 +184,8 @@ jobs:
           cd ../tests/integration
           go mod download
 
-      - name: 🗂️ Set up Nx Cache
-        uses: ./.github/actions/setup-nx-cache
+      - name: 🗂️ Set up Turbo Cache
+        uses: ./.github/actions/setup-turbo-cache
 
       - name: 📦 Install Frontend Dependencies
         run: |
@@ -297,8 +294,8 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
-      - name: 🗂️ Set up Nx Cache
-        uses: ./.github/actions/setup-nx-cache
+      - name: 🗂️ Set up Turbo Cache
+        uses: ./.github/actions/setup-turbo-cache
 
       - name: 🎭 Set up Playwright Browsers
         uses: ./.github/actions/setup-playwright
@@ -335,8 +332,8 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
-      - name: 🗂️ Set up Nx Cache
-        uses: ./.github/actions/setup-nx-cache
+      - name: 🗂️ Set up Turbo Cache
+        uses: ./.github/actions/setup-turbo-cache
 
       - name: 🔨 Build Frontend
         run: |
@@ -384,8 +381,8 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
-      - name: 🗂️ Set up Nx Cache
-        uses: ./.github/actions/setup-nx-cache
+      - name: 🗂️ Set up Turbo Cache
+        uses: ./.github/actions/setup-turbo-cache
 
       - name: 🔨 Build Frontend
         run: |
@@ -631,6 +628,7 @@ jobs:
         with:
           run_install: false
           cache_dependency_path: pnpm-lock.yaml
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📥 Download Built Distribution
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -661,7 +659,7 @@ jobs:
         run: |
           cd tests/e2e/server
           ./setup.sh
-          SKIP_SECURITY=true ./start.sh &
+          ./start.sh &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           # Wait for server to be ready
@@ -683,6 +681,67 @@ jobs:
           
           echo "Server started successfully!"
       
+      - name: 🔑 Obtain Admin Access Token
+        run: |
+          # The server now runs with security enabled (SKIP_SECURITY is gone), so the
+          # management /import and /applications calls below need an admin token.
+          # Obtain one via OAuth2 authorization code + PKCE through the CONSOLE app,
+          # authenticating the bootstrapped admin user.
+          SERVER_URL="https://localhost:8090"
+          CONSOLE_REDIRECT_URI="https://localhost:8090/console"
+          CODE_VERIFIER=$(openssl rand -hex 32 | cut -c1-43)
+          CODE_CHALLENGE=$(printf '%s' "$CODE_VERIFIER" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+
+          curl -sk -o /dev/null -D /tmp/authz_headers.txt -G "$SERVER_URL/oauth2/authorize" \
+            --data-urlencode "client_id=CONSOLE" \
+            --data-urlencode "redirect_uri=$CONSOLE_REDIRECT_URI" \
+            --data-urlencode "scope=system" \
+            --data-urlencode "response_type=code" \
+            --data-urlencode "code_challenge=$CODE_CHALLENGE" \
+            --data-urlencode "code_challenge_method=S256"
+
+          LOCATION=$(grep -i "^location:" /tmp/authz_headers.txt | tr -d '\r' | sed 's/^[Ll]ocation: //')
+          AUTH_ID=$(echo "$LOCATION" | sed 's/.*[?&]authId=\([^&]*\).*/\1/')
+          EXEC_ID=$(echo "$LOCATION" | sed 's/.*[?&]executionId=\([^&]*\).*/\1/')
+          if [ -z "$AUTH_ID" ] || [ -z "$EXEC_ID" ]; then
+            echo "❌ Failed to parse authId/executionId from authorize redirect: $LOCATION"
+            exit 1
+          fi
+
+          FLOW_RESP=$(curl -sk -X POST "$SERVER_URL/flow/execute" \
+            -H "Content-Type: application/json" \
+            -d "{\"executionId\": \"$EXEC_ID\", \"inputs\": {\"username\": \"admin\", \"password\": \"admin\"}, \"action\": \"action_001\"}")
+          ASSERTION=$(echo "$FLOW_RESP" | jq -r '.assertion // empty')
+          if [ -z "$ASSERTION" ]; then
+            echo "❌ Flow execution did not return an assertion: $FLOW_RESP"
+            exit 1
+          fi
+
+          CALLBACK_RESP=$(curl -sk -X POST "$SERVER_URL/oauth2/auth/callback" \
+            -H "Content-Type: application/json" \
+            -d "{\"authId\": \"$AUTH_ID\", \"assertion\": \"$ASSERTION\"}")
+          AUTH_CODE=$(echo "$CALLBACK_RESP" | jq -r '.redirect_uri // empty' | sed 's/.*[?&]code=\([^&]*\).*/\1/')
+          if [ -z "$AUTH_CODE" ]; then
+            echo "❌ Callback did not return an authorization code: $CALLBACK_RESP"
+            exit 1
+          fi
+
+          TOKEN_RESP=$(curl -sk -X POST "$SERVER_URL/oauth2/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "grant_type=authorization_code" \
+            --data-urlencode "code=$AUTH_CODE" \
+            --data-urlencode "redirect_uri=$CONSOLE_REDIRECT_URI" \
+            --data-urlencode "client_id=CONSOLE" \
+            --data-urlencode "code_verifier=$CODE_VERIFIER")
+          ADMIN_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.access_token // empty')
+          if [ -z "$ADMIN_TOKEN" ]; then
+            echo "❌ Failed to obtain admin access token: $TOKEN_RESP"
+            exit 1
+          fi
+          echo "::add-mask::$ADMIN_TOKEN"
+          echo "ADMIN_TOKEN=$ADMIN_TOKEN" >> "$GITHUB_ENV"
+          echo "✅ Obtained admin access token."
+
       - name: 📦 Import Sample App Resources
         run: |
           echo "Importing React Vanilla Sample declarative resources..."
@@ -690,6 +749,7 @@ jobs:
           HTTP_STATUS=$(curl -k -s -o /tmp/import_response.json -w "%{http_code}" \
             -X POST https://localhost:8090/import \
             -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
             -d "{
               \"content\": $(echo "$YAML_CONTENT" | jq -Rs .),
               \"variables\": {
@@ -719,6 +779,7 @@ jobs:
           HTTP_STATUS=$(curl -k -s -o /tmp/import_response.json -w "%{http_code}" \
             -X POST https://localhost:8090/import \
             -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
             -d "{
               \"content\": $(echo "$YAML_CONTENT" | jq -Rs .),
               \"variables\": {
@@ -740,6 +801,7 @@ jobs:
           HTTP_STATUS=$(curl -k -s -o /tmp/import_response.json -w "%{http_code}" \
             -X POST https://localhost:8090/import \
             -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
             -d "{
               \"content\": $(echo "$YAML_CONTENT" | jq -Rs .),
               \"options\": {\"upsert\": true}
@@ -758,7 +820,7 @@ jobs:
           echo "Fetching applications from the server..."
 
           # Get applications list
-          APPS_RESPONSE=$(curl -s -k https://localhost:8090/applications)
+          APPS_RESPONSE=$(curl -s -k -H "Authorization: Bearer $ADMIN_TOKEN" https://localhost:8090/applications)
 
           # Extract Sample App ID using jq (uses "Sample App" from vanilla sample,
           # which is unaffected by MFA test setup/teardown)
@@ -992,8 +1054,8 @@ jobs:
     if: needs.detect-powershell-changes.outputs.should-run == 'true'
     uses: ./.github/workflows/windows-powershell-validation.yml
 
-  cleanup-nx-cache:
-    name: 🗑️ Cleanup Stale Nx Cache
+  cleanup-turbo-cache:
+    name: 🗑️ Cleanup Stale Turbo Cache
     runs-on: ubuntu-latest
     # Skip on fork PRs — GITHUB_TOKEN is always read-only there regardless of permissions declared here.
     if: always() && github.event.pull_request.head.repo.full_name == github.repository
@@ -1007,13 +1069,13 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: 🗑️ Delete stale Nx caches
+      - name: 🗑️ Delete stale Turbo caches
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Keep the single most-recently-created Nx cache per OS; delete the rest.
-          gh api "repos/${{ github.repository }}/actions/caches?per_page=100&key=nx-Linux-" \
+          # Keep the single most-recently-created Turbo cache per OS; delete the rest.
+          gh api "repos/${{ github.repository }}/actions/caches?per_page=100&key=turbo-Linux-" \
             --jq '.actions_caches | sort_by(.created_at) | reverse | .[1:] | .[].id' \
           | xargs -r -I{} gh api --method DELETE "repos/${{ github.repository }}/actions/caches/{}"
 

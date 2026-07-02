@@ -22,32 +22,71 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestI18nMessage_String(t *testing.T) {
+type ModelTestSuite struct {
+	suite.Suite
+}
+
+func TestModelSuite(t *testing.T) {
+	suite.Run(t, new(ModelTestSuite))
+}
+
+func (suite *ModelTestSuite) TestI18nMessage_String() {
 	msg := I18nMessage{
 		Key:          "key",
 		DefaultValue: "default value",
 	}
-	assert.Equal(t, "default value", msg.String())
+	assert.Equal(suite.T(), "default value", msg.String())
 
 	msgEmpty := I18nMessage{}
-	assert.Equal(t, "", msgEmpty.String())
+	assert.Equal(suite.T(), "", msgEmpty.String())
 }
 
-func TestI18nMessage_IsEmpty(t *testing.T) {
-	t.Run("Empty Message", func(t *testing.T) {
-		msg := I18nMessage{}
-		assert.True(t, msg.IsEmpty())
+func (suite *ModelTestSuite) TestI18nMessage_IsEmpty() {
+	suite.T().Run("empty message", func(t *testing.T) {
+		assert.True(t, I18nMessage{}.IsEmpty())
 	})
 
-	t.Run("Non-Empty Message", func(t *testing.T) {
-		msg := I18nMessage{Key: "key"}
-		assert.False(t, msg.IsEmpty())
+	suite.T().Run("non-empty message", func(t *testing.T) {
+		assert.False(t, I18nMessage{Key: "key"}.IsEmpty())
 	})
 
-	t.Run("Message with value only (invalid state technically but testing IsEmpty logic)", func(t *testing.T) {
-		msg := I18nMessage{DefaultValue: "val"}
-		assert.True(t, msg.IsEmpty())
+	suite.T().Run("value only without key", func(t *testing.T) {
+		assert.True(t, I18nMessage{DefaultValue: "val"}.IsEmpty())
+	})
+}
+
+func (suite *ModelTestSuite) TestCustomServiceError() {
+	base := ServiceError{
+		Type: ClientErrorType,
+		Code: "SSE-4030",
+		Error: I18nMessage{
+			Key:          "error.unauthorized",
+			DefaultValue: "Unauthorized",
+		},
+		ErrorDescription: I18nMessage{
+			Key:          "error.unauthorized_description",
+			DefaultValue: "The caller is not authorized",
+		},
+	}
+
+	suite.T().Run("empty custom description preserves base description", func(t *testing.T) {
+		err := CustomServiceError(base, I18nMessage{})
+		assert.Equal(t, base.Type, err.Type)
+		assert.Equal(t, base.Code, err.Code)
+		assert.Equal(t, base.Error, err.Error)
+		assert.Equal(t, base.ErrorDescription, err.ErrorDescription)
+	})
+
+	suite.T().Run("non-empty custom description overrides base description", func(t *testing.T) {
+		customDesc := I18nMessage{
+			Key:          "error.custom",
+			DefaultValue: "Custom description",
+		}
+		err := CustomServiceError(base, customDesc)
+		assert.Equal(t, customDesc, err.ErrorDescription)
+		assert.Equal(t, base.Error, err.Error)
 	})
 }

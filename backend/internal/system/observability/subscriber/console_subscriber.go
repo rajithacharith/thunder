@@ -27,6 +27,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/observability/formatter"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const consoleSubscriberComponentName = "ConsoleSubscriber"
@@ -116,7 +117,7 @@ func (cs *ConsoleSubscriber) GetCategories() []event.EventCategory {
 }
 
 // OnEvent is called when a new event is published.
-func (cs *ConsoleSubscriber) OnEvent(evt *event.Event) error {
+func (cs *ConsoleSubscriber) OnEvent(evt *providers.Event) error {
 	return processEvent(evt, cs.formatter, cs.adapter, cs.logger, "console")
 }
 

@@ -19,12 +19,8 @@
 // Package constants defines global constants used across the system module.
 package constants
 
-const (
-	// LogLevelEnvironmentVariable is the environment variable name for the log level.
-	LogLevelEnvironmentVariable = "LOG_LEVEL"
-	// DefaultLogLevel is the default log level used if not specified.
-	DefaultLogLevel = "info"
-)
+// DefaultLogLevel is the default log level used if not specified.
+const DefaultLogLevel = "info"
 
 // AuthorizationHeaderName is the name of the authorization header used in HTTP requests.
 const AuthorizationHeaderName = "Authorization"
@@ -34,6 +30,10 @@ const AcceptHeaderName = "Accept"
 
 // ContentTypeHeaderName is the name of the content type header used in HTTP requests.
 const ContentTypeHeaderName = "Content-Type"
+
+// CorrelationIDHeaderName is the name of the correlation ID (trace ID) header used to propagate
+// the request's trace ID across service boundaries.
+const CorrelationIDHeaderName = "X-Correlation-ID"
 
 // TokenTypeBearer is the token type used in bearer authentication.
 const TokenTypeBearer = "Bearer"

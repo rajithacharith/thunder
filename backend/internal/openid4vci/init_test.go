@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -43,7 +44,7 @@ func (s *InitTestSuite) TestRegisterRoutes() {
 	svc.EXPECT().GenerateNonce(mock.Anything).Return("nonce", nil).Maybe()
 
 	mux := http.NewServeMux()
-	registerRoutes(mux, newOpenID4VCIHandler(svc, nil, "https://i/credential"))
+	registerRoutes(mux, newOpenID4VCIHandler(svc, nil, "https://i/credential", time.Minute))
 
 	cases := []struct {
 		method string
@@ -62,31 +63,13 @@ func (s *InitTestSuite) TestRegisterRoutes() {
 	}
 }
 
-// Initialize disables the issuer engine (nil service) when no signing key is
-// configured, but the credential-configuration management API stays available.
+// Initialize disables the issuer engine (nil service) when no signing key is configured.
 func (s *InitTestSuite) TestInitializeDisabledWithoutSigningKey() {
 	config.ResetServerRuntime()
 	s.Require().NoError(config.InitializeServerRuntime("", &config.Config{}))
 	defer config.ResetServerRuntime()
 
-	svc, credSvc, exporter, err := Initialize(http.NewServeMux(), nil, nil, nil, nil, nil)
+	svc, err := Initialize(http.NewServeMux(), nil, nil, nil, nil, nil)
 	s.Require().NoError(err)
 	s.Nil(svc)
-	s.NotNil(credSvc)
-	s.NotNil(exporter)
-}
-
-// Initialize fails when the credential-configuration store mode is invalid.
-func (s *InitTestSuite) TestInitializeInvalidStoreMode() {
-	config.ResetServerRuntime()
-	cfg := &config.Config{}
-	cfg.OpenID4VCI.Store = "bogus"
-	s.Require().NoError(config.InitializeServerRuntime("", cfg))
-	defer config.ResetServerRuntime()
-
-	svc, credSvc, exporter, err := Initialize(http.NewServeMux(), nil, nil, nil, nil, nil)
-	s.Require().Error(err)
-	s.Nil(svc)
-	s.Nil(credSvc)
-	s.Nil(exporter)
 }

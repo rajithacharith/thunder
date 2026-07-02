@@ -27,23 +27,20 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
-	"github.com/thunder-id/thunderid/internal/authn/consent"
 	"github.com/thunder-id/thunderid/internal/authn/github"
 	"github.com/thunder-id/thunderid/internal/authn/google"
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
 	"github.com/thunder-id/thunderid/internal/authn/oauth"
 	"github.com/thunder-id/thunderid/internal/authn/oidc"
+	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/notification"
-	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/email"
@@ -55,26 +52,26 @@ import (
 
 // ExecutorRegistryInterface defines registry operations for executors.
 type ExecutorRegistryInterface interface {
-	GetExecutor(name string) (core.ExecutorInterface, error)
-	RegisterExecutor(name string, ex core.ExecutorInterface)
+	GetExecutor(name string) (providers.Executor, error)
+	RegisterExecutor(name string, ex providers.Executor)
 	IsRegistered(name string) bool
 }
 
 // executorRegistry is the default implementation of ExecutorRegistryInterface.
 type executorRegistry struct {
 	mu        sync.RWMutex
-	executors map[string]core.ExecutorInterface
+	executors map[string]providers.Executor
 }
 
 // newExecutorRegistry creates a new instance of executorRegistry.
 func newExecutorRegistry() ExecutorRegistryInterface {
 	return &executorRegistry{
-		executors: make(map[string]core.ExecutorInterface),
+		executors: make(map[string]providers.Executor),
 	}
 }
 
 // RegisterExecutor registers an executor instance.
-func (r *executorRegistry) RegisterExecutor(name string, exec core.ExecutorInterface) {
+func (r *executorRegistry) RegisterExecutor(name string, exec providers.Executor) {
 	// Executors are registered at server startup, outside any request,
 	// so there is no request context (or trace ID) to propagate.
 	ctx := context.Background()
@@ -101,7 +98,7 @@ func (r *executorRegistry) RegisterExecutor(name string, exec core.ExecutorInter
 }
 
 // GetExecutor retrieves executor instance from the executor registry.
-func (r *executorRegistry) GetExecutor(name string) (core.ExecutorInterface, error) {
+func (r *executorRegistry) GetExecutor(name string) (providers.Executor, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	ex, ok := r.executors[name]
@@ -127,12 +124,12 @@ type ExecutorDependencies struct {
 	NotifSenderSvc        notification.NotificationSenderServiceInterface
 	JWTService            jwt.JWTServiceInterface
 	AuthAssertGen         assert.AuthAssertGeneratorInterface
-	ConsentEnforcer       consent.ConsentEnforcerServiceInterface
-	AuthnProvider         providers.AuthnProviderManagerInterface
+	ConsentEnforcer       providers.ConsentProvider
+	AuthnProvider         providers.AuthnProviderManager
 	OTPService            otp.OTPAuthnServiceInterface
 	PasskeyService        passkey.PasskeyServiceInterface
 	MagicLinkService      magiclink.MagicLinkAuthnServiceInterface
-	AuthZService          authz.AuthorizationServiceInterface
+	AuthZService          providers.AuthorizationProvider
 	EntityTypeService     entitytype.EntityTypeServiceInterface
 	GroupService          group.GroupServiceInterface
 	RoleService           role.RoleServiceInterface
@@ -171,12 +168,12 @@ func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 		},
 		ExecutorNameOAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
-				"", []common.Input{}, []common.Input{}, deps.FlowFactory, deps.IDPService,
+				"", []providers.Input{}, []providers.Input{}, deps.FlowFactory, deps.IDPService,
 				deps.OAuthSvc, deps.AuthnProvider, providers.IDPTypeOAuth))
 		},
 		ExecutorNameOIDCAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
-				"", []common.Input{}, []common.Input{}, deps.FlowFactory, deps.IDPService,
+				"", []providers.Input{}, []providers.Input{}, deps.FlowFactory, deps.IDPService,
 				deps.OIDCSvc, deps.AuthnProvider, providers.IDPTypeOIDC))
 		},
 		ExecutorNameGitHubAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
@@ -232,11 +229,11 @@ func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 			reg.RegisterExecutor(ExecutorNamePermissionValidator, newPermissionValidator(deps.FlowFactory))
 		},
 		ExecutorNameIdentifying: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
-			identifyingInputs := []common.Input{
+			identifyingInputs := []providers.Input{
 				{Identifier: userAttributeUsername, Type: "string", Required: true},
 			}
 			reg.RegisterExecutor(ExecutorNameIdentifying, newIdentifyingExecutor(
-				"", identifyingInputs, []common.Input{}, deps.FlowFactory, deps.EntityProvider))
+				"", identifyingInputs, []providers.Input{}, deps.FlowFactory, deps.EntityProvider))
 		},
 		ExecutorNameConsent: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameConsent, newConsentExecutor(
@@ -259,7 +256,7 @@ func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 		},
 		ExecutorNameOpenID4VPVerify: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameOpenID4VPVerify, newOpenID4VPVerifier(
-				deps.FlowFactory, deps.OpenID4VPVerifierSvc, deps.EntityTypeService, deps.AuthnProvider))
+				deps.FlowFactory, deps.OpenID4VPVerifierSvc, deps.AuthnProvider))
 		},
 	}
 }

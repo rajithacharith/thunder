@@ -169,6 +169,10 @@ $agentIdPackageJson = Get-Content "samples/apps/wayfinder-sample/package.json" -
 $WAYFINDER_SAMPLE_APP_VERSION = $agentIdPackageJson.version
 $WAYFINDER_SAMPLE_APP_FOLDER = "sample-app-wayfinder-${WAYFINDER_SAMPLE_APP_VERSION}"
 
+# PNPM version to use for frontend builds and docs build
+$rootPackageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
+$PNPM_VERSION = $rootPackageJson.devEngines.packageManager.version
+
 # Directories
 $TARGET_DIR = Join-Path $SCRIPT_DIR "target"
 $OUTPUT_DIR = Join-Path $TARGET_DIR "out"
@@ -434,7 +438,7 @@ function Build-Backend {
 function Ensure-Pnpm {
     if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
         Write-Host "pnpm not found, installing..."
-        & npm install -g pnpm
+        & npm install -g "pnpm@$PNPM_VERSION"
     }
 }
 
@@ -604,8 +608,8 @@ function Initialize-Databases {
 
     New-Item -Path $REPOSITORY_DB_DIR -ItemType Directory -Force | Out-Null
 
-    $db_files = @("configdb.db", "runtimedb.db", "userdb.db")
-    $script_paths = @("configdb/sqlite.sql", "runtimedb/sqlite.sql", "userdb/sqlite.sql")
+    $db_files = @("configdb.db", "runtimedb.db", "userdb.db", "operationdb.db")
+    $script_paths = @("configdb/sqlite.sql", "runtimedb/sqlite.sql", "userdb/sqlite.sql", "operationdb/sqlite.sql")
 
     for ($i = 0; $i -lt $db_files.Length; $i++) {
         $db_file = $db_files[$i]
@@ -1529,73 +1533,35 @@ function Run {
         Run-Consent
     }
 
-    # Save original skip security value and temporarily set to true
-    $script:ORIGINAL_SKIP_SECURITY = $env:SKIP_SECURITY
-    $env:SKIP_SECURITY = "true"
-    Run-Backend -ShowFinalOutput $false
+    # Ensure runtime prerequisites (certificates, crypto material, databases) so the
+    # in-process bootstrap can create the default resources before the server starts.
+    Write-Host "=== Ensuring server certificates exist ==="
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "server"
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "signing"
+    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
+    Ensure-Crypto-File -key_dir (Join-Path $BACKEND_DIR "config/certs")
+    Write-Host "Initializing databases..."
+    Initialize-Databases
 
-    # Run initial data setup
-    Write-Host "⚙️  Running initial data setup..."
+    # Create default resources via the in-process bootstrap one-shot (security stays
+    # enabled; the bootstrap runs through the service layer under a runtime context).
+    Write-Host "⚙️  Creating default resources..."
     Write-Host ""
-    
-    # Wait for server to be ready
-    $MAX_RETRIES = 30
-    $RETRY_INTERVAL = 2
-    $retries = 0
-    
-    # Configure TLS to use modern protocols (required for HTTPS requests on Windows)
+    $env:PUBLIC_URL = $PUBLIC_URL
+    Push-Location $BACKEND_DIR
     try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-    } catch {
-        # Fallback to TLS 1.2 if TLS 1.3 is not available
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        & go run . bootstrap --console-redirect-uris "https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
+        $bootstrapExit = $LASTEXITCODE
     }
-    
-    Write-Host "[INFO] Waiting for $PRODUCT_NAME server to be ready..."
-    while ($retries -lt $MAX_RETRIES) {
-        try {
-            $response = Invoke-WebRequest -Uri "$BASE_URL/health/readiness" -UseBasicParsing -SkipCertificateCheck -ErrorAction Stop
-            if ($response.StatusCode -eq 200) {
-                Write-Host "✓ Server is ready!"
-                break
-            }
-        }
-        catch {
-            # Server not ready yet
-        }
-        
-        $retries++
-        if ($retries -ge $MAX_RETRIES) {
-            Write-Host "❌ Server did not become ready after $MAX_RETRIES attempts"
-            Write-Host "💡 Please ensure the $PRODUCT_NAME server is running at $BASE_URL"
-            exit 1
-        }
-        
-        Write-Host "[WAITING] Attempt $retries/$MAX_RETRIES - Server not ready yet, retrying in ${RETRY_INTERVAL}s..."
-        Start-Sleep -Seconds $RETRY_INTERVAL
+    finally {
+        Pop-Location
     }
-    
-    Write-Host ""
-    
-    # Run the bootstrap script directly with environment variable and arguments
-    $env:API_BASE = $BASE_URL
-    $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
-    & $bootstrapScript -ConsoleRedirectUris "https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
-
-    if ($LASTEXITCODE -ne 0) {
+    if ($bootstrapExit -ne 0) {
         Write-Host "❌ Initial data setup failed"
         Write-Host "💡 Check the logs above for more details"
         exit 1
     }
 
-    Write-Host "🔒 Restoring security setting and restarting backend..."
-    # Restore original skip security value
-    if (![string]::IsNullOrEmpty($script:ORIGINAL_SKIP_SECURITY)) {
-        $env:SKIP_SECURITY = $script:ORIGINAL_SKIP_SECURITY
-    }
-    else {
-        Remove-Item Env:\SKIP_SECURITY -ErrorAction SilentlyContinue
-    }
     # Start backend with initial output but without final output/wait
     Start-Backend -ShowFinalOutput $false
 

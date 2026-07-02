@@ -21,12 +21,13 @@ package flowexec
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
@@ -75,12 +76,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 				"email": "test@example.com",
 			},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.ExecutionID)
@@ -115,12 +116,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
 			Token:           "",
 			Attributes:      map[string]interface{}{},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.ExecutionID)
@@ -143,12 +144,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithEmptyAuthenticatedUser() {
 		UserInputs:        map[string]string{},
 		RuntimeData:       map[string]string{},
 		AuthenticatedUser: authncm.AuthenticatedUser{},
-		ExecutionHistory:  map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:  map[string]*providers.NodeExecutionRecord{},
 		Graph:             mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
@@ -179,16 +180,17 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 		},
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.Token)
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.Equal("test-flow-id", resultCtx.ExecutionID)
@@ -226,7 +228,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutToken() {
 		Context:     string(contextJSON),
 	}
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.Equal("test-flow-id", resultCtx.ExecutionID)
@@ -307,17 +309,18 @@ func (s *ModelTestSuite) TestContextRoundTrip() {
 				},
 				UserInputs:       tc.inputs,
 				RuntimeData:      tc.runtime,
-				ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+				ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 				Graph:            mockGraph,
 			}
 
-			dbModel, err := FromEngineContext(ctx)
+			dbModel := &FlowContextDB{}
+			err := dbModel.FromEngineContext(ctx)
 			s.NoError(err)
 
 			// Context should be plain JSON (encryption is the service's responsibility)
 			s.Contains(dbModel.Context, `"appId"`)
 
-			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 			s.NoError(err)
 			s.Equal(tc.appID, resultCtx.AppID)
 			s.Equal(tc.userID, resultCtx.AuthenticatedUser.UserID)
@@ -357,14 +360,14 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 				"attr1": "value1",
 			},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
 			"node1": {NodeID: "node1"},
 		},
 		Graph: mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.Equal("flow-123", dbModel.ExecutionID)
 
@@ -427,12 +430,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
 				"email": "test@example.com",
 			},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.ExecutionID)
@@ -469,12 +472,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 			AvailableAttributes: nil,
 			Attributes:          map[string]interface{}{},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.ExecutionID)
@@ -519,16 +522,17 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 		},
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.AvailableAttributes)
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.Equal("test-flow-id", resultCtx.ExecutionID)
@@ -571,7 +575,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutAvailableAttributes() {
 		Context:     string(contextJSON),
 	}
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.Equal("test-flow-id", resultCtx.ExecutionID)
@@ -642,16 +646,17 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 				},
 				UserInputs:       map[string]string{},
 				RuntimeData:      map[string]string{},
-				ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+				ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 				Graph:            mockGraph,
 			}
 
-			dbModel, err := FromEngineContext(ctx)
+			dbModel := &FlowContextDB{}
+			err := dbModel.FromEngineContext(ctx)
 			s.NoError(err)
 			content := s.getContextContent(dbModel)
 			s.NotNil(content.AvailableAttributes)
 
-			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 			s.NoError(err)
 
 			s.NotNil(resultCtx.AuthenticatedUser.AvailableAttributes)
@@ -678,11 +683,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithCurrentSegmentID() {
 		CurrentSegmentID: "seg-1",
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
 	content := s.getContextContent(dbModel)
@@ -701,11 +707,12 @@ func (s *ModelTestSuite) TestFromEngineContext_EmptyCurrentSegmentID_OmitsField(
 		CurrentSegmentID: "",
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
 	content := s.getContextContent(dbModel)
@@ -730,7 +737,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithCurrentSegmentID() {
 		Context:     string(ctxJSON),
 	}
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.Equal("seg-1", resultCtx.CurrentSegmentID)
@@ -753,7 +760,7 @@ func (s *ModelTestSuite) TestToEngineContext_MissingCurrentSegmentID_IsEmpty() {
 		Context:     string(ctxJSON),
 	}
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.Equal("", resultCtx.CurrentSegmentID)
@@ -771,14 +778,15 @@ func (s *ModelTestSuite) TestCurrentSegmentID_RoundTrip() {
 		CurrentSegmentID: "seg-2",
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 	s.Equal("seg-2", resultCtx.CurrentSegmentID)
 }
@@ -853,13 +861,13 @@ func (s *ModelTestSuite) TestFromEngineContext_WithInterceptorSharedData() {
 		FlowType:              providers.FlowTypeAuthentication,
 		UserInputs:            map[string]string{},
 		RuntimeData:           map[string]string{},
-		ExecutionHistory:      map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:      map[string]*providers.NodeExecutionRecord{},
 		Graph:                 mockGraph,
 		InterceptorSharedData: map[string]string{"challenge": "abc123"},
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
@@ -878,13 +886,13 @@ func (s *ModelTestSuite) TestFromEngineContext_NilInterceptorSharedData() {
 		FlowType:              providers.FlowTypeAuthentication,
 		UserInputs:            map[string]string{},
 		RuntimeData:           map[string]string{},
-		ExecutionHistory:      map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:      map[string]*providers.NodeExecutionRecord{},
 		Graph:                 mockGraph,
 		InterceptorSharedData: nil,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
-
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	content := s.getContextContent(dbModel)
 	// nil map is marshaled as "null", same pattern as RuntimeData
@@ -911,7 +919,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithInterceptorSharedData() {
 		Context:     string(ctxJSON),
 	}
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	s.NotNil(resultCtx.InterceptorSharedData)
@@ -935,7 +943,7 @@ func (s *ModelTestSuite) TestToEngineContext_NilInterceptorSharedData() {
 		Context:     string(ctxJSON),
 	}
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 
 	s.NoError(err)
 	// When InterceptorSharedData is nil in content, it initializes to empty map (same as RuntimeData)
@@ -954,17 +962,400 @@ func (s *ModelTestSuite) TestInterceptorSharedData_RoundTrip() {
 		FlowType:              providers.FlowTypeAuthentication,
 		UserInputs:            map[string]string{},
 		RuntimeData:           map[string]string{},
-		ExecutionHistory:      map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:      map[string]*providers.NodeExecutionRecord{},
 		Graph:                 mockGraph,
 		InterceptorSharedData: map[string]string{"reqCount": "3"},
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
-	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 
 	s.NotNil(resultCtx.InterceptorSharedData)
 	s.Equal("3", resultCtx.InterceptorSharedData["reqCount"])
+}
+
+// FrameStack tests
+
+func (s *ModelTestSuite) TestFrameStack_PushAndDepth() {
+	ctx := &EngineContext{}
+	ctx.pushFrame("call-node-1")
+	s.Equal(1, ctx.frameDepth())
+}
+
+func (s *ModelTestSuite) TestFrameStack_PushAndPop() {
+	mockCallerGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockCalleeGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	ctx := &EngineContext{
+		Graph:    mockCallerGraph,
+		FlowType: providers.FlowTypeAuthentication,
+		RuntimeData: map[string]string{
+			"caller-key": "caller-value",
+		},
+	}
+
+	ctx.pushFrame("call-node-1")
+
+	// Simulate switching to callee state
+	ctx.Graph = mockCalleeGraph
+	ctx.FlowType = providers.FlowTypeRegistration
+	ctx.RuntimeData = map[string]string{"callee-key": "callee-value"}
+
+	s.Equal(1, ctx.frameDepth())
+
+	popped := ctx.popFrame()
+	s.NotNil(popped)
+	s.Equal(0, ctx.frameDepth())
+	// Caller state restored
+	s.Equal(mockCallerGraph, ctx.Graph)
+	s.Equal(providers.FlowTypeAuthentication, ctx.FlowType)
+	s.Equal("caller-value", ctx.RuntimeData["caller-key"])
+}
+
+func (s *ModelTestSuite) TestFrameStack_PopEmpty() {
+	ctx := &EngineContext{}
+	result := ctx.popFrame()
+	s.Nil(result)
+	s.Equal(0, ctx.frameDepth())
+}
+
+func (s *ModelTestSuite) TestSharedRuntimeData_SetAndGet() {
+	ctx := &EngineContext{}
+	ctx.setSharedRuntimeData("myKey", "myValue")
+	val, ok := ctx.getSharedRuntimeData("myKey")
+	s.True(ok)
+	s.Equal("myValue", val)
+}
+
+func (s *ModelTestSuite) TestSharedRuntimeData_GetMissing() {
+	ctx := &EngineContext{}
+	val, ok := ctx.getSharedRuntimeData("nonexistent")
+	s.False(ok)
+	s.Equal("", val)
+}
+
+func (s *ModelTestSuite) TestSharedRuntimeData_NilMap() {
+	ctx := &EngineContext{sharedRuntimeData: nil}
+	val, ok := ctx.getSharedRuntimeData("anyKey")
+	s.False(ok)
+	s.Equal("", val)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_BackwardsCompatibility_NoFrameStack() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetType").Return(providers.FlowTypeAuthentication)
+
+	userInputs := `{}`
+	runtimeData := `{}`
+	executionHistory := `{}`
+
+	content := flowContextContent{
+		AppID:            "test-app-id",
+		GraphID:          "graph-id",
+		UserInputs:       &userInputs,
+		RuntimeData:      &runtimeData,
+		ExecutionHistory: &executionHistory,
+		FrameStack:       nil,
+	}
+	ctxJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		ExecutionID: "exec-id",
+		Context:     string(ctxJSON),
+	}
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
+
+	s.NoError(err)
+	s.Equal(0, resultCtx.frameDepth())
+}
+
+func (s *ModelTestSuite) TestToEngineContext_WithFrameStack_RoundTrip() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("callee-graph-id")
+	mockGraph.On("GetType").Return(providers.FlowTypeRegistration)
+
+	mockCallerGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockCallerGraph.On("GetID").Return("caller-graph-id")
+	mockCallerGraph.On("GetType").Return(providers.FlowTypeAuthentication)
+
+	// Build an engine context with the callee as active graph and push the caller frame
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-roundtrip",
+		FlowType:         providers.FlowTypeAuthentication,
+		AppID:            "app-id",
+		Graph:            mockCallerGraph,
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
+	}
+
+	ctx.pushFrame("call-node-1")
+	// Simulate callee state as active
+	ctx.Graph = mockGraph
+	ctx.FlowType = providers.FlowTypeRegistration
+
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
+	s.NoError(err)
+
+	resolver := graphResolverFunc(func(_ context.Context, _ string) (core.GraphInterface, error) {
+		return mockCallerGraph, nil
+	})
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, resolver)
+	s.NoError(err)
+	s.Equal(1, resultCtx.frameDepth())
+}
+
+func (s *ModelTestSuite) TestToEngineContext_WithSharedRuntimeData_RoundTrip() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(providers.FlowTypeAuthentication)
+
+	ctx := EngineContext{
+		Context:           context.Background(),
+		ExecutionID:       "exec-srd",
+		FlowType:          providers.FlowTypeAuthentication,
+		AppID:             "app-id",
+		Graph:             mockGraph,
+		UserInputs:        map[string]string{},
+		RuntimeData:       map[string]string{},
+		ExecutionHistory:  map[string]*providers.NodeExecutionRecord{},
+		sharedRuntimeData: map[string]string{"shared-key": "shared-value"},
+	}
+
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
+	s.NoError(err)
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
+	s.NoError(err)
+
+	s.NotNil(resultCtx.sharedRuntimeData)
+	val, ok := resultCtx.getSharedRuntimeData("shared-key")
+	s.True(ok)
+	s.Equal("shared-value", val)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_WithFrameStack_NilResolver_Empty() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("callee-graph-id")
+	mockGraph.On("GetType").Return(providers.FlowTypeRegistration)
+
+	mockCallerGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockCallerGraph.On("GetID").Return("caller-graph-id")
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-nil-resolver",
+		FlowType:         providers.FlowTypeAuthentication,
+		AppID:            "app-id",
+		Graph:            mockCallerGraph,
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
+	}
+
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = mockGraph
+	ctx.FlowType = providers.FlowTypeRegistration
+
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
+	s.NoError(err)
+
+	// nil resolver: frame stack should be ignored, no error
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
+	s.NoError(err)
+	s.Equal(0, resultCtx.frameDepth())
+}
+
+// --- serializeFrameStack ---
+
+func (s *ModelTestSuite) TestSerializeFrameStack_EmptyStack() {
+	dbModel := &FlowContextDB{}
+	result, err := dbModel.serializeFrameStack(nil)
+	s.NoError(err)
+	s.Nil(result)
+
+	result, err = dbModel.serializeFrameStack([]*frame{})
+	s.NoError(err)
+	s.Nil(result)
+}
+
+func (s *ModelTestSuite) TestSerializeFrameStack_NilGraphError() {
+	dbModel := &FlowContextDB{}
+	f := &frame{graph: nil, resumeCallNodeID: "call-1"}
+	_, err := dbModel.serializeFrameStack([]*frame{f})
+	s.Error(err)
+}
+
+func (s *ModelTestSuite) TestSerializeFrameStack_EmptyGraphIDError() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetID").Return("")
+
+	dbModel := &FlowContextDB{}
+	f := &frame{graph: mockGraph, resumeCallNodeID: "call-1"}
+	_, err := dbModel.serializeFrameStack([]*frame{f})
+	s.Error(err)
+}
+
+func (s *ModelTestSuite) TestSerializeFrameStack_WithCurrentNode() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetID").Return("graph-1")
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1")
+
+	dbModel := &FlowContextDB{}
+	f := &frame{graph: mockGraph, currentNode: mockNode, resumeCallNodeID: "call-1"}
+	result, err := dbModel.serializeFrameStack([]*frame{f})
+	s.NoError(err)
+	s.NotNil(result)
+
+	var frames []serializedFrame
+	s.NoError(json.Unmarshal([]byte(*result), &frames))
+	s.Len(frames, 1)
+	s.NotNil(frames[0].CurrentNodeID)
+	s.Equal("node-1", *frames[0].CurrentNodeID)
+}
+
+func (s *ModelTestSuite) TestSerializeFrameStack_WithOptionalFields() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetID").Return("graph-1")
+
+	dbModel := &FlowContextDB{}
+	f := &frame{
+		graph:            mockGraph,
+		currentAction:    "action-1",
+		currentSegmentID: "seg-1",
+		runtimeData:      map[string]string{"key": "val"},
+		resumeCallNodeID: "call-1",
+	}
+	result, err := dbModel.serializeFrameStack([]*frame{f})
+	s.NoError(err)
+	s.NotNil(result)
+
+	var frames []serializedFrame
+	s.NoError(json.Unmarshal([]byte(*result), &frames))
+	s.Len(frames, 1)
+	s.NotNil(frames[0].CurrentAction)
+	s.Equal("action-1", *frames[0].CurrentAction)
+	s.NotNil(frames[0].CurrentSegmentID)
+	s.Equal("seg-1", *frames[0].CurrentSegmentID)
+	s.NotNil(frames[0].RuntimeData)
+}
+
+// --- deserializeFrameStack ---
+
+func (s *ModelTestSuite) TestDeserializeFrameStack_InvalidJSON() {
+	bad := "not-json"
+	content := flowContextContent{FrameStack: &bad}
+	dbModel := &FlowContextDB{}
+	resolver := graphResolverFunc(func(_ context.Context, _ string) (core.GraphInterface, error) {
+		return nil, nil
+	})
+	_, err := dbModel.deserializeFrameStack(context.Background(), content, resolver)
+	s.Error(err)
+}
+
+func (s *ModelTestSuite) TestDeserializeFrameStack_ResolveGraphError() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetID").Return("graph-1")
+	f := &frame{graph: mockGraph, resumeCallNodeID: "call-1"}
+
+	dbModel := &FlowContextDB{}
+	serialized, err := dbModel.serializeFrameStack([]*frame{f})
+	s.NoError(err)
+	s.NotNil(serialized)
+
+	content := flowContextContent{FrameStack: serialized}
+	resolver := graphResolverFunc(func(_ context.Context, _ string) (core.GraphInterface, error) {
+		return nil, errors.New("resolve error")
+	})
+	_, err = dbModel.deserializeFrameStack(context.Background(), content, resolver)
+	s.Error(err)
+}
+
+func (s *ModelTestSuite) TestDeserializeFrameStack_WithCurrentNodeAndOptionalFields() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetID").Return("graph-1")
+	mockGraph.On("GetType").Return(providers.FlowTypeAuthentication)
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1")
+	mockGraph.On("GetNode", "node-1").Return(mockNode, true)
+
+	dbModel := &FlowContextDB{}
+	f := &frame{
+		graph:            mockGraph,
+		currentNode:      mockNode,
+		currentAction:    "my-action",
+		currentSegmentID: "my-seg",
+		runtimeData:      map[string]string{"k": "v"},
+		resumeCallNodeID: "call-1",
+	}
+	serialized, err := dbModel.serializeFrameStack([]*frame{f})
+	s.NoError(err)
+	s.NotNil(serialized)
+
+	content := flowContextContent{FrameStack: serialized}
+	resolver := graphResolverFunc(func(_ context.Context, _ string) (core.GraphInterface, error) {
+		return mockGraph, nil
+	})
+	frames, err := dbModel.deserializeFrameStack(context.Background(), content, resolver)
+	s.NoError(err)
+	s.Len(frames, 1)
+	s.Equal(mockNode, frames[0].currentNode)
+	s.Equal("my-action", frames[0].currentAction)
+	s.Equal("my-seg", frames[0].currentSegmentID)
+	s.Equal("v", frames[0].runtimeData["k"])
+}
+
+func (s *ModelTestSuite) TestDeserializeFrameStack_InvalidRuntimeDataJSON() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+
+	bad := "not-json"
+	frames := []serializedFrame{{GraphID: "graph-1", RuntimeData: &bad}}
+	b, _ := json.Marshal(frames)
+	frameStackStr := string(b)
+	content := flowContextContent{FrameStack: &frameStackStr}
+
+	dbModel := &FlowContextDB{}
+	resolver := graphResolverFunc(func(_ context.Context, _ string) (core.GraphInterface, error) {
+		return mockGraph, nil
+	})
+	_, err := dbModel.deserializeFrameStack(context.Background(), content, resolver)
+	s.Error(err)
+}
+
+func (s *ModelTestSuite) TestDeserializeFrameStack_NodeIDNotInGraph() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetType").Return(providers.FlowTypeAuthentication)
+	mockGraph.On("GetNode", "missing-node").Return(nil, false)
+
+	nodeID := "missing-node"
+	frames := []serializedFrame{{GraphID: "graph-1", CurrentNodeID: &nodeID}}
+	b, _ := json.Marshal(frames)
+	frameStackStr := string(b)
+	content := flowContextContent{FrameStack: &frameStackStr}
+
+	dbModel := &FlowContextDB{}
+	resolver := graphResolverFunc(func(_ context.Context, _ string) (core.GraphInterface, error) {
+		return mockGraph, nil
+	})
+	result, err := dbModel.deserializeFrameStack(context.Background(), content, resolver)
+	s.NoError(err)
+	s.Len(result, 1)
+	s.Nil(result[0].currentNode)
 }

@@ -77,6 +77,9 @@ async function generateDocs() {
   // Generate contributors
   executeScript('Contributors Generator', join(__dirname, 'generate-contributors.mjs'));
 
+  // Generate SDK release data
+  executeScript('SDK Releases Generator', join(__dirname, 'generate-sdk-releases.mjs'));
+
   logger.info('🎉 All documentation artifacts generated successfully!\n');
 }
 

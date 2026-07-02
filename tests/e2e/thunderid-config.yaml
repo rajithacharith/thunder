@@ -1,19 +1,26 @@
 ---
 # resource_type: application
-# Native application used exclusively by E2E test infrastructure for admin API authentication.
-# Uses only the client_credentials grant type so it is not subject to the redirect-based
-# flow initiation guard introduced for authorization_code apps.
+# Embedded server-side application used exclusively by E2E test infrastructure for admin API
+# authentication. It has no OAuth profile, so it initiates the admin authentication flow directly
+# via the Flow Execution API and is issued a Flow Secret.
 id: 019e3a5c-0501-7f3e-a66e-66fc7918c3a7
 ouHandle: default
 name: E2E Admin Native App
 description: Native application for E2E test infrastructure admin authentication
+# Flow Secret presented by the E2E helpers when initiating the admin authentication flow
+# directly via the Flow Execution API. Test-only credential.
+flowSecret: e2e-admin-native-app-secret
 authFlowHandle: default-basic-flow
 allowedUserTypes:
   - Customer
-inboundAuthConfig:
-  - type: oauth2
-    config:
-      clientId: thunder_e2e_admin_client
-      grantTypes:
-        - client_credentials
-      tokenEndpointAuthMethod: client_secret_basic
+
+---
+# resource_type: server_config
+# Allows the sample apps' browser origins to reach the API during E2E tests. CORS origins come only from
+# the server-config "cors" section (no default ships), so the E2E setup imports them here.
+name: cors
+value:
+  allowedOrigins:
+    - "https://localhost:3000"
+    - "http://localhost:5173"
+    - "http://localhost:6274"

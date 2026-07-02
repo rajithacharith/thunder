@@ -23,18 +23,19 @@ import (
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // getCommonEventTestCases returns common test cases for event processing
 // used by both console and file subscriber tests to avoid duplication.
 func getCommonEventTestCases() []struct {
 	name    string
-	event   *event.Event
+	event   *providers.Event
 	wantErr bool
 } {
 	return []struct {
 		name    string
-		event   *event.Event
+		event   *providers.Event
 		wantErr bool
 	}{
 		{
@@ -44,13 +45,13 @@ func getCommonEventTestCases() []struct {
 		},
 		{
 			name: "successfully processes valid event",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-123",
 				Type:      "test.event",
 				Timestamp: time.Now(),
 				Component: "TestComponent",
-				Status:    event.StatusSuccess,
+				Status:    providers.StatusSuccess,
 				Data: map[string]interface{}{
 					"key1": "value1",
 					"key2": 123,
@@ -60,13 +61,13 @@ func getCommonEventTestCases() []struct {
 		},
 		{
 			name: "successfully processes event with complex data",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-456",
 				EventID:   "event-456",
 				Type:      "test.complex",
 				Timestamp: time.Now(),
 				Component: "TestComponent",
-				Status:    event.StatusSuccess,
+				Status:    providers.StatusSuccess,
 				Data: map[string]interface{}{
 					"string": "value",
 					"int":    42,
@@ -80,13 +81,13 @@ func getCommonEventTestCases() []struct {
 		},
 		{
 			name: "successfully processes failure event",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-789",
 				EventID:   "event-789",
 				Type:      "test.failure",
 				Timestamp: time.Now(),
 				Component: "TestComponent",
-				Status:    event.StatusFailure,
+				Status:    providers.StatusFailure,
 				Data: map[string]interface{}{
 					event.DataKey.Error: "test error message",
 				},

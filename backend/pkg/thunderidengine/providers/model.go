@@ -22,13 +22,18 @@
 package providers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"regexp"
+	"slices"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // LanguageTranslationsResponse represents all translations for a language, organized by namespace.
@@ -127,6 +132,32 @@ func (t ResourceServerType) IsValid() bool {
 	return false
 }
 
+// ActionKind discriminates MCP primitives stored as actions.
+type ActionKind string
+
+const (
+	// ActionKindTool represents an MCP tool.
+	ActionKindTool ActionKind = "tool"
+	// ActionKindResource represents an MCP resource.
+	ActionKindResource ActionKind = "resource"
+)
+
+// supportedActionKinds lists all the supported action kinds.
+var supportedActionKinds = []ActionKind{
+	ActionKindTool,
+	ActionKindResource,
+}
+
+// IsValid reports whether the action kind is one of the supported values.
+func (k ActionKind) IsValid() bool {
+	for _, supported := range supportedActionKinds {
+		if k == supported {
+			return true
+		}
+	}
+	return false
+}
+
 // Consolidated resource models for YAML parsing, processing, and service layer
 // These models use:
 // - yaml tags for YAML parsing (serialize/deserialize)
@@ -140,6 +171,8 @@ type Action struct {
 	Handle      string `yaml:"handle"                json:"handle"`
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 	Permission  string `yaml:"-"                     json:"-"` // Computed permission string, not serialized to YAML
+	// Kind is empty ("") for API/CUSTOM actions; "tool"|"resource" for MCP actions.
+	Kind ActionKind `yaml:"kind,omitempty" json:"-"`
 }
 
 // Resource represents a resource in both declarative resources and service layer.
@@ -212,20 +245,26 @@ type NodePosition struct {
 
 // NodeDefinition represents a single node in a flow definition.
 type NodeDefinition struct {
-	ID           string                 `json:"id"                     yaml:"id"                     jsonschema:"Unique node identifier within the flow. Example: 'start', 'username-password', 'end'"`
-	Type         string                 `json:"type"                   yaml:"type"                   jsonschema:"Node type: 'START' (entry point), 'END' (exit point), 'TASK_EXECUTION' (backend logic), or 'PROMPT' (user input)"`
-	Layout       *NodeLayout            `json:"layout,omitempty"       yaml:"layout,omitempty"       jsonschema:"Optional UI layout information for flow composer (position and size on canvas)"`
-	Meta         interface{}            `json:"meta,omitempty"         yaml:"meta,omitempty"         jsonschema:"Optional metadata. For PROMPT nodes, must include 'components' array for UI rendering. See existing flows for examples."`
-	Prompts      []PromptDefinition     `json:"prompts,omitempty"      yaml:"prompts,omitempty"      jsonschema:"For PROMPT nodes: defines user inputs and actions. Each prompt has inputs (form fields) and an action (what happens on submit)."`
-	Variant      NodeVariant            `json:"variant,omitempty"      yaml:"variant,omitempty"      jsonschema:"Optional PROMPT node variant. Use 'LOGIN_OPTIONS' to enable login option filtering on this node."`
-	Next         string                 `json:"next,omitempty"         yaml:"next,omitempty"         jsonschema:"For display-only PROMPT nodes: ID of the next node. Mutually exclusive with 'prompts'."`
-	Message      string                 `json:"message,omitempty"      yaml:"message,omitempty"      jsonschema:"For display-only PROMPT nodes: textual message for non-verbose mode."`
-	Properties   map[string]interface{} `json:"properties,omitempty"   yaml:"properties,omitempty"   jsonschema:"Optional node-specific properties for configuration"`
-	Executor     *ExecutorDefinition    `json:"executor,omitempty"     yaml:"executor,omitempty"     jsonschema:"For TASK_EXECUTION nodes: defines which executor to run (e.g., 'UsernamePasswordAuthenticator', 'OTPGenerator')"`
-	OnSuccess    string                 `json:"onSuccess,omitempty"    yaml:"onSuccess,omitempty"    jsonschema:"ID of the next node to execute on successful completion"`
-	OnFailure    string                 `json:"onFailure,omitempty"    yaml:"onFailure,omitempty"    jsonschema:"ID of the next node to execute on failure"`
-	OnIncomplete string                 `json:"onIncomplete,omitempty" yaml:"onIncomplete,omitempty" jsonschema:"For TASK_EXECUTION nodes: ID of the PROMPT node to forward to when user input is required."`
-	Condition    *ConditionDefinition   `json:"condition,omitempty"    yaml:"condition,omitempty"    jsonschema:"Optional condition to determine if this node should execute"`
+	ID           string                   `json:"id"                     yaml:"id"                     jsonschema:"Unique node identifier within the flow. Example: 'start', 'username-password', 'end'"`
+	Type         string                   `json:"type"                   yaml:"type"                   jsonschema:"Node type: 'START' (entry point), 'END' (exit point), 'TASK_EXECUTION' (backend logic), 'PROMPT' (user input), or 'CALL' (invoke another flow)"`
+	Layout       *NodeLayout              `json:"layout,omitempty"       yaml:"layout,omitempty"       jsonschema:"Optional UI layout information for flow composer (position and size on canvas)"`
+	Meta         interface{}              `json:"meta,omitempty"         yaml:"meta,omitempty"         jsonschema:"Optional metadata. For PROMPT nodes, must include 'components' array for UI rendering. See existing flows for examples."`
+	Prompts      []PromptDefinition       `json:"prompts,omitempty"      yaml:"prompts,omitempty"      jsonschema:"For PROMPT nodes: defines user inputs and actions. Each prompt has inputs (form fields) and an action (what happens on submit)."`
+	Variant      NodeVariant              `json:"variant,omitempty"      yaml:"variant,omitempty"      jsonschema:"Optional PROMPT node variant. Use 'LOGIN_OPTIONS' to enable login option filtering on this node."`
+	Next         string                   `json:"next,omitempty"         yaml:"next,omitempty"         jsonschema:"For display-only PROMPT nodes: ID of the next node. Mutually exclusive with 'prompts'."`
+	Message      string                   `json:"message,omitempty"      yaml:"message,omitempty"      jsonschema:"For display-only PROMPT nodes: textual message for non-verbose mode."`
+	Properties   map[string]interface{}   `json:"properties,omitempty"   yaml:"properties,omitempty"   jsonschema:"Optional node-specific properties for configuration"`
+	Executor     *ExecutorDefinition      `json:"executor,omitempty"     yaml:"executor,omitempty"     jsonschema:"For TASK_EXECUTION nodes: defines which executor to run (e.g., 'UsernamePasswordAuthenticator', 'OTPGenerator')"`
+	OnSuccess    string                   `json:"onSuccess,omitempty"    yaml:"onSuccess,omitempty"    jsonschema:"ID of the next node to execute on successful completion"`
+	OnFailure    string                   `json:"onFailure,omitempty"    yaml:"onFailure,omitempty"    jsonschema:"ID of the next node to execute on failure"`
+	OnIncomplete string                   `json:"onIncomplete,omitempty" yaml:"onIncomplete,omitempty" jsonschema:"For TASK_EXECUTION nodes: ID of the PROMPT node to forward to when user input is required."`
+	Condition    *ConditionDefinition     `json:"condition,omitempty"    yaml:"condition,omitempty"    jsonschema:"Optional condition to determine if this node should execute"`
+	Flow         *FlowReferenceDefinition `json:"flow,omitempty"       yaml:"flow,omitempty"         jsonschema:"For CALL nodes: identifies the target flow to invoke by its ID."`
+}
+
+// FlowReferenceDefinition identifies the target flow for a CALL node.
+type FlowReferenceDefinition struct {
+	Ref string `json:"ref" yaml:"ref" jsonschema:"ID of the flow to invoke."`
 }
 
 type nodeDefinitionAlias NodeDefinition
@@ -680,4 +719,426 @@ type UserTypeAttributeMapping struct {
 type AttributeConfiguration struct {
 	UserTypeResolution        *UserTypeResolution        `json:"userTypeResolution,omitempty"        yaml:"user_type_resolution,omitempty"`         //nolint:lll
 	UserTypeAttributeMappings []UserTypeAttributeMapping `json:"userTypeAttributeMappings,omitempty" yaml:"user_type_attribute_mappings,omitempty"` //nolint:lll
+}
+
+// ConsentElementApproval represents a user's approval decision for a specific element.
+type ConsentElementApproval struct {
+	// Name is the consent element name
+	Name string
+	// Namespace is the consent namespace to which this element belongs (e.g. "attribute")
+	Namespace Namespace
+	// IsUserApproved indicates whether the user approved this element
+	IsUserApproved bool
+}
+
+// ConsentPurposeItem represents an element approval record within a consent.
+type ConsentPurposeItem struct {
+	// Name is the consent purpose name
+	Name string
+	// Elements is the list of element approval records for this purpose
+	Elements []ConsentElementApproval
+}
+
+// ConsentAuthorization represents the authorization record within a consent.
+type ConsentAuthorization struct {
+	// ID is the unique identifier of the authorization record
+	ID string
+	// UserID is the identifier of the user who performed the authorization
+	UserID string
+	// Type is the authorization type (e.g. "authorization")
+	Type ConsentAuthorizationType
+	// Status is the authorization status (e.g. "APPROVED", "CREATED", "REJECTED")
+	Status ConsentAuthorizationStatus
+	// UpdatedTime is the Unix timestamp of the last status change
+	UpdatedTime int64
+}
+
+// ConsentPromptData holds the structured data needed to render a consent prompt for the user.
+// It contains all purposes whose consent is required, with their elements grouped under each purpose.
+type ConsentPromptData struct {
+	// Purposes is the list of consent purposes that require user consent, along with their elements
+	Purposes []ConsentPurposePrompt `json:"purposes"`
+	// SessionToken is the signed JWT token that encapsulates the consent session data
+	SessionToken string `json:"sessionToken,omitempty"`
+}
+
+// ConsentPurposePrompt holds a single consent purpose's elements that need user consent.
+// The Type discriminator tells the UI how to label and group sections.
+type ConsentPurposePrompt struct {
+	// PurposeName is the name of the consent purpose (e.g. "app:my_app:attrs")
+	PurposeName string `json:"purposeName"`
+	// PurposeID is the unique identifier of the consent purpose
+	PurposeID string `json:"purposeId"`
+	// Description is a human-readable description of the consent purpose
+	Description string `json:"description,omitempty"`
+	// Type discriminates between attribute and permission consent purposes.
+	Type string `json:"type,omitempty"`
+	// Essential is the list of mandatory elements that require user consent
+	Essential []PromptElement `json:"essential"`
+	// Optional is the list of elements the user can opt in or out of
+	Optional []PromptElement `json:"optional"`
+}
+
+// PromptElement represents a single element within a consent purpose prompt. Parent carries
+// rollup linkage for permission elements (zero value, omitted on the wire, for attribute elements).
+type PromptElement struct {
+	// Name is the canonical element name (attribute name or permission string)
+	Name string `json:"name"`
+	// Parent is the canonical name of the rollup parent, if any
+	Parent string `json:"parent,omitempty"`
+}
+
+// ConsentDecisions holds the user's consent decisions.
+type ConsentDecisions struct {
+	// Purposes contains the per-purpose element approval decisions
+	Purposes []PurposeDecision `json:"purposes"`
+}
+
+// PurposeDecision holds the consent decisions for a single purpose
+type PurposeDecision struct {
+	// PurposeName is the name of the consent purpose
+	PurposeName string `json:"purposeName"`
+	// Approved indicates whether the user approved this purpose
+	Approved bool `json:"approved"`
+	// Elements contains the per-element approval decisions
+	Elements []ElementDecision `json:"elements"`
+}
+
+// ElementDecision holds the approval decision for a single consent element
+type ElementDecision struct {
+	// Name is the name of the consent element
+	Name string `json:"name"`
+	// Approved indicates whether the user approved sharing this element
+	Approved bool `json:"approved"`
+}
+
+// Consent represents a consent record in the system, containing all relevant details and status.
+type Consent struct {
+	// ID is the unique identifier of the consent
+	ID string
+	// Type is the consent type (e.g. "authentication")
+	Type ConsentType
+	// GroupID is the group ID that this consent is associated with (e.g. app id)
+	GroupID string
+	// Status is the consent status (CREATED, ACTIVE, REJECTED, REVOKED, EXPIRED)
+	Status ConsentStatus
+	// ValidityTime is the Unix timestamp until which the consent is valid
+	ValidityTime int64
+	// Purposes is the list of consent purposes with element approval records
+	Purposes []ConsentPurposeItem
+	// Authorizations is the list of authorization records for this consent
+	Authorizations []ConsentAuthorization
+	// CreatedTime is the Unix timestamp when the consent was created
+	CreatedTime int64
+	// UpdatedTime is the Unix timestamp when the consent was last updated
+	UpdatedTime int64
+}
+
+// ExecutorResponse represents the response from an executor
+type ExecutorResponse struct {
+	Status         ExecutorStatus         `json:"status"`
+	Inputs         []Input                `json:"inputs,omitempty"`
+	AdditionalData map[string]string      `json:"additionalData,omitempty"`
+	RedirectURL    string                 `json:"redirectUrl,omitempty"`
+	RuntimeData    map[string]string      `json:"runtimeData,omitempty"`
+	ForwardedData  map[string]interface{} `json:"forwardedData,omitempty"`
+	Assertion      string                 `json:"assertion,omitempty"`
+	Error          *common.ServiceError   `json:"error,omitempty"`
+	AuthUser       AuthUser               `json:"-"`
+}
+
+// ExecutionPolicy defines behavioral policies for node execution.
+type ExecutionPolicy struct {
+	SkipChallengeValidation bool
+	AllowSegmentRestart     bool
+}
+
+// sensitiveInputTypes contains the list of input types that are considered sensitive.
+var sensitiveInputTypes = []string{
+	InputTypePassword,
+	InputTypeOTP,
+}
+
+// Input represents the inputs required for a node
+type Input struct {
+	Ref         string           `json:"ref,omitempty"`
+	Identifier  string           `json:"identifier"`
+	Type        string           `json:"type"`
+	Required    bool             `json:"required"`
+	Options     []string         `json:"options,omitempty"`
+	DisplayName string           `json:"-"`
+	Validation  []ValidationRule `json:"validation,omitempty"`
+}
+
+// IsSensitive checks whether this input's type is considered sensitive.
+func (i Input) IsSensitive() bool {
+	return slices.Contains(sensitiveInputTypes, i.Type)
+}
+
+// ValidationRule defines a single constraint on a flow input. CompiledRegex is
+// populated by PrepareValidationRules at graph-build time and excluded from JSON.
+type ValidationRule struct {
+	Type          ValidationType `json:"type"`
+	Value         interface{}    `json:"value"`
+	Message       string         `json:"message,omitempty"`
+	CompiledRegex *regexp.Regexp `json:"-"`
+}
+
+// Application represents the structure for application which returns in GetApplicationById.
+type Application struct {
+	ID          string `yaml:"id,omitempty" json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`
+	OUID        string `yaml:"ouId,omitempty" json:"ouId,omitempty" jsonschema:"Organization unit ID. The OU this application belongs to."`
+	Name        string `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"Application name."`
+	Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"Optional description of the application's purpose."`
+	Template    string `yaml:"template,omitempty" json:"template,omitempty" jsonschema:"Template used to create the application."`
+
+	URL       string   `yaml:"url,omitempty" json:"url,omitempty" jsonschema:"Application home URL."`
+	LogoURL   string   `yaml:"logoUrl,omitempty" json:"logoUrl,omitempty" jsonschema:"Application logo URL."`
+	TosURI    string   `yaml:"tosUri,omitempty" json:"tosUri,omitempty" jsonschema:"Terms of Service URI."`
+	PolicyURI string   `yaml:"policyUri,omitempty" json:"policyUri,omitempty" jsonschema:"Privacy Policy URI."`
+	Contacts  []string `yaml:"contacts,omitempty" json:"contacts,omitempty"`
+
+	InboundAuthProfile `yaml:",inline"`
+	InboundAuthConfig  []InboundAuthConfigWithSecret `yaml:"inboundAuthConfig,omitempty" json:"inboundAuthConfig,omitempty" jsonschema:"Inbound authentication configuration (OAuth2/OIDC settings)."`
+	Metadata           map[string]interface{}        `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"Generic metadata key-value pairs."`
+}
+
+// InboundAuthProfile is the wire field block embedded in entity DTOs (requests and responses).
+type InboundAuthProfile struct {
+	AuthFlowID                string              `json:"authFlowId,omitempty"             yaml:"authFlowId,omitempty"             jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). If omitted, the default authentication flow is used."`
+	AuthFlowHandle            string              `json:"authFlowHandle,omitempty"         yaml:"authFlowHandle,omitempty"         jsonschema:"Authentication flow handle. Optional. Alternative to authFlowId — resolved to an ID at import time."`
+	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"     yaml:"registrationFlowId,omitempty"     jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow."`
+	RegistrationFlowHandle    string              `json:"registrationFlowHandle,omitempty" yaml:"registrationFlowHandle,omitempty" jsonschema:"Registration flow handle. Optional. Alternative to registrationFlowId — resolved to an ID at import time."`
+	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"        yaml:"isRegistrationFlowEnabled"        jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registrationFlowId or registrationFlowHandle to be set."`
+	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"         yaml:"recoveryFlowId,omitempty"         jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
+	RecoveryFlowHandle        string              `json:"recoveryFlowHandle,omitempty"     yaml:"recoveryFlowHandle,omitempty"     jsonschema:"Recovery flow handle. Optional. Alternative to recoveryFlowId — resolved to an ID at import time."`
+	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"            yaml:"isRecoveryFlowEnabled"            jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId or recoveryFlowHandle to be set."`
+	ThemeID                   string              `json:"themeId,omitempty"                yaml:"themeId,omitempty"                jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
+	LayoutID                  string              `json:"layoutId,omitempty"               yaml:"layoutId,omitempty"               jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"              yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
+	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"           yaml:"loginConsent,omitempty"           jsonschema:"Login consent configuration settings."`
+	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"       yaml:"allowedUserTypes,omitempty"       jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
+}
+
+// OAuthConfigWithSecret is the wire input shape and the create/update echo response shape.
+// Carries ClientSecret (omitempty) so it appears only when freshly issued.
+type OAuthConfigWithSecret struct {
+	ClientID                           string                  `json:"clientId,omitempty"                 yaml:"clientId,omitempty"                 jsonschema:"OAuth client ID (auto-generated if not provided)"`
+	ClientSecret                       string                  `json:"clientSecret,omitempty"             yaml:"clientSecret,omitempty"             jsonschema:"OAuth client secret (auto-generated if not provided)"`
+	RedirectURIs                       []string                `json:"redirectUris,omitempty"             yaml:"redirectUris,omitempty"             jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
+	GrantTypes                         []GrantType             `json:"grantTypes,omitempty"               yaml:"grantTypes,omitempty"               jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
+	ResponseTypes                      []ResponseType          `json:"responseTypes,omitempty"            yaml:"responseTypes,omitempty"            jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
+	TokenEndpointAuthMethod            TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"  yaml:"tokenEndpointAuthMethod,omitempty"  jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
+	PKCERequired                       bool                    `json:"pkceRequired"                       yaml:"pkceRequired"                       jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
+	PublicClient                       bool                    `json:"publicClient"                       yaml:"publicClient"                       jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
+	RequirePushedAuthorizationRequests bool                    `json:"requirePushedAuthorizationRequests" yaml:"requirePushedAuthorizationRequests" jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
+	DPoPBoundAccessTokens              bool                    `json:"dpopBoundAccessTokens"              yaml:"dpopBoundAccessTokens"              jsonschema:"Require DPoP-bound access tokens (RFC 9449)."`
+	IncludeActClaim                    bool                    `json:"includeActClaim"                    yaml:"includeActClaim"                    jsonschema:"Include an implicit on-behalf-of 'act' claim (identifying the application entity) in access tokens issued through this client's authorization code flow. Agents always include it regardless of this setting."`
+	Token                              *OAuthTokenConfig       `json:"token,omitempty"                    yaml:"token,omitempty"                    jsonschema:"Token configuration for access tokens and ID tokens"`
+	Scopes                             []string                `json:"scopes,omitempty"                   yaml:"scopes,omitempty"                   jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
+	UserInfo                           *UserInfoConfig         `json:"userInfo,omitempty"                 yaml:"userInfo,omitempty"                 jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
+	ScopeClaims                        map[string][]string     `json:"scopeClaims,omitempty"              yaml:"scopeClaims,omitempty"              jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
+	Certificate                        *Certificate            `json:"certificate,omitempty"              yaml:"certificate,omitempty"              jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	AcrValues                          []string                `json:"acrValues,omitempty"                yaml:"acrValues,omitempty"                jsonschema:"Default ACR values applied when the request does not specify acr_values."`
+}
+
+// InboundAuthConfigWithSecret is the wire input wrapper and create/update echo response wrapper.
+type InboundAuthConfigWithSecret struct {
+	Type        InboundAuthType        `json:"type"             yaml:"type"             jsonschema:"Inbound authentication type. Use 'oauth2' for OAuth/OIDC applications."`
+	OAuthConfig *OAuthConfigWithSecret `json:"config,omitempty" yaml:"config,omitempty" jsonschema:"OAuth/OIDC configuration. Required when type is 'oauth2'. Defines OAuth grant types, redirect URIs, client authentication, and PKCE settings."`
+}
+
+// NodeContext holds the context for a specific node in the flow execution.
+type NodeContext struct {
+	Context context.Context
+
+	ExecutionID   string
+	FlowType      FlowType
+	EntityID      string
+	Verbose       bool
+	CurrentAction string
+	CurrentNodeID string
+	ExecutorMode  string
+
+	NodeProperties map[string]interface{}
+	NodeInputs     []Input
+	UserInputs     map[string]string
+	RuntimeData    map[string]string
+	ForwardedData  map[string]interface{}
+
+	Application      Application
+	AuthUser         AuthUser
+	ExecutionHistory map[string]*NodeExecutionRecord
+}
+
+// NodeExecutionRecord represents a record of a node execution in the flow.
+type NodeExecutionRecord struct {
+	NodeID       string             `json:"nodeId"`
+	NodeType     string             `json:"nodeType"`
+	ExecutorName string             `json:"executorName,omitempty"`
+	ExecutorType ExecutorType       `json:"executorType,omitempty"`
+	ExecutorMode string             `json:"executorMode,omitempty"`
+	Step         int                `json:"step"`
+	Status       FlowStatus         `json:"status"`
+	Executions   []ExecutionAttempt `json:"executions"`
+	StartTime    int64              `json:"startTime,omitempty"`
+	EndTime      int64              `json:"endTime,omitempty"`
+}
+
+// GetDuration calculates the duration of the execution in milliseconds.
+func (n *NodeExecutionRecord) GetDuration() int64 {
+	return getDuration(n.StartTime, n.EndTime)
+}
+
+// ExecutionAttempt represents a single execution attempt of a node.
+type ExecutionAttempt struct {
+	Attempt   int        `json:"attempt"`
+	Timestamp int64      `json:"timestamp"`
+	Status    FlowStatus `json:"status"`
+	StartTime int64      `json:"startTime"`
+	EndTime   int64      `json:"endTime"`
+}
+
+// GetDuration calculates the duration of the execution attempt in milliseconds.
+func (e *ExecutionAttempt) GetDuration() int64 {
+	return getDuration(e.StartTime, e.EndTime)
+}
+
+// getDuration calculates the duration between startTime and endTime in milliseconds.
+func getDuration(startTime int64, endTime int64) int64 {
+	if startTime == 0 || endTime == 0 {
+		return 0
+	}
+	return (endTime - startTime) * 1000
+}
+
+// Subject identifies the principal for an access evaluation.
+type Subject struct {
+	Type       string                 `json:"type,omitempty"`
+	ID         string                 `json:"id"`
+	GroupIDs   []string               `json:"groupIds,omitempty"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// AccessEvaluationResourceServer identifies the resource server for an access evaluation.
+type AccessEvaluationResourceServer struct {
+	Handle     string                 `json:"handle"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// Permission identifies the permission string being evaluated.
+type Permission struct {
+	Name       string                 `json:"name"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// AccessEvaluationRequest represents a single fine-grained access evaluation request.
+type AccessEvaluationRequest struct {
+	Subject        Subject                        `json:"subject"`
+	ResourceServer AccessEvaluationResourceServer `json:"resourceServer"`
+	Permission     Permission                     `json:"permission"`
+	Context        map[string]interface{}         `json:"context,omitempty"`
+}
+
+// AccessEvaluationResponse represents a single fine-grained access evaluation response.
+type AccessEvaluationResponse struct {
+	Decision bool                   `json:"decision"`
+	Context  map[string]interface{} `json:"context,omitempty"`
+}
+
+// AccessEvaluationsRequest represents a batched fine-grained access evaluation request.
+type AccessEvaluationsRequest struct {
+	Evaluations []AccessEvaluationRequest `json:"evaluations"`
+}
+
+// AccessEvaluationsResponse represents a batched fine-grained access evaluation response.
+type AccessEvaluationsResponse struct {
+	Evaluations []AccessEvaluationResponse `json:"evaluations"`
+}
+
+// Event represents a generic analytics or audit event in the system.
+// This is a minimal, generic structure that can represent any type of event.
+// Event-specific data should be stored in the Data map.
+type Event struct {
+	// TraceID is the correlation ID for tracking related events across the system.
+	TraceID string `json:"trace_id"`
+
+	// EventID is the unique identifier for this specific event.
+	EventID string `json:"event_id"`
+
+	// Type indicates the type/name of the event (e.g., "user.created", "order.completed").
+	Type string `json:"type"`
+
+	// Timestamp is when the event occurred.
+	Timestamp time.Time `json:"timestamp"`
+
+	// Component is the source component/service that generated the event.
+	Component string `json:"component"`
+
+	// Status indicates the outcome of the event (e.g., "success", "failure", "in_progress").
+	Status string `json:"status"`
+
+	// Data contains event-specific structured data.
+	// Use this to store any additional information relevant to the event type.
+	// Examples:
+	//   - user_id, client_id, session_id
+	//   - error details, duration, IP address
+	//   - business-specific fields
+	Data map[string]interface{} `json:"data,omitempty"`
+}
+
+// WithStatus sets the status and returns the event for chaining.
+func (e *Event) WithStatus(status string) *Event {
+	e.Status = status
+	return e
+}
+
+// WithData sets a data field and returns the event for chaining.
+// Use this to add event-specific information like user_id, client_id, error details, etc.
+func (e *Event) WithData(key string, value interface{}) *Event {
+	if e.Data == nil {
+		e.Data = make(map[string]interface{})
+	}
+	e.Data[key] = value
+	return e
+}
+
+// WithDataMap sets multiple data fields at once and returns the event for chaining.
+func (e *Event) WithDataMap(data map[string]interface{}) *Event {
+	if e.Data == nil {
+		e.Data = make(map[string]interface{})
+	}
+	for k, v := range data {
+		e.Data[k] = v
+	}
+	return e
+}
+
+// Validate validates the event and returns an error if invalid.
+func (e *Event) Validate() error {
+	if e == nil {
+		return fmt.Errorf("event is nil")
+	}
+
+	if e.TraceID == "" {
+		return fmt.Errorf("trace_id is required")
+	}
+
+	if e.EventID == "" {
+		return fmt.Errorf("event_id is required")
+	}
+
+	if e.Type == "" {
+		return fmt.Errorf("type is required")
+	}
+
+	if e.Component == "" {
+		return fmt.Errorf("component is required")
+	}
+
+	if e.Timestamp.IsZero() {
+		return fmt.Errorf("timestamp is required")
+	}
+
+	return nil
 }

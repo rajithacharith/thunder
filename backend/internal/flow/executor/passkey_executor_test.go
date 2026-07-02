@@ -29,8 +29,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/passkeymock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
@@ -56,7 +54,7 @@ func newPasskeyAuthenticatedUser() providers.AuthUser {
 type PasskeyAuthExecutorTestSuite struct {
 	suite.Suite
 	mockPasskeyService *passkeymock.WebAuthnAuthnServiceInterfaceMock
-	mockAuthnProvider  *managermock.AuthnProviderManagerInterfaceMock
+	mockAuthnProvider  *managermock.AuthnProviderManagerMock
 	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
 	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
 	executor           *passkeyAuthExecutor
@@ -68,51 +66,51 @@ func TestPasskeyAuthExecutorSuite(t *testing.T) {
 
 func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
 	suite.mockPasskeyService = passkeymock.NewWebAuthnAuthnServiceInterfaceMock(suite.T())
-	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 
 	// Create mock identifying executor
 	identifyingMock := createMockIdentifyingExecutor(suite.T())
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, common.ExecutorTypeUtility,
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, providers.ExecutorTypeUtility,
 		mock.Anything, mock.Anything).Return(identifyingMock).Maybe()
 
 	// Create mock passkey executor base
 	mockExec := createMockPasskeyAuthExecutor(suite.T())
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNamePasskeyAuth, common.ExecutorTypeAuthentication,
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNamePasskeyAuth, providers.ExecutorTypeAuthentication,
 		mock.Anything, mock.Anything).Return(mockExec)
 
 	suite.executor = newPasskeyAuthExecutor(suite.mockFlowFactory,
 		suite.mockPasskeyService, suite.mockAuthnProvider, suite.mockEntityProvider)
 }
 
-func createMockPasskeyAuthExecutor(t *testing.T) core.ExecutorInterface {
+func createMockPasskeyAuthExecutor(t *testing.T) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(ExecutorNamePasskeyAuth).Maybe()
-	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
-	mockExec.On("GetDefaultInputs").Return([]common.Input{
+	mockExec.On("GetType").Return(providers.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetDefaultInputs").Return([]providers.Input{
 		{Identifier: inputCredentialID, Type: "string", Required: true},
 		{Identifier: inputClientDataJSON, Type: "string", Required: true},
 		{Identifier: inputAuthenticatorData, Type: "string", Required: true},
 		{Identifier: inputSignature, Type: "string", Required: true},
 		{Identifier: inputUserHandle, Type: "string", Required: false},
 	}).Maybe()
-	mockExec.On("GetPrerequisites").Return([]common.Input{
+	mockExec.On("GetPrerequisites").Return([]providers.Input{
 		{Identifier: userAttributeUserID, Type: "string", Required: true},
 	}).Maybe()
-	mockExec.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+	mockExec.On("GetRequiredInputs", mock.Anything).Return([]providers.Input{
 		{Identifier: inputCredentialID, Type: "string", Required: true},
 		{Identifier: inputClientDataJSON, Type: "string", Required: true},
 		{Identifier: inputAuthenticatorData, Type: "string", Required: true},
 		{Identifier: inputSignature, Type: "string", Required: true},
 	}).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
-		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+		func(ctx *providers.NodeContext, execResp *providers.ExecutorResponse) bool {
 			// Check if all required inputs are present
 			requiredInputs := []string{inputCredentialID, inputClientDataJSON, inputAuthenticatorData, inputSignature}
 			for _, input := range requiredInputs {
 				if _, exists := ctx.UserInputs[input]; !exists {
-					execResp.Status = common.ExecUserInputRequired
+					execResp.Status = providers.ExecUserInputRequired
 					return false
 				}
 			}
@@ -121,9 +119,9 @@ func createMockPasskeyAuthExecutor(t *testing.T) core.ExecutorInterface {
 	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything, mock.Anything).Return(true).Maybe()
 	mockExec.On("GetUserIDFromContext", mock.Anything, mock.Anything, mock.Anything).Return(
 		func(
-			ctx *core.NodeContext,
-			execResp *common.ExecutorResponse,
-			_ providers.AuthnProviderManagerInterface,
+			ctx *providers.NodeContext,
+			execResp *providers.ExecutorResponse,
+			_ providers.AuthnProviderManager,
 		) string {
 			if userID, ok := ctx.RuntimeData[userAttributeUserID]; ok {
 				return userID
@@ -137,8 +135,8 @@ func createMockPasskeyAuthExecutor(t *testing.T) core.ExecutorInterface {
 }
 
 // Helper to create a node context with common properties
-func createPasskeyNodeContext(mode string, flowType providers.FlowType) *core.NodeContext {
-	return &core.NodeContext{
+func createPasskeyNodeContext(mode string, flowType providers.FlowType) *providers.NodeContext {
+	return &providers.NodeContext{
 		ExecutionID:  testPasskeyFlowID,
 		FlowType:     flowType,
 		ExecutorMode: mode,
@@ -188,7 +186,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), testSessionToken, resp.RuntimeData[runtimePasskeySessionToken])
 	assert.NotEmpty(suite.T(), resp.AdditionalData[runtimePasskeyChallenge])
 }
@@ -215,7 +213,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_MissingUserID() 
 	// Usernameless flow should succeed
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), testSessionToken, resp.RuntimeData[runtimePasskeySessionToken])
 	assert.NotEmpty(suite.T(), resp.AdditionalData[runtimePasskeyChallenge])
 }
@@ -247,7 +245,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_ServiceError_Cli
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, "User has no registered passkeys")
 }
 
@@ -290,7 +288,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthUser.IsAuthenticated())
 }
 
@@ -304,7 +302,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_MissingInputs() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_MissingSessionToken() {
@@ -348,7 +346,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_InvalidPasskey_Clie
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	assert.Equal(suite.T(), ErrInvalidPasskey.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	assert.NotEmpty(suite.T(), resp.Inputs)
 	inputIDs := make([]string, 0, len(resp.Inputs))
@@ -407,7 +405,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), testSessionToken, resp.RuntimeData[runtimePasskeySessionToken])
 	assert.NotEmpty(suite.T(), resp.AdditionalData[runtimePasskeyCreationOptions])
 }
@@ -420,7 +418,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_MissingUserI
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), ErrUserIDRequiredForPasskeyReg.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
@@ -449,7 +447,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_ServiceError
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_ServiceError_Server() {
@@ -490,7 +488,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_DefaultRelyi
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_RegistrationFlow() {
@@ -515,7 +513,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Reg
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), testCredentialIDValue, resp.RuntimeData[runtimePasskeyCredentialID])
 	assert.Equal(suite.T(), "My Passkey", resp.RuntimeData[runtimePasskeyCredentialName])
 	assert.Equal(suite.T(), "", resp.RuntimeData[runtimePasskeySessionToken]) // Should be cleared
@@ -544,7 +542,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Aut
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_MissingInputs() {
@@ -557,7 +555,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_MissingInpu
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	// All missing inputs must be listed so the client knows what to collect
 	assert.NotEmpty(suite.T(), resp.Inputs)
 	inputIDs := make([]string, 0, len(resp.Inputs))
@@ -582,7 +580,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_PartialInpu
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	// The full input list is returned so the client can re-render the entire form
 	assert.NotEmpty(suite.T(), resp.Inputs)
 	inputIDs := make([]string, 0, len(resp.Inputs))
@@ -632,7 +630,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceErro
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, "Invalid attestation object")
 	// Client must receive the full input list so it can re-prompt the user
 	assert.NotEmpty(suite.T(), resp.Inputs)
@@ -922,7 +920,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_UserIDFromUserIn
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_UserIDFromUserInputs() {
@@ -944,5 +942,5 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_UserIDFromUs
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 }

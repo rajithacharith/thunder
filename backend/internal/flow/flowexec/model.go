@@ -28,12 +28,26 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
 )
+
+// frame captures the per-call execution state saved when a CALL node pushes execution
+// into a callee flow and restored when the callee returns.
+type frame struct {
+	graph               core.GraphInterface
+	flowType            providers.FlowType
+	currentNode         core.NodeInterface
+	currentNodeResponse *common.NodeResponse
+	currentAction       string
+	currentSegmentID    string
+	runtimeData         map[string]string
+	forwardedData       map[string]interface{}
+	additionalData      map[string]string
+	resumeCallNodeID    string
+}
 
 // EngineContext holds the overall context used by the flow engine during execution.
 type EngineContext struct {
@@ -55,14 +69,19 @@ type EngineContext struct {
 	CurrentSegmentID    string
 
 	Graph       core.GraphInterface
-	Application appmodel.Application
+	Application providers.Application
 
 	AuthenticatedUser authncm.AuthenticatedUser
 	AuthUser          providers.AuthUser
 	Assertion         string
-	ExecutionHistory  map[string]*common.NodeExecutionRecord
+	ExecutionHistory  map[string]*providers.NodeExecutionRecord
 
 	InterceptorSharedData map[string]string
+
+	// frameStack holds saved call frames. Top is the most recent caller.
+	frameStack []*frame
+	// sharedRuntimeData is a cross-frame key-value store available to executors that opt in.
+	sharedRuntimeData map[string]string
 }
 
 // mergeRuntimeData merges the given data into RuntimeData.
@@ -75,6 +94,66 @@ func (ec *EngineContext) mergeRuntimeData(data map[string]string) {
 	}
 }
 
+// pushFrame saves the current execution state as a new frame. Call this before swapping context to the callee.
+func (e *EngineContext) pushFrame(resumeCallNodeID string) {
+	f := &frame{
+		graph:               e.Graph,
+		flowType:            e.FlowType,
+		currentNode:         e.CurrentNode,
+		currentNodeResponse: e.CurrentNodeResponse,
+		currentAction:       e.CurrentAction,
+		currentSegmentID:    e.CurrentSegmentID,
+		runtimeData:         e.RuntimeData,
+		forwardedData:       e.ForwardedData,
+		additionalData:      e.AdditionalData,
+		resumeCallNodeID:    resumeCallNodeID,
+	}
+	e.frameStack = append(e.frameStack, f)
+}
+
+// popFrame restores the most-recently-pushed frame and removes it from the stack.
+// Returns nil when the stack is empty.
+func (e *EngineContext) popFrame() *frame {
+	if len(e.frameStack) == 0 {
+		return nil
+	}
+	top := e.frameStack[len(e.frameStack)-1]
+	e.frameStack = e.frameStack[:len(e.frameStack)-1]
+
+	e.Graph = top.graph
+	e.FlowType = top.flowType
+	e.CurrentNode = top.currentNode
+	e.CurrentNodeResponse = top.currentNodeResponse
+	e.CurrentAction = top.currentAction
+	e.CurrentSegmentID = top.currentSegmentID
+	e.RuntimeData = top.runtimeData
+	e.ForwardedData = top.forwardedData
+	e.AdditionalData = top.additionalData
+	return top
+}
+
+// frameDepth returns the number of saved frames (0 means root flow).
+func (e *EngineContext) frameDepth() int {
+	return len(e.frameStack)
+}
+
+// setSharedRuntimeData writes a value into the cross-frame shared runtime data bucket.
+func (e *EngineContext) setSharedRuntimeData(key, value string) {
+	if e.sharedRuntimeData == nil {
+		e.sharedRuntimeData = make(map[string]string)
+	}
+	e.sharedRuntimeData[key] = value
+}
+
+// getSharedRuntimeData returns a value from the cross-frame shared runtime data bucket.
+func (e *EngineContext) getSharedRuntimeData(key string) (string, bool) {
+	if e.sharedRuntimeData == nil {
+		return "", false
+	}
+	v, ok := e.sharedRuntimeData[key]
+	return v, ok
+}
+
 // InterceptorRunnerContext is a self-contained, request-scoped context built by the engine
 // for each RunInterceptors call. It carries everything the interceptor service needs without
 // requiring access to the engine context itself.
@@ -83,16 +162,16 @@ type InterceptorRunnerContext struct {
 	ExecutionID          string
 	AppID                string
 	FlowType             providers.FlowType
-	FlowStatus           common.FlowStatus
+	FlowStatus           providers.FlowStatus
 	CurrentNodeID        string
 	NodeType             common.NodeType
 	SkipInterceptors     []string
-	ExecutionPolicy      *core.ExecutionPolicy
+	ExecutionPolicy      *providers.ExecutionPolicy
 	AllowSegmentRestart  bool
 	UserInputs           map[string]string
 	ForwardedData        map[string]interface{}
 	AdditionalData       map[string]string
-	CurrentNodeInputs    []common.Input
+	CurrentNodeInputs    []providers.Input
 	ResolvedInterceptors []core.InterceptorUnitInterface
 	SharedData           map[string]string
 }
@@ -102,7 +181,7 @@ type FlowStep struct {
 	ExecutionID    string
 	StepID         string
 	Type           common.FlowStepType
-	Status         common.FlowStatus
+	Status         providers.FlowStatus
 	ChallengeToken string
 	Data           FlowData
 	Assertion      string
@@ -111,7 +190,7 @@ type FlowStep struct {
 
 // FlowData holds the data returned by a flow execution step
 type FlowData struct {
-	Inputs         []common.Input      `json:"inputs,omitempty"`
+	Inputs         []providers.Input   `json:"inputs,omitempty"`
 	RedirectURL    string              `json:"redirectURL,omitempty"`
 	Actions        []common.Action     `json:"actions,omitempty"`
 	Meta           interface{}         `json:"meta,omitempty"`
@@ -134,6 +213,7 @@ type FlowResponse struct {
 // FlowRequest represents the flow execution API request body
 type FlowRequest struct {
 	ApplicationID  string            `json:"applicationId"`
+	FlowSecret     string            `json:"flowSecret,omitempty"`
 	FlowType       string            `json:"flowType"`
 	Verbose        bool              `json:"verbose,omitempty"`
 	ExecutionID    string            `json:"executionId"`
@@ -160,6 +240,16 @@ type FlowContextDB struct {
 	UpdatedAt   time.Time
 }
 
+// serializedFrame is the on-disk representation of a single call frame.
+type serializedFrame struct {
+	GraphID          string  `json:"graphId"`
+	CurrentNodeID    *string `json:"currentNodeId,omitempty"`
+	CurrentAction    *string `json:"currentAction,omitempty"`
+	CurrentSegmentID *string `json:"currentSegmentId,omitempty"`
+	RuntimeData      *string `json:"runtimeData,omitempty"`
+	ResumeCallNodeID string  `json:"resumeCallNodeId,omitempty"`
+}
+
 // flowContextContent holds all flow state serialized into the CONTEXT JSON column.
 type flowContextContent struct {
 	AppID                 string  `json:"appId"`
@@ -180,7 +270,13 @@ type flowContextContent struct {
 	AvailableAttributes   *string `json:"availableAttributes,omitempty"`
 	AuthUser              *string `json:"authUser,omitempty"`
 	InterceptorSharedData *string `json:"interceptorSharedData,omitempty"`
+	FrameStack            *string `json:"frameStack,omitempty"`
+	SharedRuntimeData     *string `json:"sharedRuntimeData,omitempty"`
 }
+
+// graphResolverFunc resolves a flow graph by its flow ID. Used during context deserialization to
+// hydrate saved call frames.
+type graphResolverFunc func(ctx context.Context, flowID string) (core.GraphInterface, error)
 
 // GetGraphID extracts the graph ID from the context JSON.
 func (f *FlowContextDB) GetGraphID(_ context.Context) (string, error) {
@@ -192,7 +288,8 @@ func (f *FlowContextDB) GetGraphID(_ context.Context) (string, error) {
 }
 
 // ToEngineContext converts the database model to the flow engine context.
-func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInterface) (EngineContext, error) {
+func (f *FlowContextDB) ToEngineContext(ctx context.Context,
+	graph core.GraphInterface, resolveGraph graphResolverFunc) (EngineContext, error) {
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return EngineContext{}, err
@@ -261,13 +358,13 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 	}
 
 	// Parse execution history
-	var executionHistory map[string]*common.NodeExecutionRecord
+	var executionHistory map[string]*providers.NodeExecutionRecord
 	if content.ExecutionHistory != nil {
 		if err := json.Unmarshal([]byte(*content.ExecutionHistory), &executionHistory); err != nil {
 			return EngineContext{}, err
 		}
 	} else {
-		executionHistory = make(map[string]*common.NodeExecutionRecord)
+		executionHistory = make(map[string]*providers.NodeExecutionRecord)
 	}
 
 	// Get current node from graph if available
@@ -308,6 +405,20 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 		interceptorSharedData = make(map[string]string)
 	}
 
+	// Parse frame stack
+	frameStack, err := f.deserializeFrameStack(ctx, content, resolveGraph)
+	if err != nil {
+		return EngineContext{}, err
+	}
+
+	// Parse shared runtime data
+	var sharedRuntimeData map[string]string
+	if content.SharedRuntimeData != nil {
+		if err := json.Unmarshal([]byte(*content.SharedRuntimeData), &sharedRuntimeData); err != nil {
+			return EngineContext{}, err
+		}
+	}
+
 	return EngineContext{
 		Context:               ctx,
 		ExecutionID:           f.ExecutionID,
@@ -325,36 +436,38 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 		AuthUser:              authUser,
 		ExecutionHistory:      executionHistory,
 		InterceptorSharedData: interceptorSharedData,
+		frameStack:            frameStack,
+		sharedRuntimeData:     sharedRuntimeData,
 	}, nil
 }
 
-// FromEngineContext creates a database model from the flow engine context.
-func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
+// FromEngineContext converts an EngineContext to the database model for persistence.
+func (f *FlowContextDB) FromEngineContext(ctx EngineContext) error {
 	// Serialize user inputs
 	userInputsJSON, err := json.Marshal(ctx.UserInputs)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	userInputs := string(userInputsJSON)
 
 	// Serialize runtime data
 	runtimeDataJSON, err := json.Marshal(ctx.RuntimeData)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	runtimeData := string(runtimeDataJSON)
 
 	// Serialize authenticated user attributes
 	userAttributesJSON, err := json.Marshal(ctx.AuthenticatedUser.Attributes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	userAttributes := string(userAttributesJSON)
 
 	// Serialize execution history
 	executionHistoryJSON, err := json.Marshal(ctx.ExecutionHistory)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	executionHistory := string(executionHistoryJSON)
 
@@ -405,7 +518,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 	if ctx.AuthenticatedUser.AvailableAttributes != nil {
 		availableAttrsJSON, err := json.Marshal(ctx.AuthenticatedUser.AvailableAttributes)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		availableAttrsStr := string(availableAttrsJSON)
 		availableAttributes = &availableAttrsStr
@@ -416,7 +529,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 	if ctx.AuthUser.IsAuthenticated() {
 		authUserJSON, err := json.Marshal(&ctx.AuthUser)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		s := string(authUserJSON)
 		authUserStr = &s
@@ -424,16 +537,33 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 
 	// Get graph ID
 	if ctx.Graph == nil || ctx.Graph.GetID() == "" {
-		return nil, fmt.Errorf("graph with a valid ID is required to persist engine context")
+		return fmt.Errorf("graph with a valid ID is required to persist engine context")
 	}
 	graphID := ctx.Graph.GetID()
 
 	// Serialize interceptorSharedData
 	interceptorSharedDataJSON, err := json.Marshal(ctx.InterceptorSharedData)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	interceptorSharedData := string(interceptorSharedDataJSON)
+
+	// Serialize frame stack
+	frameStackStr, err := f.serializeFrameStack(ctx.frameStack)
+	if err != nil {
+		return err
+	}
+
+	// Serialize shared runtime data
+	var sharedRuntimeDataStr *string
+	if len(ctx.sharedRuntimeData) > 0 {
+		srdJSON, err := json.Marshal(ctx.sharedRuntimeData)
+		if err != nil {
+			return err
+		}
+		s := string(srdJSON)
+		sharedRuntimeDataStr = &s
+	}
 
 	content := flowContextContent{
 		AppID:                 ctx.AppID,
@@ -454,15 +584,122 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		AvailableAttributes:   availableAttributes,
 		AuthUser:              authUserStr,
 		InterceptorSharedData: &interceptorSharedData,
+		FrameStack:            frameStackStr,
+		SharedRuntimeData:     sharedRuntimeDataStr,
 	}
 
 	contextJSON, err := json.Marshal(content)
 	if err != nil {
+		return err
+	}
+
+	f.ExecutionID = ctx.ExecutionID
+	f.Context = string(contextJSON)
+	return nil
+}
+
+// deserializeFrameStack reconstructs call frames from persisted content.
+// Returns nil without error when FrameStack is absent or resolveGraph is nil.
+func (f *FlowContextDB) deserializeFrameStack(ctx context.Context,
+	content flowContextContent, resolveGraph graphResolverFunc) ([]*frame, error) {
+	if content.FrameStack == nil || resolveGraph == nil {
+		return nil, nil
+	}
+
+	var serializedFrames []serializedFrame
+	if err := json.Unmarshal([]byte(*content.FrameStack), &serializedFrames); err != nil {
 		return nil, err
 	}
 
-	return &FlowContextDB{
-		ExecutionID: ctx.ExecutionID,
-		Context:     string(contextJSON),
-	}, nil
+	frames := make([]*frame, 0, len(serializedFrames))
+	for _, sf := range serializedFrames {
+		frameGraph, err := resolveGraph(ctx, sf.GraphID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve frame graph %s: %w", sf.GraphID, err)
+		}
+
+		var currentNode core.NodeInterface
+		if sf.CurrentNodeID != nil {
+			if n, exists := frameGraph.GetNode(*sf.CurrentNodeID); exists {
+				currentNode = n
+			}
+		}
+
+		var currentAction, currentSegmentID string
+		if sf.CurrentAction != nil {
+			currentAction = *sf.CurrentAction
+		}
+		if sf.CurrentSegmentID != nil {
+			currentSegmentID = *sf.CurrentSegmentID
+		}
+
+		var runtimeData map[string]string
+		if sf.RuntimeData != nil {
+			if err := json.Unmarshal([]byte(*sf.RuntimeData), &runtimeData); err != nil {
+				return nil, err
+			}
+		}
+
+		frames = append(frames, &frame{
+			graph:            frameGraph,
+			flowType:         frameGraph.GetType(),
+			currentNode:      currentNode,
+			currentAction:    currentAction,
+			currentSegmentID: currentSegmentID,
+			runtimeData:      runtimeData,
+			resumeCallNodeID: sf.ResumeCallNodeID,
+		})
+	}
+
+	return frames, nil
+}
+
+// serializeFrameStack converts in-memory call frames to a JSON string pointer.
+// Returns nil when the stack is empty.
+func (f *FlowContextDB) serializeFrameStack(frameStack []*frame) (*string, error) {
+	if len(frameStack) == 0 {
+		return nil, nil
+	}
+
+	serializedFrames := make([]serializedFrame, 0, len(frameStack))
+	for _, f := range frameStack {
+		if f.graph == nil || f.graph.GetID() == "" {
+			return nil, fmt.Errorf("frame graph with a valid ID is required to persist frame stack")
+		}
+
+		sf := serializedFrame{
+			GraphID:          f.graph.GetID(),
+			ResumeCallNodeID: f.resumeCallNodeID,
+		}
+
+		if f.currentNode != nil {
+			nodeID := f.currentNode.GetID()
+			sf.CurrentNodeID = &nodeID
+		}
+		if f.currentAction != "" {
+			sf.CurrentAction = &f.currentAction
+		}
+		if f.currentSegmentID != "" {
+			sf.CurrentSegmentID = &f.currentSegmentID
+		}
+
+		if len(f.runtimeData) > 0 {
+			b, err := json.Marshal(f.runtimeData)
+			if err != nil {
+				return nil, err
+			}
+			s := string(b)
+			sf.RuntimeData = &s
+		}
+
+		serializedFrames = append(serializedFrames, sf)
+	}
+
+	b, err := json.Marshal(serializedFrames)
+	if err != nil {
+		return nil, err
+	}
+
+	s := string(b)
+	return &s, nil
 }

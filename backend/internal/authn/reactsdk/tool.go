@@ -503,7 +503,7 @@ createRoot(document.getElementById('root')).render(
 
 ~~~jsx
 // App.jsx
-import { SignedIn, SignedOut, SignInButton, SignOutButton, Loading, User } from '@thunderid/react'
+import { SignedIn, SignedOut, SignInButton, SignOutButton, Loading, UserDropdown } from '@thunderid/react'
 
 function App() {
   return (
@@ -513,34 +513,14 @@ function App() {
         <Loading>
           <div>Loading...</div>
         </Loading>
-      </header>
-
-      <main>
-        <SignedOut>
-          <div className="welcome">
-            <h2>Welcome!</h2>
-            <p>Please sign in to continue</p>
-            <SignInButton>Sign In</SignInButton>
-          </div>
-        </SignedOut>
-
         <SignedIn>
-          <div className="dashboard">
-            <User>
-              {(user) => (
-                <>
-                  <h2>Welcome, {user?.displayName}!</h2>
-                  <div className="user-info">
-                    <p><strong>Email:</strong> {user?.email}</p>
-                    <p><strong>Username:</strong> {user?.username}</p>
-                  </div>
-                </>
-              )}
-            </User>
-            <SignOutButton>Sign Out</SignOutButton>
-          </div>
+          <UserDropdown />
+          <SignOutButton>Sign Out</SignOutButton>
         </SignedIn>
-      </main>
+        <SignedOut>
+          <SignInButton>Sign In</SignInButton>
+        </SignedOut>
+      </header>
     </div>
   )
 }
@@ -566,8 +546,8 @@ app using ~@thunderid/react~, based on this sample project.
 If starting fresh, create a new Vite React app:
 
 ~~~bash
-npm create vite@latest my-app -- --template react
-cd my-app
+npm create vite@latest my-react-app -- --template react
+cd my-react-app
 npm install
 ~~~
 

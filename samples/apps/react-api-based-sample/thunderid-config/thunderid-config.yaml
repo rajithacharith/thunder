@@ -47,3 +47,10 @@ schema: {
       "required": false
     }
   }
+
+---
+# resource_type: server_config
+name: cors
+value:
+  allowedOrigins:
+    - "https://localhost:3000"

@@ -119,7 +119,7 @@ func (_c *PromptNodeInterfaceMock_AddPreviousNode_Call) RunAndReturn(run func(pr
 }
 
 // Execute provides a mock function for the type PromptNodeInterfaceMock
-func (_mock *PromptNodeInterfaceMock) Execute(ctx *NodeContext) (*common.NodeResponse, *common0.ServiceError) {
+func (_mock *PromptNodeInterfaceMock) Execute(ctx *providers.NodeContext) (*common.NodeResponse, *common0.ServiceError) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -128,17 +128,17 @@ func (_mock *PromptNodeInterfaceMock) Execute(ctx *NodeContext) (*common.NodeRes
 
 	var r0 *common.NodeResponse
 	var r1 *common0.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*NodeContext) (*common.NodeResponse, *common0.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(*providers.NodeContext) (*common.NodeResponse, *common0.ServiceError)); ok {
 		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*NodeContext) *common.NodeResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(*providers.NodeContext) *common.NodeResponse); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common.NodeResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*NodeContext) *common0.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(*providers.NodeContext) *common0.ServiceError); ok {
 		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
@@ -154,16 +154,16 @@ type PromptNodeInterfaceMock_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
-//   - ctx *NodeContext
+//   - ctx *providers.NodeContext
 func (_e *PromptNodeInterfaceMock_Expecter) Execute(ctx interface{}) *PromptNodeInterfaceMock_Execute_Call {
 	return &PromptNodeInterfaceMock_Execute_Call{Call: _e.mock.On("Execute", ctx)}
 }
 
-func (_c *PromptNodeInterfaceMock_Execute_Call) Run(run func(ctx *NodeContext)) *PromptNodeInterfaceMock_Execute_Call {
+func (_c *PromptNodeInterfaceMock_Execute_Call) Run(run func(ctx *providers.NodeContext)) *PromptNodeInterfaceMock_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *NodeContext
+		var arg0 *providers.NodeContext
 		if args[0] != nil {
-			arg0 = args[0].(*NodeContext)
+			arg0 = args[0].(*providers.NodeContext)
 		}
 		run(
 			arg0,
@@ -177,7 +177,7 @@ func (_c *PromptNodeInterfaceMock_Execute_Call) Return(nodeResponse *common.Node
 	return _c
 }
 
-func (_c *PromptNodeInterfaceMock_Execute_Call) RunAndReturn(run func(ctx *NodeContext) (*common.NodeResponse, *common0.ServiceError)) *PromptNodeInterfaceMock_Execute_Call {
+func (_c *PromptNodeInterfaceMock_Execute_Call) RunAndReturn(run func(ctx *providers.NodeContext) (*common.NodeResponse, *common0.ServiceError)) *PromptNodeInterfaceMock_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -229,19 +229,19 @@ func (_c *PromptNodeInterfaceMock_GetCondition_Call) RunAndReturn(run func() *No
 }
 
 // GetExecutionPolicy provides a mock function for the type PromptNodeInterfaceMock
-func (_mock *PromptNodeInterfaceMock) GetExecutionPolicy() *ExecutionPolicy {
+func (_mock *PromptNodeInterfaceMock) GetExecutionPolicy() *providers.ExecutionPolicy {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetExecutionPolicy")
 	}
 
-	var r0 *ExecutionPolicy
-	if returnFunc, ok := ret.Get(0).(func() *ExecutionPolicy); ok {
+	var r0 *providers.ExecutionPolicy
+	if returnFunc, ok := ret.Get(0).(func() *providers.ExecutionPolicy); ok {
 		r0 = returnFunc()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ExecutionPolicy)
+			r0 = ret.Get(0).(*providers.ExecutionPolicy)
 		}
 	}
 	return r0
@@ -264,12 +264,12 @@ func (_c *PromptNodeInterfaceMock_GetExecutionPolicy_Call) Run(run func()) *Prom
 	return _c
 }
 
-func (_c *PromptNodeInterfaceMock_GetExecutionPolicy_Call) Return(executionPolicy *ExecutionPolicy) *PromptNodeInterfaceMock_GetExecutionPolicy_Call {
+func (_c *PromptNodeInterfaceMock_GetExecutionPolicy_Call) Return(executionPolicy *providers.ExecutionPolicy) *PromptNodeInterfaceMock_GetExecutionPolicy_Call {
 	_c.Call.Return(executionPolicy)
 	return _c
 }
 
-func (_c *PromptNodeInterfaceMock_GetExecutionPolicy_Call) RunAndReturn(run func() *ExecutionPolicy) *PromptNodeInterfaceMock_GetExecutionPolicy_Call {
+func (_c *PromptNodeInterfaceMock_GetExecutionPolicy_Call) RunAndReturn(run func() *providers.ExecutionPolicy) *PromptNodeInterfaceMock_GetExecutionPolicy_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1323,7 +1323,7 @@ func (_c *PromptNodeInterfaceMock_SetVariant_Call) RunAndReturn(run func(variant
 }
 
 // ShouldExecute provides a mock function for the type PromptNodeInterfaceMock
-func (_mock *PromptNodeInterfaceMock) ShouldExecute(ctx *NodeContext) bool {
+func (_mock *PromptNodeInterfaceMock) ShouldExecute(ctx *providers.NodeContext) bool {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -1331,7 +1331,7 @@ func (_mock *PromptNodeInterfaceMock) ShouldExecute(ctx *NodeContext) bool {
 	}
 
 	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(*NodeContext) bool); ok {
+	if returnFunc, ok := ret.Get(0).(func(*providers.NodeContext) bool); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Get(0).(bool)
@@ -1345,16 +1345,16 @@ type PromptNodeInterfaceMock_ShouldExecute_Call struct {
 }
 
 // ShouldExecute is a helper method to define mock.On call
-//   - ctx *NodeContext
+//   - ctx *providers.NodeContext
 func (_e *PromptNodeInterfaceMock_Expecter) ShouldExecute(ctx interface{}) *PromptNodeInterfaceMock_ShouldExecute_Call {
 	return &PromptNodeInterfaceMock_ShouldExecute_Call{Call: _e.mock.On("ShouldExecute", ctx)}
 }
 
-func (_c *PromptNodeInterfaceMock_ShouldExecute_Call) Run(run func(ctx *NodeContext)) *PromptNodeInterfaceMock_ShouldExecute_Call {
+func (_c *PromptNodeInterfaceMock_ShouldExecute_Call) Run(run func(ctx *providers.NodeContext)) *PromptNodeInterfaceMock_ShouldExecute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *NodeContext
+		var arg0 *providers.NodeContext
 		if args[0] != nil {
-			arg0 = args[0].(*NodeContext)
+			arg0 = args[0].(*providers.NodeContext)
 		}
 		run(
 			arg0,
@@ -1368,7 +1368,7 @@ func (_c *PromptNodeInterfaceMock_ShouldExecute_Call) Return(b bool) *PromptNode
 	return _c
 }
 
-func (_c *PromptNodeInterfaceMock_ShouldExecute_Call) RunAndReturn(run func(ctx *NodeContext) bool) *PromptNodeInterfaceMock_ShouldExecute_Call {
+func (_c *PromptNodeInterfaceMock_ShouldExecute_Call) RunAndReturn(run func(ctx *providers.NodeContext) bool) *PromptNodeInterfaceMock_ShouldExecute_Call {
 	_c.Call.Return(run)
 	return _c
 }

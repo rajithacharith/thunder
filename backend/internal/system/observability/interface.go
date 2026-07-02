@@ -21,10 +21,10 @@ package observability
 import (
 	"context"
 
-	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/observability/publisher"
 	"github.com/thunder-id/thunderid/internal/system/observability/subscriber"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // ObservabilityServiceInterface defines the contract for the observability service.
@@ -34,7 +34,7 @@ type ObservabilityServiceInterface interface {
 	// PublishEvent publishes an event to the observability system.
 	// This is a no-op if observability is disabled.
 	// The context carries the request trace ID used for correlated logging.
-	PublishEvent(ctx context.Context, evt *event.Event)
+	PublishEvent(ctx context.Context, evt *providers.Event)
 
 	// IsEnabled returns true if observability is enabled and operational.
 	IsEnabled() bool

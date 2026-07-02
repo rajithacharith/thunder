@@ -102,7 +102,7 @@ type ResourceServiceInterface interface {
 		ctx context.Context, resourceServerID string, resourceID *string, id string,
 	) (*providers.Action, *tidcommon.ServiceError)
 	GetActionList(
-		ctx context.Context, resourceServerID string, resourceID *string, limit, offset int,
+		ctx context.Context, resourceServerID string, resourceID *string, kind providers.ActionKind, limit, offset int,
 	) (*ActionList, *tidcommon.ServiceError)
 	UpdateAction(
 		ctx context.Context, resourceServerID string, resourceID *string, id string, action providers.Action,
@@ -596,6 +596,21 @@ func (rs *resourceService) CreateResource(
 		return nil, &ErrorHandleConflict
 	}
 
+	// For MCP resource servers, a resource (group) and an action (tool/resource) in the same parent
+	// context must not share a handle, since they would derive an identical permission string.
+	if resourceServer.Type == providers.ResourceServerTypeMCP {
+		actionHandleExists, err := rs.resourceStore.CheckActionHandleExists(
+			ctx, resourceServerID, resource.Parent, resource.Handle,
+		)
+		if err != nil {
+			rs.logger.Error(ctx, "Failed to check action handle", log.Error(err))
+			return nil, &tidcommon.InternalServerError
+		}
+		if actionHandleExists {
+			return nil, &ErrorHandleConflict
+		}
+	}
+
 	// Derive permission string based on hierarchy
 	resource.Permission = derivePermission(resourceServer, parentResource, resource.Handle)
 
@@ -808,13 +823,6 @@ func (rs *resourceService) UpdateResource(
 			return err
 		}
 
-		if err := rs.syncConsentOnPermissionUpdate(
-			txCtx, currentResource.Permission, updateResource.Description,
-		); err != nil {
-			rs.logger.Error(ctx, "Failed to sync consent element for resource", log.Error(err))
-			return err
-		}
-
 		updatedResource = &providers.Resource{
 			ID:          id,
 			Name:        updateResource.Name,
@@ -928,6 +936,13 @@ func (rs *resourceService) CreateAction(
 		return nil, err
 	}
 
+	if resourceServer.Type == providers.ResourceServerTypeMCP && action.Kind == "" {
+		action.Kind = providers.ActionKindTool
+	}
+	if svcErr := rs.validateActionKind(action.Kind); svcErr != nil {
+		return nil, svcErr
+	}
+
 	// Check handle uniqueness
 	handleExists, err := rs.resourceStore.CheckActionHandleExists(
 		ctx, resourceServerID, resourceID, action.Handle,
@@ -938,6 +953,21 @@ func (rs *resourceService) CreateAction(
 	}
 	if handleExists {
 		return nil, &ErrorHandleConflict
+	}
+
+	// For MCP resource servers, an action (tool/resource) and a resource (group) in the same parent
+	// context must not share a handle, since they would derive an identical permission string.
+	if resourceServer.Type == providers.ResourceServerTypeMCP {
+		resHandleExists, err := rs.resourceStore.CheckResourceHandleExists(
+			ctx, resourceServerID, action.Handle, resourceID,
+		)
+		if err != nil {
+			rs.logger.Error(ctx, "Failed to check resource handle", log.Error(err))
+			return nil, &tidcommon.InternalServerError
+		}
+		if resHandleExists {
+			return nil, &ErrorHandleConflict
+		}
 	}
 
 	// Derive permission string based on hierarchy
@@ -970,6 +1000,7 @@ func (rs *resourceService) CreateAction(
 			Handle:      action.Handle,
 			Description: action.Description,
 			Permission:  action.Permission,
+			Kind:        action.Kind,
 		}
 		return nil
 	}); err != nil {
@@ -1024,9 +1055,10 @@ func (rs *resourceService) GetAction(
 // GetActionList retrieves a paginated list of actions.
 // If resourceID is nil, retrieves actions at resource server level.
 // If resourceID is provided, retrieves actions at resource level.
+// If kind is non-empty, only actions of that kind are returned.
 func (rs *resourceService) GetActionList(
 	ctx context.Context,
-	resourceServerID string, resourceID *string, limit, offset int,
+	resourceServerID string, resourceID *string, kind providers.ActionKind, limit, offset int,
 ) (*ActionList, *tidcommon.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
@@ -1056,7 +1088,7 @@ func (rs *resourceService) GetActionList(
 		resID = resourceID
 	}
 
-	totalCount, err := rs.resourceStore.GetActionListCount(ctx, resourceServerID, resID)
+	totalCount, err := rs.resourceStore.GetActionListCount(ctx, resourceServerID, resID, kind)
 	if err != nil {
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
@@ -1065,7 +1097,7 @@ func (rs *resourceService) GetActionList(
 		return nil, &tidcommon.InternalServerError
 	}
 
-	actions, err := rs.resourceStore.GetActionList(ctx, resourceServerID, resID, limit, offset)
+	actions, err := rs.resourceStore.GetActionList(ctx, resourceServerID, resID, kind, limit, offset)
 	if err != nil {
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
@@ -1138,11 +1170,17 @@ func (rs *resourceService) UpdateAction(
 		return nil, &tidcommon.InternalServerError
 	}
 
-	// Update only name and description (handle is immutable)
+	// Kind is immutable; reject any explicit change and preserve the stored value.
+	if action.Kind != "" && action.Kind != currentAction.Kind {
+		return nil, &ErrorInvalidRequestFormat
+	}
+
+	// Update only name and description (handle and kind are immutable)
 	updateAction := providers.Action{
 		Name:        action.Name,
 		Handle:      currentAction.Handle, // Immutable - preserve
 		Description: action.Description,
+		Kind:        currentAction.Kind, // Immutable - preserve
 	}
 
 	// Use transaction for write operation
@@ -1155,18 +1193,12 @@ func (rs *resourceService) UpdateAction(
 			return err
 		}
 
-		if err := rs.syncConsentOnPermissionUpdate(
-			txCtx, currentAction.Permission, updateAction.Description,
-		); err != nil {
-			rs.logger.Error(ctx, "Failed to sync consent element for action", log.Error(err))
-			return err
-		}
-
 		updatedAction = &providers.Action{
 			ID:          id,
 			Name:        updateAction.Name,
 			Handle:      updateAction.Handle,
 			Description: updateAction.Description,
+			Kind:        updateAction.Kind,
 		}
 		return nil
 	}); err != nil {
@@ -1460,6 +1492,15 @@ func (rs *resourceService) validateActionCreate(action providers.Action, delimit
 	return nil
 }
 
+// validateActionKind rejects a non-empty kind that is not one of the supported values (tool|resource).
+// An empty kind is allowed for all resource server types; MCP defaulting is applied by the caller.
+func (rs *resourceService) validateActionKind(kind providers.ActionKind) *tidcommon.ServiceError {
+	if kind != "" && !kind.IsValid() {
+		return &ErrorInvalidRequestFormat
+	}
+	return nil
+}
+
 // validatePaginationParams validates pagination parameters.
 func validatePaginationParams(limit, offset int) *tidcommon.ServiceError {
 	if limit < 1 || limit > serverconst.MaxPageSize {
@@ -1598,7 +1639,7 @@ func (rs *resourceService) syncConsentOnPermissionCreate(
 	if _, createErr := rs.consentService.CreateConsentElements(ctx, ouID, []consent.ConsentElementInput{{
 		Name:        permission,
 		Description: description,
-		Namespace:   consent.NamespacePermission,
+		Namespace:   providers.NamespacePermission,
 	}}); createErr != nil {
 		return rs.wrapConsentServiceError(ctx, createErr)
 	}
@@ -1616,7 +1657,7 @@ func (rs *resourceService) syncConsentOnPermissionDelete(ctx context.Context, pe
 	// TODO: Replace with the resource server's actual OU when multi-OU consent is supported.
 	const ouID = "default"
 
-	existing, err := rs.consentService.ListConsentElements(ctx, ouID, consent.NamespacePermission, permission)
+	existing, err := rs.consentService.ListConsentElements(ctx, ouID, providers.NamespacePermission, permission)
 	if err != nil {
 		return rs.wrapConsentServiceError(ctx, err)
 	}
@@ -1630,40 +1671,6 @@ func (rs *resourceService) syncConsentOnPermissionDelete(ctx context.Context, pe
 			return nil
 		}
 		return rs.wrapConsentServiceError(ctx, delErr)
-	}
-	return nil
-}
-
-// syncConsentOnPermissionUpdate refreshes the description of the consent element associated with
-// the given permission string. When the element is missing it is created lazily so callers do not
-// have to coordinate creates and updates.
-func (rs *resourceService) syncConsentOnPermissionUpdate(
-	ctx context.Context, permission, description string,
-) error {
-	if rs.consentService == nil || !rs.consentService.IsEnabled() || permission == "" {
-		return nil
-	}
-	// TODO: Replace with the resource server's actual OU when multi-OU consent is supported.
-	const ouID = "default"
-
-	existing, err := rs.consentService.ListConsentElements(ctx, ouID, consent.NamespacePermission, permission)
-	if err != nil {
-		return rs.wrapConsentServiceError(ctx, err)
-	}
-	if len(existing) == 0 {
-		return rs.syncConsentOnPermissionCreate(ctx, permission, description)
-	}
-	if existing[0].Description == description {
-		return nil
-	}
-
-	if _, updErr := rs.consentService.UpdateConsentElement(ctx, ouID, existing[0].ID,
-		&consent.ConsentElementInput{
-			Name:        permission,
-			Description: description,
-			Namespace:   consent.NamespacePermission,
-		}); updErr != nil {
-		return rs.wrapConsentServiceError(ctx, updErr)
 	}
 	return nil
 }

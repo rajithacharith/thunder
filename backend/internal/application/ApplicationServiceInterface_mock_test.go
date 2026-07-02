@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/application/model"
-	model0 "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -171,23 +171,23 @@ func (_c *ApplicationServiceInterfaceMock_DeleteApplication_Call) RunAndReturn(r
 }
 
 // GetApplication provides a mock function for the type ApplicationServiceInterfaceMock
-func (_mock *ApplicationServiceInterfaceMock) GetApplication(ctx context.Context, appID string) (*model.Application, *common.ServiceError) {
+func (_mock *ApplicationServiceInterfaceMock) GetApplication(ctx context.Context, appID string) (*providers.Application, *common.ServiceError) {
 	ret := _mock.Called(ctx, appID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetApplication")
 	}
 
-	var r0 *model.Application
+	var r0 *providers.Application
 	var r1 *common.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.Application, *common.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*providers.Application, *common.ServiceError)); ok {
 		return returnFunc(ctx, appID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.Application); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *providers.Application); ok {
 		r0 = returnFunc(ctx, appID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.Application)
+			r0 = ret.Get(0).(*providers.Application)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
@@ -230,12 +230,12 @@ func (_c *ApplicationServiceInterfaceMock_GetApplication_Call) Run(run func(ctx 
 	return _c
 }
 
-func (_c *ApplicationServiceInterfaceMock_GetApplication_Call) Return(application *model.Application, serviceError *common.ServiceError) *ApplicationServiceInterfaceMock_GetApplication_Call {
+func (_c *ApplicationServiceInterfaceMock_GetApplication_Call) Return(application *providers.Application, serviceError *common.ServiceError) *ApplicationServiceInterfaceMock_GetApplication_Call {
 	_c.Call.Return(application, serviceError)
 	return _c
 }
 
-func (_c *ApplicationServiceInterfaceMock_GetApplication_Call) RunAndReturn(run func(ctx context.Context, appID string) (*model.Application, *common.ServiceError)) *ApplicationServiceInterfaceMock_GetApplication_Call {
+func (_c *ApplicationServiceInterfaceMock_GetApplication_Call) RunAndReturn(run func(ctx context.Context, appID string) (*providers.Application, *common.ServiceError)) *ApplicationServiceInterfaceMock_GetApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -374,6 +374,80 @@ func (_c *ApplicationServiceInterfaceMock_GetOAuthApplication_Call) RunAndReturn
 	return _c
 }
 
+// GetResourceDependencies provides a mock function for the type ApplicationServiceInterfaceMock
+func (_mock *ApplicationServiceInterfaceMock) GetResourceDependencies(ctx context.Context, resourceType string, id string) ([]resourcedependency.ResourceDependency, error) {
+	ret := _mock.Called(ctx, resourceType, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetResourceDependencies")
+	}
+
+	var r0 []resourcedependency.ResourceDependency
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]resourcedependency.ResourceDependency, error)); ok {
+		return returnFunc(ctx, resourceType, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []resourcedependency.ResourceDependency); ok {
+		r0 = returnFunc(ctx, resourceType, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]resourcedependency.ResourceDependency)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, resourceType, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ApplicationServiceInterfaceMock_GetResourceDependencies_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetResourceDependencies'
+type ApplicationServiceInterfaceMock_GetResourceDependencies_Call struct {
+	*mock.Call
+}
+
+// GetResourceDependencies is a helper method to define mock.On call
+//   - ctx context.Context
+//   - resourceType string
+//   - id string
+func (_e *ApplicationServiceInterfaceMock_Expecter) GetResourceDependencies(ctx interface{}, resourceType interface{}, id interface{}) *ApplicationServiceInterfaceMock_GetResourceDependencies_Call {
+	return &ApplicationServiceInterfaceMock_GetResourceDependencies_Call{Call: _e.mock.On("GetResourceDependencies", ctx, resourceType, id)}
+}
+
+func (_c *ApplicationServiceInterfaceMock_GetResourceDependencies_Call) Run(run func(ctx context.Context, resourceType string, id string)) *ApplicationServiceInterfaceMock_GetResourceDependencies_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *ApplicationServiceInterfaceMock_GetResourceDependencies_Call) Return(resourceDependencys []resourcedependency.ResourceDependency, err error) *ApplicationServiceInterfaceMock_GetResourceDependencies_Call {
+	_c.Call.Return(resourceDependencys, err)
+	return _c
+}
+
+func (_c *ApplicationServiceInterfaceMock_GetResourceDependencies_Call) RunAndReturn(run func(ctx context.Context, resourceType string, id string) ([]resourcedependency.ResourceDependency, error)) *ApplicationServiceInterfaceMock_GetResourceDependencies_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateApplication provides a mock function for the type ApplicationServiceInterfaceMock
 func (_mock *ApplicationServiceInterfaceMock) UpdateApplication(ctx context.Context, appID string, app *model.ApplicationDTO) (*model.ApplicationDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, appID, app)
@@ -451,7 +525,7 @@ func (_c *ApplicationServiceInterfaceMock_UpdateApplication_Call) RunAndReturn(r
 }
 
 // ValidateApplication provides a mock function for the type ApplicationServiceInterfaceMock
-func (_mock *ApplicationServiceInterfaceMock) ValidateApplication(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *model0.InboundAuthConfigWithSecret, *common.ServiceError) {
+func (_mock *ApplicationServiceInterfaceMock) ValidateApplication(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *providers.InboundAuthConfigWithSecret, *common.ServiceError) {
 	ret := _mock.Called(ctx, app)
 
 	if len(ret) == 0 {
@@ -459,9 +533,9 @@ func (_mock *ApplicationServiceInterfaceMock) ValidateApplication(ctx context.Co
 	}
 
 	var r0 *model.ApplicationProcessedDTO
-	var r1 *model0.InboundAuthConfigWithSecret
+	var r1 *providers.InboundAuthConfigWithSecret
 	var r2 *common.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *model0.InboundAuthConfigWithSecret, *common.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *providers.InboundAuthConfigWithSecret, *common.ServiceError)); ok {
 		return returnFunc(ctx, app)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.ApplicationDTO) *model.ApplicationProcessedDTO); ok {
@@ -471,11 +545,11 @@ func (_mock *ApplicationServiceInterfaceMock) ValidateApplication(ctx context.Co
 			r0 = ret.Get(0).(*model.ApplicationProcessedDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *model.ApplicationDTO) *model0.InboundAuthConfigWithSecret); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *model.ApplicationDTO) *providers.InboundAuthConfigWithSecret); ok {
 		r1 = returnFunc(ctx, app)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*model0.InboundAuthConfigWithSecret)
+			r1 = ret.Get(1).(*providers.InboundAuthConfigWithSecret)
 		}
 	}
 	if returnFunc, ok := ret.Get(2).(func(context.Context, *model.ApplicationDTO) *common.ServiceError); ok {
@@ -518,12 +592,12 @@ func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) Run(run func
 	return _c
 }
 
-func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) Return(applicationProcessedDTO *model.ApplicationProcessedDTO, inboundAuthConfigWithSecret *model0.InboundAuthConfigWithSecret, serviceError *common.ServiceError) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
+func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) Return(applicationProcessedDTO *model.ApplicationProcessedDTO, inboundAuthConfigWithSecret *providers.InboundAuthConfigWithSecret, serviceError *common.ServiceError) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
 	_c.Call.Return(applicationProcessedDTO, inboundAuthConfigWithSecret, serviceError)
 	return _c
 }
 
-func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) RunAndReturn(run func(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *model0.InboundAuthConfigWithSecret, *common.ServiceError)) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
+func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) RunAndReturn(run func(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *providers.InboundAuthConfigWithSecret, *common.ServiceError)) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }

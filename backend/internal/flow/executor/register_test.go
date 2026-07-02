@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 
 	"github.com/stretchr/testify/assert"
@@ -31,8 +33,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	yaml "gopkg.in/yaml.v3"
 
-	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/githubmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/googlemock"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/oauthmock"
@@ -58,7 +58,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) mockFlowFactory() *coremock.F
 	mockFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockBase := coremock.NewExecutorInterfaceMock(suite.T())
 	mockBase.On("GetName").Return("").Maybe()
-	mockBase.On("GetType").Return(common.ExecutorTypeUtility).Maybe()
+	mockBase.On("GetType").Return(providers.ExecutorTypeUtility).Maybe()
 	mockFactory.On("CreateExecutor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(mockBase).Maybe()
 	return mockFactory
@@ -193,7 +193,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestRegisterBuiltInExecutors_
 		[]string{ExecutorNamePermissionValidator})
 	require.NoError(suite.T(), err)
 
-	custom := createMockExecutorForRegistry(suite.T(), "CustomExecutor", common.ExecutorTypeUtility)
+	custom := createMockExecutorForRegistry(suite.T(), "CustomExecutor", providers.ExecutorTypeUtility)
 	suite.registry.RegisterExecutor("CustomExecutor", custom)
 
 	assert.True(suite.T(), suite.registry.IsRegistered("CustomExecutor"))
@@ -236,11 +236,11 @@ type nilSkippingRegistry struct {
 	inner ExecutorRegistryInterface
 }
 
-func (n *nilSkippingRegistry) GetExecutor(name string) (core.ExecutorInterface, error) {
+func (n *nilSkippingRegistry) GetExecutor(name string) (providers.Executor, error) {
 	return n.inner.GetExecutor(name)
 }
 
-func (n *nilSkippingRegistry) RegisterExecutor(name string, _ core.ExecutorInterface) {
+func (n *nilSkippingRegistry) RegisterExecutor(name string, _ providers.Executor) {
 	n.inner.RegisterExecutor(name, nil)
 }
 

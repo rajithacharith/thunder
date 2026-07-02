@@ -108,20 +108,6 @@ var ErrorRegistrationFlowDisabled = tidcommon.ServiceError{
 	},
 }
 
-// ErrorRecoveryFlowDisabled defines the error response for recovery flow disabled errors.
-var ErrorRecoveryFlowDisabled = tidcommon.ServiceError{
-	Code: "FES-1010",
-	Type: tidcommon.ClientErrorType,
-	Error: tidcommon.I18nMessage{
-		Key:          "error.flowexecservice.recovery_not_allowed",
-		DefaultValue: "Recovery not allowed",
-	},
-	ErrorDescription: tidcommon.I18nMessage{
-		Key:          "error.flowexecservice.recovery_not_allowed_description",
-		DefaultValue: "Recovery flow is disabled for the application",
-	},
-}
-
 // ErrorApplicationRetrievalClientError defines the error response for application retrieval client errors.
 var ErrorApplicationRetrievalClientError = tidcommon.ServiceError{
 	Code: "FES-1007",
@@ -150,10 +136,24 @@ var ErrorInvalidFlowInitContext = tidcommon.ServiceError{
 	},
 }
 
+// ErrorRecoveryFlowDisabled defines the error response for recovery flow disabled errors.
+var ErrorRecoveryFlowDisabled = tidcommon.ServiceError{
+	Code: "FES-1009",
+	Type: tidcommon.ClientErrorType,
+	Error: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.recovery_not_allowed",
+		DefaultValue: "Recovery not allowed",
+	},
+	ErrorDescription: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.recovery_not_allowed_description",
+		DefaultValue: "Recovery flow is disabled for the application",
+	},
+}
+
 // ErrorDirectFlowInitiationNotPermitted defines the error for applications that do not allow
 // direct flow initiation via the HTTP endpoint (e.g. authorization_code grant type apps).
 var ErrorDirectFlowInitiationNotPermitted = tidcommon.ServiceError{
-	Code: "FES-1011",
+	Code: "FES-1010",
 	Type: tidcommon.ClientErrorType,
 	Error: tidcommon.I18nMessage{
 		Key:          "error.flowexecservice.direct_flow_initiation_not_permitted",
@@ -162,5 +162,35 @@ var ErrorDirectFlowInitiationNotPermitted = tidcommon.ServiceError{
 	ErrorDescription: tidcommon.I18nMessage{
 		Key:          "error.flowexecservice.direct_flow_initiation_not_permitted_description",
 		DefaultValue: "Direct flow initiation is not permitted for this application type",
+	},
+}
+
+// ErrorFlowSecretRequired defines the error when a backend application initiates a new flow
+// without providing its Flow Secret.
+var ErrorFlowSecretRequired = tidcommon.ServiceError{
+	Code: "FES-1011",
+	Type: tidcommon.ClientErrorType,
+	Error: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.flow_secret_required",
+		DefaultValue: "Authentication required",
+	},
+	ErrorDescription: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.flow_secret_required_description",
+		DefaultValue: "Backend applications must provide a valid flow secret to initiate a new flow",
+	},
+}
+
+// ErrorFlowSecretInvalid defines the error when a backend application provides an incorrect
+// Flow Secret when initiating a new flow.
+var ErrorFlowSecretInvalid = tidcommon.ServiceError{
+	Code: "FES-1012",
+	Type: tidcommon.ClientErrorType,
+	Error: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.flow_secret_invalid",
+		DefaultValue: "Authentication failed",
+	},
+	ErrorDescription: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.flow_secret_invalid_description",
+		DefaultValue: "The provided flow secret is invalid",
 	},
 }

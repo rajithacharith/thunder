@@ -34,7 +34,7 @@ import SkillsLogo from '../icons/SkillsLogo';
 import WindowsLogo from '../icons/WindowsLogo';
 
 const INSTALL_TABS = [
-  {id: 'cli', label: 'CLI', icon: CliLogo, command: 'npx thunderid', brandColor: null, enabled: true},
+  {id: 'cli', label: 'npx', icon: CliLogo, command: 'npx thunderid', brandColor: null, enabled: true},
   {
     id: 'docker',
     label: 'Docker',
@@ -213,32 +213,6 @@ export default function HeroSection(): JSX.Element {
             }}
           >
             <Typography
-              variant="overline"
-              sx={{
-                mb: 2,
-                fontSize: '0.75rem',
-                letterSpacing: '0.22em',
-                color: theme.vars?.palette.primary.main,
-                fontWeight: 500,
-                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) both',
-              }}
-            >
-              INTRODUCING
-            </Typography>
-
-            <Box
-              component="img"
-              src={isLight ? 'assets/images/logo.svg' : 'assets/images/logo-inverted.svg'}
-              alt="ThunderID"
-              sx={{
-                height: {xs: 36, md: 44},
-                width: 'auto',
-                mb: 3,
-                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.05s both',
-              }}
-            />
-
-            <Typography
               variant="h1"
               sx={{
                 mb: 2.5,
@@ -260,7 +234,7 @@ export default function HeroSection(): JSX.Element {
               >
                 Auth
               </Box>{' '}
-              for the Modern Dev
+              for Modern Apps and Agents
             </Typography>
 
             <Typography
@@ -274,7 +248,7 @@ export default function HeroSection(): JSX.Element {
                 animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s both',
               }}
             >
-              High-performance open-source identity stack, engineered for developers.
+              Authentication, authorization, and identity for humans, AI agents, and workloads.
             </Typography>
 
             <Stack
@@ -420,6 +394,30 @@ export default function HeroSection(): JSX.Element {
               animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s both',
             }}
           >
+            {/* Section label */}
+            <Box sx={{mb: 2.25}}>
+              <Typography
+                sx={{
+                  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.14em',
+                  color: isLight ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.28)',
+                  mb: 0.875,
+                }}
+              >
+                Get ThunderID where you work
+              </Typography>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 2,
+                  borderRadius: '1px',
+                  background: `linear-gradient(90deg, ${theme.vars?.palette.primary.main}, rgba(54,136,255,0.2))`,
+                }}
+              />
+            </Box>
+
             {/* Tab row */}
             <Box sx={{display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap'}}>
               {INSTALL_TABS.filter((tab) => tab.enabled).map((tab) => {
@@ -512,7 +510,6 @@ export default function HeroSection(): JSX.Element {
                 bgcolor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
                 backdropFilter: 'blur(8px)',
                 animation: 'glowPulse 3s ease-in-out 0.8s infinite',
-                mb: 3,
               }}
             >
               <Typography
@@ -626,8 +623,29 @@ export default function HeroSection(): JSX.Element {
               </Box>
             </Box>
 
+            {/* ── or divider ── */}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mt: 2}}>
+              <Box
+                sx={{flex: 1, height: '1px', bgcolor: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)'}}
+              />
+              <Box
+                component="span"
+                sx={{
+                  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+                  fontSize: '0.8rem',
+                  color: isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                or
+              </Box>
+              <Box
+                sx={{flex: 1, height: '1px', bgcolor: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)'}}
+              />
+            </Box>
+
             {/* ── Download row ── */}
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap'}}>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mt: 1.75}}>
               {primaryAsset ? (
                 <>
                   <Box
@@ -644,7 +662,7 @@ export default function HeroSection(): JSX.Element {
                       '&:hover': {color: isLight ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.85)'},
                     }}
                   >
-                    <Box sx={{display: 'flex', alignItems: 'center', opacity: 0.7}}>{OS_ICONS[primaryAsset.os]}</Box>
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>{OS_ICONS[primaryAsset.os]}</Box>
                     <span>
                       Download for {OS_LABELS[primaryAsset.os]}
                       {ARCH_LABELS[primaryAsset.os]?.[primaryAsset.arch]
@@ -688,7 +706,7 @@ export default function HeroSection(): JSX.Element {
                   transition: 'color 0.15s ease',
                 }}
               >
-                explore other options →
+                Other platforms →
               </Typography>
             </Box>
           </Box>

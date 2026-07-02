@@ -31,6 +31,7 @@ import CodeBlock from '@site/src/components/CodeBlock';
 import CodeGroup from '@site/src/components/CodeGroup';
 import ColorSchemeImage from '@site/src/components/ColorSchemeImage';
 import DeploymentCards from '@site/src/components/DeploymentCards';
+import DeveloperShortcut from '@site/src/components/DeveloperShortcut';
 import DocsGetStarted from '@site/src/components/DocsGetStarted';
 import FloatingLogosBackground from '@site/src/components/FloatingLogosBackground';
 import {BuildAFlowDiagram, FlowNodeTypesRoadmap, FlowBuildingBlocksRoadmap} from '@site/src/components/FlowConcepts';
@@ -41,6 +42,7 @@ import BrowserLogo from '@site/src/components/icons/BrowserLogo';
 import ClaudeLogo from '@site/src/components/icons/ClaudeLogo';
 import CliLogo from '@site/src/components/icons/CliLogo';
 import CodexLogo from '@site/src/components/icons/CodexLogo';
+import DockerLogo from '@site/src/components/icons/DockerLogo';
 import ExpressLogo from '@site/src/components/icons/ExpressLogo';
 import FlutterLogo from '@site/src/components/icons/FlutterLogo';
 import GoLogo from '@site/src/components/icons/GoLogo';
@@ -57,11 +59,13 @@ import SkillsLogo from '@site/src/components/icons/SkillsLogo';
 import TanStackLogo from '@site/src/components/icons/TanStackLogo';
 import VueLogo from '@site/src/components/icons/VueLogo';
 import {InfographicTimeline, InfographicStep} from '@site/src/components/InfographicTimeline';
+import IntegrationTypePicker from '@site/src/components/IntegrationTypePicker';
 import {K8sArchDiagram} from '@site/src/components/K8sArchDiagram';
 import {ConsoleUrl, WayFinderSampleUrl, WayFinderMailUrl} from '@site/src/components/LocalUrls';
 import {NextSteps, NextStepsCard} from '@site/src/components/NextSteps';
 import ProductName from '@site/src/components/ProductName';
 import RepoLink from '@site/src/components/RepoLink';
+import RunThunderID from '@site/src/components/RunThunderID';
 import SampleDownload from '@site/src/components/SampleDownload';
 import SDKCard from '@site/src/components/SDKCard';
 import Stepper from '@site/src/components/Stepper';
@@ -121,7 +125,9 @@ export default {
   ConsoleUrl,
   WayFinderSampleUrl,
   WayFinderMailUrl,
+  IntegrationTypePicker,
   RepoLink,
+  RunThunderID,
   WayfinderCast,
   WayfinderArchitecture,
   WayfinderAgentOrganization,
@@ -142,6 +148,7 @@ export default {
   K8sArchDiagram,
   ApiVersionReference,
   DeploymentCards,
+  DeveloperShortcut,
   GettingStartedJourney,
   SampleDownload,
   UseCaseBranchCards,
@@ -155,6 +162,7 @@ export default {
   ClaudeLogo,
   CliLogo,
   CodexLogo,
+  DockerLogo,
   Html5Logo,
   SkillsLogo,
   // TODO: Heading styling is a bit off when oxygen-ui Typography is used.

@@ -36,7 +36,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	certmodel "github.com/thunder-id/thunderid/internal/cert"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -89,7 +88,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_Success() {
 		logger:       log.GetLogger(),
 	}
 	cfg := &providers.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
-	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
+	cert := &providers.Certificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, cert)
 	assert.Nil(s.T(), svcErr)
@@ -135,7 +134,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_EncryptFailure() {
 		logger:       log.GetLogger(),
 	}
 	cfg := &providers.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
-	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
+	cert := &providers.Certificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, cert)
 	assert.Nil(s.T(), result)
@@ -171,7 +170,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateNestedJWTUserInfo_Success() {
 	}
 
 	cfg := &providers.UserInfoConfig{SigningAlg: "RS256", EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
-	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
+	cert := &providers.Certificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateNestedJWTUserInfo(
 		context.Background(),
@@ -210,7 +209,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_EncryptErrorPropagated() 
 		logger:       log.GetLogger(),
 	}
 	cfg := &providers.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
-	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
+	cert := &providers.Certificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, cert)
 	assert.Nil(s.T(), result)

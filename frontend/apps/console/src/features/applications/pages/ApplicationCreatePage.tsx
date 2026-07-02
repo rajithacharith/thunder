@@ -34,6 +34,7 @@ import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
 import useCreateApplication from '../api/useCreateApplication';
+import useGetApplications from '../api/useGetApplications';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-application/ConfigureDesign';
 import ConfigureDetails from '../components/create-application/ConfigureDetails';
@@ -101,10 +102,16 @@ export default function ApplicationCreatePage(): JSX.Element {
       DESIGN: {label: t('applications:onboarding.steps.design'), order: 4},
       OPTIONS: {label: t('applications:onboarding.steps.options'), order: 5},
       EXPERIENCE: {label: t('applications:onboarding.steps.experience'), order: 6},
-      CONFIGURE: {label: t('applications:onboarding.steps.configure'), order: 7},
+      CONFIGURE: {
+        label:
+          selectedPlatform === PlatformApplicationTemplate.WALLET
+            ? t('applications:onboarding.steps.walletConfigure')
+            : t('applications:onboarding.steps.configure'),
+        order: 7,
+      },
       COMPLETE: {label: t('applications:onboarding.steps.complete'), order: 8},
     }),
-    [t],
+    [t, selectedPlatform],
   );
   const navigate = useNavigate();
   const {pathname} = useLocation();
@@ -112,7 +119,17 @@ export default function ApplicationCreatePage(): JSX.Element {
   const logger = useLogger('ApplicationCreatePage');
   const createApplication = useCreateApplication();
   const {data: userTypesData} = useGetUserTypes();
+  const {data: applicationsData} = useGetApplications({limit: 100});
   const {hasMultipleOUs, isLoading: isOuLoading, ouList} = useHasMultipleOUs();
+
+  // Client ids already in use, so the wallet step can flag a duplicate before submission.
+  const existingClientIds = useMemo(
+    (): string[] =>
+      (applicationsData?.applications ?? [])
+        .map((app) => app.clientId)
+        .filter((clientId): clientId is string => Boolean(clientId)),
+    [applicationsData],
+  );
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
   const [createdApplication, setCreatedApplication] = useState<Application | null>(null);
@@ -272,8 +289,11 @@ export default function ApplicationCreatePage(): JSX.Element {
         const hasClientSecret = createdApp.inboundAuthConfig?.some(
           (config) => config.type === 'oauth2' && config.config?.clientSecret,
         );
+        // Backend / server-side apps receive an Flow Secret (top-level) even when they have no
+        // OAuth client secret, so surface the save-secret step for either credential.
+        const hasSecret = Boolean(hasClientSecret) || Boolean(createdApp.flowSecret);
 
-        if (hasClientSecret) {
+        if (hasSecret) {
           setCreatedApplication(createdApp);
           setCurrentStep(ApplicationCreateFlowStep.COMPLETE);
         } else {
@@ -505,6 +525,7 @@ export default function ApplicationCreatePage(): JSX.Element {
             onHostingUrlChange={setHostingUrl}
             onCallbackUrlChange={setCallbackUrlFromConfig}
             onClientIdChange={setWalletClientId}
+            existingClientIds={existingClientIds}
             onReadyChange={handleConfigureStepReadyChange}
           />
         );
@@ -517,8 +538,9 @@ export default function ApplicationCreatePage(): JSX.Element {
         const oauth2Config = createdApplication.inboundAuthConfig?.find((config) => config.type === 'oauth2');
         const clientId = oauth2Config?.config?.clientId;
         const clientSecret = oauth2Config?.config?.clientSecret;
+        const {flowSecret} = createdApplication;
 
-        if (!clientSecret) {
+        if (!clientSecret && !flowSecret) {
           return null;
         }
 
@@ -527,6 +549,7 @@ export default function ApplicationCreatePage(): JSX.Element {
             appName={appName}
             clientId={clientId}
             clientSecret={clientSecret}
+            flowSecret={flowSecret}
             onContinue={handleNextStep}
           />
         );
@@ -538,7 +561,7 @@ export default function ApplicationCreatePage(): JSX.Element {
   };
 
   const getStepProgress = (): number => {
-    const stepNames = Object.keys(steps) as ApplicationCreateFlowStep[];
+    const stepNames = creationFlow.steps;
     return ((stepNames.indexOf(currentStep) + 1) / stepNames.length) * 100;
   };
 
@@ -564,6 +587,11 @@ export default function ApplicationCreatePage(): JSX.Element {
       ]
     : [{key: 'applications', label: t('navigation:pages.applications'), onClick: () => void navigate('/applications')}];
 
+  // The wallet template's CONFIGURE step runs before DESIGN/OPTIONS, so there's no branding
+  // to preview yet — show it full-width instead of alongside an empty/loading preview panel.
+  const isWalletConfigureStep =
+    currentStep === ApplicationCreateFlowStep.CONFIGURE && selectedPlatform === PlatformApplicationTemplate.WALLET;
+
   return (
     <Box sx={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
       {/* Progress bar at the very top */}
@@ -576,7 +604,8 @@ export default function ApplicationCreatePage(): JSX.Element {
               currentStep === ApplicationCreateFlowStep.STACK ||
               currentStep === ApplicationCreateFlowStep.NAME ||
               currentStep === ApplicationCreateFlowStep.ORGANIZATION_UNIT ||
-              currentStep === ApplicationCreateFlowStep.COMPLETE
+              currentStep === ApplicationCreateFlowStep.COMPLETE ||
+              isWalletConfigureStep
                 ? 1
                 : '0 0 50%',
             display: 'flex',
@@ -622,7 +651,8 @@ export default function ApplicationCreatePage(): JSX.Element {
                 mx:
                   currentStep === ApplicationCreateFlowStep.STACK ||
                   currentStep === ApplicationCreateFlowStep.NAME ||
-                  currentStep === ApplicationCreateFlowStep.ORGANIZATION_UNIT
+                  currentStep === ApplicationCreateFlowStep.ORGANIZATION_UNIT ||
+                  isWalletConfigureStep
                     ? 'auto'
                     : 0,
                 alignItems: currentStep === ApplicationCreateFlowStep.COMPLETE ? 'center' : 'flex-start',
@@ -694,7 +724,8 @@ export default function ApplicationCreatePage(): JSX.Element {
         {currentStep !== ApplicationCreateFlowStep.STACK &&
           currentStep !== ApplicationCreateFlowStep.NAME &&
           currentStep !== ApplicationCreateFlowStep.ORGANIZATION_UNIT &&
-          currentStep !== ApplicationCreateFlowStep.COMPLETE && (
+          currentStep !== ApplicationCreateFlowStep.COMPLETE &&
+          !isWalletConfigureStep && (
             <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
               {isPreviewFlowLoading ? (
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1}}>

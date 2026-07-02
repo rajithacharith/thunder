@@ -82,6 +82,12 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 	if request.JWKSUri != "" && len(request.JWKS) > 0 {
 		return nil, &ErrorJWKSConfigurationConflict
 	}
+	if request.JWKSUri != "" {
+		parsedJWKSURI, err := sysutils.ParseURL(request.JWKSUri)
+		if err != nil || parsedJWKSURI.Scheme != "https" || parsedJWKSURI.Host == "" {
+			return nil, &ErrorInvalidClientMetadata
+		}
+	}
 
 	// TODO: Revisit OU for DCR apps
 	if request.OUID == "" {
@@ -186,10 +192,9 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	*model.ApplicationDTO, *tidcommon.ServiceError) {
 	isPublicClient := request.TokenEndpointAuthMethod == providers.TokenEndpointAuthMethodNone
 
-	// Map JWKS/JWKS_URI to application-level certificate
-	var appCertificate *inboundmodel.Certificate
+	var oauthCertificate *inboundmodel.Certificate
 	if request.JWKSUri != "" {
-		appCertificate = &inboundmodel.Certificate{
+		oauthCertificate = &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKSURI,
 			Value: request.JWKSUri,
 		}
@@ -198,7 +203,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		if err != nil {
 			return nil, &ErrorServerError
 		}
-		appCertificate = &inboundmodel.Certificate{
+		oauthCertificate = &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: string(jwksBytes),
 		}
@@ -215,17 +220,16 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		return nil, &ErrorServerError
 	}
 
-	// Generate client ID if client_name is not provided and use it as both app name and client ID.
+	// Generate client ID during DCR conversion so certificate-backed clients can persist
+	// the OAuth-app certificate against the final client_id.
 	// When localized variants are present without a client_name, use an i18n ref as the app name
 	// so the UI resolves the display name from the i18n table rather than falling back to the clientID.
-	var clientID string
+	clientID, err := oauthutils.GenerateOAuth2ClientID()
+	if err != nil {
+		return nil, &ErrorServerError
+	}
 	appName := request.ClientName
 	if appName == "" {
-		generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
-		if err != nil {
-			return nil, &ErrorServerError
-		}
-		clientID = generatedClientID
 		if len(request.LocalizedClientName) > 0 {
 			appName = application.AppI18nRef(appID, "name")
 		} else {
@@ -236,7 +240,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		appName = application.AppI18nRef(appID, "name")
 	}
 
-	oauthAppConfig := &inboundmodel.OAuthConfigWithSecret{
+	oauthAppConfig := &providers.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       request.RedirectURIs,
 		GrantTypes:                         request.GrantTypes,
@@ -249,11 +253,12 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		Scopes:                             scopes,
 		UserInfo:                           buildUserInfoConfig(request),
 		Token:                              buildTokenConfig(request),
+		Certificate:                        oauthCertificate,
 	}
 
-	inboundAuthConfig := []inboundmodel.InboundAuthConfigWithSecret{
+	inboundAuthConfig := []providers.InboundAuthConfigWithSecret{
 		{
-			Type:        inboundmodel.OAuthInboundAuthType,
+			Type:        providers.OAuthInboundAuthType,
 			OAuthConfig: oauthAppConfig,
 		},
 	}
@@ -268,9 +273,6 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		TosURI:            request.TosURI,
 		PolicyURI:         request.PolicyURI,
 		Contacts:          request.Contacts,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: appCertificate,
-		},
 	}
 
 	return appDTO, nil
@@ -341,12 +343,12 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 
 	var jwksURI string
 	var jwks map[string]interface{}
-	if appDTO.Certificate != nil {
-		switch appDTO.Certificate.Type {
+	if oauthConfig.Certificate != nil {
+		switch oauthConfig.Certificate.Type {
 		case cert.CertificateTypeJWKSURI:
-			jwksURI = appDTO.Certificate.Value
+			jwksURI = oauthConfig.Certificate.Value
 		case cert.CertificateTypeJWKS:
-			if err := json.Unmarshal([]byte(appDTO.Certificate.Value), &jwks); err != nil {
+			if err := json.Unmarshal([]byte(oauthConfig.Certificate.Value), &jwks); err != nil {
 				return nil, &ErrorServerError
 			}
 		}

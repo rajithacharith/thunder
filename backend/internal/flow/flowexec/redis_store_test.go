@@ -33,7 +33,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
@@ -82,14 +81,15 @@ func (suite *RedisFlowStoreTestSuite) buildEngineContext() EngineContext {
 		},
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 }
 
 // serializedFlowContext converts an EngineContext to the JSON bytes the store would write.
 func (suite *RedisFlowStoreTestSuite) serializedFlowContext(engineCtx EngineContext) []byte {
-	dbModel, err := FromEngineContext(engineCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(engineCtx)
 	suite.Require().NoError(err)
 	data, err := json.Marshal(dbModel)
 	suite.Require().NoError(err)
@@ -109,7 +109,8 @@ func (suite *RedisFlowStoreTestSuite) TestStoreFlowContext_Success() {
 	engineCtx := suite.buildEngineContext()
 	expirySeconds := int64(1800)
 
-	dbModel, err := FromEngineContext(engineCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(engineCtx)
 	suite.Require().NoError(err)
 
 	statusCmd := redis.NewStatusCmd(suite.ctx)
@@ -124,7 +125,8 @@ func (suite *RedisFlowStoreTestSuite) TestStoreFlowContext_SetError() {
 	engineCtx := suite.buildEngineContext()
 	expirySeconds := int64(1800)
 
-	dbModel, err := FromEngineContext(engineCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(engineCtx)
 	suite.Require().NoError(err)
 
 	statusCmd := redis.NewStatusCmd(suite.ctx)
@@ -189,7 +191,8 @@ func (suite *RedisFlowStoreTestSuite) TestGetFlowContext_UnmarshalError() {
 
 func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_Success() {
 	engineCtx := suite.buildEngineContext()
-	dbModel, err := FromEngineContext(engineCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(engineCtx)
 	suite.Require().NoError(err)
 
 	cmd := redis.NewCmd(suite.ctx)
@@ -203,7 +206,8 @@ func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_Success() {
 
 func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_KeyNotFound() {
 	engineCtx := suite.buildEngineContext()
-	dbModel, err := FromEngineContext(engineCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(engineCtx)
 	suite.Require().NoError(err)
 
 	cmd := redis.NewCmd(suite.ctx)
@@ -218,7 +222,8 @@ func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_KeyNotFound() {
 
 func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_ScriptError() {
 	engineCtx := suite.buildEngineContext()
-	dbModel, err := FromEngineContext(engineCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(engineCtx)
 	suite.Require().NoError(err)
 
 	cmd := redis.NewCmd(suite.ctx)

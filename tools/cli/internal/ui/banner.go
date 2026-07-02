@@ -104,7 +104,7 @@ func BannerString() string {
 		Foreground(lipgloss.Color(colorGrey)).
 		Width(logoWidth).
 		Align(lipgloss.Center).
-		Render("Auth for the Modern Dev")
+		Render("Auth for Modern Apps and Agents")
 
 	return introBoxStyle.Render(banner + "\n\n" + slogan)
 }
@@ -181,6 +181,44 @@ const (
 	// SkipRelease marks the new version as skipped and starts the current version.
 	SkipRelease
 )
+
+// PortConflictChoice represents the user's response to a port-in-use prompt.
+type PortConflictChoice int
+
+const (
+	// KillAndUsePort kills the process on the default port and continues.
+	KillAndUsePort PortConflictChoice = iota
+	// UseAlternatePort starts ThunderID on an alternate port instead.
+	UseAlternatePort
+	// AbortSetup exits without starting ThunderID.
+	AbortSetup
+)
+
+// PromptPortConflict shows a port-in-use warning and asks how to proceed.
+// altPort is the next free port the caller pre-computed as an alternative.
+// Returns the chosen action and the port to use.
+func PromptPortConflict(port, altPort int) (PortConflictChoice, int) {
+	title := redStyle.Render(fmt.Sprintf("Port %d is already in use", port))
+	body := greyStyle.Render(fmt.Sprintf("%s cannot start because another process is using port %d.", product.Name, port))
+	fmt.Println(noteBoxStyle.Render(title + "\n\n" + body))
+
+	var choice PortConflictChoice
+	if err := huh.NewSelect[PortConflictChoice]().
+		Title("How would you like to proceed?").
+		Options(
+			huh.NewOption(fmt.Sprintf("Kill the process on port %d and continue", port), KillAndUsePort),
+			huh.NewOption(fmt.Sprintf("Use port %d instead", altPort), UseAlternatePort),
+			huh.NewOption("Abort", AbortSetup),
+		).
+		Value(&choice).
+		Run(); err != nil {
+		return AbortSetup, port
+	}
+	if choice == UseAlternatePort {
+		return choice, altPort
+	}
+	return choice, port
+}
 
 // PromptUpgrade shows the "new version available" banner and asks the user what to do.
 // Returns the chosen action, or StartCurrent if the prompt is cancelled.

@@ -19,7 +19,11 @@
 // Package event provides event models and types for the observability system.
 package event
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+)
 
 // EventCategory represents a category for grouping related events.
 // Used by the event bus for efficient routing - subscribers declare which
@@ -54,7 +58,7 @@ const (
 
 // UnmappedEventTypeError represents an error when an event type is not mapped to a category.
 type UnmappedEventTypeError struct {
-	EventType EventType
+	EventType providers.EventType
 }
 
 func (e *UnmappedEventTypeError) Error() string {
@@ -66,7 +70,7 @@ func (e *UnmappedEventTypeError) Error() string {
 
 // eventTypeToCategory maps each event type to its category.
 // This enables automatic routing of events to appropriate categories.
-var eventTypeToCategory = map[EventType]EventCategory{
+var eventTypeToCategory = map[providers.EventType]EventCategory{
 	// Authentication events
 	EventTypeTokenIssuanceStarted: CategoryAuthentication,
 	EventTypeTokenIssued:          CategoryAuthentication,
@@ -85,19 +89,12 @@ var eventTypeToCategory = map[EventType]EventCategory{
 // GetCategory returns the category for a given event type.
 // If the event type is not mapped, it returns an error to prevent unintentional use
 // of unmapped event types. All event types must be explicitly mapped to categories.
-func GetCategory(eventType EventType) (EventCategory, error) {
+func GetCategory(eventType providers.EventType) (EventCategory, error) {
 	if category, exists := eventTypeToCategory[eventType]; exists {
 		return category, nil
 	}
 	// Return error for unmapped event types
 	return "", &UnmappedEventTypeError{EventType: eventType}
-}
-
-// GetCategory returns the category for the given event.
-// If the event type is not mapped to a category, it returns an error.
-// This ensures all event types are explicitly mapped to prevent unintentional wildcard usage.
-func (e *Event) GetCategory() (EventCategory, error) {
-	return GetCategory(EventType(e.Type))
 }
 
 // GetAllCategories returns all defined event categories (excluding CategoryAll).

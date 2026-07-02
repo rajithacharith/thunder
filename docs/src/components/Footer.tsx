@@ -122,6 +122,7 @@ export default function Footer(): JSX.Element {
             title="Community"
             links={[
               {label: 'Contributing', href: '/docs/next/community/contributing/contribute-ideas'},
+              {label: 'Events', href: '/events'},
               {label: 'Discussions', href: productConfig.project.source.github.discussionsUrl},
               {label: 'Report an Issue', href: productConfig.project.source.github.issuesUrl},
             ]}

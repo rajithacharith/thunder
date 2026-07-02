@@ -84,7 +84,7 @@ func TestPublishFlowStartedEvent(t *testing.T) {
 				IsAuthenticated: true,
 				UserID:          "user-123",
 			},
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
 		// Call the actual function to get code coverage
@@ -100,7 +100,7 @@ func TestPublishFlowStartedEvent(t *testing.T) {
 			ExecutionID:      "flow-002",
 			FlowType:         providers.FlowTypeRegistration,
 			AppID:            "app-002",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
 		// Call the actual function to get code coverage
@@ -126,7 +126,7 @@ func TestPublishFlowCompletedEvent(t *testing.T) {
 			IsAuthenticated: true,
 			UserID:          "user-456",
 		},
-		ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+		ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 	}
 
 	flowStartTime := int64(1000)
@@ -151,7 +151,7 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 			ExecutionID:      "flow-004",
 			FlowType:         providers.FlowTypeAuthentication,
 			AppID:            "app-004",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
 		svcErr := &tidcommon.ServiceError{
@@ -176,7 +176,7 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 			ExecutionID:      "flow-005",
 			FlowType:         providers.FlowTypeAuthentication,
 			AppID:            "app-005",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
 		svcErr := &tidcommon.ServiceError{
@@ -211,7 +211,7 @@ func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 			ExecutionID:      "flow-006",
 			FlowType:         providers.FlowTypeAuthentication,
 			AppID:            "app-006",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
 		// Call the actual function to get code coverage
@@ -231,16 +231,16 @@ func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 			ExecutionID:      "flow-007",
 			FlowType:         providers.FlowTypeAuthentication,
 			AppID:            "app-007",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
 		// Simulate retry scenario
-		ctx.ExecutionHistory[node.GetID()] = &common.NodeExecutionRecord{
+		ctx.ExecutionHistory[node.GetID()] = &providers.NodeExecutionRecord{
 			NodeID:     node.GetID(),
 			NodeType:   string(node.GetType()),
 			Step:       1,
-			Status:     common.FlowStatusIncomplete,
-			Executions: []common.ExecutionAttempt{{Attempt: 1, Status: common.FlowStatusIncomplete}},
+			Status:     providers.FlowStatusIncomplete,
+			Executions: []providers.ExecutionAttempt{{Attempt: 1, Status: providers.FlowStatusIncomplete}},
 			StartTime:  1000,
 		}
 
@@ -272,15 +272,15 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 				IsAuthenticated: true,
 				UserID:          "user-789",
 			},
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
-		ctx.ExecutionHistory[node.GetID()] = &common.NodeExecutionRecord{
+		ctx.ExecutionHistory[node.GetID()] = &providers.NodeExecutionRecord{
 			NodeID:     node.GetID(),
 			NodeType:   string(node.GetType()),
 			Step:       1,
-			Status:     common.FlowStatusComplete,
-			Executions: []common.ExecutionAttempt{{Attempt: 1, Status: common.FlowStatusComplete}},
+			Status:     providers.FlowStatusComplete,
+			Executions: []providers.ExecutionAttempt{{Attempt: 1, Status: providers.FlowStatusComplete}},
 			StartTime:  1000,
 		}
 
@@ -305,15 +305,15 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 			ExecutionID:      "flow-009",
 			FlowType:         providers.FlowTypeAuthentication,
 			AppID:            "app-009",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
-		ctx.ExecutionHistory[node.GetID()] = &common.NodeExecutionRecord{
+		ctx.ExecutionHistory[node.GetID()] = &providers.NodeExecutionRecord{
 			NodeID:     node.GetID(),
 			NodeType:   string(node.GetType()),
 			Step:       1,
-			Status:     common.FlowStatusError,
-			Executions: []common.ExecutionAttempt{{Attempt: 1, Status: common.FlowStatusError}},
+			Status:     providers.FlowStatusError,
+			Executions: []providers.ExecutionAttempt{{Attempt: 1, Status: providers.FlowStatusError}},
 			StartTime:  1000,
 		}
 
@@ -343,15 +343,15 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 			ExecutionID:      "flow-010",
 			FlowType:         providers.FlowTypeAuthentication,
 			AppID:            "app-010",
-			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+			ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 		}
 
-		ctx.ExecutionHistory[node.GetID()] = &common.NodeExecutionRecord{
+		ctx.ExecutionHistory[node.GetID()] = &providers.NodeExecutionRecord{
 			NodeID:     node.GetID(),
 			NodeType:   string(node.GetType()),
 			Step:       1,
-			Status:     common.FlowStatusIncomplete,
-			Executions: []common.ExecutionAttempt{{Attempt: 1, Status: common.FlowStatusIncomplete}},
+			Status:     providers.FlowStatusIncomplete,
+			Executions: []providers.ExecutionAttempt{{Attempt: 1, Status: providers.FlowStatusIncomplete}},
 			StartTime:  1000,
 		}
 
@@ -393,7 +393,7 @@ func TestObservabilityDisabled(t *testing.T) {
 		ExecutionID:      "test-flow",
 		FlowType:         providers.FlowTypeAuthentication,
 		AppID:            "test-app",
-		ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
+		ExecutionHistory: make(map[string]*providers.NodeExecutionRecord),
 	}
 
 	publishFlowStartedEvent(ctx, mockObs)

@@ -27,6 +27,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/observability/subscriber"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // CategoryPublisherInterface is an event bus interface with category-based routing.
@@ -34,7 +35,7 @@ import (
 type CategoryPublisherInterface interface {
 	// Publish publishes an event immediately to all interested subscribers.
 	// The context carries the request trace ID used for correlated logging.
-	Publish(ctx context.Context, event *event.Event)
+	Publish(ctx context.Context, event *providers.Event)
 
 	// Subscribe adds a subscriber (subscriber decides what categories it wants).
 	Subscribe(sub subscriber.SubscriberInterface)
@@ -85,7 +86,7 @@ func NewCategoryPublisher() CategoryPublisherInterface {
 // Publish publishes an event to all interested subscribers.
 // This method returns immediately without blocking the caller.
 // The entire publishing process (validation, routing, and dispatching) runs asynchronously.
-func (p *categoryEventPublisher) Publish(ctx context.Context, evt *event.Event) {
+func (p *categoryEventPublisher) Publish(ctx context.Context, evt *providers.Event) {
 	if evt == nil {
 		return
 	}
@@ -124,7 +125,7 @@ func (p *categoryEventPublisher) Publish(ctx context.Context, evt *event.Event) 
 		}()
 
 		// Get event category
-		category, err := evt.GetCategory()
+		category, err := event.GetCategory(providers.EventType(evt.Type))
 		if err != nil {
 			p.logger.Error(eventCtx, "Failed to get event category, skipping publish",
 				log.String("eventType", evt.Type),

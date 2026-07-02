@@ -290,7 +290,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithExecutor() {
 
 	s.mockExecutorRegistry.EXPECT().IsRegistered("test-executor").Return(true)
 	mockTaskNode.EXPECT().SetExecutorName("test-executor")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
 	mockGraph.EXPECT().AddNode(mockTaskNode).Return(nil)
@@ -334,7 +334,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_ExecutorNotRegistered() {
 	s.mockFlowFactory.EXPECT().CreateNode(
 		"task", "TASK_EXECUTION", map[string]interface{}(nil), false, true).Return(
 		mockTaskNode, nil)
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	s.mockExecutorRegistry.EXPECT().IsRegistered("unknown-executor").Return(false)
 
@@ -390,7 +390,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithOnFailure() {
 	mockStartNode.EXPECT().SetOnSuccess("task")
 	mockTaskNode.EXPECT().SetOnSuccess("end")
 	mockTaskNode.EXPECT().SetOnFailure("error-prompt")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	s.mockExecutorRegistry.EXPECT().IsRegistered("test-executor").Return(true)
 	mockTaskNode.EXPECT().SetExecutorName("test-executor")
@@ -526,7 +526,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithInputs() {
 		mockTaskNode, nil)
 
 	mockStartNode.EXPECT().SetOnSuccess("task")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{
 		{Ref: "username", Type: "string", Identifier: "user", Required: true},
 		{Ref: "password", Type: "string", Identifier: "pass", Required: true},
 	})
@@ -606,8 +606,8 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithActions() {
 		}
 		return true
 	}))
-	mockTask1Node.EXPECT().SetInputs([]common.Input{})
-	mockTask2Node.EXPECT().SetInputs([]common.Input{})
+	mockTask1Node.EXPECT().SetInputs([]providers.Input{})
+	mockTask2Node.EXPECT().SetInputs([]providers.Input{})
 
 	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
 	mockGraph.EXPECT().AddNode(mockPromptNode).Return(nil)
@@ -774,7 +774,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithCondition() {
 		mockEndNode, nil)
 
 	mockStartNode.EXPECT().SetOnSuccess("task")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 	mockTaskNode.EXPECT().SetCondition(&core.NodeCondition{
 		Key:    "userType",
 		Value:  "premium",
@@ -1051,7 +1051,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithExecutorMode() {
 	s.mockExecutorRegistry.EXPECT().IsRegistered("SMSOTPAuthExecutor").Return(true)
 	mockTaskNode.EXPECT().SetExecutorName("SMSOTPAuthExecutor")
 	mockTaskNode.EXPECT().SetMode("send") // Verify mode is set
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
 	mockGraph.EXPECT().AddNode(mockTaskNode).Return(nil)
@@ -1661,10 +1661,269 @@ func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_ValidationRulesCompiled
 			return false
 		}
 		rule := prompts[0].Inputs[0].Validation[0]
-		return rule.Type == common.ValidationTypeRegex && rule.CompiledRegex != nil
+		return rule.Type == providers.ValidationTypeRegex && rule.CompiledRegex != nil
 	}))
 
 	err := s.builder.configureNodePrompts(context.Background(), nodeDef, mockPromptNode, map[string][]string{})
+	s.Nil(err)
+}
+
+// CALL node tests
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_MissingFlowRef() {
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{
+				ID:        "call-1",
+				Type:      "CALL",
+				OnSuccess: "end",
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.Nil(graph)
+	s.NotNil(err)
+	s.Contains(err.Error(), "flow.ref")
+}
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_MissingOnSuccess() {
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{
+				ID:   "call-1",
+				Type: "CALL",
+				Flow: &providers.FlowReferenceDefinition{Ref: "target-flow"},
+			},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.Nil(graph)
+	s.NotNil(err)
+	s.Contains(err.Error(), "onSuccess")
+}
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_OnIncompleteNotAllowed() {
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{
+				ID:           "call-1",
+				Type:         "CALL",
+				Flow:         &providers.FlowReferenceDefinition{Ref: "target-flow"},
+				OnSuccess:    "end",
+				OnIncomplete: "some-node",
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.Nil(graph)
+	s.NotNil(err)
+	s.Contains(err.Error(), "onIncomplete")
+}
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_PromptsNotAllowed() {
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{
+				ID:        "call-1",
+				Type:      "CALL",
+				Flow:      &providers.FlowReferenceDefinition{Ref: "target-flow"},
+				OnSuccess: "end",
+				Prompts: []providers.PromptDefinition{
+					{Inputs: []providers.InputDefinition{{Identifier: "username"}}},
+				},
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.Nil(graph)
+	s.NotNil(err)
+	s.Contains(err.Error(), "prompts")
+}
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_ExecutorNotAllowed() {
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{
+				ID:        "call-1",
+				Type:      "CALL",
+				Flow:      &providers.FlowReferenceDefinition{Ref: "target-flow"},
+				OnSuccess: "end",
+				Executor:  &providers.ExecutorDefinition{Name: "some-executor"},
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.Nil(graph)
+	s.NotNil(err)
+	s.Contains(err.Error(), "executor")
+}
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_ValidDefinition() {
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{ID: "start", Type: "START", OnSuccess: "call-1"},
+			{
+				ID:        "call-1",
+				Type:      "CALL",
+				Flow:      &providers.FlowReferenceDefinition{Ref: "target-flow"},
+				OnSuccess: "end",
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockStartNode := coremock.NewRepresentationNodeInterfaceMock(s.T())
+	mockCallNode := coremock.NewCallNodeInterfaceMock(s.T())
+	mockEndNode := coremock.NewRepresentationNodeInterfaceMock(s.T())
+
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"start", "START", map[string]interface{}(nil), false, false).Return(mockStartNode, nil)
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"call-1", "CALL", map[string]interface{}(nil), false, false).Return(mockCallNode, nil)
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"end", "END", map[string]interface{}(nil), false, true).Return(mockEndNode, nil)
+
+	mockStartNode.EXPECT().SetOnSuccess("call-1")
+	mockCallNode.EXPECT().SetOnSuccess("end")
+	mockCallNode.EXPECT().SetReferencedFlow("target-flow")
+	mockCallNode.EXPECT().GetType().Return(common.NodeTypeCall).Maybe()
+
+	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
+	mockGraph.EXPECT().AddNode(mockCallNode).Return(nil)
+	mockGraph.EXPECT().AddNode(mockEndNode).Return(nil)
+	mockGraph.EXPECT().AddEdge("start", "call-1").Return(nil)
+	mockGraph.EXPECT().AddEdge("call-1", "end").Return(nil)
+	mockGraph.EXPECT().GetNodes().Return(
+		map[string]core.NodeInterface{"start": mockStartNode, "call-1": mockCallNode, "end": mockEndNode})
+	mockStartNode.EXPECT().GetType().Return(common.NodeTypeStart)
+	mockEndNode.EXPECT().GetType().Return(common.NodeTypeEnd).Maybe()
+	mockStartNode.EXPECT().GetID().Return("start")
+	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.NotNil(graph)
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestBuildGraph_CallNode_OnFailureToNonPromptNode_Accepted() {
+	// CALL nodes are allowed to route onFailure to non-PROMPT nodes (unlike TASK_EXECUTION nodes).
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{ID: "start", Type: "START", OnSuccess: "call-1"},
+			{
+				ID:        "call-1",
+				Type:      "CALL",
+				Flow:      &providers.FlowReferenceDefinition{Ref: "target-flow"},
+				OnSuccess: "end",
+				OnFailure: "end",
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockStartNode := coremock.NewRepresentationNodeInterfaceMock(s.T())
+	mockCallNode := coremock.NewCallNodeInterfaceMock(s.T())
+	mockEndNode := coremock.NewRepresentationNodeInterfaceMock(s.T())
+
+	s.mockFlowFactory.EXPECT().CreateGraph(
+		"flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"start", "START", map[string]interface{}(nil), false, false).Return(mockStartNode, nil)
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"call-1", "CALL", map[string]interface{}(nil), false, false).Return(mockCallNode, nil)
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"end", "END", map[string]interface{}(nil), false, true).Return(mockEndNode, nil)
+
+	mockStartNode.EXPECT().SetOnSuccess("call-1")
+	mockCallNode.EXPECT().SetOnSuccess("end")
+	mockCallNode.EXPECT().SetOnFailure("end")
+	mockCallNode.EXPECT().SetReferencedFlow("target-flow")
+	mockCallNode.EXPECT().GetType().Return(common.NodeTypeCall).Maybe()
+
+	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
+	mockGraph.EXPECT().AddNode(mockCallNode).Return(nil)
+	mockGraph.EXPECT().AddNode(mockEndNode).Return(nil)
+	mockGraph.EXPECT().AddEdge("start", "call-1").Return(nil)
+	mockGraph.EXPECT().AddEdge("call-1", "end").Return(nil).Times(2)
+	mockGraph.EXPECT().GetNodes().Return(
+		map[string]core.NodeInterface{"start": mockStartNode, "call-1": mockCallNode, "end": mockEndNode})
+	mockStartNode.EXPECT().GetType().Return(common.NodeTypeStart)
+	mockEndNode.EXPECT().GetType().Return(common.NodeTypeEnd).Maybe()
+	mockStartNode.EXPECT().GetID().Return("start")
+	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
+
+	graph, err := s.builder.buildGraph(context.Background(), flow)
+
+	s.NotNil(graph)
 	s.Nil(err)
 }
 

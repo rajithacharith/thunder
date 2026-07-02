@@ -19,72 +19,49 @@
 package executor
 
 import (
-	"context"
-
-	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
-	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
-
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
-	"github.com/thunder-id/thunderid/internal/entitytype"
+	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
-
-// openid4vpVerifierService is the subset of the OpenID4VP verifier service the
-// executor depends on. openid4vp.OpenID4VPServiceInterface satisfies it.
-type openid4vpVerifierService interface {
-	Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, *tidcommon.ServiceError)
-	GetResult(ctx context.Context, state string) (*openid4vp.RequestState, *tidcommon.ServiceError)
-}
 
 // openid4vpVerifier drives an OpenID4VP presentation as a flow step: it
 // initiates a request (returning QR / deep-link data) and then polls until the
 // wallet's response is verified, surfacing the verified holder as the
 // authenticated user.
 type openid4vpVerifier struct {
-	core.ExecutorInterface
-	service           openid4vpVerifierService
-	entityTypeService entitytype.EntityTypeServiceInterface
-	authnProvider     providers.AuthnProviderManagerInterface
-	logger            *log.Logger
+	providers.Executor
+	service       openid4vp.OpenID4VPServiceInterface
+	authnProvider providers.AuthnProviderManager
+	logger        *log.Logger
 }
 
-// newOpenID4VPVerifier creates the OpenID4VP verifier executor. service
-// may be nil when the verifier is disabled; the executor then fails cleanly
-// when reached.
 func newOpenID4VPVerifier(
-	flowFactory core.FlowFactoryInterface, service openid4vpVerifierService,
-	entityTypeService entitytype.EntityTypeServiceInterface,
-	authnProvider providers.AuthnProviderManagerInterface,
-) core.ExecutorInterface {
+	flowFactory core.FlowFactoryInterface, service openid4vp.OpenID4VPServiceInterface,
+	authnProvider providers.AuthnProviderManager,
+) providers.Executor {
 	base := flowFactory.CreateExecutor(
-		ExecutorNameOpenID4VPVerify, common.ExecutorTypeAuthentication, []common.Input{}, []common.Input{})
+		ExecutorNameOpenID4VPVerify, providers.ExecutorTypeAuthentication, []providers.Input{}, []providers.Input{})
 	return &openid4vpVerifier{
-		ExecutorInterface: base,
-		service:           service,
-		entityTypeService: entityTypeService,
-		authnProvider:     authnProvider,
-		logger:            log.GetLogger().With(log.String(log.LoggerKeyExecutorName, ExecutorNameOpenID4VPVerify)),
+		Executor:      base,
+		service:       service,
+		authnProvider: authnProvider,
+		logger:        log.GetLogger().With(log.String(log.LoggerKeyExecutorName, ExecutorNameOpenID4VPVerify)),
 	}
 }
 
 // Execute initiates the request on first entry and polls for the result on
 // subsequent entries.
-func (e *openid4vpVerifier) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
+func (e *openid4vpVerifier) Execute(ctx *providers.NodeContext) (*providers.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
-	}
-
-	if e.service == nil {
-		logger.Error(ctx.Context, "OpenID4VP verifier service is not configured")
-		execResp.Status = common.ExecFailure
-		execResp.Error = &ErrOpenID4VPNotConfigured
-		return execResp, nil
+		AuthUser:       ctx.AuthUser,
 	}
 
 	state := ctx.RuntimeData[common.RuntimeKeyOpenID4VPState]
@@ -96,12 +73,12 @@ func (e *openid4vpVerifier) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 
 // initiate starts a new request and returns the QR / deep-link data as a view.
 func (e *openid4vpVerifier) initiate(
-	ctx *core.NodeContext, execResp *common.ExecutorResponse, logger *log.Logger,
-) (*common.ExecutorResponse, error) {
+	ctx *providers.NodeContext, execResp *providers.ExecutorResponse, logger *log.Logger,
+) (*providers.ExecutorResponse, error) {
 	definitionID := presentationDefinitionID(ctx)
 	if definitionID == "" {
 		logger.Error(ctx.Context, "OpenID4VP node is missing the presentation_definition_id property")
-		execResp.Status = common.ExecFailure
+		execResp.Status = providers.ExecFailure
 		execResp.Error = &ErrOpenID4VPDefinitionNotConfigured
 		return execResp, nil
 	}
@@ -109,20 +86,20 @@ func (e *openid4vpVerifier) initiate(
 	if svcErr != nil {
 		logger.Error(ctx.Context, "Failed to initiate OpenID4VP request",
 			log.String("definitionID", definitionID), log.String("errorCode", svcErr.Code))
-		execResp.Status = common.ExecFailure
+		execResp.Status = providers.ExecFailure
 		execResp.Error = &ErrOpenID4VPInitiateFailed
 		return execResp, nil
 	}
 
 	execResp.RuntimeData[common.RuntimeKeyOpenID4VPState] = init.State
-	setQRData(execResp, init.ClientID, init.RequestURI)
-	execResp.Status = common.ExecUserInputRequired
+	setQRData(execResp, init.ClientID, init.RequestURI, init.WalletURI)
+	execResp.Status = providers.ExecUserInputRequired
 	return execResp, nil
 }
 
 // presentationDefinitionID reads the presentation_definition_id from node
 // properties, returning "" when the node has not configured one.
-func presentationDefinitionID(ctx *core.NodeContext) string {
+func presentationDefinitionID(ctx *providers.NodeContext) string {
 	if ctx.NodeProperties != nil {
 		if v, ok := ctx.NodeProperties[propertyKeyPresentationDefinitionID].(string); ok {
 			return v
@@ -132,40 +109,40 @@ func presentationDefinitionID(ctx *core.NodeContext) string {
 }
 
 // setQRData populates the QR / deep-link payload for the client.
-func setQRData(execResp *common.ExecutorResponse, clientID, requestURI string) {
+func setQRData(execResp *providers.ExecutorResponse, clientID, requestURI, walletURI string) {
 	execResp.AdditionalData[common.DataOpenID4VPClientID] = clientID
 	execResp.AdditionalData[common.DataOpenID4VPRequestURI] = requestURI
-	execResp.AdditionalData[common.DataOpenID4VPWalletURI] = openid4vp.WalletAuthorizationURI(clientID, requestURI)
+	execResp.AdditionalData[common.DataOpenID4VPWalletURI] = walletURI
 }
 
 // poll checks the request result, completing, failing, or continuing to wait.
 func (e *openid4vpVerifier) poll(
-	ctx *core.NodeContext, state string, execResp *common.ExecutorResponse, logger *log.Logger,
-) (*common.ExecutorResponse, error) {
+	ctx *providers.NodeContext, state string, execResp *providers.ExecutorResponse, logger *log.Logger,
+) (*providers.ExecutorResponse, error) {
 	rs, svcErr := e.service.GetResult(ctx.Context, state)
 	if svcErr != nil {
 		logger.Debug(ctx.Context, "OpenID4VP request state not found or expired",
 			log.String("errorCode", svcErr.Code))
-		execResp.Status = common.ExecFailure
+		execResp.Status = providers.ExecFailure
 		execResp.Error = &ErrOpenID4VPExpired
 		return execResp, nil
 	}
 
 	switch rs.Status {
+	case openid4vp.StatusExpired:
+		execResp.Status = providers.ExecFailure
+		execResp.Error = &ErrOpenID4VPExpired
 	case openid4vp.StatusCompleted:
-		e.authenticate(ctx, state, execResp, logger)
-		if execResp.Status == common.ExecFailure {
+		e.authenticate(ctx, rs, execResp, logger)
+		if execResp.Status == providers.ExecFailure {
 			return execResp, nil
 		}
-		e.resolveUserType(ctx, execResp, logger)
-		if execResp.Status == common.ExecFailure {
-			return execResp, nil
-		}
-		execResp.Status = common.ExecComplete
+		delete(ctx.RuntimeData, common.RuntimeKeyOpenID4VPState)
+		execResp.Status = providers.ExecComplete
 	case openid4vp.StatusFailed:
 		logger.Debug(ctx.Context, "OpenID4VP presentation verification failed",
 			log.String("reason", rs.FailureReason))
-		execResp.Status = common.ExecFailure
+		execResp.Status = providers.ExecFailure
 		execResp.Error = tidcommon.CustomServiceError(ErrOpenID4VPVerificationFailed,
 			tidcommon.I18nMessage{
 				Key:          ErrOpenID4VPVerificationFailed.ErrorDescription.Key,
@@ -175,50 +152,31 @@ func (e *openid4vpVerifier) poll(
 		// Still pending: keep the state, re-emit the QR data so the wait view
 		// keeps rendering it across polls, and keep the client polling.
 		execResp.RuntimeData[common.RuntimeKeyOpenID4VPState] = state
-		setQRData(execResp, rs.ClientID, rs.RequestURI)
-		execResp.Status = common.ExecUserInputRequired
+		setQRData(execResp, rs.ClientID, rs.RequestURI,
+			openid4vp.WalletAuthorizationURI(rs.ClientID, rs.RequestURI))
+		execResp.Status = providers.ExecUserInputRequired
 	}
 	return execResp, nil
 }
 
-// resolveUserType finds the single self-registration-enabled user type from the
-// application's allowed types and writes it into RuntimeData so the downstream
-// ProvisioningExecutor knows which entity type to create.
-func (e *openid4vpVerifier) resolveUserType(
-	ctx *core.NodeContext, execResp *common.ExecutorResponse, logger *log.Logger,
-) {
-	if e.entityTypeService == nil {
-		return
-	}
-	var candidates []entitytype.EntityType
-	for _, name := range ctx.Application.AllowedUserTypes {
-		et, svcErr := e.entityTypeService.GetEntityTypeByName(ctx.Context, entitytype.TypeCategoryUser, name)
-		if svcErr != nil {
-			if svcErr.Type == tidcommon.ClientErrorType {
-				continue
-			}
-			logger.Error(ctx.Context, "Failed to retrieve user type", log.String("userType", name))
-			return
-		}
-		if et.AllowSelfRegistration {
-			candidates = append(candidates, *et)
-		}
-	}
-	if len(candidates) == 1 {
-		execResp.RuntimeData[userTypeKey] = candidates[0].Name
-		execResp.RuntimeData[defaultOUIDKey] = candidates[0].OUID
-	}
-}
-
-// authenticate passes the presentation session state through the authn provider
-// so that the provider calls the OpenID4VP service and populates AuthUser via
+// authenticate passes the verified presentation result through the authn provider
+// so that the provider resolves the holder's entity and populates AuthUser via
 // the standard chain, just like OAuth/OIDC/Passkey executors.
 func (e *openid4vpVerifier) authenticate(
-	ctx *core.NodeContext, state string,
-	execResp *common.ExecutorResponse, logger *log.Logger,
+	ctx *providers.NodeContext, rs *openid4vp.RequestState,
+	execResp *providers.ExecutorResponse, logger *log.Logger,
 ) {
+	if rs.Result == nil {
+		logger.Error(ctx.Context, "OpenID4VP completed state has no result")
+		execResp.Status = providers.ExecFailure
+		execResp.Error = &ErrOpenID4VPVerificationFailed
+		return
+	}
 	credentials := map[string]interface{}{
-		"openid4vp": &authncommon.OpenID4VPCredential{State: state},
+		"openid4vp": &authncommon.OpenID4VPCredential{
+			Subject: rs.Result.Subject,
+			Claims:  rs.Result.Claims,
+		},
 	}
 
 	authUser, authenticatedClaims, svcErr := e.authnProvider.AuthenticateUser(
@@ -227,7 +185,7 @@ func (e *openid4vpVerifier) authenticate(
 	if svcErr != nil {
 		logger.Debug(ctx.Context, "OpenID4VP authentication through provider failed",
 			log.String("errorCode", svcErr.Code))
-		execResp.Status = common.ExecFailure
+		execResp.Status = providers.ExecFailure
 		execResp.Error = &ErrOpenID4VPVerificationFailed
 		return
 	}
@@ -236,9 +194,7 @@ func (e *openid4vpVerifier) authenticate(
 		execResp.RuntimeData[key] = systemutils.ConvertInterfaceValueToString(value)
 	}
 
-	// Flag the holder for JIT provisioning when the app allows login without a
-	// local user, mirroring the federated executors.
-	if isAuthenticationWithoutLocalUserAllowed(ctx) {
+	if ctx.FlowType == providers.FlowTypeAuthentication && isAuthenticationWithoutLocalUserAllowed(ctx) {
 		execResp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning] = dataValueTrue
 	}
 }

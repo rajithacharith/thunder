@@ -28,44 +28,39 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
+	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-const (
-	defaultAuthFlowExpiry           int64 = 1800  // 30 minutes in seconds
-	defaultRegistrationFlowExpiry   int64 = 3600  // 60 minutes in seconds
-	defaultUserOnboardingFlowExpiry int64 = 86400 // 24 hours in seconds
-	defaultRecoveryFlowExpiry       int64 = 1800  // 30 minutes in seconds
-)
-
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
 	flowEngine       flowEngineInterface
-	flowProvider     providers.FlowProviderInterface
+	flowProvider     providers.FlowProvider
 	graphBuilder     graphbuilder.GraphBuilderInterface
 	flowStore        flowStoreInterface
-	actorProvider    providers.ActorProviderInterface
-	observabilitySvc observability.ObservabilityServiceInterface
+	actorProvider    providers.ActorProvider
+	observabilitySvc providers.ObservabilityProvider
 	transactioner    transaction.Transactioner
 	cryptoSvc        kmprovider.RuntimeCryptoProvider
 	cfg              flowconfig.Config
 }
 
-func newFlowExecService(flowProvider providers.FlowProviderInterface,
+// newFlowExecService creates a new instance of flowExecService with the provided dependencies.
+func newFlowExecService(flowProvider providers.FlowProvider,
 	flowStore flowStoreInterface, flowEngine flowEngineInterface,
-	actorProvider providers.ActorProviderInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	actorProvider providers.ActorProvider,
+	observabilitySvc providers.ObservabilityProvider,
 	transactioner transaction.Transactioner,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
@@ -86,7 +81,7 @@ func newFlowExecService(flowProvider providers.FlowProviderInterface,
 // Execute executes a flow with the given data
 func (s *flowExecService) Execute(ctx context.Context,
 	appID, executionID, flowType string, verbose bool,
-	action string, inputs map[string]string, challengeToken string) (
+	action string, inputs map[string]string, challengeToken, flowSecret string) (
 	*FlowStep, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
 
@@ -97,7 +92,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 	var loadErr *tidcommon.ServiceError
 
 	if isNewFlow(executionID) {
-		engineCtx, loadErr = s.loadNewContext(ctx, appID, flowType, verbose, action, inputs, logger)
+		engineCtx, loadErr = s.loadNewContext(ctx, appID, flowType, verbose, action, inputs, flowSecret, logger)
 		if loadErr != nil {
 			logger.Error(ctx, "Failed to load new flow context",
 				log.String("appID", appID),
@@ -110,7 +105,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 					string(event.EventTypeFlowFailed),
 					event.ComponentFlowEngine,
 				).
-					WithStatus(event.StatusFailure).
+					WithStatus(providers.StatusFailure).
 					WithData(event.DataKey.EntityID, appID).
 					WithData(event.DataKey.FlowType, flowType).
 					WithData(event.DataKey.Error, processServiceErrorForEventPublish(loadErr))
@@ -175,14 +170,14 @@ func (s *flowExecService) Execute(ctx context.Context,
 
 // initContext initializes a new flow context with the given details.
 func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr string, verbose bool,
-	action string, inputs map[string]string, logger *log.Logger) (
+	action string, inputs map[string]string, flowSecret string, logger *log.Logger) (
 	*EngineContext, *tidcommon.ServiceError) {
 	flowType, err := validateFlowType(flowTypeStr)
 	if err != nil {
 		return nil, err
 	}
 
-	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, flowType, logger); svcErr != nil {
+	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, flowType, flowSecret, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -195,13 +190,19 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 	return engineCtx, nil
 }
 
-// checkDirectFlowInitiationAllowed returns an error if the application's grant type does not
-// permit direct HTTP initiation of an authentication flow. Applications configured with the
-// authorization_code grant type must have their authentication flows initiated by the OAuth
-// component, not via a direct HTTP call. Other flow types (registration, recovery, user
-// onboarding) are not subject to this restriction.
+// checkDirectFlowInitiationAllowed governs which applications may initiate an authentication flow
+// directly over HTTP, based on how the application is classified:
+//   - RedirectOnly — the application signs users in through a redirect-based protocol component
+//     (currently OAuth 2.0 authorization_code apps) and must have its flows initiated by that
+//     component, not via a direct HTTP call.
+//   - FlowSecret — a backend / server-side application (including embedded apps with no protocol
+//     profile) that must authenticate at flow initiation by presenting its Flow Secret.
+//
+// Other flow types (registration, recovery, user onboarding) are not restricted. The classification
+// is derived from neutral actor data resolved through the actor layer; Flow Secret verification is
+// the only credential check that remains here.
 func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, appID string,
-	flowType providers.FlowType, logger *log.Logger) *tidcommon.ServiceError {
+	flowType providers.FlowType, flowSecret string, logger *log.Logger) *tidcommon.ServiceError {
 	if flowType != providers.FlowTypeAuthentication {
 		return nil
 	}
@@ -209,23 +210,74 @@ func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, 
 		return nil
 	}
 
-	oauthProfile, svcErr := s.actorProvider.GetOAuthProfileByID(ctx, appID)
+	mode, svcErr := s.resolveFlowInitiationMode(ctx, appID)
 	if svcErr != nil {
 		if svcErr.Code == actorprovider.ErrorActorNotFound.Code {
-			return nil
+			return &ErrorInvalidAppID
 		}
-		logger.Error(ctx, "Failed to retrieve OAuth profile for flow initiation guard",
+		logger.Error(ctx, "Failed to resolve flow initiation mode for guard",
 			log.String("appID", appID))
 		return &tidcommon.InternalServerError
 	}
-	if oauthProfile == nil {
+
+	switch mode {
+	case flowInitiationNotPermitted:
+		return &ErrorDirectFlowInitiationNotPermitted
+	case flowInitiationFlowSecret:
+		if flowSecret == "" {
+			return &ErrorFlowSecretRequired
+		}
+		if authErr := s.actorProvider.AuthenticateActor(ctx,
+			map[string]interface{}{authnprovidercm.UserAttributeUserID: appID},
+			map[string]interface{}{fieldFlowSecret: flowSecret}); authErr != nil {
+			logger.Debug(ctx, "Backend application provided an invalid flow secret",
+				log.String("appID", appID))
+			return &ErrorFlowSecretInvalid
+		}
 		return nil
+	default:
+		logger.Error(ctx, "Unknown flow initiation mode for application",
+			log.String("appID", appID))
+		return &tidcommon.InternalServerError
+	}
+}
+
+// resolveFlowInitiationMode derives how the given application is permitted to initiate a new
+// authentication flow, using neutral actor data resolved through the actor layer. A non-existent
+// application returns ErrorActorNotFound so the caller can distinguish an unknown app from a
+// backend app.
+func (s *flowExecService) resolveFlowInitiationMode(
+	ctx context.Context, appID string,
+) (flowInitiationMode, *tidcommon.ServiceError) {
+	profile, svcErr := s.actorProvider.GetOAuthProfileByID(ctx, appID)
+	if svcErr != nil && svcErr.Code != actorprovider.ErrorActorNotFound.Code {
+		return 0, svcErr
 	}
 
-	if slices.Contains(oauthProfile.GrantTypes, string(providers.GrantTypeAuthorizationCode)) {
-		return &ErrorDirectFlowInitiationNotPermitted
+	// No protocol profile means either a server-side embedded app (exists, no OAuth config) or a
+	// non-existent application. Confirm existence so an unknown app surfaces as ErrorActorNotFound
+	// rather than being treated as a backend app.
+	if profile == nil {
+		if _, clientErr := s.actorProvider.GetInboundClientByID(ctx, appID); clientErr != nil {
+			return 0, clientErr
+		}
+		return flowInitiationFlowSecret, nil
 	}
-	return nil
+
+	// A redirect-based (authorization_code) profile — public or confidential — must initiate flows
+	// through the protocol component, not via a direct HTTP call. A machine-to-machine app
+	// (client_credentials as its only grant) obtains tokens directly and does not run flows. Neither
+	// may initiate a flow directly.
+	if slices.Contains(profile.GrantTypes, string(providers.GrantTypeAuthorizationCode)) ||
+		isClientCredentialsOnly(profile.GrantTypes) {
+		return flowInitiationNotPermitted, nil
+	}
+	return flowInitiationFlowSecret, nil
+}
+
+// isClientCredentialsOnly reports whether client_credentials is the only configured grant type.
+func isClientCredentialsOnly(grantTypes []string) bool {
+	return len(grantTypes) == 1 && grantTypes[0] == string(providers.GrantTypeClientCredentials)
 }
 
 // initContext initializes a new flow context with the given details.
@@ -333,7 +385,19 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 		return nil, &tidcommon.InternalServerError
 	}
 
-	engineContext, err := dbModel.ToEngineContext(ctx, graph)
+	graphResolver := graphResolverFunc(func(rctx context.Context, flowID string) (core.GraphInterface, error) {
+		f, svcErr := s.flowProvider.GetFlow(rctx, flowID)
+		if svcErr != nil {
+			return nil, fmt.Errorf("failed to get flow %s: %s", flowID, svcErr.Error.DefaultValue)
+		}
+		g, svcErr := s.graphBuilder.GetGraph(rctx, f)
+		if svcErr != nil {
+			return nil, fmt.Errorf("failed to build graph for flow %s: %s", flowID, svcErr.Error.DefaultValue)
+		}
+		return g, nil
+	})
+
+	engineContext, err := dbModel.ToEngineContext(ctx, graph, graphResolver)
 	if err != nil {
 		logger.Error(ctx, "Failed to convert flow context from database format",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
@@ -349,7 +413,7 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 }
 
 // setApplicationToContext loads the inbound-client / entity records for the flow's owning entity
-// and assembles a model.Application view onto engineCtx.Application. Entity-agnostic: works for
+// and assembles a providers.Application view onto engineCtx.Application. Entity-agnostic: works for
 // any entity (application, agent, ...) that has an inbound-client row.
 func (s *flowExecService) setApplicationToContext(engineCtx *EngineContext,
 	logger *log.Logger) *tidcommon.ServiceError {
@@ -392,7 +456,7 @@ func (s *flowExecService) removeContext(ctx context.Context, executionID string,
 // updateContext updates the flow context in the store based on the flow step status.
 func (s *flowExecService) updateContext(ctx context.Context, engineCtx *EngineContext,
 	flowStep *FlowStep, logger *log.Logger) error {
-	if flowStep.Status == common.FlowStatusComplete {
+	if flowStep.Status == providers.FlowStatusComplete {
 		return s.removeContext(ctx, engineCtx.ExecutionID, logger)
 	} else {
 		logger.Debug(ctx, "Flow execution is incomplete, updating the flow context",
@@ -451,7 +515,8 @@ func (s *flowExecService) storeContext(ctx context.Context, engineCtx *EngineCon
 // encryptEngineContext serializes an EngineContext and encrypts the context field, returning
 // an EncryptedEngineContext ready to be handed to the store.
 func (s *flowExecService) encryptEngineContext(ctx context.Context, engineCtx *EngineContext) (*FlowContextDB, error) {
-	serialized, err := FromEngineContext(*engineCtx)
+	serialized := &FlowContextDB{}
+	err := serialized.FromEngineContext(*engineCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize engine context: %w", err)
 	}
@@ -560,7 +625,7 @@ func (s *flowExecService) getSystemFlowGraph(ctx context.Context, flowType provi
 
 // isComplete checks if the flow step status indicates completion.
 func isComplete(step FlowStep) bool {
-	return step.Status == common.FlowStatusComplete
+	return step.Status == providers.FlowStatusComplete
 }
 
 // prepareContext prepares the flow context by merging any data.
@@ -687,7 +752,7 @@ func (s *flowExecService) InitiateAndExecute(ctx context.Context,
 		return nil, flowErr
 	}
 
-	if flowStep.Status == common.FlowStatusIncomplete {
+	if flowStep.Status == providers.FlowStatusIncomplete {
 		if storeErr := s.storeContext(ctx, engineCtx, initContext.ExpirySeconds, logger); storeErr != nil {
 			logger.Error(ctx, "Failed to store flow context after execution",
 				log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),

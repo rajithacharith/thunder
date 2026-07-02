@@ -22,7 +22,6 @@ import (
 	"context"
 	"slices"
 
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
@@ -36,18 +35,18 @@ import (
 type clientCredentialsGrantHandler struct {
 	tokenBuilder    tokenservice.TokenBuilderInterface
 	ouService       providers.OrganizationUnitProvider
-	authzService    authz.AuthorizationServiceInterface
-	actorProvider   providers.ActorProviderInterface
-	resourceService providers.ResourceProviderInterface
+	authzService    providers.AuthorizationProvider
+	actorProvider   providers.ActorProvider
+	resourceService providers.ResourceServerProvider
 }
 
 // newClientCredentialsGrantHandler creates a new instance of ClientCredentialsGrantHandler.
 func newClientCredentialsGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	ouService providers.OrganizationUnitProvider,
-	authzService authz.AuthorizationServiceInterface,
-	actorProvider providers.ActorProviderInterface,
-	resourceService providers.ResourceProviderInterface,
+	authzService providers.AuthorizationProvider,
+	actorProvider providers.ActorProvider,
+	resourceService providers.ResourceServerProvider,
 ) GrantHandlerInterface {
 	return &clientCredentialsGrantHandler{
 		tokenBuilder:    tokenBuilder,
@@ -179,21 +178,21 @@ func buildAccessEvaluationsRequest(
 	entityID string,
 	groupIDs []string,
 	permissions []string,
-) authz.AccessEvaluationsRequest {
-	evaluations := make([]authz.AccessEvaluationRequest, 0, len(permissions))
+) providers.AccessEvaluationsRequest {
+	evaluations := make([]providers.AccessEvaluationRequest, 0, len(permissions))
 	for _, permission := range permissions {
-		evaluations = append(evaluations, authz.AccessEvaluationRequest{
-			Subject: authz.Subject{
+		evaluations = append(evaluations, providers.AccessEvaluationRequest{
+			Subject: providers.Subject{
 				ID:       entityID,
 				GroupIDs: groupIDs,
 			},
-			Permission: authz.Permission{Name: permission},
+			Permission: providers.Permission{Name: permission},
 		})
 	}
-	return authz.AccessEvaluationsRequest{Evaluations: evaluations}
+	return providers.AccessEvaluationsRequest{Evaluations: evaluations}
 }
 
-func filterAuthorizedScopes(scopes []string, evaluations []authz.AccessEvaluationResponse) []string {
+func filterAuthorizedScopes(scopes []string, evaluations []providers.AccessEvaluationResponse) []string {
 	authorizedScopes := make([]string, 0, len(evaluations))
 	for i, evaluation := range evaluations {
 		if evaluation.Decision && i < len(scopes) {

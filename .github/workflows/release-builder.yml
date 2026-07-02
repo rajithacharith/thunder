@@ -49,6 +49,7 @@ env:
   RELEASE_GIT_USER_NAME: "thunderid-automation-bot"
   RELEASE_GIT_USER_EMAIL: "thunderid-bot@wso2.com"
   NODE_VERSION: "lts/*"
+  PNPM_VERSION: "latest"
 
 jobs:
   build:
@@ -374,6 +375,7 @@ jobs:
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           run_install: false
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 🔨 Build Release Artifacts
         uses: ./.github/actions/build-multiplatform
@@ -625,6 +627,7 @@ jobs:
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           run_install: false
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 🏷️ Update Sample Apps Version
         run: |

@@ -7,6 +7,10 @@ inputs:
     description: 'Node.js version to use'
     required: false
     default: 'lts/*'
+  pnpm-version:
+    description: 'pnpm version to use'
+    required: false
+    default: 'latest'
   docs-artifact-name:
     description: 'Name of the artifact containing built docs (optional if docs need to be built)'
     required: false
@@ -45,6 +49,7 @@ runs:
       uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       with:
         run_install: false
+        version: ${{ inputs.pnpm-version }}
 
     - name: 🛠️ Build Documentation
       if: inputs.build-docs == 'true'

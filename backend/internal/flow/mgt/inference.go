@@ -444,12 +444,12 @@ func (s *flowInferenceService) createUserTypePromptNode(
 }
 
 // createInputPromptNode creates a generic PROMPT node for collecting a specific input
-func (s *flowInferenceService) createInputPromptNode(nodeID string, input common.Input,
+func (s *flowInferenceService) createInputPromptNode(nodeID string, input providers.Input,
 	nextNodeID string, includeLayout bool) providers.NodeDefinition {
 	// Determine the component type based on input type
 	componentType := input.Type
 	if componentType == "" {
-		componentType = common.InputTypeText
+		componentType = providers.InputTypeText
 	}
 
 	// Create label from identifier by capitalizing the first letter
@@ -526,7 +526,7 @@ func (s *flowInferenceService) createInputPromptNode(nodeID string, input common
 func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(
 	ctx context.Context, nodes *[]providers.NodeDefinition, includeLayout bool) {
 	var smsSendNodeID string
-	var phoneInput *common.Input
+	var phoneInput *providers.Input
 	hasPhoneInputPrompt := false
 
 	// Scan all the existing nodes
@@ -538,11 +538,11 @@ func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(
 			smsSendNodeID == "" {
 			smsSendNodeID = node.ID
 			for _, input := range node.Executor.Inputs {
-				if input.Type == common.InputTypePhone {
-					phoneInput = &common.Input{
+				if input.Type == providers.InputTypePhone {
+					phoneInput = &providers.Input{
 						Ref:        input.Ref,
 						Identifier: input.Identifier,
-						Type:       common.InputTypePhone,
+						Type:       providers.InputTypePhone,
 						Required:   input.Required,
 					}
 					break
@@ -554,7 +554,7 @@ func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(
 		if node.Type == string(common.NodeTypePrompt) {
 			for _, prompt := range node.Prompts {
 				for _, input := range prompt.Inputs {
-					if input.Type == common.InputTypePhone {
+					if input.Type == providers.InputTypePhone {
 						hasPhoneInputPrompt = true
 						break
 					}
@@ -578,10 +578,10 @@ func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(
 	}
 
 	if phoneInput == nil {
-		phoneInput = &common.Input{
+		phoneInput = &providers.Input{
 			Ref:        "mobile_number_input",
 			Identifier: common.AttributeMobileNumber,
-			Type:       common.InputTypePhone,
+			Type:       providers.InputTypePhone,
 			Required:   true,
 		}
 	}

@@ -113,6 +113,7 @@ const LoginFlowBuilderPage = lazy(() => import('./features/login-flow/pages/Logi
 const CreateRolePage = lazy(() => import('./features/roles/pages/CreateRolePage'));
 const RoleEditPage = lazy(() => import('./features/roles/pages/RoleEditPage'));
 const RolesListPage = lazy(() => import('./features/roles/pages/RolesListPage'));
+const SettingsPage = lazy(() => import('./features/settings/pages/SettingsPage'));
 const VerifiablePresentationsListPage = lazy(
   () => import('./features/verifiable-presentations/pages/VerifiablePresentationsListPage'),
 );
@@ -181,6 +182,7 @@ export default function App(): JSX.Element {
               <Route path="flows" element={<FlowsListPage />} />
               <Route path="resource-servers" element={<ResourceServersListPage />} />
               <Route path="resource-servers/:resourceServerId" element={<ResourceServerEditPage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
             {/* Organization Units - wrapped in OrganizationUnitProvider to preserve tree state across navigation */}
             <Route

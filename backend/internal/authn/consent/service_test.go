@@ -138,7 +138,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsClien
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -168,7 +168,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -198,21 +198,21 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_AllConsentsActive()
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
 			},
 		},
 	}
-	existingConsents := []consent.Consent{
+	existingConsents := []providers.Consent{
 		{
 			ID:      "consent-1",
 			GroupID: "app1",
-			Purposes: []consent.ConsentPurposeItem{
+			Purposes: []providers.ConsentPurposeItem{
 				{
 					Name: "app:app1:attrs",
-					Elements: []consent.ConsentElementApproval{
+					Elements: []providers.ConsentElementApproval{
 						{Name: "email", IsUserApproved: true},
 					},
 				},
@@ -237,7 +237,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ForceRepromptIgnore
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -260,7 +260,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ForceRepromptIgnore
 	s.NotNil(result)
 	s.Len(result.Purposes, 1)
 	s.Equal("app:app1:attrs", result.Purposes[0].PurposeName)
-	s.Equal([]PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
+	s.Equal([]providers.PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
 	s.NotEmpty(result.SessionToken)
 	s.mockConsentSvc.AssertNotCalled(s.T(), "SearchConsents", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -269,7 +269,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:          "purpose-1",
-			Namespace:   consent.NamespaceAttribute,
+			Namespace:   providers.NamespaceAttribute,
 			Name:        "app:app1:attrs",
 			Description: "Test purpose",
 			Elements: []consent.PurposeElement{
@@ -283,7 +283,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
 	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
@@ -294,8 +294,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
 	s.NotNil(result)
 	s.Len(result.Purposes, 1)
 	s.Equal("app:app1:attrs", result.Purposes[0].PurposeName)
-	s.Equal([]PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
-	s.Equal([]PromptElement{{Name: "phone"}}, result.Purposes[0].Optional)
+	s.Equal([]providers.PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
+	s.Equal([]providers.PromptElement{{Name: "phone"}}, result.Purposes[0].Optional)
 	s.NotEmpty(result.SessionToken)
 }
 
@@ -303,7 +303,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_RequiredAttributesF
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -317,7 +317,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_RequiredAttributesF
 	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
@@ -328,7 +328,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_RequiredAttributesF
 	s.Nil(svcErr)
 	s.NotNil(result)
 	s.Len(result.Purposes, 1)
-	s.Equal([]PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
+	s.Equal([]providers.PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
 	s.Empty(result.Purposes[0].Optional)
 }
 
@@ -336,7 +336,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_UserProfileFilter()
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -354,25 +354,27 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_UserProfileFilter()
 	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
+	// Both "email" and "phone" are requested as optional; the user-profile filter must
+	// drop "phone" because it is not present in availableAttributes.
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		nil, nil, nil, availableAttributes, false, nil)
+		nil, []string{"email", "phone"}, nil, availableAttributes, false, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
 	s.Len(result.Purposes, 1)
 	s.Empty(result.Purposes[0].Essential)
-	s.Equal([]PromptElement{{Name: "email"}}, result.Purposes[0].Optional)
+	s.Equal([]providers.PromptElement{{Name: "email"}}, result.Purposes[0].Optional)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PartialConsentsExist() {
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -380,13 +382,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PartialConsentsExis
 			},
 		},
 	}
-	existingConsents := []consent.Consent{
+	existingConsents := []providers.Consent{
 		{
 			ID: "consent-1",
-			Purposes: []consent.ConsentPurposeItem{
+			Purposes: []providers.ConsentPurposeItem{
 				{
 					Name: "app:app1:attrs",
-					Elements: []consent.ConsentElementApproval{
+					Elements: []providers.ConsentElementApproval{
 						{Name: "email", IsUserApproved: true},
 					},
 				},
@@ -409,7 +411,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PartialConsentsExis
 	s.NotNil(result)
 	s.Len(result.Purposes, 1)
 	s.Empty(result.Purposes[0].Essential)
-	s.Equal([]PromptElement{{Name: "phone"}}, result.Purposes[0].Optional)
+	s.Equal([]providers.PromptElement{{Name: "phone"}}, result.Purposes[0].Optional)
 }
 
 // RecordConsent tests
@@ -445,7 +447,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:        "purpose-1",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "app:app1:attrs",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -457,7 +459,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &tidcommon.ServiceError{
@@ -475,8 +477,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestCreateConsentSessionToken_GenerateJWTFails() {
-	promptData := &ConsentPromptData{
-		Purposes: []ConsentPurposePrompt{{PurposeName: "purpose-1", Essential: []PromptElement{{Name: "email"}}}},
+	promptData := &providers.ConsentPromptData{
+		Purposes: []providers.ConsentPurposePrompt{{PurposeName: "purpose-1",
+			Essential: []providers.PromptElement{{Name: "email"}}}},
 	}
 
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
@@ -534,8 +537,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Inva
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SessionTokenInvalid() {
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "purpose1", Approved: true},
 		},
 	}
@@ -558,21 +561,21 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_MissingPurpose_Treat
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 		{PurposeName: "purpose2", Essential: []string{"phone"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 			// purpose2 is missing — should be filled in as denied
 		},
 	}
-	createdConsent := &consent.Consent{
+	createdConsent := &providers.Consent{
 		ID: "consent-filled",
-		Purposes: []consent.ConsentPurposeItem{
-			{Name: "purpose1", Elements: []consent.ConsentElementApproval{
+		Purposes: []providers.ConsentPurposeItem{
+			{Name: "purpose1", Elements: []providers.ConsentElementApproval{
 				{Name: "email", IsUserApproved: true},
 			}},
-			{Name: "purpose2", Elements: []consent.ConsentElementApproval{
+			{Name: "purpose2", Elements: []providers.ConsentElementApproval{
 				{Name: "phone", IsUserApproved: true}, // essential overridden to approved
 			}},
 		},
@@ -581,7 +584,11 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_MissingPurpose_Treat
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+		{ID: "p2", Name: "purpose2", Elements: []consent.PurposeElement{{Name: "phone"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.MatchedBy(func(req *consent.ConsentRequest) bool {
 			// Verify purpose2 was added with phone element
@@ -610,9 +617,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ClientEr
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
@@ -639,9 +646,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
@@ -668,24 +675,24 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuc
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "app:app1:attrs", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "app:app1:attrs",
 				Approved:    true,
-				Elements: []ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: true},
 				},
 			},
 		},
 	}
-	createdConsent := &consent.Consent{
+	createdConsent := &providers.Consent{
 		ID:      "consent-new",
 		GroupID: "app1",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "app:app1:attrs",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				},
 			},
@@ -695,7 +702,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuc
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "app:app1:attrs", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(createdConsent, nil)
 
@@ -711,9 +721,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
@@ -726,7 +736,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, clientErr)
 
@@ -742,9 +755,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
@@ -757,7 +770,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, serverErr)
 
@@ -773,37 +789,37 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "app:app1:attrs", Essential: []string{"email"}, Optional: []string{"phone"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "app:app1:attrs",
 				Approved:    true,
-				Elements: []ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: true},
 					{Name: "phone", Approved: true},
 				},
 			},
 		},
 	}
-	existingConsent := consent.Consent{
+	existingConsent := providers.Consent{
 		ID:      "consent-existing",
 		GroupID: "app1",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "app:app1:attrs",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				},
 			},
 		},
 	}
-	updatedConsent := &consent.Consent{
+	updatedConsent := &providers.Consent{
 		ID:      "consent-existing",
 		GroupID: "app1",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "app:app1:attrs",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: true},
 				},
@@ -814,7 +830,12 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{existingConsent}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "app:app1:attrs", Elements: []consent.PurposeElement{
+			{Name: "email"}, {Name: "phone"},
+		}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("UpdateConsent", mock.Anything, "ou1", "consent-existing",
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(updatedConsent, nil)
 
@@ -831,14 +852,14 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
 	}
-	existingConsent := consent.Consent{ID: "consent-existing"}
+	existingConsent := providers.Consent{ID: "consent-existing"}
 	clientErr := &tidcommon.ServiceError{
 		Type: tidcommon.ClientErrorType,
 		Code: "CONSENT-4004",
@@ -847,7 +868,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{existingConsent}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("UpdateConsent", mock.Anything, "ou1", "consent-existing",
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, clientErr)
 
@@ -863,14 +887,14 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
 	}
-	existingConsent := consent.Consent{ID: "consent-existing"}
+	existingConsent := providers.Consent{ID: "consent-existing"}
 	serverErr := &tidcommon.ServiceError{
 		Type: tidcommon.ServerErrorType,
 		Code: "CONSENT-5004",
@@ -879,7 +903,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{existingConsent}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("UpdateConsent", mock.Anything, "ou1", "consent-existing",
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, serverErr)
 
@@ -895,19 +922,22 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_WithValidityPeriod()
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
 	}
-	createdConsent := &consent.Consent{ID: "consent-timed"}
+	createdConsent := &providers.Consent{ID: "consent-timed"}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.MatchedBy(func(req *consent.ConsentRequest) bool {
 			return req.ValidityTime > 0
@@ -925,19 +955,22 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ZeroValidityPeriod()
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "purpose1", Essential: []string{"email"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Approved: true, Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Approved: true, Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 			}},
 		},
 	}
-	createdConsent := &consent.Consent{ID: "consent-no-expiry"}
+	createdConsent := &providers.Consent{ID: "consent-no-expiry"}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "purpose1", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.MatchedBy(func(req *consent.ConsentRequest) bool {
 			return req.ValidityTime == 0
@@ -954,12 +987,12 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 	sessionToken := buildTestSessionToken([]consentSessionPurpose{
 		{PurposeName: "app:app1:attrs", Essential: []string{"email"}, Optional: []string{"phone"}},
 	})
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "app:app1:attrs",
 				Approved:    true,
-				Elements: []ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: false}, // user denies essential
 					{Name: "phone", Approved: false},
 				},
@@ -967,13 +1000,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 		},
 	}
 	// The consent record should reflect the user's actual decisions (email denied)
-	createdConsent := &consent.Consent{
+	createdConsent := &providers.Consent{
 		ID:      "consent-essential-deny",
 		GroupID: "app1",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "app:app1:attrs",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: false},
 					{Name: "phone", IsUserApproved: false},
 				},
@@ -984,7 +1017,12 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
-		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "app:app1:attrs", Elements: []consent.PurposeElement{
+			{Name: "email"}, {Name: "phone"},
+		}},
+	}, (*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
 		mock.MatchedBy(func(req *consent.ConsentRequest) bool {
 			// Verify that email element is NOT overridden — stays denied
@@ -1008,20 +1046,68 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 	s.mockConsentSvc.AssertCalled(s.T(), "CreateConsent", mock.Anything, "ou1", mock.Anything)
 }
 
+// TestRecordConsent_NoExisting_StaleElementFiltered verifies that a first-time consent submission
+// drops element decisions for elements no longer in the current purpose definition (e.g. a purpose
+// was re-versioned between the prompt and the submission).
+func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_StaleElementFiltered() {
+	sessionToken := buildTestSessionToken([]consentSessionPurpose{
+		{PurposeName: "app:app1:attrs", Optional: []string{"email", "legacy_attr"}},
+	})
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{
+				PurposeName: "app:app1:attrs",
+				Approved:    true,
+				Elements: []providers.ElementDecision{
+					{Name: "email", Approved: true},
+					{Name: "legacy_attr", Approved: true},
+				},
+			},
+		},
+	}
+	createdConsent := &providers.Consent{ID: "consent-filtered"}
+
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
+		Return((*tidcommon.ServiceError)(nil))
+	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
+		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]providers.Consent{}, nil)
+	// Current purpose definition no longer contains legacy_attr.
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").Return([]consent.ConsentPurpose{
+		{ID: "p1", Name: "app:app1:attrs", Elements: []consent.PurposeElement{{Name: "email"}}},
+	}, (*tidcommon.ServiceError)(nil))
+	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
+		mock.MatchedBy(func(req *consent.ConsentRequest) bool {
+			if len(req.Purposes) != 1 || req.Purposes[0].Name != "app:app1:attrs" {
+				return false
+			}
+			if len(req.Purposes[0].Elements) != 1 {
+				return false
+			}
+			return req.Purposes[0].Elements[0].Name == "email"
+		})).Return(createdConsent, nil)
+
+	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
+		decisions, sessionToken, 0, nil)
+
+	s.Nil(svcErr)
+	s.NotNil(result)
+	s.Equal("consent-filtered", result.ID)
+}
+
 // buildConsentedElementSet tests
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentedElementSet_Empty() {
-	result := buildConsentedElementSet([]consent.Consent{})
+	result := buildConsentedElementSet([]providers.Consent{})
 	s.Empty(result)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentedElementSet_ApprovedElements() {
-	consents := []consent.Consent{
+	consents := []providers.Consent{
 		{
-			Purposes: []consent.ConsentPurposeItem{
+			Purposes: []providers.ConsentPurposeItem{
 				{
 					Name: "purpose1",
-					Elements: []consent.ConsentElementApproval{
+					Elements: []providers.ConsentElementApproval{
 						{Name: "email", IsUserApproved: true},
 						{Name: "phone", IsUserApproved: false},
 					},
@@ -1037,17 +1123,17 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentedElementSet_ApprovedE
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentedElementSet_MultipleConsents() {
-	consents := []consent.Consent{
+	consents := []providers.Consent{
 		{
-			Purposes: []consent.ConsentPurposeItem{
-				{Name: "purpose1", Elements: []consent.ConsentElementApproval{
+			Purposes: []providers.ConsentPurposeItem{
+				{Name: "purpose1", Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				}},
 			},
 		},
 		{
-			Purposes: []consent.ConsentPurposeItem{
-				{Name: "purpose2", Elements: []consent.ConsentElementApproval{
+			Purposes: []providers.ConsentPurposeItem{
+				{Name: "purpose2", Elements: []providers.ConsentElementApproval{
 					{Name: "phone", IsUserApproved: true},
 				}},
 			},
@@ -1099,7 +1185,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_AllNeedConsent
 	purposes := []consent.ConsentPurpose{
 		{
 			ID:          "p1",
-			Namespace:   consent.NamespaceAttribute,
+			Namespace:   providers.NamespaceAttribute,
 			Name:        "purpose1",
 			Description: "Test purpose",
 			Elements: []consent.PurposeElement{
@@ -1109,20 +1195,20 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_AllNeedConsent
 		},
 	}
 
-	result := buildPurposePrompts(purposes, nil, nil, map[string]bool{}, nil, nil)
+	result := buildPurposePrompts(purposes, nil, []string{"email", "phone"}, map[string]bool{}, nil, nil)
 
 	s.Len(result, 1)
 	s.Equal("purpose1", result[0].PurposeName)
 	s.Equal("p1", result[0].PurposeID)
 	s.Equal("Test purpose", result[0].Description)
 	s.Empty(result[0].Essential)
-	s.Equal([]PromptElement{{Name: "email"}, {Name: "phone"}}, result[0].Optional)
+	s.Equal([]providers.PromptElement{{Name: "email"}, {Name: "phone"}}, result[0].Optional)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_AllAlreadyConsented() {
 	purposes := []consent.ConsentPurpose{
 		{
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "purpose1",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -1131,7 +1217,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_AllAlreadyCons
 	}
 	consentedElements := map[string]bool{"purpose1:email": true}
 
-	result := buildPurposePrompts(purposes, nil, nil, consentedElements, nil, nil)
+	// "email" is requested but already consented; the prompt builder must drop it.
+	result := buildPurposePrompts(purposes, []string{"email"}, nil, consentedElements, nil, nil)
 
 	s.Empty(result)
 }
@@ -1139,7 +1226,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_AllAlreadyCons
 func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_RequiredAttributesFilter() {
 	purposes := []consent.ConsentPurpose{
 		{
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "purpose1",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -1151,14 +1238,14 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_RequiredAttrib
 	result := buildPurposePrompts(purposes, []string{"email"}, nil, map[string]bool{}, nil, nil)
 
 	s.Len(result, 1)
-	s.Equal([]PromptElement{{Name: "email"}}, result[0].Essential)
+	s.Equal([]providers.PromptElement{{Name: "email"}}, result[0].Essential)
 	s.Empty(result[0].Optional)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_UserProfileFilter() {
 	purposes := []consent.ConsentPurpose{
 		{
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "purpose1",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -1168,17 +1255,20 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_UserProfileFil
 	}
 	userAttributeSet := map[string]bool{"email": true}
 
-	result := buildPurposePrompts(purposes, nil, nil, map[string]bool{}, userAttributeSet, nil)
+	// Both elements are requested; the user-profile filter must drop "phone" since it is
+	// not in availableAttributes.
+	result := buildPurposePrompts(purposes, nil, []string{"email", "phone"}, map[string]bool{},
+		userAttributeSet, nil)
 
 	s.Len(result, 1)
 	s.Empty(result[0].Essential)
-	s.Equal([]PromptElement{{Name: "email"}}, result[0].Optional)
+	s.Equal([]providers.PromptElement{{Name: "email"}}, result[0].Optional)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_NoMatchingElements() {
 	purposes := []consent.ConsentPurpose{
 		{
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "purpose1",
 			Elements: []consent.PurposeElement{
 				{Name: "email", IsMandatory: true},
@@ -1195,64 +1285,67 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_NoMatchingElem
 // mergeConsentPurposes tests
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NoExisting() {
-	incoming := []consent.ConsentPurposeItem{
+	incoming := []providers.ConsentPurposeItem{
 		{
 			Name: "purpose1",
-			Elements: []consent.ConsentElementApproval{
+			Elements: []providers.ConsentElementApproval{
 				{Name: "email", IsUserApproved: true},
 			},
 		},
 	}
+	valid := map[string]map[string]bool{"purpose1": {"email": true}}
 
-	result := mergeConsentPurposes(nil, incoming)
+	result := mergeConsentPurposes(nil, incoming, valid)
 
 	s.Len(result, 1)
 	s.Equal("purpose1", result[0].Name)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NewElementAddedToExistingPurpose() {
-	existing := []consent.ConsentPurposeItem{
+	existing := []providers.ConsentPurposeItem{
 		{
 			Name: "purpose1",
-			Elements: []consent.ConsentElementApproval{
+			Elements: []providers.ConsentElementApproval{
 				{Name: "email", IsUserApproved: true},
 			},
 		},
 	}
-	incoming := []consent.ConsentPurposeItem{
+	incoming := []providers.ConsentPurposeItem{
 		{
 			Name: "purpose1",
-			Elements: []consent.ConsentElementApproval{
+			Elements: []providers.ConsentElementApproval{
 				{Name: "phone", IsUserApproved: true},
 			},
 		},
 	}
+	valid := map[string]map[string]bool{"purpose1": {"email": true, "phone": true}}
 
-	result := mergeConsentPurposes(existing, incoming)
+	result := mergeConsentPurposes(existing, incoming, valid)
 
 	s.Len(result, 1)
 	s.Len(result[0].Elements, 2)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NewDecisionOverridesExisting() {
-	existing := []consent.ConsentPurposeItem{
+	existing := []providers.ConsentPurposeItem{
 		{
 			Name: "purpose1",
-			Elements: []consent.ConsentElementApproval{
+			Elements: []providers.ConsentElementApproval{
 				{Name: "email", IsUserApproved: false},
 			},
 		},
 	}
-	incoming := []consent.ConsentPurposeItem{
+	incoming := []providers.ConsentPurposeItem{
 		{
 			Name: "purpose1",
-			Elements: []consent.ConsentElementApproval{
+			Elements: []providers.ConsentElementApproval{
 				{Name: "email", IsUserApproved: true},
 			},
 		},
 	}
+	valid := map[string]map[string]bool{"purpose1": {"email": true}}
 
-	result := mergeConsentPurposes(existing, incoming)
+	result := mergeConsentPurposes(existing, incoming, valid)
 
 	s.Len(result, 1)
 	s.Len(result[0].Elements, 1)
@@ -1260,21 +1353,25 @@ func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NewDecisionOv
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_ExistingPurposePreserved() {
-	existing := []consent.ConsentPurposeItem{
-		{Name: "purpose1", Elements: []consent.ConsentElementApproval{
+	existing := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
 			{Name: "email", IsUserApproved: true},
 		}},
-		{Name: "purpose2", Elements: []consent.ConsentElementApproval{
+		{Name: "purpose2", Elements: []providers.ConsentElementApproval{
 			{Name: "address", IsUserApproved: true},
 		}},
 	}
-	incoming := []consent.ConsentPurposeItem{
-		{Name: "purpose1", Elements: []consent.ConsentElementApproval{
+	incoming := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
 			{Name: "email", IsUserApproved: true},
 		}},
 	}
+	valid := map[string]map[string]bool{
+		"purpose1": {"email": true},
+		"purpose2": {"address": true},
+	}
 
-	result := mergeConsentPurposes(existing, incoming)
+	result := mergeConsentPurposes(existing, incoming, valid)
 
 	s.Len(result, 2)
 	purposeNames := make([]string, 0, 2)
@@ -1286,21 +1383,25 @@ func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_ExistingPurpo
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NewPurposeAdded() {
-	existing := []consent.ConsentPurposeItem{
-		{Name: "purpose1", Elements: []consent.ConsentElementApproval{
+	existing := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
 			{Name: "email", IsUserApproved: true},
 		}},
 	}
-	incoming := []consent.ConsentPurposeItem{
-		{Name: "purpose1", Elements: []consent.ConsentElementApproval{
+	incoming := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
 			{Name: "email", IsUserApproved: true},
 		}},
-		{Name: "purpose-new", Elements: []consent.ConsentElementApproval{
+		{Name: "purpose-new", Elements: []providers.ConsentElementApproval{
 			{Name: "phone", IsUserApproved: true},
 		}},
 	}
+	valid := map[string]map[string]bool{
+		"purpose1":    {"email": true},
+		"purpose-new": {"phone": true},
+	}
 
-	result := mergeConsentPurposes(existing, incoming)
+	result := mergeConsentPurposes(existing, incoming, valid)
 
 	s.Len(result, 2)
 	purposeNames := make([]string, 0, 2)
@@ -1311,11 +1412,57 @@ func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NewPurposeAdd
 	s.Contains(purposeNames, "purpose-new")
 }
 
+// TestMergeConsentPurposes_StaleElementDropped covers the case where the existing record
+// holds a consent decision for an element that has since been removed from its purpose.
+// The stale element must be filtered out of the merged result.
+func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_StaleElementDropped() {
+	existing := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
+			{Name: "email", IsUserApproved: true},
+			{Name: "legacy", IsUserApproved: true},
+		}},
+	}
+	incoming := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
+			{Name: "phone", IsUserApproved: true},
+		}},
+	}
+	valid := map[string]map[string]bool{"purpose1": {"email": true, "phone": true}}
+
+	result := mergeConsentPurposes(existing, incoming, valid)
+
+	s.Len(result, 1)
+	s.Len(result[0].Elements, 2)
+	names := []string{result[0].Elements[0].Name, result[0].Elements[1].Name}
+	s.Contains(names, "email")
+	s.Contains(names, "phone")
+	s.NotContains(names, "legacy")
+}
+
+// TestMergeConsentPurposes_DeletedPurposeDropped covers the case where an existing purpose
+// no longer exists upstream. The whole purpose entry should be removed from the merged result.
+func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_DeletedPurposeDropped() {
+	existing := []providers.ConsentPurposeItem{
+		{Name: "purpose1", Elements: []providers.ConsentElementApproval{
+			{Name: "email", IsUserApproved: true},
+		}},
+		{Name: "purpose-gone", Elements: []providers.ConsentElementApproval{
+			{Name: "old", IsUserApproved: true},
+		}},
+	}
+	valid := map[string]map[string]bool{"purpose1": {"email": true}}
+
+	result := mergeConsentPurposes(existing, nil, valid)
+
+	s.Len(result, 1)
+	s.Equal("purpose1", result[0].Name)
+}
+
 // buildConsentElementApprovals tests
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentElementApprovals_Empty() {
 	session := &consentSessionData{}
-	decisions := &ConsentDecisions{Purposes: []PurposeDecision{}}
+	decisions := &providers.ConsentDecisions{Purposes: []providers.PurposeDecision{}}
 
 	result := buildConsentElementApprovals(session, decisions)
 
@@ -1328,12 +1475,12 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentElementApprovals_Multi
 			{PurposeName: "purpose1", Optional: []string{"email", "phone"}},
 		},
 	}
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "purpose1",
 				Approved:    true,
-				Elements: []ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: true},
 					{Name: "phone", Approved: false},
 				},
@@ -1358,13 +1505,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildConsentElementApprovals_Drops
 			{PurposeName: "purpose1", Optional: []string{"email"}},
 		},
 	}
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "purpose1", Elements: []ElementDecision{
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "purpose1", Elements: []providers.ElementDecision{
 				{Name: "email", Approved: true},
 				{Name: "phone", Approved: true}, // not prompted — dropped
 			}},
-			{PurposeName: "forged", Elements: []ElementDecision{ // not prompted — dropped
+			{PurposeName: "forged", Elements: []providers.ElementDecision{ // not prompted — dropped
 				{Name: "admin", Approved: true},
 			}},
 		},
@@ -1393,9 +1540,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestFillMissingDecisions_AllPresent() 
 			{PurposeName: "p1", Essential: []string{"email"}},
 		},
 	}
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "p1", Approved: true, Elements: []ElementDecision{{Name: "email", Approved: true}}},
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "p1", Approved: true, Elements: []providers.ElementDecision{{Name: "email", Approved: true}}},
 		},
 	}
 	fillMissingDecisions(session, decisions)
@@ -1409,9 +1556,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestFillMissingDecisions_MissingPurpos
 			{PurposeName: "p2", Essential: []string{"phone"}, Optional: []string{"address"}},
 		},
 	}
-	decisions := &ConsentDecisions{
-		Purposes: []PurposeDecision{
-			{PurposeName: "p1", Approved: true, Elements: []ElementDecision{{Name: "email", Approved: true}}},
+	decisions := &providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
+			{PurposeName: "p1", Approved: true, Elements: []providers.ElementDecision{{Name: "email", Approved: true}}},
 		},
 	}
 	fillMissingDecisions(session, decisions)
@@ -1434,7 +1581,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestFillMissingDecisions_MissingPurpos
 
 func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_EmptyPermissionsReturnsInputUnchanged() {
 	input := []consent.ConsentPurpose{
-		{ID: "attr-p", Namespace: consent.NamespaceAttribute, Name: "App 1"},
+		{ID: "attr-p", Namespace: providers.NamespaceAttribute, Name: "App 1"},
 	}
 	out, svcErr := s.service.applyPermissionsPurpose(context.Background(), input, "ou1", "app1", "App 1", nil)
 	s.Nil(svcErr)
@@ -1444,14 +1591,14 @@ func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_EmptyPermi
 func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_CreatesPurposeWhenMissing() {
 	perms := []string{"booking:read", "booking:write"}
 	input := []consent.ConsentPurpose{
-		{ID: "attr-p", Namespace: consent.NamespaceAttribute, Name: "App 1"},
+		{ID: "attr-p", Namespace: providers.NamespaceAttribute, Name: "App 1"},
 	}
 	s.mockConsentSvc.On("CreateConsentPurpose", mock.Anything, "ou1",
 		mock.MatchedBy(func(in *consent.ConsentPurposeInput) bool {
 			return in.GroupID == "app1" &&
 				in.Name == consent.PermissionsPurposeName("app1") &&
 				len(in.Elements) == 2
-		})).Return(&consent.ConsentPurpose{ID: "perm-p", Namespace: consent.NamespacePermission}, nil)
+		})).Return(&consent.ConsentPurpose{ID: "perm-p", Namespace: providers.NamespacePermission}, nil)
 
 	out, svcErr := s.service.applyPermissionsPurpose(context.Background(), input, "ou1", "app1", "App 1", perms)
 	s.Nil(svcErr)
@@ -1464,10 +1611,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_NoopWhenPu
 	input := []consent.ConsentPurpose{
 		{
 			ID:        "perm-p",
-			Namespace: consent.NamespacePermission,
+			Namespace: providers.NamespacePermission,
 			Name:      "permissions:app1",
 			Elements: []consent.PurposeElement{
-				{Name: "booking:read", Namespace: consent.NamespacePermission},
+				{Name: "booking:read", Namespace: providers.NamespacePermission},
 			},
 		},
 	}
@@ -1484,10 +1631,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_UpdatesPur
 	input := []consent.ConsentPurpose{
 		{
 			ID:        "perm-p",
-			Namespace: consent.NamespacePermission,
+			Namespace: providers.NamespacePermission,
 			Name:      "permissions:app1",
 			Elements: []consent.PurposeElement{
-				{Name: "booking:read", Namespace: consent.NamespacePermission},
+				{Name: "booking:read", Namespace: providers.NamespacePermission},
 			},
 		},
 	}
@@ -1501,7 +1648,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_UpdatesPur
 				names[e.Name] = true
 			}
 			return names["booking:read"] && names["booking:cancel"]
-		})).Return(&consent.ConsentPurpose{ID: "perm-p", Namespace: consent.NamespacePermission}, nil)
+		})).Return(&consent.ConsentPurpose{ID: "perm-p", Namespace: providers.NamespacePermission}, nil)
 
 	out, svcErr := s.service.applyPermissionsPurpose(context.Background(), input, "ou1", "app1", "App 1", perms)
 	s.Nil(svcErr)
@@ -1527,17 +1674,17 @@ func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_IgnoresAtt
 	input := []consent.ConsentPurpose{
 		{
 			ID:        "attr-p",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Name:      "App 1",
 			Elements: []consent.PurposeElement{
-				{Name: "email", Namespace: consent.NamespaceAttribute},
+				{Name: "email", Namespace: providers.NamespaceAttribute},
 			},
 		},
 	}
 	s.mockConsentSvc.On("CreateConsentPurpose", mock.Anything, "ou1",
 		mock.MatchedBy(func(in *consent.ConsentPurposeInput) bool {
 			return in.Name == consent.PermissionsPurposeName("app1")
-		})).Return(&consent.ConsentPurpose{ID: "perm-new", Namespace: consent.NamespacePermission}, nil)
+		})).Return(&consent.ConsentPurpose{ID: "perm-new", Namespace: providers.NamespacePermission}, nil)
 
 	out, svcErr := s.service.applyPermissionsPurpose(context.Background(), input, "ou1", "app1", "App 1", perms)
 	s.Nil(svcErr)
@@ -1554,10 +1701,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestPermissionsPurposeName() {
 
 func (s *ConsentEnforcerServiceTestSuite) TestFilterPermissionPurposes() {
 	input := []consent.ConsentPurpose{
-		{ID: "1", Namespace: consent.NamespaceAttribute},
-		{ID: "2", Namespace: consent.NamespacePermission},
+		{ID: "1", Namespace: providers.NamespaceAttribute},
+		{ID: "2", Namespace: providers.NamespacePermission},
 		{ID: "3", Namespace: ""}, // purpose with no recognized prefix — skipped
-		{ID: "4", Namespace: consent.NamespacePermission},
+		{ID: "4", Namespace: providers.NamespacePermission},
 	}
 	got := consent.FilterPermissionPurposes(input)
 	s.Len(got, 2)
@@ -1567,12 +1714,12 @@ func (s *ConsentEnforcerServiceTestSuite) TestFilterPermissionPurposes() {
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergePurposeElements() {
 	existing := []consent.PurposeElement{
-		{Name: "a", Namespace: consent.NamespacePermission},
-		{Name: "b", Namespace: consent.NamespacePermission},
+		{Name: "a", Namespace: providers.NamespacePermission},
+		{Name: "b", Namespace: providers.NamespacePermission},
 	}
 	desired := []consent.PurposeElement{
-		{Name: "b", Namespace: consent.NamespacePermission},
-		{Name: "c", Namespace: consent.NamespacePermission},
+		{Name: "b", Namespace: providers.NamespacePermission},
+		{Name: "c", Namespace: providers.NamespacePermission},
 	}
 	merged, changed := mergePurposeElements(existing, desired)
 	s.True(changed)
@@ -1632,7 +1779,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPermissionPurposePrompt_Filte
 	purpose := consent.ConsentPurpose{
 		ID:        "perm-1",
 		Name:      consent.PermissionsPurposeName("app1"),
-		Namespace: consent.NamespacePermission,
+		Namespace: providers.NamespacePermission,
 		Elements: []consent.PurposeElement{
 			{Name: "p1"},
 			{Name: "p2"},
@@ -1663,7 +1810,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPermissionPurposePrompt_Attac
 	purpose := consent.ConsentPurpose{
 		ID:        "perm-1",
 		Name:      consent.PermissionsPurposeName("app1"),
-		Namespace: consent.NamespacePermission,
+		Namespace: providers.NamespacePermission,
 		Elements: []consent.PurposeElement{
 			{Name: "users"},
 			{Name: "users.read"},
@@ -1683,7 +1830,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPermissionPurposePrompt_Empty
 	purpose := consent.ConsentPurpose{
 		ID:        "perm-1",
 		Name:      consent.PermissionsPurposeName("app1"),
-		Namespace: consent.NamespacePermission,
+		Namespace: providers.NamespacePermission,
 		Elements: []consent.PurposeElement{
 			{Name: "p1"},
 		},
@@ -1717,6 +1864,6 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPromptedPurposeSet_AndElement
 
 func (s *ConsentEnforcerServiceTestSuite) TestElementNames() {
 	s.Nil(elementNames(nil))
-	s.Nil(elementNames([]PromptElement{}))
-	s.Equal([]string{"a", "b"}, elementNames([]PromptElement{{Name: "a"}, {Name: "b", Parent: "a"}}))
+	s.Nil(elementNames([]providers.PromptElement{}))
+	s.Equal([]string{"a", "b"}, elementNames([]providers.PromptElement{{Name: "a"}, {Name: "b", Parent: "a"}}))
 }

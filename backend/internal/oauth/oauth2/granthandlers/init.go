@@ -20,7 +20,6 @@ package granthandlers
 
 import (
 	"github.com/thunder-id/thunderid/internal/attributecache"
-	"github.com/thunder-id/thunderid/internal/authz"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2authz "github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/ciba"
@@ -39,9 +38,9 @@ func Initialize(
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	ouService providers.OrganizationUnitProvider,
-	authzService authz.AuthorizationServiceInterface,
-	actorProvider providers.ActorProviderInterface,
-	resourceService providers.ResourceProviderInterface,
+	authzService providers.AuthorizationProvider,
+	actorProvider providers.ActorProvider,
+	resourceService providers.ResourceServerProvider,
 	cibaService ciba.CIBAServiceInterface,
 	cfg oauthconfig.Config,
 ) GrantHandlerProviderInterface {

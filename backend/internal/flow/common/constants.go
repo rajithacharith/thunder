@@ -21,18 +21,6 @@ package common
 
 import "time"
 
-// FlowStatus defines the status of a flow execution.
-type FlowStatus string
-
-const (
-	// FlowStatusComplete indicates that the flow execution is complete.
-	FlowStatusComplete FlowStatus = "COMPLETE"
-	// FlowStatusIncomplete indicates that the flow execution is incomplete.
-	FlowStatusIncomplete FlowStatus = "INCOMPLETE"
-	// FlowStatusError indicates that there was an error during the flow execution.
-	FlowStatusError FlowStatus = "ERROR"
-)
-
 // FlowStepType defines the type of a step in the flow execution.
 type FlowStepType string
 
@@ -55,6 +43,8 @@ const (
 	NodeTypeTaskExecution NodeType = "TASK_EXECUTION"
 	// NodeTypePrompt represents a prompt node
 	NodeTypePrompt NodeType = "PROMPT"
+	// NodeTypeCall represents a CALL node that invokes another flow
+	NodeTypeCall NodeType = "CALL"
 )
 
 // NodeStatus defines the status of a node in the flow execution.
@@ -70,6 +60,8 @@ const (
 	// NodeStatusForward indicates that the engine should forward execution to NextNodeID.
 	// Used for scenarios like onFailure handlers where context should be preserved.
 	NodeStatusForward NodeStatus = "FORWARD"
+	// NodeStatusCall signals the engine to push a frame and transfer execution to the referenced flow.
+	NodeStatusCall NodeStatus = "CALL_FLOW"
 )
 
 // NodeResponseType defines the type of response from a node in the flow execution.
@@ -82,34 +74,6 @@ const (
 	NodeResponseTypeRedirection NodeResponseType = "REDIRECTION"
 	// NodeResponseTypeRetry indicates that the node response is a retry type, indicating a retry action.
 	NodeResponseTypeRetry NodeResponseType = "RETRY"
-)
-
-// ExecutorStatus defines the status of an executor in the flow execution.
-type ExecutorStatus string
-
-const (
-	// ExecComplete indicates that the executor has completed its execution successfully.
-	ExecComplete ExecutorStatus = "COMPLETE"
-	// ExecUserInputRequired indicates that the executor requires user input to proceed.
-	ExecUserInputRequired ExecutorStatus = "USER_INPUT_REQUIRED"
-	// ExecExternalRedirection indicates that the executor is redirecting to an external URL.
-	ExecExternalRedirection ExecutorStatus = "EXTERNAL_REDIRECTION"
-	// ExecFailure indicates that the executor has failed during its execution.
-	ExecFailure ExecutorStatus = "FAILURE"
-	// ExecRetry indicates that the executor is retrying its execution.
-	ExecRetry ExecutorStatus = "RETRY"
-)
-
-// ExecutorType defines the type of an executor in the flow execution.
-type ExecutorType string
-
-const (
-	// ExecutorTypeAuthentication represents an executor that performs authentication.
-	ExecutorTypeAuthentication ExecutorType = "AUTHENTICATION"
-	// ExecutorTypeRegistration represents an executor that handles user registration/provisioning.
-	ExecutorTypeRegistration ExecutorType = "REGISTRATION"
-	// ExecutorTypeUtility represents a utility executor for common operations.
-	ExecutorTypeUtility ExecutorType = "UTILITY"
 )
 
 const (
@@ -239,34 +203,6 @@ const (
 	RuntimeKeyAuthorizationRequestID = "authorizationRequestId"
 )
 
-// TODO: Define a go type for InputType when formalizing input types
-
-// InputType constants define known input types used in flow definitions.
-const (
-	// InputTypeText represents a text input type.
-	InputTypeText = "TEXT_INPUT"
-	// InputTypeEmail represents an email input type.
-	InputTypeEmail = "EMAIL_INPUT"
-	// InputTypePassword represents a password credential input type.
-	InputTypePassword = "PASSWORD_INPUT"
-	// InputTypeOTP represents a one-time password input type.
-	InputTypeOTP = "OTP_INPUT"
-	// InputTypePhone represents a phone number input type.
-	InputTypePhone = "PHONE_INPUT"
-	// InputTypeConsent represents a consent decisions input type.
-	InputTypeConsent = "CONSENT_INPUT"
-	// InputTypeHidden represents a hidden input type.
-	InputTypeHidden = "HIDDEN"
-	// InputTypeSelect represents a select (dropdown) input type.
-	InputTypeSelect = "SELECT"
-
-	// TODO: Add support for other sensitive input types:
-	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
-	// - OAuth/OIDC authorization codes
-	// - OIDC nonce
-	// - Invite tokens
-)
-
 // MetaComponentType constants define known component types used in flow meta definitions.
 const (
 	// MetaComponentTypeBlock represents a block container component.
@@ -283,12 +219,6 @@ const (
 	// AttributeMobileNumber is the default attribute name for a user's mobile phone number.
 	AttributeMobileNumber = "mobile_number"
 )
-
-// sensitiveInputTypes contains the list of input types that are considered sensitive.
-var sensitiveInputTypes = []string{
-	InputTypePassword,
-	InputTypeOTP,
-}
 
 const (
 	// AttributeEmail is the default attribute name for a user's email.
@@ -315,27 +245,6 @@ const (
 	ForwardedDataKeyActionType = "actionType"
 	// ForwardedDataKeyTemplateData holds template parameters for notification executors
 	ForwardedDataKeyTemplateData = "templateData"
-)
-
-// ValidationType identifies the constraint type of a ValidationRule.
-type ValidationType string
-
-// Validation rule types.
-const (
-	// ValidationTypeRegex matches the submitted value against a regex pattern.
-	ValidationTypeRegex ValidationType = "regex"
-	// ValidationTypeMinLength enforces a minimum string length on the submitted value.
-	ValidationTypeMinLength ValidationType = "minLength"
-	// ValidationTypeMaxLength enforces a maximum string length on the submitted value.
-	ValidationTypeMaxLength ValidationType = "maxLength"
-)
-
-// Default i18n fallback message keys returned in fieldErrors when a validation
-// rule does not specify a message.
-const (
-	DefaultValidationMessageRegex     = "validation.pattern.invalid"
-	DefaultValidationMessageMinLength = "validation.minLength.invalid"
-	DefaultValidationMessageMaxLength = "validation.maxLength.invalid"
 )
 
 // InterceptorStatus represents the outcome of an interceptor execution.

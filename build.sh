@@ -150,7 +150,7 @@ TEST_RUN="${4:-}"
 TEST_PACKAGE="${5:-}"
 
 # PNPM version to use for frontend builds and docs build
-PNPM_VERSION="11.0.9"
+PNPM_VERSION=$(grep -A2 '"packageManager"' package.json | grep -o '"version": *"[^"]*"' | sed 's/"version": *"\(.*\)"/\1/')
 
 # ============================================================================
 # Read Configuration from deployment.yaml
@@ -321,8 +321,8 @@ function initialize_databases() {
 
     mkdir -p "$REPOSITORY_DB_DIR"
 
-    db_files=("configdb.db" "runtimedb.db" "userdb.db")
-    script_paths=("configdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql")
+    db_files=("configdb.db" "runtimedb.db" "userdb.db" "operationdb.db")
+    script_paths=("configdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql" "operationdb/sqlite.sql")
 
     for ((i = 0; i < ${#db_files[@]}; i++)); do
         db_file="${db_files[$i]}"
@@ -502,6 +502,7 @@ function prepare_backend_for_packaging() {
     echo "=== Ensuring server certificates exist in the distribution ==="
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "server"
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "signing"
+    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "ecdsa-signing"
     echo "================================================================"
 
     echo "=== Ensuring crypto file exists in the distribution ==="
@@ -926,13 +927,26 @@ function ensure_certificates() {
     if [[ ! -f "$local_cert_file" || ! -f "$local_key_file" ]]; then
         mkdir -p "$LOCAL_CERT_DIR"
         echo "Generating certificates (${cert_name_prefix}) in $LOCAL_CERT_DIR..."
-        OPENSSL_ERR=$(
-            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout "$local_key_file" \
-                -out "$local_cert_file" \
-                -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
-                > /dev/null 2>&1
-        )
+        if [[ "$cert_name_prefix" == ecdsa* ]]; then
+            OPENSSL_ERR=$(
+                openssl ecparam -name prime256v1 -genkey -noout -param_enc named_curve \
+                    -out "$local_key_file" && \
+                openssl req -new -x509 -nodes -days 3650 \
+                    -key "$local_key_file" \
+                    -out "$local_cert_file" \
+                    -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
+                    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
+                    2>&1 >/dev/null
+            )
+        else
+            OPENSSL_ERR=$(
+                openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                    -keyout "$local_key_file" \
+                    -out "$local_cert_file" \
+                    -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
+                    2>&1 >/dev/null
+            )
+        fi
         if [[ $? -ne 0 ]]; then
             echo "Error generating certificates: $OPENSSL_ERR"
             exit 1
@@ -1017,60 +1031,36 @@ function run() {
         run_consent
     fi
 
-    # Save original skip security value and temporarily set to true
-    ORIGINAL_SKIP_SECURITY="${SKIP_SECURITY:-}"
-    export SKIP_SECURITY=true
-    run_backend false
+    # Ensure runtime prerequisites (certificates, crypto material, databases) so the
+    # in-process bootstrap can create the default resources before the server starts.
+    echo "=== Ensuring server certificates exist ==="
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "signing"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "ecdsa-signing"
 
-    # Run initial data setup
-    echo "⚙️  Running initial data setup..."
+    echo "=== Ensuring sample app certificates exist ==="
+    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
+    ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
+
+    ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
+
+    echo "Initializing databases..."
+    initialize_databases
+
+    # Create default resources via the in-process bootstrap one-shot (security stays
+    # enabled; the bootstrap runs through the service layer under a runtime context).
+    echo "⚙️  Creating default resources..."
     echo ""
-    
-    # Wait for server to be ready
-    MAX_RETRIES=30
-    RETRY_INTERVAL=2
-    retries=0
-    
-    echo "[INFO] Waiting for ${PRODUCT_NAME} server to be ready..."
-    while [ $retries -lt $MAX_RETRIES ]; do
-        if curl -k -s -f "$BASE_URL/health/readiness" > /dev/null 2>&1; then
-            echo "✓ Server is ready!"
-            break
-        fi
-        
-        retries=$((retries + 1))
-        if [ $retries -ge $MAX_RETRIES ]; then
-            echo "❌ Server did not become ready after $MAX_RETRIES attempts"
-            echo "💡 Please ensure the ${PRODUCT_NAME} server is running at $BASE_URL"
-            exit 1
-        fi
-        
-        echo "[WAITING] Attempt $retries/$MAX_RETRIES - Server not ready yet, retrying in ${RETRY_INTERVAL}s..."
-        sleep $RETRY_INTERVAL
-    done
-    
-    echo ""
-    
-    # Run the bootstrap script directly with environment variable and arguments
-    API_BASE="$BASE_URL" \
+    if ! ( cd "$BACKEND_DIR" && \
         ADMIN_USERNAME="${ADMIN_USERNAME:-}" \
         ADMIN_PASSWORD="${ADMIN_PASSWORD:-}" \
-        "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
-        --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
-
-    if [ $? -ne 0 ]; then
+        PUBLIC_URL="$PUBLIC_URL" \
+        go run . bootstrap --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console" ); then
         echo "❌ Initial data setup failed"
         echo "💡 Check the logs above for more details"
         exit 1
     fi
 
-    echo "🔒 Restoring security setting and restarting backend..."
-    # Restore original SKIP_SECURITY value
-    if [ -n "$ORIGINAL_SKIP_SECURITY" ]; then
-        export SKIP_SECURITY="$ORIGINAL_SKIP_SECURITY"
-    else
-        unset SKIP_SECURITY
-    fi
     # Start backend with initial output but without final output/wait
     start_backend false
 
@@ -1098,6 +1088,7 @@ function run_backend() {
     echo "=== Ensuring server certificates exist ==="
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "signing"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "ecdsa-signing"
 
     echo "=== Ensuring sample app certificates exist ==="
     ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"

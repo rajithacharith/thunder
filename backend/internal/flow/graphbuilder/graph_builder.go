@@ -166,7 +166,16 @@ func (b *graphBuilder) processNode(
 	isFinalNode := nodeDef.OnSuccess == "" &&
 		nodeDef.OnFailure == "" &&
 		len(nodeDef.Prompts) == 0 &&
-		nodeDef.Next == ""
+		nodeDef.Next == "" &&
+		nodeDef.Flow == nil
+
+	// TODO: Temporarily add the call node validation here.
+	// Should be moved to flow validator once implemented.
+	if nodeDef.Type == string(common.NodeTypeCall) {
+		if err := b.validateCallNodeDefinition(nodeDef); err != nil {
+			return err
+		}
+	}
 
 	// Construct a new node. Here we set isStartNode to false by default
 	node, err := b.flowFactory.CreateNode(nodeDef.ID, nodeDef.Type, nodeDef.Properties,
@@ -193,6 +202,7 @@ func (b *graphBuilder) processNode(
 	if err := b.configureNodeExecutor(ctx, nodeDef, node); err != nil {
 		return err
 	}
+	b.configureCallNodeReference(nodeDef, node)
 
 	// Add node to the graph
 	if err := graph.AddNode(node); err != nil {
@@ -220,11 +230,17 @@ func (b *graphBuilder) configureNodeNavigation(nodeDef *providers.NodeDefinition
 
 	// Set onFailure if defined
 	if nodeDef.OnFailure != "" {
-		if err := b.validateOnFailureTarget(allNodes, nodeDef.OnFailure); err != nil {
-			return fmt.Errorf("invalid onFailure configuration for node %s: %w", nodeDef.ID, err)
+		// CALL nodes may route onFailure to any node type, not just PROMPT.
+		if nodeDef.Type != string(common.NodeTypeCall) {
+			if err := b.validateOnFailureTarget(allNodes, nodeDef.OnFailure); err != nil {
+				return fmt.Errorf("invalid onFailure configuration for node %s: %w", nodeDef.ID, err)
+			}
 		}
 		if taskNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
 			taskNode.SetOnFailure(nodeDef.OnFailure)
+		}
+		if callNode, ok := node.(core.CallNodeInterface); ok {
+			callNode.SetOnFailure(nodeDef.OnFailure)
 		}
 
 		// Add edge for graph structure
@@ -279,6 +295,36 @@ func (b *graphBuilder) validateOnIncompleteTarget(nodes []providers.NodeDefiniti
 	return errors.New("onIncomplete target node not found")
 }
 
+// validateCallNodeDefinition validates the constraints specific to CALL nodes.
+func (b *graphBuilder) validateCallNodeDefinition(nodeDef *providers.NodeDefinition) error {
+	if nodeDef.Flow == nil || nodeDef.Flow.Ref == "" {
+		return fmt.Errorf("CALL node %s: 'flow.ref' is required", nodeDef.ID)
+	}
+	if nodeDef.OnSuccess == "" {
+		return fmt.Errorf("CALL node %s: 'onSuccess' is required", nodeDef.ID)
+	}
+	if nodeDef.OnIncomplete != "" {
+		return fmt.Errorf("CALL node %s: 'onIncomplete' is not allowed on CALL nodes", nodeDef.ID)
+	}
+	if len(nodeDef.Prompts) > 0 {
+		return fmt.Errorf("CALL node %s: 'prompts' is not allowed on CALL nodes", nodeDef.ID)
+	}
+	if nodeDef.Executor != nil {
+		return fmt.Errorf("CALL node %s: 'executor' is not allowed on CALL nodes", nodeDef.ID)
+	}
+	return nil
+}
+
+// configureCallNodeReference sets the referenced flow ID on CALL nodes.
+func (b *graphBuilder) configureCallNodeReference(nodeDef *providers.NodeDefinition, node core.NodeInterface) {
+	if nodeDef.Flow == nil || nodeDef.Flow.Ref == "" {
+		return
+	}
+	if callNode, ok := node.(core.CallNodeInterface); ok {
+		callNode.SetReferencedFlow(nodeDef.Flow.Ref)
+	}
+}
+
 // configureNodeInputs configures the inputs for executor-backed nodes.
 // Validation rules on executor inputs are intentionally not propagated:
 // executor inputs are read from runtime context (already validated at the
@@ -298,13 +344,13 @@ func (b *graphBuilder) configureNodeInputs(
 
 	if nodeDef.Executor == nil || len(nodeDef.Executor.Inputs) == 0 {
 		logger.Debug(ctx, "No inputs defined for executor; setting empty input list")
-		executorNode.SetInputs([]common.Input{})
+		executorNode.SetInputs([]providers.Input{})
 		return
 	}
 
-	inputs := make([]common.Input, len(nodeDef.Executor.Inputs))
+	inputs := make([]providers.Input, len(nodeDef.Executor.Inputs))
 	for i, input := range nodeDef.Executor.Inputs {
-		inputs[i] = common.Input{
+		inputs[i] = providers.Input{
 			Ref:        input.Ref,
 			Identifier: input.Identifier,
 			Type:       input.Type,
@@ -316,14 +362,14 @@ func (b *graphBuilder) configureNodeInputs(
 
 // toValidationRules converts mgt rule definitions to runtime ValidationRule
 // values and pre-compiles their regex patterns. Returns nil for an empty input.
-func toValidationRules(defs []providers.ValidationRuleDefinition) ([]common.ValidationRule, error) {
+func toValidationRules(defs []providers.ValidationRuleDefinition) ([]providers.ValidationRule, error) {
 	if len(defs) == 0 {
 		return nil, nil
 	}
-	rules := make([]common.ValidationRule, len(defs))
+	rules := make([]providers.ValidationRule, len(defs))
 	for i, d := range defs {
-		rules[i] = common.ValidationRule{
-			Type:    common.ValidationType(d.Type),
+		rules[i] = providers.ValidationRule{
+			Type:    providers.ValidationType(d.Type),
 			Value:   d.Value,
 			Message: d.Message,
 		}
@@ -390,14 +436,14 @@ func (b *graphBuilder) configureNodePrompts(
 	prompts := make([]common.Prompt, len(nodeDef.Prompts))
 	for i, promptDef := range nodeDef.Prompts {
 		// Convert inputs
-		inputs := make([]common.Input, len(promptDef.Inputs))
+		inputs := make([]providers.Input, len(promptDef.Inputs))
 		for j, inputDef := range promptDef.Inputs {
 			validation, err := toValidationRules(inputDef.Validation)
 			if err != nil {
 				return fmt.Errorf("node %s, prompt %d, input %s: %w",
 					nodeDef.ID, i, inputDef.Identifier, err)
 			}
-			inputs[j] = common.Input{
+			inputs[j] = providers.Input{
 				Ref:        inputDef.Ref,
 				Identifier: inputDef.Identifier,
 				Type:       inputDef.Type,

@@ -28,7 +28,6 @@ import (
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -37,11 +36,11 @@ import (
 // The observabilitySvc parameter is optional (can be nil) - if nil, observability events won't be published.
 func Initialize(
 	mux *http.ServeMux,
-	flowProvider providers.FlowProviderInterface,
-	actorProvider providers.ActorProviderInterface,
+	flowProvider providers.FlowProvider,
+	actorProvider providers.ActorProvider,
 	executorRegistry executor.ExecutorRegistryInterface,
 	interceptorRegistry interceptor.InterceptorRegistryInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
 	cfg flowconfig.Config,
@@ -62,7 +61,8 @@ func Initialize(
 		flowStore = newFlowStore(dbProvider, cfg.DeploymentID)
 	}
 	interceptorRunner := newInterceptorRunner(interceptorRegistry)
-	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc)
+	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc,
+		flowProvider, graphBuilder)
 	flowExecService := newFlowExecService(flowProvider, flowStore, flowEngine,
 		actorProvider, observabilitySvc, transactioner, cryptoSvc, graphBuilder, cfg)
 

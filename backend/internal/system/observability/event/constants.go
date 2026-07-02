@@ -18,6 +18,8 @@
 
 package event
 
+import "github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 // Component name constants for event sources.
 // These identify which component/module is emitting the event.
 const (
@@ -33,34 +35,34 @@ const (
 	// Token Issuance Events
 
 	// EventTypeTokenIssuanceStarted is triggered when token issuance begins.
-	EventTypeTokenIssuanceStarted EventType = "TOKEN_ISSUANCE_STARTED" //nolint:gosec
+	EventTypeTokenIssuanceStarted providers.EventType = "TOKEN_ISSUANCE_STARTED" //nolint:gosec
 
 	// EventTypeTokenIssued is triggered when a token is successfully issued.
-	EventTypeTokenIssued EventType = "TOKEN_ISSUED"
+	EventTypeTokenIssued providers.EventType = "TOKEN_ISSUED"
 
 	// EventTypeTokenIssuanceFailed is triggered when token issuance fails.
-	EventTypeTokenIssuanceFailed EventType = "TOKEN_ISSUANCE_FAILED" //nolint:gosec
+	EventTypeTokenIssuanceFailed providers.EventType = "TOKEN_ISSUANCE_FAILED" //nolint:gosec
 
 	// Flow Execution Events
 
 	// EventTypeFlowStarted is triggered when a flow execution begins.
-	EventTypeFlowStarted EventType = "FLOW_STARTED"
+	EventTypeFlowStarted providers.EventType = "FLOW_STARTED"
 
 	// EventTypeFlowNodeExecutionStarted is triggered when a flow node execution begins.
-	EventTypeFlowNodeExecutionStarted EventType = "FLOW_NODE_EXECUTION_STARTED"
+	EventTypeFlowNodeExecutionStarted providers.EventType = "FLOW_NODE_EXECUTION_STARTED"
 
 	// EventTypeFlowNodeExecutionCompleted is triggered when a flow node completes.
-	EventTypeFlowNodeExecutionCompleted EventType = "FLOW_NODE_EXECUTION_COMPLETED"
+	EventTypeFlowNodeExecutionCompleted providers.EventType = "FLOW_NODE_EXECUTION_COMPLETED"
 
 	// EventTypeFlowNodeExecutionFailed is triggered when a flow node fails.
-	EventTypeFlowNodeExecutionFailed EventType = "FLOW_NODE_EXECUTION_FAILED"
+	EventTypeFlowNodeExecutionFailed providers.EventType = "FLOW_NODE_EXECUTION_FAILED"
 
 	// EventTypeFlowUserInputRequired is triggered when flow requires user input.
-	EventTypeFlowUserInputRequired EventType = "FLOW_USER_INPUT_REQUIRED"
+	EventTypeFlowUserInputRequired providers.EventType = "FLOW_USER_INPUT_REQUIRED"
 
 	// EventTypeFlowCompleted is triggered when flow execution succeeds.
-	EventTypeFlowCompleted EventType = "FLOW_COMPLETED"
+	EventTypeFlowCompleted providers.EventType = "FLOW_COMPLETED"
 
 	// EventTypeFlowFailed is triggered when flow execution fails.
-	EventTypeFlowFailed EventType = "FLOW_FAILED"
+	EventTypeFlowFailed providers.EventType = "FLOW_FAILED"
 )

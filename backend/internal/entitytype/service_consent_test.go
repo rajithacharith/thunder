@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -171,7 +172,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestCreateMissingConsentElements_Som
 		Return([]string{"email"}, nil)
 
 	expectedInput := []consent.ConsentElementInput{
-		{Name: "phone", Namespace: consent.NamespaceAttribute},
+		{Name: "phone", Namespace: providers.NamespaceAttribute},
 	}
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default", expectedInput).
 		Return([]consent.ConsentElement{{ID: "e1", Name: "phone"}}, nil)
@@ -225,7 +226,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestSchemaServiceWithConsent(cMock)
 
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
 		Return((*tidcommon.ServiceError)(nil))
@@ -239,7 +240,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_NoExisting
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestSchemaServiceWithConsent(cMock)
 
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{}, nil)
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
@@ -252,7 +253,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_Associated
 	svc := newTestSchemaServiceWithConsent(cMock)
 
 	// "email" can't be deleted due to associated purpose — should warn and continue
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
 		Return(&consent.ErrorDeletingConsentElementWithAssociatedPurpose)
@@ -266,7 +267,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_OtherDelet
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestSchemaServiceWithConsent(cMock)
 
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
 		Return(&tidcommon.InternalServerError)
@@ -280,7 +281,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_ListError(
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestSchemaServiceWithConsent(cMock)
 
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
@@ -292,12 +293,12 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_MultipleAt
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestSchemaServiceWithConsent(cMock)
 
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
 		Return((*tidcommon.ServiceError)(nil))
 
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "phone").
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e2").
 		Return((*tidcommon.ServiceError)(nil))
@@ -382,7 +383,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_NewA
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
 		Return([]string{"email"}, nil)
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default",
-		[]consent.ConsentElementInput{{Name: "phone", Namespace: consent.NamespaceAttribute}}).
+		[]consent.ConsentElementInput{{Name: "phone", Namespace: providers.NamespaceAttribute}}).
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 
 	result := svc.syncConsentElementsOnUpdate(
@@ -403,7 +404,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Attr
 		Return([]string{"email"}, nil)
 
 	// Delete "phone" which was removed
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "phone").
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e2").
 		Return((*tidcommon.ServiceError)(nil))
@@ -463,7 +464,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Dele
 
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
 		Return([]string{"email"}, nil)
-	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
+	cMock.EXPECT().ListConsentElements(mock.Anything, "default", providers.NamespaceAttribute, "phone").
 		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.syncConsentElementsOnUpdate(
@@ -609,7 +610,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteEntityType_ConsentEnabled_
 	cMock.On("IsEnabled").Return(true)
 	storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, "schema-id").Return(nil)
 	// Consent element cleanup: ListConsentElements → found → DeleteConsentElement
-	cMock.On("ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.On("ListConsentElements", mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "elem-1", Name: "email"}}, (*tidcommon.ServiceError)(nil))
 	cMock.On("DeleteConsentElement", mock.Anything, "default", "elem-1").
 		Return((*tidcommon.ServiceError)(nil))
@@ -618,7 +619,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteEntityType_ConsentEnabled_
 
 	s.Nil(svcErr)
 	storeMock.AssertCalled(s.T(), "DeleteEntityTypeByID", mock.Anything, mock.Anything, "schema-id")
-	cMock.AssertCalled(s.T(), "ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email")
+	cMock.AssertCalled(s.T(), "ListConsentElements", mock.Anything, "default", providers.NamespaceAttribute, "email")
 }
 
 // TestCreateEntityType_ConsentSyncFails_CompensationDeleteFails verifies that when the
@@ -755,11 +756,11 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteEntityType_ConsentCleanupF
 	cMock.On("IsEnabled").Return(true)
 	storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, "schema-id").Return(nil)
 	// Consent cleanup fails when listing elements for the removed attribute.
-	cMock.On("ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email").
+	cMock.On("ListConsentElements", mock.Anything, "default", providers.NamespaceAttribute, "email").
 		Return(nil, &tidcommon.InternalServerError)
 
 	svcErr := svc.DeleteEntityType(context.Background(), TypeCategoryUser, "schema-id")
 
 	s.Nil(svcErr)
-	cMock.AssertCalled(s.T(), "ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email")
+	cMock.AssertCalled(s.T(), "ListConsentElements", mock.Anything, "default", providers.NamespaceAttribute, "email")
 }

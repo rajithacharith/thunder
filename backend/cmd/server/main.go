@@ -37,7 +37,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/cors"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
@@ -68,11 +67,11 @@ func main() {
 		logger.Fatal(ctx, "Failed to initialize configurations")
 	}
 
-	// Install the CORS allowed-origins matcher used by the HTTP middleware.
-	// Compilation errors are already surfaced by config validation; this call
-	// rebuilds the rules and installs them as the cors package singleton.
-	if err := cors.InitializeMatcher(cfg.CORS.AllowedOrigins); err != nil {
-		logger.Fatal(ctx, "Failed to initialize CORS matcher", log.Error(err))
+	// Apply the configured log level from deployment.yaml, now that config is loaded.
+	if cfg.Log.Level != "" {
+		if err := logger.SetLevel(cfg.Log.Level); err != nil {
+			logger.Fatal(ctx, "Invalid log level in configuration", log.Error(err))
+		}
 	}
 
 	// Initialize the cache manager.
@@ -88,7 +87,18 @@ func main() {
 	}
 
 	// Register the services.
-	jwtService, runtimeCryptoSvc := registerServices(mux, cacheManager)
+	jwtService, runtimeCryptoSvc, importService := registerServices(mux, cacheManager)
+
+	// When invoked as the bootstrap one-shot (`thunderid bootstrap`), create the
+	// default resources in-process and exit without starting the HTTP server.
+	if isBootstrapInvocation() {
+		if err := runBootstrap(ctx, logger, serverHome, importService, cacheManager); err != nil {
+			logger.Error(ctx, "In-process bootstrap failed; exiting", log.Error(err))
+			os.Exit(1)
+		}
+		logger.Info(ctx, "In-process bootstrap finished successfully")
+		return
+	}
 
 	// Register static file handlers for frontend applications.
 	registerStaticFileHandlers(ctx, logger, mux, serverHome)

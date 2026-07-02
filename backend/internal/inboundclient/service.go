@@ -51,16 +51,17 @@ import (
 // InboundClientServiceInterface is the public API of the inbound client subsystem.
 type InboundClientServiceInterface interface {
 	// CreateInboundClient validates and persists a new inbound auth profile, certificates, and OAuth config.
-	CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient, appCert *inboundmodel.Certificate,
+	CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
 		oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error
 	// GetInboundClientByEntityID returns the inbound client for the given entity.
 	GetInboundClientByEntityID(ctx context.Context, entityID string) (*inboundmodel.InboundClient, error)
 	// GetInboundClientList returns all inbound clients.
 	GetInboundClientList(ctx context.Context) ([]inboundmodel.InboundClient, error)
+	// GetEntityIDsByThemeID returns paginated entity IDs of inbound clients referencing the given theme.
+	GetEntityIDsByThemeID(ctx context.Context, themeID string, limit, offset int) ([]string, int, error)
 	// UpdateInboundClient validates and persists updates to an inbound client, certificates, and OAuth config.
 	UpdateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-		appCert *inboundmodel.Certificate, oauthProfile *providers.OAuthProfile,
-		hasClientSecret bool, oauthClientID string, entityName string) error
+		oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error
 	// DeleteInboundClient removes the inbound client, OAuth profile, and certificates for the given entity.
 	DeleteInboundClient(ctx context.Context, entityID string) error
 	// Validate resolves flow defaults and validates FK constraints and OAuth profile without persisting.
@@ -68,7 +69,7 @@ type InboundClientServiceInterface interface {
 		oauthProfile *providers.OAuthProfile, hasClientSecret bool) error
 	// ResolveInboundAuthProfileHandles resolves flow handle fields in-place to their IDs.
 	// Only fields with an empty ID but a non-empty handle are resolved.
-	ResolveInboundAuthProfileHandles(ctx context.Context, profile *inboundmodel.InboundAuthProfile) error
+	ResolveInboundAuthProfileHandles(ctx context.Context, profile *providers.InboundAuthProfile) error
 
 	// GetOAuthProfileByEntityID returns the stored OAuth profile for the given entity.
 	GetOAuthProfileByEntityID(ctx context.Context, entityID string) (*providers.OAuthProfile, error)
@@ -124,8 +125,7 @@ func newInboundClientService(store inboundClientStoreInterface, transactioner tr
 
 // CreateInboundClient validates and persists a new inbound auth profile, certificates, and OAuth config.
 func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-	appCert *inboundmodel.Certificate, oauthProfile *providers.OAuthProfile,
-	hasClientSecret bool, entityName string) error {
+	oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error {
 	if client == nil {
 		return fmt.Errorf("inbound client is required")
 	}
@@ -149,21 +149,17 @@ func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *
 	}
 	applyInboundDefaults(client, oauthProfile)
 	oauthClientID := s.resolveClientID(ctx, client.ID)
+	if err := validateOAuthCertificateClientID(oauthProfile, oauthClientID); err != nil {
+		return err
+	}
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if _, vErr, opErr := s.createCertificate(
-			txCtx, cert.CertificateReferenceTypeApplication, client.ID, appCert,
-		); vErr != nil {
-			return vErr
-		} else if opErr != nil {
-			return opErr
-		}
 		if err := s.store.CreateInboundClient(txCtx, *client); err != nil {
 			return err
 		}
 		if oauthProfile != nil {
 			if oauthProfile.Certificate != nil && oauthClientID != "" {
 				if _, vErr, opErr := s.createCertificate(
-					txCtx, cert.CertificateReferenceTypeOAuthApp, oauthClientID, oauthProfile.Certificate,
+					txCtx, oauthClientID, oauthProfile.Certificate,
 				); vErr != nil {
 					return vErr
 				} else if opErr != nil {
@@ -195,10 +191,21 @@ func (s *inboundClientService) GetInboundClientList(ctx context.Context) ([]inbo
 	return s.store.GetInboundClientList(ctx, serverconst.MaxCompositeStoreRecords)
 }
 
+// GetEntityIDsByThemeID returns paginated entity IDs of inbound clients referencing the given theme.
+func (s *inboundClientService) GetEntityIDsByThemeID(
+	ctx context.Context, themeID string, limit, offset int) ([]string, int, error) {
+	if limit < 0 {
+		return nil, 0, fmt.Errorf("invalid limit: must be non-negative, got %d", limit)
+	}
+	if offset < 0 {
+		return nil, 0, fmt.Errorf("invalid offset: must be non-negative, got %d", offset)
+	}
+	return s.store.GetEntityIDsByThemeID(ctx, themeID, limit, offset)
+}
+
 // UpdateInboundClient validates and persists updates to an inbound client, certificates, and OAuth config.
 func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-	appCert *inboundmodel.Certificate, oauthProfile *providers.OAuthProfile,
-	hasClientSecret bool, oauthClientID string, entityName string) error {
+	oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error {
 	if client == nil {
 		return fmt.Errorf("inbound client is required")
 	}
@@ -223,22 +230,16 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 	applyInboundDefaults(client, oauthProfile)
 	// Capture existing OAuth client_id before the caller updates entity system attributes.
 	oldOAuthClientID := s.resolveClientID(ctx, client.ID)
+	if err := validateOAuthCertificateClientID(oauthProfile, oauthClientID); err != nil {
+		return err
+	}
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if _, vErr, opErr := s.syncCertificate(
-			txCtx, cert.CertificateReferenceTypeApplication, client.ID, appCert,
-		); vErr != nil {
-			return vErr
-		} else if opErr != nil {
-			return opErr
-		}
 		if err := s.store.UpdateInboundClient(txCtx, *client); err != nil {
 			return err
 		}
 		// Clean up the previous OAuth-app cert when the client_id changed or OAuth was removed.
 		if oldOAuthClientID != "" && oldOAuthClientID != oauthClientID {
-			if opErr := s.deleteCertificate(
-				txCtx, cert.CertificateReferenceTypeOAuthApp, oldOAuthClientID,
-			); opErr != nil {
+			if opErr := s.deleteCertificate(txCtx, oldOAuthClientID); opErr != nil {
 				if opErr.Underlying == nil || opErr.Underlying.Code != cert.ErrorCertificateNotFound.Code {
 					return opErr
 				}
@@ -250,7 +251,7 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 				oauthCert = oauthProfile.Certificate
 			}
 			if _, vErr, opErr := s.syncCertificate(
-				txCtx, cert.CertificateReferenceTypeOAuthApp, oauthClientID, oauthCert,
+				txCtx, oauthClientID, oauthCert,
 			); vErr != nil {
 				return vErr
 			} else if opErr != nil {
@@ -290,10 +291,17 @@ func (s *inboundClientService) Validate(ctx context.Context, client *inboundmode
 	return nil
 }
 
+func validateOAuthCertificateClientID(oauthProfile *providers.OAuthProfile, oauthClientID string) error {
+	if oauthProfile != nil && oauthProfile.Certificate != nil && oauthClientID == "" {
+		return ErrOAuthCertificateRequiresClientID
+	}
+	return nil
+}
+
 // ResolveInboundAuthProfileHandles resolves flow handle fields to their IDs in-place.
 // Each handle is only resolved when the corresponding ID field is empty.
 func (s *inboundClientService) ResolveInboundAuthProfileHandles(
-	ctx context.Context, profile *inboundmodel.InboundAuthProfile,
+	ctx context.Context, profile *providers.InboundAuthProfile,
 ) error {
 	if s.flowMgt == nil {
 		return nil
@@ -352,21 +360,11 @@ func (s *inboundClientService) DeleteInboundClient(ctx context.Context, entityID
 	// Capture OAuth client_id before the caller deletes the entity itself.
 	oauthClientID := s.resolveClientID(ctx, entityID)
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if s.consentService != nil && s.consentService.IsEnabled() {
-			if err := s.syncConsentOnDelete(txCtx, entityID); err != nil {
-				return err
-			}
-		}
 		if err := s.store.DeleteInboundClient(txCtx, entityID); err != nil {
 			return err
 		}
-		if opErr := s.deleteCertificate(txCtx, cert.CertificateReferenceTypeApplication, entityID); opErr != nil {
-			if opErr.Underlying == nil || opErr.Underlying.Code != cert.ErrorCertificateNotFound.Code {
-				return opErr
-			}
-		}
 		if oauthClientID != "" {
-			if opErr := s.deleteCertificate(txCtx, cert.CertificateReferenceTypeOAuthApp, oauthClientID); opErr != nil {
+			if opErr := s.deleteCertificate(txCtx, oauthClientID); opErr != nil {
 				if opErr.Underlying == nil || opErr.Underlying.Code != cert.ErrorCertificateNotFound.Code {
 					return opErr
 				}
@@ -552,10 +550,10 @@ func (s *inboundClientService) GetCertificate(ctx context.Context, refType cert.
 	return &inboundmodel.Certificate{Type: c.Type, Value: c.Value}, nil
 }
 
-// createCertificate validates and creates a new certificate record.
-func (s *inboundClientService) createCertificate(ctx context.Context, refType cert.CertificateReferenceType,
-	refID string, in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
-	c, vErr := validateCertificateInput(refType, refID, "", in)
+// createCertificate validates and creates a new OAuth-app certificate record.
+func (s *inboundClientService) createCertificate(ctx context.Context, refID string,
+	in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
+	c, vErr := validateCertificateInput(refID, "", in)
 	if vErr != nil {
 		return nil, vErr, nil
 	}
@@ -568,9 +566,10 @@ func (s *inboundClientService) createCertificate(ctx context.Context, refType ce
 	return &inboundmodel.Certificate{Type: c.Type, Value: c.Value}, nil, nil
 }
 
-// syncCertificate creates, updates, or deletes the certificate to match the desired state.
-func (s *inboundClientService) syncCertificate(ctx context.Context, refType cert.CertificateReferenceType,
-	refID string, in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
+// syncCertificate creates, updates, or deletes the OAuth-app certificate to match the desired state.
+func (s *inboundClientService) syncCertificate(ctx context.Context, refID string,
+	in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
+	refType := cert.CertificateReferenceTypeOAuthApp
 	existing, svcErr := s.certService.GetCertificateByReference(ctx, refType, refID)
 	if svcErr != nil && svcErr.Code != cert.ErrorCertificateNotFound.Code {
 		return nil, nil, &CertOperationError{Operation: CertOpRetrieve, RefType: refType, Underlying: svcErr}
@@ -580,7 +579,7 @@ func (s *inboundClientService) syncCertificate(ctx context.Context, refType cert
 	if existing != nil {
 		existingID = existing.ID
 	}
-	desired, vErr := validateCertificateInput(refType, refID, existingID, in)
+	desired, vErr := validateCertificateInput(refID, existingID, in)
 	if vErr != nil {
 		return nil, vErr, nil
 	}
@@ -606,9 +605,9 @@ func (s *inboundClientService) syncCertificate(ctx context.Context, refType cert
 	return nil, nil, nil
 }
 
-// deleteCertificate removes the certificate for the given reference type and ID.
-func (s *inboundClientService) deleteCertificate(ctx context.Context, refType cert.CertificateReferenceType,
-	refID string) *CertOperationError {
+// deleteCertificate removes the OAuth-app certificate for the given client ID.
+func (s *inboundClientService) deleteCertificate(ctx context.Context, refID string) *CertOperationError {
+	refType := cert.CertificateReferenceTypeOAuthApp
 	if s.certService == nil {
 		return nil
 	}
@@ -619,11 +618,11 @@ func (s *inboundClientService) deleteCertificate(ctx context.Context, refType ce
 }
 
 // validateCertificateInput validates and maps inbound certificate input to a cert.Certificate.
-func validateCertificateInput(refType cert.CertificateReferenceType,
-	refID, existingCertID string, in *inboundmodel.Certificate) (*cert.Certificate, error) {
+func validateCertificateInput(refID, existingCertID string, in *inboundmodel.Certificate) (*cert.Certificate, error) {
 	if in == nil || in.Type == "" {
 		return nil, nil
 	}
+	refType := cert.CertificateReferenceTypeOAuthApp
 	switch in.Type {
 	case cert.CertificateTypeJWKS:
 		if in.Value == "" {
@@ -1352,7 +1351,7 @@ func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
 		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
 		GroupID:     entityID,
-		Namespace:   consent.NamespaceAttribute,
+		Namespace:   providers.NamespaceAttribute,
 		Elements:    attributesToPurposeElements(attrMap),
 	}
 	if _, err := s.consentService.CreateConsentPurpose(ctx, ouID, &purpose); err != nil {
@@ -1389,7 +1388,7 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 				Name:        consent.AttributesPurposeName(entityID),
 				Description: "Consent purpose for application " + entityName,
 				GroupID:     entityID,
-				Namespace:   consent.NamespaceAttribute,
+				Namespace:   providers.NamespaceAttribute,
 				Elements:    attributesToPurposeElements(newAttrs),
 			}
 			if _, createErr := s.consentService.CreateConsentPurpose(ctx, ouID, &purpose); createErr != nil {
@@ -1400,16 +1399,8 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 	}
 
 	if len(newAttrs) == 0 {
-		// No attributes requested; remove only the attribute purpose. The permission purpose, if any,
-		// is left alone — it has an independent lifecycle bound to the resource service.
-		if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, existing[0].ID); delErr != nil {
-			if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
-				s.logger.Warn(ctx, "Cannot delete attribute consent purpose due to existing consents",
-					log.String("entityID", entityID))
-				return nil
-			}
-			return s.wrapConsentServiceError(delErr)
-		}
+		// No attributes requested; leave the existing attribute purpose intact. Consent purposes
+		// outlive the application so prior consents remain interpretable.
 		return nil
 	}
 
@@ -1421,7 +1412,7 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
 		GroupID:     entityID,
-		Namespace:   consent.NamespaceAttribute,
+		Namespace:   providers.NamespaceAttribute,
 		Elements:    attributesToPurposeElements(newAttrs),
 	}
 	if _, updateErr := s.consentService.UpdateConsentPurpose(ctx, ouID, existing[0].ID, &updated); updateErr != nil {
@@ -1445,30 +1436,6 @@ func isConsentAttributesUnchanged(existing []consent.PurposeElement, requested m
 	return true
 }
 
-// syncConsentOnDelete removes every consent purpose (attribute and permission) owned by the
-// application. Purposes that cannot be deleted because they are referenced by active consent
-// records are skipped with a warning.
-func (s *inboundClientService) syncConsentOnDelete(ctx context.Context, entityID string) error {
-	// TODO: Replace with the entity's actual OU when multi-OU consent is supported.
-	const ouID = "default"
-	purposes, err := s.consentService.ListConsentPurposes(ctx, ouID, entityID)
-	if err != nil {
-		return s.wrapConsentServiceError(err)
-	}
-	for _, p := range purposes {
-		if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, p.ID); delErr != nil {
-			if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
-				s.logger.Warn(ctx, "Cannot delete consent purpose due to existing consents",
-					log.String("entityID", entityID), log.String("purposeID", p.ID),
-					log.String("purposeNamespace", string(p.Namespace)))
-				continue
-			}
-			return s.wrapConsentServiceError(delErr)
-		}
-	}
-	return nil
-}
-
 // createMissingConsentElements creates any consent elements not yet present in the consent service.
 func (s *inboundClientService) createMissingConsentElements(ctx context.Context,
 	ouID string, names []string) error {
@@ -1488,7 +1455,7 @@ func (s *inboundClientService) createMissingConsentElements(ctx context.Context,
 		if !existingMap[n] {
 			toCreate = append(toCreate, consent.ConsentElementInput{
 				Name:      n,
-				Namespace: consent.NamespaceAttribute,
+				Namespace: providers.NamespaceAttribute,
 			})
 		}
 	}
@@ -1546,7 +1513,7 @@ func attributesToPurposeElements(attributes map[string]bool) []consent.PurposeEl
 	for attr := range attributes {
 		elements = append(elements, consent.PurposeElement{
 			Name:        attr,
-			Namespace:   consent.NamespaceAttribute,
+			Namespace:   providers.NamespaceAttribute,
 			IsMandatory: false,
 		})
 	}

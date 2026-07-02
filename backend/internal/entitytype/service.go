@@ -26,6 +26,7 @@ import (
 	"fmt"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/entitytype/model"
@@ -1140,7 +1141,7 @@ func (us *entityTypeService) createMissingConsentElements(ctx context.Context,
 		if !existingMap[name] {
 			elementsToCreate = append(elementsToCreate, consent.ConsentElementInput{
 				Name:      name,
-				Namespace: consent.NamespaceAttribute,
+				Namespace: providers.NamespaceAttribute,
 			})
 		}
 	}
@@ -1172,7 +1173,7 @@ func (us *entityTypeService) deleteConsentElements(ctx context.Context,
 
 	for _, attrName := range attributeNames {
 		// List existing consent elements for the removed attribute to find their IDs for deletion
-		existing, err := us.consentService.ListConsentElements(ctx, ouID, consent.NamespaceAttribute, attrName)
+		existing, err := us.consentService.ListConsentElements(ctx, ouID, providers.NamespaceAttribute, attrName)
 		if err != nil {
 			return wrapConsentServiceError(ctx, err, logger)
 		}
