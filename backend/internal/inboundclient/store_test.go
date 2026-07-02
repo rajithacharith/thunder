@@ -832,9 +832,27 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByReference_Flow() {
 	})
 }
 
+func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByReference_Layout() {
+	suite.Run("uses layout queries", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetEntityIDsByLayoutIDCount,
+			"layout-1", testServerID).
+			Return([]map[string]interface{}{{"total": int64(1)}}, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetEntityIDsByLayoutID,
+			"layout-1", testServerID, 10, 0).
+			Return([]map[string]interface{}{{"entity_id": "app-1"}}, nil).Once()
+
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeLayout, "layout-1", 10, 0)
+		suite.NoError(err)
+		suite.Equal(1, total)
+		suite.Equal([]string{"app-1"}, ids)
+	})
+}
+
 func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByReference_UnknownTypeSkipsDB() {
 	ids, total, err := suite.store.GetEntityIDsByReference(
-		context.Background(), "layout", "layout-1", 10, 0)
+		context.Background(), "idp", "idp-1", 10, 0)
 	suite.NoError(err)
 	suite.Equal(0, total)
 	suite.Empty(ids)

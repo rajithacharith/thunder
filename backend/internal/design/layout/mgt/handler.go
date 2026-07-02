@@ -183,6 +183,26 @@ func (lh *layoutMgtHandler) HandleLayoutPutRequest(w http.ResponseWriter, r *htt
 	lh.logger.Debug(ctx, "Successfully updated layout configuration", log.String("id", id))
 }
 
+// HandleLayoutUsagesGetRequest handles the get layout usages request.
+func (lh *layoutMgtHandler) HandleLayoutUsagesGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := r.PathValue("id")
+	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
+	if svcErr != nil {
+		handleError(ctx, w, svcErr)
+		return
+	}
+
+	result, svcErr := lh.layoutMgtService.GetLayoutUsages(ctx, id, limit, offset)
+	if svcErr != nil {
+		handleError(ctx, w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, result)
+	lh.logger.Debug(ctx, "Successfully retrieved layout usages", log.String("id", id))
+}
+
 // HandleLayoutDeleteRequest handles the delete layout configuration request.
 func (lh *layoutMgtHandler) HandleLayoutDeleteRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

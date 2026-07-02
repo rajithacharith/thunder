@@ -29,6 +29,8 @@ import (
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -50,6 +52,8 @@ type mockLayoutService struct {
 	updateLayoutFunc  func(id string, layout UpdateLayoutRequest) (*Layout, *tidcommon.ServiceError)
 	deleteLayoutFunc  func(id string) *tidcommon.ServiceError
 	isLayoutExistFunc func(id string) (bool, *tidcommon.ServiceError)
+	getLayoutUsagesFunc func(id string, limit, offset int) (
+		*resourcedependency.DependenciesResponse, *tidcommon.ServiceError)
 }
 
 func (m *mockLayoutService) GetLayoutList(
@@ -77,6 +81,14 @@ func (m *mockLayoutService) DeleteLayout(_ context.Context, id string) *tidcommo
 
 func (m *mockLayoutService) IsLayoutExist(_ context.Context, id string) (bool, *tidcommon.ServiceError) {
 	return m.isLayoutExistFunc(id)
+}
+
+func (m *mockLayoutService) SetDependencyRegistry(resourcedependency.Registry) {}
+
+func (m *mockLayoutService) GetLayoutUsages(
+	_ context.Context, id string, limit, offset int) (
+	*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+	return m.getLayoutUsagesFunc(id, limit, offset)
 }
 
 // Test HandleLayoutListRequest - Success
@@ -493,4 +505,77 @@ func (suite *LayoutHandlerTestSuite) TestHandleError_StatusCodeMapping() {
 			assert.Equal(suite.T(), tc.expectedStatus, w.Code)
 		})
 	}
+}
+
+// Test HandleLayoutUsagesGetRequest - Success
+func (suite *LayoutHandlerTestSuite) TestHandleLayoutUsagesGetRequest_Success() {
+	total := 2
+	mockSvc := &mockLayoutService{
+		getLayoutUsagesFunc: func(id string, limit, offset int) (
+			*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+			return &resourcedependency.DependenciesResponse{
+				TotalResults: &total,
+				Count:        2,
+				Summary:      map[string]int{resourcedependency.ResourceTypeApplication: 2},
+				Usages: []resourcedependency.ResourceDependency{
+					{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-1",
+						DisplayName: "App One", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+					{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-2",
+						DisplayName: "App Two", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+				},
+			}, nil
+		},
+	}
+
+	handler := newLayoutMgtHandler(mockSvc)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /design/layouts/{id}/usages", handler.HandleLayoutUsagesGetRequest)
+
+	req := httptest.NewRequest(http.MethodGet, "/design/layouts/layout-123/usages?limit=10&offset=0", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response resourcedependency.DependenciesResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), response.TotalResults)
+	assert.Equal(suite.T(), 2, *response.TotalResults)
+	assert.Len(suite.T(), response.Usages, 2)
+	assert.Equal(suite.T(), resourcedependency.ResourceTypeApplication, response.Usages[0].ResourceType)
+	assert.Equal(suite.T(), resourcedependency.BehaviorFallback, response.Usages[0].BehaviorOnDelete)
+}
+
+// Test HandleLayoutUsagesGetRequest - Invalid pagination
+func (suite *LayoutHandlerTestSuite) TestHandleLayoutUsagesGetRequest_InvalidLimit() {
+	handler := newLayoutMgtHandler(&mockLayoutService{})
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /design/layouts/{id}/usages", handler.HandleLayoutUsagesGetRequest)
+
+	req := httptest.NewRequest(http.MethodGet, "/design/layouts/layout-123/usages?limit=abc", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+// Test HandleLayoutUsagesGetRequest - Service error maps to correct status
+func (suite *LayoutHandlerTestSuite) TestHandleLayoutUsagesGetRequest_NotFound() {
+	mockSvc := &mockLayoutService{
+		getLayoutUsagesFunc: func(id string, limit, offset int) (
+			*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+			return nil, &ErrorLayoutNotFound
+		},
+	}
+
+	handler := newLayoutMgtHandler(mockSvc)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /design/layouts/{id}/usages", handler.HandleLayoutUsagesGetRequest)
+
+	req := httptest.NewRequest(http.MethodGet, "/design/layouts/missing/usages", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }

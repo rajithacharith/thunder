@@ -643,6 +643,75 @@ paths:
         "500":
           $ref: '#/components/responses/InternalServerError'
 
+  /design/layouts/{id}/usages:
+    get:
+      tags:
+        - Layouts
+      summary: Get layout usages
+      description: |
+        Returns the resources that reference this layout, aggregated across all
+        resource types. This endpoint is informational only — it drives the
+        pre-delete confirmation dialog in the UI and does not gate deletion on the server.
+
+        Each usage entry includes a `behaviorOnDelete` field describing what happens
+        to the referencing resource if the layout is deleted:
+        - `fallback`: the reference is kept as-is and resolved to the system default layout at read time.
+        - `cascade`: the resource is permanently deleted along with the layout.
+
+        When usage data is unavailable (e.g. the server has not fully initialised),
+        `totalResults` and `summary` are `null` rather than `0`/empty.
+        Consumers must treat `null` as "unknown" and `0` as "confirmed empty".
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: Resources that reference this layout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceUsagesResponse'
+              example:
+                totalResults: 3
+                count: 3
+                summary:
+                  application: 2
+                  agent: 1
+                usages:
+                  - resourceType: application
+                    id: "a1b2c3d4-0000-0000-0000-000000000001"
+                    displayName: "Customer Portal"
+                    behaviorOnDelete: fallback
+                  - resourceType: application
+                    id: "a1b2c3d4-0000-0000-0000-000000000002"
+                    displayName: "Admin Console"
+                    behaviorOnDelete: fallback
+                  - resourceType: agent
+                    id: "a1b2c3d4-0000-0000-0000-000000000003"
+                    displayName: "Support Agent"
+                    behaviorOnDelete: fallback
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          description: 'Not Found: The layout could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "LAY-1003"
+                message:
+                  key: "layout.error.not_found"
+                  defaultValue: "Layout not found"
+                description:
+                  key: "layout.error.not_found_description"
+                  defaultValue: "The requested layout configuration was not found"
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
   /design/resolve:
     get:
       tags:

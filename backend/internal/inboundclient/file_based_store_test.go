@@ -425,13 +425,27 @@ func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByFlowID_MatchesAnyFlowSlo
 	suite.ElementsMatch([]string{"app-1", "app-2", "app-3"}, ids)
 }
 
+func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByReference_MatchesOnLayoutID() {
+	store := newFileBasedStoreForTest()
+	ctx := context.Background()
+
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", LayoutID: "layout-a"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-2", LayoutID: "layout-b"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-3", LayoutID: "layout-a"}))
+
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeLayout, "layout-a", 10, 0)
+	suite.NoError(err)
+	suite.Equal(2, total)
+	suite.ElementsMatch([]string{"app-1", "app-3"}, ids)
+}
+
 func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByReference_UnknownType() {
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", ThemeID: "theme-a"}))
 
-	ids, total, err := store.GetEntityIDsByReference(ctx, "layout", "layout-1", 10, 0)
+	ids, total, err := store.GetEntityIDsByReference(ctx, "idp", "idp-1", 10, 0)
 	suite.NoError(err)
 	suite.Equal(0, total)
 	suite.Empty(ids)

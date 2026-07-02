@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 )
 
 // Test Suite
@@ -577,5 +578,113 @@ func (suite *LayoutServiceTestSuite) TestDeleteLayout_ApplicationsCountError() {
 
 	err := suite.service.DeleteLayout(context.Background(), "layout-123")
 
+	assert.NotNil(suite.T(), err)
+}
+
+// --- GetLayoutUsages tests ---
+
+// stubUsageRegistry is a minimal resourcedependency.Registry for tests.
+type stubUsageRegistry struct {
+	resp *resourcedependency.DependenciesResponse
+	err  error
+}
+
+func (s *stubUsageRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (s *stubUsageRegistry) GetDependencies(
+	_ context.Context, _, _ string) (*resourcedependency.DependenciesResponse, error) {
+	return s.resp, s.err
+}
+
+// Test GetLayoutUsages - Empty ID
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_EmptyID() {
+	result, err := suite.service.GetLayoutUsages(context.Background(), "", 10, 0)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorInvalidLayoutID.Code, err.Code)
+}
+
+// Test GetLayoutUsages - Invalid pagination
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_InvalidLimit() {
+	result, err := suite.service.GetLayoutUsages(context.Background(), "layout-123", 0, 0)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+}
+
+// Test GetLayoutUsages - Layout not found
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_NotFound() {
+	suite.mockStore.On("IsLayoutExist", "missing").Return(false, nil)
+
+	result, err := suite.service.GetLayoutUsages(context.Background(), "missing", 10, 0)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorLayoutNotFound.Code, err.Code)
+}
+
+// Test GetLayoutUsages - Store error on existence check
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_ExistenceCheckError() {
+	suite.mockStore.On("IsLayoutExist", "layout-123").Return(false, errors.New("database error"))
+
+	result, err := suite.service.GetLayoutUsages(context.Background(), "layout-123", 10, 0)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+}
+
+// Test GetLayoutUsages - usage registry not set returns unknown (nil totalResults)
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_RegistryNotSet() {
+	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
+
+	result, err := suite.service.GetLayoutUsages(context.Background(), "layout-123", 10, 0)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), result.TotalResults)
+	assert.Nil(suite.T(), result.Summary)
+	assert.Empty(suite.T(), result.Usages)
+}
+
+// Test GetLayoutUsages - registry returns usages
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_WithUsages() {
+	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
+	total := 2
+	suite.service.SetDependencyRegistry(&stubUsageRegistry{
+		resp: &resourcedependency.DependenciesResponse{
+			TotalResults: &total,
+			Count:        2,
+			Summary:      map[string]int{resourcedependency.ResourceTypeApplication: 2},
+			Usages: []resourcedependency.ResourceDependency{
+				{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-1",
+					DisplayName: "App One", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+				{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-2",
+					DisplayName: "App Two", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+			},
+		},
+	})
+
+	result, err := suite.service.GetLayoutUsages(context.Background(), "layout-123", 10, 0)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.NotNil(suite.T(), result.TotalResults)
+	assert.Equal(suite.T(), 2, *result.TotalResults)
+	assert.Equal(suite.T(), 2, result.Summary[resourcedependency.ResourceTypeApplication])
+	assert.Len(suite.T(), result.Usages, 2)
+	assert.Equal(suite.T(), resourcedependency.ResourceTypeApplication, result.Usages[0].ResourceType)
+	assert.Equal(suite.T(), resourcedependency.BehaviorFallback, result.Usages[0].BehaviorOnDelete)
+	assert.Equal(suite.T(), "App One", result.Usages[0].DisplayName)
+}
+
+// Test GetLayoutUsages - registry returns error
+func (suite *LayoutServiceTestSuite) TestGetLayoutUsages_RegistryError() {
+	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
+	suite.service.SetDependencyRegistry(&stubUsageRegistry{err: errors.New("registry error")})
+
+	result, err := suite.service.GetLayoutUsages(context.Background(), "layout-123", 10, 0)
+
+	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
 }
