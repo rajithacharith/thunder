@@ -44,6 +44,7 @@ import {
   LayoutGrid,
   Palette,
   Server,
+  Settings,
   ShieldCheck,
   SquareArrowRightEnter,
   UserRoundCog,
@@ -280,6 +281,17 @@ export default function DashboardLayout(): ReactNode {
             text: t('navigation:pages.translations'),
             icon: <Languages size={16} />,
             path: '/translations',
+          },
+        ],
+      },
+      {
+        category: t('navigation:categories.system'),
+        routes: [
+          {
+            id: 'settings',
+            text: t('navigation:pages.settings'),
+            icon: <Settings size={16} />,
+            path: '/settings',
           },
         ],
       },

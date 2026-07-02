@@ -41,3 +41,4 @@ export { routes, ConsoleRoutes };
 export { ConsoleSigninPage } from "../../pages/authentication";
 export { UsersPage, type UserFormData } from "../../pages/user-management";
 export { ApplicationsPage, type ApplicationFormData } from "../../pages/applications";
+export { SettingsPage } from "../../pages/settings";

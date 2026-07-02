@@ -631,6 +631,7 @@ const translations = {
     'categories.resources': 'Resources',
     'categories.configure': 'Configure',
     'categories.customize': 'Customize',
+    'categories.system': 'System',
     'pages.importConfiguration': 'Import Configuration',
     'pages.openProject': 'Import Configuration',
     'pages.home': 'Home',
@@ -651,6 +652,7 @@ const translations = {
     'pages.flows': 'Flows',
     'pages.design': 'Design',
     'pages.translations': 'Translations',
+    'pages.settings': 'Settings',
     'breadcrumb.console': 'Console',
   },
 
@@ -3769,6 +3771,31 @@ const translations = {
     'delete.disclaimer': 'Wallets will no longer be able to request this credential.',
     'delete.success': 'Credential configuration deleted',
     'delete.error': 'Failed to delete credential configuration',
+  },
+
+  // ============================================================================
+  // Settings namespace - Server-wide settings translations
+  // ============================================================================
+  settings: {
+    'page.title': 'Settings',
+    'page.subtitle': 'Settings that apply across your entire ThunderID deployment.',
+    'tabs.ariaLabel': 'Settings sections',
+    'tabs.cors': 'CORS',
+    'cors.card.title': 'Allowed origins',
+    'cors.card.description': 'Manage which origins are allowed to access your APIs.',
+    'cors.readOnlyHint': "Some origins are read-only because they're managed declaratively.",
+    'cors.addOrigin': 'Add origin',
+    'cors.originPlaceholder': 'https://app.example.com',
+    'cors.removeOrigin': 'Remove origin',
+    'cors.validation.invalid': 'Enter a valid origin (e.g. https://app.example.com) or a valid regular expression.',
+    'cors.validation.duplicate': 'This origin is already in the list.',
+    'cors.unsavedChanges': 'You have unsaved changes',
+    'cors.discard': 'Discard',
+    'cors.save': 'Save changes',
+    'cors.saving': 'Saving…',
+    'cors.load.error': 'Failed to load allowed origins.',
+    'cors.save.success': 'Allowed origins updated.',
+    'cors.save.error': 'Failed to update allowed origins.',
   },
 } as const;
 
