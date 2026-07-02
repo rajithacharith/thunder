@@ -289,8 +289,11 @@ export default function ApplicationCreatePage(): JSX.Element {
         const hasClientSecret = createdApp.inboundAuthConfig?.some(
           (config) => config.type === 'oauth2' && config.config?.clientSecret,
         );
+        // Backend / server-side apps receive an Flow Secret (top-level) even when they have no
+        // OAuth client secret, so surface the save-secret step for either credential.
+        const hasSecret = Boolean(hasClientSecret) || Boolean(createdApp.flowSecret);
 
-        if (hasClientSecret) {
+        if (hasSecret) {
           setCreatedApplication(createdApp);
           setCurrentStep(ApplicationCreateFlowStep.COMPLETE);
         } else {
@@ -535,8 +538,9 @@ export default function ApplicationCreatePage(): JSX.Element {
         const oauth2Config = createdApplication.inboundAuthConfig?.find((config) => config.type === 'oauth2');
         const clientId = oauth2Config?.config?.clientId;
         const clientSecret = oauth2Config?.config?.clientSecret;
+        const {flowSecret} = createdApplication;
 
-        if (!clientSecret) {
+        if (!clientSecret && !flowSecret) {
           return null;
         }
 
@@ -545,6 +549,7 @@ export default function ApplicationCreatePage(): JSX.Element {
             appName={appName}
             clientId={clientId}
             clientSecret={clientSecret}
+            flowSecret={flowSecret}
             onContinue={handleNextStep}
           />
         );

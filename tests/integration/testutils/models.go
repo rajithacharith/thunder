@@ -58,6 +58,10 @@ type Application struct {
 	Certificate               map[string]interface{}   `json:"certificate,omitempty"`
 	InboundAuthConfig         []map[string]interface{} `json:"inboundAuthConfig,omitempty"`
 	AssertionConfig           map[string]interface{}   `json:"assertion,omitempty"`
+	// Embedded creates a native app with no inbound OAuth profile — the canonical flow-native app
+	// that authenticates flow initiation with a Flow Secret. When set, no default OAuth config is
+	// synthesized.
+	Embedded bool `json:"-"`
 }
 
 // OrganizationUnit represents an organization unit in the system

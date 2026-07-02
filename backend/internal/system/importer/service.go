@@ -864,13 +864,14 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 			LoginConsent:              req.LoginConsent,
 			AllowedUserTypes:          req.AllowedUserTypes,
 		},
-		Template:  req.Template,
-		URL:       req.URL,
-		LogoURL:   req.LogoURL,
-		TosURI:    req.TosURI,
-		PolicyURI: req.PolicyURI,
-		Contacts:  req.Contacts,
-		Metadata:  req.Metadata,
+		Template:   req.Template,
+		FlowSecret: req.FlowSecret,
+		URL:        req.URL,
+		LogoURL:    req.LogoURL,
+		TosURI:     req.TosURI,
+		PolicyURI:  req.PolicyURI,
+		Contacts:   req.Contacts,
+		Metadata:   req.Metadata,
 	}
 
 	if len(req.InboundAuthConfig) > 0 {

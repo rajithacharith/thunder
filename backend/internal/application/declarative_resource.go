@@ -189,13 +189,14 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 			AllowedUserTypes:          appRequest.AllowedUserTypes,
 			LoginConsent:              appRequest.LoginConsent,
 		},
-		Template:  appRequest.Template,
-		URL:       appRequest.URL,
-		LogoURL:   appRequest.LogoURL,
-		TosURI:    appRequest.TosURI,
-		PolicyURI: appRequest.PolicyURI,
-		Contacts:  appRequest.Contacts,
-		Metadata:  appRequest.Metadata,
+		Template:   appRequest.Template,
+		FlowSecret: appRequest.FlowSecret,
+		URL:        appRequest.URL,
+		LogoURL:    appRequest.LogoURL,
+		TosURI:     appRequest.TosURI,
+		PolicyURI:  appRequest.PolicyURI,
+		Contacts:   appRequest.Contacts,
+		Metadata:   appRequest.Metadata,
 	}
 	if len(appRequest.InboundAuthConfig) > 0 {
 		inboundAuthConfigDTOs := make([]providers.InboundAuthConfigWithSecret, 0)
@@ -311,7 +312,9 @@ func makeAppEntityParser(
 			return nil, nil, nil, fmt.Errorf("failed to build system attributes: %w", err)
 		}
 
-		sysCredsJSON, err := buildSystemCredentials(clientSecret)
+		// Declarative resources do not get an auto-generated Flow Secret; an explicitly declared
+		// value is honored to keep declarative definitions deterministic.
+		sysCredsJSON, err := buildSystemCredentials(clientSecret, appDTO.FlowSecret)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to build system credentials: %w", err)
 		}

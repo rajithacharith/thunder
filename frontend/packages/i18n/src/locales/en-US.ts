@@ -1614,6 +1614,24 @@ const translations = {
     'regenerateSecret.success.securityReminder.title': 'Security Reminder',
     'regenerateSecret.success.securityReminder.description':
       'Never share your client secret publicly or store it in version control. If you believe your secret has been compromised, regenerate it immediately.',
+    'regenerateFlowSecret.dialog.title': 'Regenerate Flow Secret',
+    'regenerateFlowSecret.dialog.message':
+      'Are you sure you want to regenerate the Flow Secret for this application? This will immediately invalidate the current Flow Secret and generate a new one.',
+    'regenerateFlowSecret.dialog.disclaimer':
+      'Warning: Regenerating the Flow Secret invalidates the current secret. Server-side flow initiation will fail until the new Flow Secret is deployed.',
+    'regenerateFlowSecret.dialog.confirmButton': 'Regenerate',
+    'regenerateFlowSecret.dialog.regenerating': 'Regenerating...',
+    'regenerateFlowSecret.dialog.error': 'Failed to regenerate Flow Secret. Please try again.',
+    'regenerateFlowSecret.success.title': 'Save Your New Flow Secret',
+    'regenerateFlowSecret.success.subtitle':
+      "This is the only time you'll see this Flow Secret. Store it somewhere safe.",
+    'regenerateFlowSecret.success.secretLabel': 'New Flow Secret',
+    'regenerateFlowSecret.success.copySecret': 'Copy Flow Secret',
+    'regenerateFlowSecret.success.copied': 'Copied to clipboard',
+    'regenerateFlowSecret.success.securityReminder.title': 'Security Reminder',
+    'regenerateFlowSecret.success.securityReminder.description':
+      'Never share your Flow Secret publicly or store it in version control. If you believe your Flow Secret has been compromised, regenerate it immediately.',
+    'regenerateFlowSecret.snackbar.success': 'Flow Secret regenerated successfully.',
     'onboarding.preview.title': 'Preview',
     'onboarding.preview.signin': 'Sign In',
     'onboarding.preview.username': 'Username',
@@ -1931,11 +1949,15 @@ const translations = {
       "Make sure to copy your client secret now. You won't be able to see it again for security reasons.",
     'clientSecret.clientIdLabel': 'Client ID',
     'clientSecret.clientSecretLabel': 'Client Secret',
+    'clientSecret.purpose': 'Used to authenticate your application at the OAuth 2.0 token endpoint.',
     'clientSecret.copied': 'Copied to clipboard',
     'clientSecret.copySecret': 'Copy Secret',
     'clientSecret.securityReminder.title': 'Security Reminder',
     'clientSecret.securityReminder.description':
       'Your client secret is a confidential key used to authenticate your application. It should be treated with the same level of security as a password. Never expose it in browser console, version control, or logs.',
+    'flowSecret.label': 'Flow Secret',
+    'flowSecret.purpose':
+      'Used to authenticate your server when it starts a sign-in flow directly via the Flow Execution API.',
     'view.title': 'Application Details',
     'view.subtitle': 'View application details and configuration',
     'view.sections.basicInformation': 'Basic Information',
@@ -2052,6 +2074,10 @@ const translations = {
     'edit.general.sections.dangerZone.regenerateSecret.description':
       'Regenerating the client secret will immediately invalidate the current client secret and cannot be undone.',
     'edit.general.sections.dangerZone.regenerateSecret.button': 'Regenerate Client Secret',
+    'edit.general.sections.dangerZone.regenerateFlowSecret.title': 'Regenerate Flow Secret',
+    'edit.general.sections.dangerZone.regenerateFlowSecret.description':
+      'Regenerating the Flow Secret immediately invalidates the current one. Server-side flow initiation will fail until the new secret is deployed.',
+    'edit.general.sections.dangerZone.regenerateFlowSecret.button': 'Regenerate Flow Secret',
     'edit.general.sections.dangerZone.deleteApplication.title': 'Delete Application',
     'edit.general.sections.dangerZone.deleteApplication.description':
       'Permanently delete this application and all associated data. This action cannot be undone.',

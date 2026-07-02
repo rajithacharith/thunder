@@ -57,7 +57,7 @@ var (
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
 					ClientID:                "test_app_client",
-					ClientSecret:            "test_app_secret",
+					ClientSecret:            "test_flow_secret",
 					RedirectURIs:            []string{"http://localhost/testapp/callback"},
 					GrantTypes:              []string{"authorization_code", "client_credentials"},
 					ResponseTypes:           []string{"code"},
@@ -642,7 +642,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
 					ClientID:     "defaults_app_client",
-					ClientSecret: "defaults_app_secret",
+					ClientSecret: "defaults_flow_secret",
 					RedirectURIs: []string{"http://localhost/defaults/callback"},
 					// Intentionally omitting GrantTypes, ResponseTypes, and TokenEndpointAuthMethod
 					PKCERequired: false,
@@ -713,7 +713,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
 					ClientID:                "invalid_auth_app_client",
-					ClientSecret:            "invalid_auth_app_secret",
+					ClientSecret:            "invalid_auth_flow_secret",
 					RedirectURIs:            []string{"http://localhost/invalid/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
@@ -745,7 +745,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
 					ClientID:                "empty_auth_app_client",
-					ClientSecret:            "empty_auth_app_secret",
+					ClientSecret:            "empty_auth_flow_secret",
 					RedirectURIs:            []string{"http://localhost/empty/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
@@ -814,7 +814,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPartialDefaults() 
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
 					ClientID:     "partial_app_client",
-					ClientSecret: "partial_app_secret",
+					ClientSecret: "partial_flow_secret",
 					RedirectURIs: []string{"http://localhost/partial/callback"},
 					// GrantTypes missing - should get default
 					ResponseTypes:           []string{"code"},     // Explicitly set
