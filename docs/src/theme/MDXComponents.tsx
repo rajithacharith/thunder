@@ -75,7 +75,9 @@ import {UseCaseStepper, UseCaseStepperCard} from '@site/src/components/UseCaseSt
 import {UseCaseVerticalCards, UseCaseVerticalCard, UseCaseCardSection} from '@site/src/components/UseCaseVerticalCards';
 import {
   WayfinderCast,
+  WayfinderVcCast,
   WayfinderArchitecture,
+  WayfinderVcArchitecture,
   WayfinderAgentOrganization,
   WayfinderAgentArchitecture,
   WayfinderMcpOrganization,
@@ -129,7 +131,9 @@ export default {
   RepoLink,
   RunThunderID,
   WayfinderCast,
+  WayfinderVcCast,
   WayfinderArchitecture,
+  WayfinderVcArchitecture,
   WayfinderAgentOrganization,
   WayfinderAgentArchitecture,
   WayfinderMcpOrganization,

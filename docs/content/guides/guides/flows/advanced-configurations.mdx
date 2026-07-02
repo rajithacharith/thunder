@@ -1995,6 +1995,7 @@ Initiates an OpenID4VP presentation request and, on each subsequent poll, checks
 | Property | UI Label | Required | Default | Description |
 |---|---|---|---|---|
 | `presentation_definition_id` | Presentation Definition | No | `eudi-pid` | The identifier of the presentation definition to request. Must match a definition registered in the server configuration. |
+| `allowAuthenticationWithoutLocalUser` | Allow Auth Without Local User | No | `false` | When `true` in an authentication flow, sets the `userEligibleForProvisioning` runtime flag on completion so a downstream Provisioning executor can create the account. |
 
 **Input Configuration:** None. The executor generates the request internally; no user inputs are required.
 
@@ -2008,7 +2009,7 @@ Initiates an OpenID4VP presentation request and, on each subsequent poll, checks
 
 2. On **subsequent executions** (state present in runtime data): polls the request state. Returns `INCOMPLETE` again (re-emitting the QR data) if the wallet has not yet responded; completes the flow if the credential is verified; fails the flow if verification fails or the request expires.
 
-3. On **completion**: sets `AuthenticatedUser` with the verified holder's `subject` and all selectively disclosed credential claims, plus `openid4vp_issuer` and `openid4vp_vct` attributes. If an existing local account matches the disclosed attributes, `AuthenticatedUser.UserID` is populated automatically. If no existing local account is found, the runtime data `userEligibleForProvisioning` flag is set so a downstream **Provisioning** executor can create the account.
+3. On **completion**: sets `AuthenticatedUser` with the verified holder's `subject` and all selectively disclosed credential claims. If an existing local account matches the disclosed attributes, `AuthenticatedUser.UserID` is populated automatically. When `allowAuthenticationWithoutLocalUser` is `true`, the `userEligibleForProvisioning` runtime flag is set so a downstream **Provisioning** executor can create the account.
 
 **Example:**
 
