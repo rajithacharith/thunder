@@ -392,25 +392,16 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *tidcomm
 }
 
 // GetResourceDependencies returns the agents that reference the resource identified by
-// (resourceType, id). It implements the resourcedependency.Provider interface.
+// (resourceType, id). It implements the resourcedependency.Provider interface. The
+// inbound-client store resolves which reference types are tracked, so no per-type handling is
+// needed here. The number of referencing entities is bounded by MaxCompositeStoreRecords
+// (the inbound-client store limit).
 func (s *agentService) GetResourceDependencies(
 	ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error) {
-	switch resourceType {
-	case resourcedependency.ResourceTypeTheme:
-		return s.getAgentsByThemeID(ctx, id)
-	default:
-		return []resourcedependency.ResourceDependency{}, nil
-	}
-}
-
-// getAgentsByThemeID returns agents referencing the given theme. The number of referencing
-// entities is bounded by MaxCompositeStoreRecords (the inbound-client store limit).
-func (s *agentService) getAgentsByThemeID(
-	ctx context.Context, themeID string) ([]resourcedependency.ResourceDependency, error) {
-	ids, _, err := s.inboundClientService.GetEntityIDsByThemeID(
-		ctx, themeID, serverconst.MaxCompositeStoreRecords, 0)
+	ids, _, err := s.inboundClientService.GetEntityIDsByReference(
+		ctx, resourceType, id, serverconst.MaxCompositeStoreRecords, 0)
 	if err != nil {
-		s.logger.Error(ctx, "Failed to get entity IDs by theme ID", log.Error(err))
+		s.logger.Error(ctx, "Failed to get entity IDs by reference", log.Error(err))
 		return nil, err
 	}
 	if len(ids) == 0 {

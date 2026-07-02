@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
@@ -248,6 +249,57 @@ func (s *FlowMgtHandlerTestSuite) TestGetFlow_NotFound() {
 	w := httptest.NewRecorder()
 
 	s.handler.getFlow(w, req)
+
+	s.Equal(http.StatusNotFound, w.Code)
+}
+
+// Test getFlowUsages
+
+func (s *FlowMgtHandlerTestSuite) TestGetFlowUsages_Success() {
+	total := 1
+	s.mockService.EXPECT().GetFlowUsages(mock.Anything, testFlowIDHandler).Return(
+		&resourcedependency.DependenciesResponse{
+			TotalResults: &total,
+			Count:        1,
+			Summary:      map[string]int{resourcedependency.ResourceTypeApplication: 1},
+			Usages: []resourcedependency.ResourceDependency{
+				{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-1",
+					DisplayName: "App One", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+			},
+		}, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler+"/usages", nil)
+	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
+	w := httptest.NewRecorder()
+
+	s.handler.getFlowUsages(w, req)
+
+	s.Equal(http.StatusOK, w.Code)
+	var response resourcedependency.DependenciesResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	s.NoError(err)
+	s.Equal(1, *response.TotalResults)
+	s.Len(response.Usages, 1)
+	s.Equal(resourcedependency.ResourceTypeApplication, response.Usages[0].ResourceType)
+}
+
+func (s *FlowMgtHandlerTestSuite) TestGetFlowUsages_MissingFlowID() {
+	req := httptest.NewRequest(http.MethodGet, "/flows//usages", nil)
+	w := httptest.NewRecorder()
+
+	s.handler.getFlowUsages(w, req)
+
+	s.Equal(http.StatusBadRequest, w.Code)
+}
+
+func (s *FlowMgtHandlerTestSuite) TestGetFlowUsages_NotFound() {
+	s.mockService.EXPECT().GetFlowUsages(mock.Anything, testFlowIDHandler).Return(nil, &ErrorFlowNotFound)
+
+	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler+"/usages", nil)
+	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
+	w := httptest.NewRecorder()
+
+	s.handler.getFlowUsages(w, req)
 
 	s.Equal(http.StatusNotFound, w.Code)
 }

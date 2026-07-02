@@ -33,6 +33,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/executormock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/interceptormock"
@@ -59,6 +60,21 @@ type stubTransactioner struct{}
 
 func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
 	return txFunc(ctx)
+}
+
+// stubDependencyRegistry is a stub implementation of resourcedependency.Registry for testing.
+// The real registry never returns an error from GetDependencies, so a stub is required to
+// exercise the error branch of GetFlowUsages.
+type stubDependencyRegistry struct {
+	resp *resourcedependency.DependenciesResponse
+	err  error
+}
+
+func (r *stubDependencyRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (r *stubDependencyRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return r.resp, r.err
 }
 
 func (s *FlowMgtServiceTestSuite) SetupTest() {
@@ -856,7 +872,77 @@ func (s *FlowMgtServiceTestSuite) TestGetFlow_StoreError() {
 	s.Equal(&tidcommon.InternalServerError, err)
 }
 
-// GetFlowByHandle tests
+// GetFlowUsages tests
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_EmptyID() {
+	result, err := s.service.GetFlowUsages(context.Background(), "")
+
+	s.Nil(result)
+	s.Equal(&ErrorMissingFlowID, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_NotFound() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(result)
+	s.Equal(&ErrorFlowNotFound, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_StoreError() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errors.New("db error"))
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(result)
+	s.Equal(&tidcommon.InternalServerError, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_NoRegistrySet() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).
+		Return(&providers.CompleteFlowDefinition{ID: testFlowIDService}, nil)
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Nil(result.TotalResults)
+	s.Nil(result.Summary)
+	s.Empty(result.Usages)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_RegistryError() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).
+		Return(&providers.CompleteFlowDefinition{ID: testFlowIDService}, nil)
+	s.service.SetDependencyRegistry(&stubDependencyRegistry{err: errors.New("registry error")})
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(result)
+	s.Equal(&tidcommon.InternalServerError, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_Success() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).
+		Return(&providers.CompleteFlowDefinition{ID: testFlowIDService}, nil)
+	total := 1
+	expected := &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Summary:      map[string]int{resourcedependency.ResourceTypeApplication: 1},
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-1",
+				DisplayName: "App One", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+		},
+	}
+	s.service.SetDependencyRegistry(&stubDependencyRegistry{resp: expected})
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(err)
+	s.Equal(expected, result)
+}
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_Success() {
 	expectedFlow := &providers.CompleteFlowDefinition{

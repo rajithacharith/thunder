@@ -381,8 +381,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, agentExporter)
 
-	// Wire the dependency registry into the theme service (two-phase init to avoid cyclic imports).
-	registerDependencyRegistry(themeMgtService, applicationService, agentService)
+	// Wire the dependency registry into the theme and flow services (two-phase init to avoid
+	// cyclic imports).
+	registerDependencyRegistry(themeMgtService, flowMgtService, applicationService, agentService)
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
@@ -446,11 +447,15 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 }
 
 // registerDependencyRegistry builds the dependency registry from the given providers and wires
-// it into the theme management service.
+// it into the theme and flow management services.
 func registerDependencyRegistry(
-	themeMgtService thememgt.ThemeMgtServiceInterface, providers ...resourcedependency.Provider,
+	themeMgtService thememgt.ThemeMgtServiceInterface,
+	flowMgtService flowmgt.FlowMgtServiceInterface,
+	providers ...resourcedependency.Provider,
 ) {
-	themeMgtService.SetDependencyRegistry(resourcedependency.Initialize(providers...))
+	registry := resourcedependency.Initialize(providers...)
+	themeMgtService.SetDependencyRegistry(registry)
+	flowMgtService.SetDependencyRegistry(registry)
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

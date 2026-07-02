@@ -35,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -73,6 +74,9 @@ type FlowMgtServiceInterface interface {
 		*providers.CompleteFlowDefinition, *tidcommon.ServiceError)
 	GetGraph(ctx context.Context, flowID string) (core.GraphInterface, *tidcommon.ServiceError)
 	IsValidFlow(ctx context.Context, flowID string, flowType providers.FlowType) (bool, *tidcommon.ServiceError)
+	SetDependencyRegistry(r resourcedependency.Registry)
+	GetFlowUsages(ctx context.Context, flowID string) (
+		*resourcedependency.DependenciesResponse, *tidcommon.ServiceError)
 }
 
 // flowMgtService is the default implementation of the FlowMgtServiceInterface.
@@ -84,6 +88,7 @@ type flowMgtService struct {
 	interceptorRegistry interceptor.InterceptorRegistryInterface
 	compositeStore      *compositeFlowStore
 	transactioner       transaction.Transactioner
+	dependencyRegistry  resourcedependency.Registry
 	logger              *log.Logger
 }
 
@@ -224,6 +229,47 @@ func (s *flowMgtService) GetFlow(ctx context.Context, flowID string) (
 	}
 
 	return flow, nil
+}
+
+// SetDependencyRegistry injects the dependency registry. Called by servicemanager after the
+// provider services are initialized to avoid a cyclic import.
+func (s *flowMgtService) SetDependencyRegistry(r resourcedependency.Registry) {
+	s.dependencyRegistry = r
+}
+
+// GetFlowUsages returns the resources that reference this flow.
+func (s *flowMgtService) GetFlowUsages(
+	ctx context.Context, flowID string) (*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+	if flowID == "" {
+		return nil, &ErrorMissingFlowID
+	}
+
+	if _, err := s.store.GetFlowByID(ctx, flowID); err != nil {
+		if errors.Is(err, errFlowNotFound) {
+			return nil, &ErrorFlowNotFound
+		}
+		s.logger.Error(ctx, "Failed to get flow", log.String(logKeyFlowID, flowID), log.Error(err))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	if s.dependencyRegistry == nil {
+		s.logger.Warn(ctx, "Dependency registry not set; returning unknown usages",
+			log.String(logKeyFlowID, flowID))
+		return &resourcedependency.DependenciesResponse{
+			TotalResults: nil,
+			Count:        0,
+			Summary:      nil,
+			Usages:       []resourcedependency.ResourceDependency{},
+		}, nil
+	}
+
+	result, err := s.dependencyRegistry.GetDependencies(ctx, resourcedependency.ResourceTypeFlow, flowID)
+	if err != nil {
+		s.logger.Error(ctx, "Failed to get flow usages", log.String(logKeyFlowID, flowID), log.Error(err))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	return result, nil
 }
 
 // GetFlowByHandle retrieves a flow definition by its handle and type.

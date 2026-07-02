@@ -3325,7 +3325,11 @@ func (suite *ServiceTestSuite) TestValidateApplicationFields_FlowHandleResolutio
 // --- GetResourceDependencies tests ---
 
 func (suite *ServiceTestSuite) TestGetResourceDependencies_UnknownResourceType() {
-	service, _ := suite.setupTestService()
+	service, mockStore := suite.setupTestService()
+	mockStore.EXPECT().
+		GetEntityIDsByReference(
+			mock.Anything, "unknown", "id-1", serverconst.MaxCompositeStoreRecords, 0).
+		Return([]string{}, 0, nil)
 
 	result, err := service.GetResourceDependencies(context.Background(), "unknown", "id-1")
 	assert.NoError(suite.T(), err)
@@ -3335,7 +3339,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_UnknownResourceType()
 func (suite *ServiceTestSuite) TestGetResourceDependencies_InboundClientError() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return(nil, 0, errors.New("store error"))
 
 	result, err := service.GetResourceDependencies(
@@ -3347,7 +3352,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_InboundClientError() 
 func (suite *ServiceTestSuite) TestGetResourceDependencies_EmptyIDs() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{}, 0, nil)
 
 	result, err := service.GetResourceDependencies(
@@ -3359,7 +3365,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_EmptyIDs() {
 func (suite *ServiceTestSuite) TestGetResourceDependencies_EntityProviderError() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"app-1"}, 1, nil)
 
 	ep := resetEntityProviderMethod(service, "GetEntitiesByIDs")
@@ -3375,7 +3382,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_EntityProviderError()
 func (suite *ServiceTestSuite) TestGetResourceDependencies_Success() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"app-1", "app-2"}, 2, nil)
 
 	sysAttrs1, _ := json.Marshal(map[string]interface{}{"name": "Portal App"})
@@ -3402,7 +3410,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_Success() {
 func (suite *ServiceTestSuite) TestGetResourceDependencies_FiltersOutNonAppEntities() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"app-1", "agent-1"}, 2, nil)
 
 	sysAttrs, _ := json.Marshal(map[string]interface{}{"name": "Portal App"})
@@ -3422,7 +3431,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_FiltersOutNonAppEntit
 func (suite *ServiceTestSuite) TestGetResourceDependencies_NoSystemAttributes() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"app-1"}, 1, nil)
 
 	ep := resetEntityProviderMethod(service, "GetEntitiesByIDs")
@@ -3441,7 +3451,8 @@ func (suite *ServiceTestSuite) TestGetResourceDependencies_NoSystemAttributes() 
 func (suite *ServiceTestSuite) TestGetResourceDependencies_SystemAttributesWithoutName() {
 	service, mockStore := suite.setupTestService()
 	mockStore.EXPECT().
-		GetEntityIDsByThemeID(mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+		GetEntityIDsByReference(
+			mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"app-1"}, 1, nil)
 
 	sysAttrs, _ := json.Marshal(map[string]interface{}{"description": "some desc"})
