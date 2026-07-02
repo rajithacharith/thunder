@@ -19,12 +19,8 @@
 // Package constants defines global constants used across the system module.
 package constants
 
-const (
-	// LogLevelEnvironmentVariable is the environment variable name for the log level.
-	LogLevelEnvironmentVariable = "LOG_LEVEL"
-	// DefaultLogLevel is the default log level used if not specified.
-	DefaultLogLevel = "info"
-)
+// DefaultLogLevel is the default log level used if not specified.
+const DefaultLogLevel = "info"
 
 // AuthorizationHeaderName is the name of the authorization header used in HTTP requests.
 const AuthorizationHeaderName = "Authorization"

@@ -402,9 +402,15 @@ type TranslationConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// LogConfig holds logging configuration.
+type LogConfig struct {
+	Level string `yaml:"level" json:"level"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               engineconfig.ServerConfig        `yaml:"server"                json:"server"`
+	Log                  LogConfig                        `yaml:"log"                   json:"log"`
 	GateClient           engineconfig.GateClientConfig    `yaml:"gate_client"           json:"gate_client"`
 	TLS                  TLSConfig                        `yaml:"tls"                   json:"tls"`
 	Database             DatabaseConfig                   `yaml:"database"              json:"database"`

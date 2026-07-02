@@ -30,15 +30,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/constants"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 )
 
 type LogTestSuite struct {
 	suite.Suite
-	originalLogLevel string
-	originalStdout   *os.File
-	buffer           *bytes.Buffer
+	originalStdout *os.File
+	buffer         *bytes.Buffer
 }
 
 func TestLogSuite(t *testing.T) {
@@ -46,9 +44,6 @@ func TestLogSuite(t *testing.T) {
 }
 
 func (suite *LogTestSuite) SetupTest() {
-	// Save original environment variable
-	suite.originalLogLevel = os.Getenv(constants.LogLevelEnvironmentVariable)
-
 	// Capture stdout
 	suite.originalStdout = os.Stdout
 	suite.buffer = &bytes.Buffer{}
@@ -64,12 +59,6 @@ func (suite *LogTestSuite) SetupTest() {
 }
 
 func (suite *LogTestSuite) TearDownTest() {
-	// Restore original environment variable
-	err := os.Setenv(constants.LogLevelEnvironmentVariable, suite.originalLogLevel)
-	if err != nil {
-		suite.T().Errorf("Failed to restore environment variable: %v", err)
-	}
-
 	// Restore stdout
 	os.Stdout = suite.originalStdout
 
@@ -78,44 +67,34 @@ func (suite *LogTestSuite) TearDownTest() {
 	once = sync.Once{}
 }
 
-func (suite *LogTestSuite) TestInitLoggerWithEnvironmentVariable() {
-	testCases := []struct {
-		name     string
-		logLevel string
-		isValid  bool
-	}{
-		{"DefaultLevel", "", true},
-		{"DebugLevel", "debug", true},
-		{"InfoLevel", "info", true},
-		{"WarnLevel", "warn", true},
-		{"ErrorLevel", "error", true},
-		{"InvalidLevel", "unknown", false},
-	}
+func (suite *LogTestSuite) TestInitLoggerUsesDefaultLevel() {
+	logger = nil
+	once = sync.Once{}
 
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			logger = nil
-			once = sync.Once{}
+	assert.NotPanics(suite.T(), func() {
+		_ = GetLogger()
+	})
+	// The logger boots at the default level (info), so debug is not enabled.
+	assert.False(suite.T(), GetLogger().IsDebugEnabled())
+}
 
-			if tc.logLevel != "" {
-				err := os.Setenv(constants.LogLevelEnvironmentVariable, tc.logLevel)
-				assert.NoError(t, err)
-			} else {
-				err := os.Unsetenv(constants.LogLevelEnvironmentVariable)
-				assert.NoError(t, err)
-			}
+func (suite *LogTestSuite) TestSetLevel() {
+	logger = nil
+	once = sync.Once{}
+	log := GetLogger()
 
-			if tc.isValid {
-				assert.NotPanics(t, func() {
-					_ = GetLogger()
-				})
-			} else {
-				assert.Panics(t, func() {
-					_ = GetLogger()
-				})
-			}
-		})
-	}
+	err := log.SetLevel("debug")
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), log.IsDebugEnabled())
+
+	err = log.SetLevel("error")
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), log.IsDebugEnabled())
+
+	// An invalid level returns an error and leaves the level unchanged.
+	err = log.SetLevel("bogus")
+	assert.Error(suite.T(), err)
+	assert.False(suite.T(), log.IsDebugEnabled())
 }
 
 func (suite *LogTestSuite) TestParseLogLevel() {
@@ -148,9 +127,6 @@ func (suite *LogTestSuite) TestParseLogLevel() {
 
 func (suite *LogTestSuite) TestLogMethods() {
 	var buf bytes.Buffer
-
-	err := os.Setenv(constants.LogLevelEnvironmentVariable, "debug")
-	assert.NoError(suite.T(), err)
 
 	logger = nil
 	once = sync.Once{}
@@ -412,9 +388,6 @@ func (suite *LogTestSuite) TestContextHandlerPreservedByWithGroup() {
 func (suite *LogTestSuite) TestGetLoggerUsesContextHandler() {
 	logger = nil
 	once = sync.Once{}
-
-	err := os.Setenv(constants.LogLevelEnvironmentVariable, "info")
-	assert.NoError(suite.T(), err)
 
 	log := GetLogger()
 	_, ok := log.internal.Handler().(*contextHandler)

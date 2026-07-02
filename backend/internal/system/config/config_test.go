@@ -180,6 +180,32 @@ notification:
 	assert.Equal(suite.T(), "mysql", config.Database.Config.SQLite.Path)
 }
 
+func (suite *ConfigTestSuite) TestLoadConfigLogLevel() {
+	tempDir := suite.T().TempDir()
+
+	notification := `
+notification:
+  otp:
+    length: 6
+    use_numeric_only: true
+    validity_period_seconds: 120
+`
+
+	// A deployment.yaml with a log level should parse into cfg.Log.Level.
+	withLevel := suite.createTempFile(tempDir, "user*.yaml", "log:\n  level: \"debug\"\n"+notification)
+	config, err := LoadConfig(withLevel, "", tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+	assert.Equal(suite.T(), "debug", config.Log.Level)
+
+	// Omitting the log section leaves the level empty.
+	withoutLevel := suite.createTempFile(tempDir, "user*.yaml", "server:\n  hostname: \"test\"\n"+notification)
+	config, err = LoadConfig(withoutLevel, "", tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+	assert.Equal(suite.T(), "", config.Log.Level)
+}
+
 func (suite *ConfigTestSuite) TestLoadConfigWithDefaults_ErrorCases() {
 	tempDir := suite.T().TempDir()
 
