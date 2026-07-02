@@ -1036,6 +1036,7 @@ function run() {
     echo "=== Ensuring server certificates exist ==="
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "signing"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "ecdsa-signing"
 
     echo "=== Ensuring sample app certificates exist ==="
     ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
