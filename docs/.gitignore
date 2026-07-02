@@ -12,6 +12,7 @@
 static/api/*/combined.yaml
 static/api/*/postman/
 static/data/releases.json
+static/data/sdk-releases.json
 
 # Misc
 .DS_Store
