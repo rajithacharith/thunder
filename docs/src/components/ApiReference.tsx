@@ -57,6 +57,7 @@ export default function ApiReference({specUrl, ...rest}: ApiReferenceProps) {
               layout: 'modern',
               // Hides the `Open in Client` button that takes to Scalar Hosted workspace.
               hideClientButton: true,
+              hideDarkModeToggle: true,
               ...rest,
             }}
           />

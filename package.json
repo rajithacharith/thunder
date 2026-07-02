@@ -19,7 +19,6 @@
     "workspace",
     "wso2"
   ],
-  "packageManager": "pnpm@11.5.0",
   "scripts": {
     "build": "turbo run build",
     "build:docs": "turbo run build --filter=@thunderid/docs",
@@ -45,5 +44,11 @@
     "eslint": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.9.0"
+    }
   }
 }

@@ -17,6 +17,27 @@ reviews:
         Never remove this label if it was manually added by a developer, regardless of what files are changed.
 
   path_instructions:
+    - path: "**"
+      instructions: |
+        Scan every changed line for the bare word `thunder`, `Thunder`, or `THUNDER` where it is
+        **not** immediately followed by `id`, `Id`, or `ID` (i.e., it is not part of `thunderid`,
+        `ThunderID`, or `THUNDERID`).
+        Flag every such occurrence as a **blocking issue** using this format:
+
+        "🔴 **Incorrect product name**: `<term>` must be `ThunderID` (or the appropriate template
+        placeholder for the file type). Bare `thunder`/`Thunder`/`THUNDER` is not an accepted
+        short form of the product name."
+
+        Do **not** flag:
+        - Import paths or package names (e.g., `@thunderid/...`, `thunder-id/...`).
+        - Code identifiers where `thunder` is a structural prefix followed by `id` in any casing
+          (e.g., `RunThunderID`, `thunderid`, `thunderId`).
+        - Fenced code blocks that show literal terminal output or configuration values where
+          the exact string is semantically required.
+
+        This check applies to every file type: `.go`, `.ts`, `.tsx`, `.mdx`, `.md`, `.yaml`,
+        `.toml`, `.json`, `.sh`, and any other text file.
+
     - path: "**/*.go"
       instructions: |
         Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in this file.
@@ -112,6 +133,27 @@ reviews:
           const repoUrl = project.source.github.url; // repo URL string
           ```
         - Do not hardcode the product name as a string literal; always derive it from config.
+          In JSX output, prefer the `<ProductName />` component (import from `@site/src/components/ProductName`).
+        - Flag any raw HTML element (`<div>`, `<span>`, `<p>`, `<button>`, `<a>`, `<ul>`, `<li>`, etc.)
+          that could be replaced by a `@wso2/oxygen-ui` component. Ask:
+          **"Should this use an Oxygen UI component instead of raw HTML?"**
+          Common replacements: `<div>` → `<Box>`, `<p>` → `<Typography>`, `<button>` → `<Button>`,
+          `<span>` → `<Box component="span">`.
+          Exception: SVG diagram elements (`<svg>`, `<rect>`, `<path>`, `<text>`, etc.) are exempt
+          from this specific Oxygen UI check.
+        - Flag hand-built SVG diagrams (components composed of `<svg>`, `<rect>`, `<path>`, `<text>`,
+          etc. used to render an architecture, flow, or sequence diagram) as a **major issue** and ask:
+          **"Should this diagram use Mermaid instead of raw SVG?"**
+          Only accept raw SVG when the diagram requires a layout Mermaid cannot express.
+        - Flag any icon import from a library other than `@wso2/oxygen-ui-icons-react` as a **major issue**.
+          Generic UI icons must come from `@wso2/oxygen-ui-icons-react` (a Lucide React wrapper).
+          Custom brand or technology logos under `docs/src/components/icons/` are exempt.
+        - Flag inline `style={{...}}` props. Styling must use the `sx` prop or `styled()` from
+          `@wso2/oxygen-ui`. Prefer `sx`; use `styled()` only when `sx` alone is insufficient
+          (e.g., complex descendant selectors, keyframe animations).
+        - Flag any new CSS added to `docs/src/css/custom.css` unless it targets Scalar API reference
+          elements or other third-party components where `sx`/`styled()` cannot reach. Ask:
+          **"Can this style be applied via `sx` or `styled()` instead?"**
 
         Review documentation changes for:
         - Technical accuracy: do code examples and parameter descriptions match the actual implementation in this PR?

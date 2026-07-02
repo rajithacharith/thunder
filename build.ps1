@@ -169,6 +169,10 @@ $agentIdPackageJson = Get-Content "samples/apps/wayfinder-sample/package.json" -
 $WAYFINDER_SAMPLE_APP_VERSION = $agentIdPackageJson.version
 $WAYFINDER_SAMPLE_APP_FOLDER = "sample-app-wayfinder-${WAYFINDER_SAMPLE_APP_VERSION}"
 
+# PNPM version to use for frontend builds and docs build
+$rootPackageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
+$PNPM_VERSION = $rootPackageJson.devEngines.packageManager.version
+
 # Directories
 $TARGET_DIR = Join-Path $SCRIPT_DIR "target"
 $OUTPUT_DIR = Join-Path $TARGET_DIR "out"
@@ -434,7 +438,7 @@ function Build-Backend {
 function Ensure-Pnpm {
     if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
         Write-Host "pnpm not found, installing..."
-        & npm install -g pnpm
+        & npm install -g "pnpm@$PNPM_VERSION"
     }
 }
 

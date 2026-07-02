@@ -107,6 +107,7 @@ function BoltCanvas(): JSX.Element {
       pts = [];
       const margin = 0.18;
       const scale = Math.min((W * (1 - margin * 2)) / BOLT_VW, (H * (1 - margin * 2)) / BOLT_VH);
+      if (scale <= 0) return;
       const ox = (W - BOLT_VW * scale) / 2;
       const oy = (H - BOLT_VH * scale) / 2;
       const size = Math.ceil(BOLT_VW * scale);

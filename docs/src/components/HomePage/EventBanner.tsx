@@ -22,8 +22,8 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {Box} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useEffect, useState} from 'react';
-import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface EventItem {
   city: string;
@@ -76,7 +76,7 @@ export default function EventBanner(): JSX.Element | null {
   if (!nextEvent) return null;
 
   return (
-    <Box sx={{display: 'flex', justifyContent: 'center', pt: 2, px: 4}}>
+    <Box sx={{display: 'flex', justifyContent: 'center', pt: 2, px: 4, overflow: 'hidden'}}>
       <Box
         component={Link}
         href="/events"
@@ -121,7 +121,7 @@ export default function EventBanner(): JSX.Element | null {
         <Box
           component="span"
           sx={{
-            display: 'inline-block',
+            display: {xs: 'none', md: 'inline-block'},
             width: '1px',
             height: '13px',
             bgcolor: isLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.16)',
@@ -129,7 +129,7 @@ export default function EventBanner(): JSX.Element | null {
             flexShrink: 0,
           }}
         />
-        <Box component="span" sx={{color: 'text.secondary', whiteSpace: 'nowrap', letterSpacing: '0.01em', textTransform: 'uppercase'}}>
+        <Box component="span" sx={{display: {xs: 'none', md: 'inline'}, color: 'text.secondary', whiteSpace: 'nowrap', letterSpacing: '0.01em', textTransform: 'uppercase'}}>
           {nextEvent.name} · {nextEvent.city} · {formatBannerDate(nextEvent.startDate, nextEvent.endDate)}
         </Box>
         <Box
