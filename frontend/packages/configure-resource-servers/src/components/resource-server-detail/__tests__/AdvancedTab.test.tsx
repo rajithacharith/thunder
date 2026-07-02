@@ -16,33 +16,10 @@
  * under the License.
  */
 
-import {renderWithProviders, screen, fireEvent, waitFor} from '@thunderid/test-utils';
+import {renderWithProviders, screen, fireEvent} from '@thunderid/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {ResourceServer} from '../../../models/resource-server';
 import AdvancedTab from '../AdvancedTab';
-
-vi.mock('@thunderid/react', () => ({
-  useThunderID: () => ({http: {request: vi.fn()}}),
-}));
-
-vi.mock('@thunderid/contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunderid/contexts')>();
-  return {
-    ...actual,
-    useConfig: () => ({getServerUrl: () => 'http://localhost:8090'}),
-    useToast: () => ({showToast: vi.fn()}),
-  };
-});
-
-vi.mock('@thunderid/logger/react', () => ({
-  useLogger: () => ({error: vi.fn(), info: vi.fn(), debug: vi.fn()}),
-}));
-
-const mockUpdateMutate = vi.fn();
-
-vi.mock('../../../api/useUpdateResourceServer', () => ({
-  default: () => ({mutate: mockUpdateMutate, isPending: false}),
-}));
 
 const mockResourceServer: ResourceServer = {
   id: 'rs-1',
@@ -66,67 +43,81 @@ describe('AdvancedTab', () => {
   });
 
   it('renders the Configurations section with the current identifier value', () => {
-    renderWithProviders(<AdvancedTab resourceServer={mockResourceServer} onRefresh={vi.fn()} />);
+    renderWithProviders(
+      <AdvancedTab
+        resourceServer={mockResourceServer}
+        identifier={mockResourceServer.identifier ?? ''}
+        onIdentifierChange={vi.fn()}
+      />,
+    );
 
     expect(screen.getByLabelText(/Identifier/i)).toHaveValue('https://api.example.com');
   });
 
-  it('shows Save and Discard buttons when the identifier field is edited', async () => {
-    renderWithProviders(<AdvancedTab resourceServer={mockResourceServer} onRefresh={vi.fn()} />);
-
-    const identifierInput = screen.getByLabelText(/Identifier/i);
-    fireEvent.change(identifierInput, {target: {value: 'https://new-api.example.com'}});
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /Save/i})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /Discard/i})).toBeInTheDocument();
-    });
-  });
-
-  it('calls updateRs.mutate with the new identifier when Save is clicked', async () => {
-    renderWithProviders(<AdvancedTab resourceServer={mockResourceServer} onRefresh={vi.fn()} />);
-
-    const identifierInput = screen.getByLabelText(/Identifier/i);
-    fireEvent.change(identifierInput, {target: {value: 'https://new-api.example.com'}});
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /Save/i})).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', {name: /Save/i}));
-
-    expect(mockUpdateMutate).toHaveBeenCalledWith(
-      {
-        id: 'rs-1',
-        data: {
-          name: 'Test API',
-          description: 'Existing API description',
-          identifier: 'https://new-api.example.com',
-          ouId: 'ou-1',
-        },
-      },
-      expect.any(Object),
+  it('renders the identifier label as a top FormLabel, not a floating label', () => {
+    renderWithProviders(
+      <AdvancedTab
+        resourceServer={mockResourceServer}
+        identifier={mockResourceServer.identifier ?? ''}
+        onIdentifierChange={vi.fn()}
+      />,
     );
+
+    const label = screen.getByText('Identifier (Audience)');
+    expect(label.tagName.toLowerCase()).toBe('label');
+    expect(label).toHaveClass('MuiFormLabel-root');
   });
 
-  it('resets the identifier to the original value when Discard is clicked', async () => {
-    renderWithProviders(<AdvancedTab resourceServer={mockResourceServer} onRefresh={vi.fn()} />);
+  it('calls onIdentifierChange when the identifier field is edited', () => {
+    const onIdentifierChange = vi.fn();
+    renderWithProviders(
+      <AdvancedTab
+        resourceServer={mockResourceServer}
+        identifier={mockResourceServer.identifier ?? ''}
+        onIdentifierChange={onIdentifierChange}
+      />,
+    );
 
     const identifierInput = screen.getByLabelText(/Identifier/i);
     fireEvent.change(identifierInput, {target: {value: 'https://new-api.example.com'}});
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /Discard/i})).toBeInTheDocument();
-    });
+    expect(onIdentifierChange).toHaveBeenCalledWith('https://new-api.example.com');
+  });
 
-    fireEvent.click(screen.getByRole('button', {name: /Discard/i}));
+  it('reflects the identifier prop value in the field', () => {
+    renderWithProviders(
+      <AdvancedTab
+        resourceServer={mockResourceServer}
+        identifier="https://controlled.example.com"
+        onIdentifierChange={vi.fn()}
+      />,
+    );
 
-    expect(identifierInput).toHaveValue('https://api.example.com');
+    expect(screen.getByLabelText(/Identifier/i)).toHaveValue('https://controlled.example.com');
   });
 
   it('disables the identifier field for read-only resource servers', () => {
-    renderWithProviders(<AdvancedTab resourceServer={readOnlyResourceServer} onRefresh={vi.fn()} />);
+    renderWithProviders(
+      <AdvancedTab
+        resourceServer={readOnlyResourceServer}
+        identifier={readOnlyResourceServer.identifier ?? ''}
+        onIdentifierChange={vi.fn()}
+      />,
+    );
 
     expect(screen.getByLabelText(/Identifier/i)).toBeDisabled();
+  });
+
+  it('does not render inline Save or Discard buttons', () => {
+    renderWithProviders(
+      <AdvancedTab
+        resourceServer={mockResourceServer}
+        identifier={mockResourceServer.identifier ?? ''}
+        onIdentifierChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', {name: /Save/i})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /Discard/i})).not.toBeInTheDocument();
   });
 });

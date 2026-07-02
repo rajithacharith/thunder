@@ -79,7 +79,9 @@ export default function ResourceServerEditPage(): JSX.Element {
   const initialTab = searchParams.get('tab') === 'advanced' ? TAB_ADVANCED : TAB_RESOURCES;
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const [editedFields, setEditedFields] = useState<Partial<{name: string; description: string}>>({});
+  const [editedFields, setEditedFields] = useState<Partial<{name: string; description: string; identifier: string}>>(
+    {},
+  );
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -90,9 +92,14 @@ export default function ResourceServerEditPage(): JSX.Element {
     setActiveTab(newValue);
   };
 
-  const handleFieldChange = (field: 'name' | 'description', value: string): void => {
+  const handleFieldChange = (field: 'name' | 'description' | 'identifier', value: string): void => {
     if (!resourceServer) return;
-    const original = field === 'name' ? resourceServer.name : (resourceServer.description ?? '');
+    const original =
+      field === 'name'
+        ? resourceServer.name
+        : field === 'description'
+          ? (resourceServer.description ?? '')
+          : (resourceServer.identifier ?? '');
     if (value === original) {
       setEditedFields((prev) => {
         const next = {...prev};
@@ -119,6 +126,12 @@ export default function ResourceServerEditPage(): JSX.Element {
                 ? editedFields.description
                 : null
               : (resourceServer.description ?? null),
+          identifier:
+            'identifier' in editedFields
+              ? editedFields.identifier?.trim()
+                ? editedFields.identifier
+                : null
+              : (resourceServer.identifier ?? null),
           ouId: resourceServer.ouId,
         },
       },
@@ -300,7 +313,11 @@ export default function ResourceServerEditPage(): JSX.Element {
         aria-label={t('resourceServers:edit.tabs', 'Resource server settings')}
       >
         <Tab
-          label={t('resourceServers:edit.tab.resources', 'Resources')}
+          label={
+            resourceServer.type === 'MCP'
+              ? t('resourceServers:edit.tab.capabilities', 'Capabilities')
+              : t('resourceServers:edit.tab.resources', 'Resources')
+          }
           id="resource-server-tab-0"
           aria-controls="resource-server-tabpanel-0"
           sx={{textTransform: 'none'}}
@@ -328,11 +345,20 @@ export default function ResourceServerEditPage(): JSX.Element {
             title={t('resourceServers:edit.dangerZone.title', 'Danger Zone')}
             description={t(
               'resourceServers:edit.dangerZone.description',
-              'Irreversible actions for this resource server.',
+              'Actions in this section are irreversible. Proceed with caution.',
             )}
-            slotProps={{root: {sx: {borderColor: 'error.main', mt: 3}}}}
+            slotProps={{root: {sx: {mt: 3}}}}
           >
-            <Button variant="outlined" color="error" onClick={() => setDeleteDialogOpen(true)}>
+            <Typography variant="h6" gutterBottom color="error">
+              {t('resourceServers:edit.dangerZone.deleteServer.title', 'Delete resource server')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
+              {t(
+                'resourceServers:edit.dangerZone.deleteServer.description',
+                'Permanently delete this resource server and all associated data. This action cannot be undone.',
+              )}
+            </Typography>
+            <Button variant="contained" color="error" onClick={() => setDeleteDialogOpen(true)}>
               {t('resourceServers:edit.dangerZone.deleteServer', 'Delete resource server')}
             </Button>
           </SettingsCard>
@@ -356,9 +382,8 @@ export default function ResourceServerEditPage(): JSX.Element {
         <AdvancedTab
           key={resourceServer.id}
           resourceServer={resourceServer}
-          onRefresh={() => {
-            void refetch();
-          }}
+          identifier={editedFields.identifier ?? resourceServer.identifier ?? ''}
+          onIdentifierChange={(v) => handleFieldChange('identifier', v)}
         />
       </TabPanel>
 

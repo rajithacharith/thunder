@@ -68,6 +68,15 @@ const readOnlyResourceServer: ResourceServer = {
   isReadOnly: true,
 };
 
+const mockMcpResourceServer: ResourceServer = {
+  id: 'rs-mcp',
+  name: 'My MCP Server',
+  handle: 'my-mcp',
+  ouId: 'ou-1',
+  delimiter: ':',
+  type: 'MCP',
+};
+
 describe('ResourceDetailPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -226,5 +235,211 @@ describe('ResourceDetailPanel', () => {
     );
 
     expect(screen.queryByText(/This is a system resource server and cannot be modified/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('ResourceDetailPanel (MCP non-server node)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const toolNode: SelectedNode = {
+    type: 'server-action',
+    id: 'tool-1',
+    data: {id: 'tool-1', name: 'Search Files', handle: 'search-files', permission: 'my-mcp:search-files', kind: 'tool'},
+  };
+
+  const namespaceNode: SelectedNode = {
+    type: 'resource',
+    id: 'ns-1',
+    data: {id: 'ns-1', name: 'Booking', handle: 'booking', permission: 'my-mcp:booking'},
+  };
+
+  it('renders the node name as an h5 heading', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('heading', {level: 5, name: 'Search Files'})).toBeInTheDocument();
+  });
+
+  it('renders the kind label with an icon as a subtitle, not a chip', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    const label = screen.getByText('Tool');
+    expect(label).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Tool'})).not.toBeInTheDocument();
+    expect(label.parentElement?.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('renders the Namespace kind label with an icon for a namespace node', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={namespaceNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    const label = screen.getByText('Namespace');
+    expect(label).toBeInTheDocument();
+    expect(label.parentElement?.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('does not render a breadcrumb', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.queryByText(/›/)).not.toBeInTheDocument();
+  });
+
+  it('renders the Handle field as read-only with the node handle', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    const handleInput = screen.getByDisplayValue('search-files');
+    expect(handleInput).toHaveAttribute('readonly');
+  });
+
+  it('does not render a copy button for the Handle field', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    const handleInput = screen.getByDisplayValue('search-files');
+    const handleFormControl = handleInput.closest('.MuiFormControl-root');
+    expect(handleFormControl?.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  it('renders the Delimiter field as read-only with the resource server delimiter', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    const delimiterInput = screen.getByDisplayValue(':');
+    expect(delimiterInput).toHaveAttribute('readonly');
+  });
+
+  it('renders Name, Handle, Delimiter and Description fields in that order', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    const labels = screen.getAllByText(/^(Name|Handle \(immutable\)|Delimiter \(immutable\)|Description)$/);
+    expect(labels.map((el) => el.textContent)).toEqual([
+      'Name',
+      'Handle (immutable)',
+      'Delimiter (immutable)',
+      'Description',
+    ]);
+  });
+
+  it('renders a copy button for the Permission field', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+  });
+
+  it('does not render an Advanced toggle', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.queryByText(/Advanced/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the Permission field as a read-only text field with the derived permission', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.getByText('Permission')).toBeInTheDocument();
+    const permissionInput = screen.getByDisplayValue('my-mcp:search-files');
+    expect(permissionInput).toHaveAttribute('readonly');
+  });
+
+  it('renders the permission help text as helper text below the field', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.getByText(/Built from the resource server handle/i)).toBeInTheDocument();
+  });
+
+  it('renders kind-aware helper text for Name, Handle, Delimiter and Description for a tool node', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={toolNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.getByText('A human-readable name for this tool.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Stable identifier for this tool, used to build the permission scope.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Separates segments in the permission scope. Defined by the resource server.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Optional. Describe what this tool is for.')).toBeInTheDocument();
+  });
+
+  it('renders kind-aware helper text for Name and Description for a namespace node', () => {
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={namespaceNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.getByText('A human-readable name for this namespace.')).toBeInTheDocument();
+    expect(screen.getByText('Optional. Describe what this namespace is for.')).toBeInTheDocument();
+  });
+});
+
+describe('ResourceDetailPanel (non-MCP nodes do not show MCP hints)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not render MCP-specific helper text for a generic resource node', () => {
+    const selectedNode: SelectedNode = {
+      type: 'resource',
+      id: 'r-1',
+      data: {id: 'r-1', name: 'Documents', handle: 'documents', permission: 'dark-dodos/documents'},
+    };
+
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={selectedNode} resourceServer={mockResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.queryByText(/A human-readable name for this/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Optional\. Describe what this/i)).not.toBeInTheDocument();
+  });
+
+  it('does not render MCP-specific helper text for a server node', () => {
+    const selectedNode: SelectedNode = {
+      type: 'server',
+      id: 'rs-1',
+      data: mockResourceServer,
+    };
+
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={selectedNode} resourceServer={mockResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.queryByText(/A human-readable name for this/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Optional\. Describe what this/i)).not.toBeInTheDocument();
+  });
+
+  it('does not render MCP-specific helper text for an MCP server node', () => {
+    const selectedNode: SelectedNode = {
+      type: 'server',
+      id: 'rs-mcp',
+      data: mockMcpResourceServer,
+    };
+
+    renderWithProviders(
+      <ResourceDetailPanel selectedNode={selectedNode} resourceServer={mockMcpResourceServer} onRefresh={vi.fn()} />,
+    );
+
+    expect(screen.queryByText(/A human-readable name for this/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Optional\. Describe what this/i)).not.toBeInTheDocument();
   });
 });

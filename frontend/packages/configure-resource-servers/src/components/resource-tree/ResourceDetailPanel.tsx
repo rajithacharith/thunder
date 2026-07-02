@@ -27,6 +27,7 @@ import {
   FormControl,
   FormLabel,
   IconButton,
+  InputAdornment,
   Stack,
   TextField,
   Tooltip,
@@ -39,6 +40,8 @@ import type {SelectedNode} from './ResourceTree';
 import useUpdateAction from '../../api/useUpdateAction';
 import useUpdateResource from '../../api/useUpdateResource';
 import useUpdateResourceServer from '../../api/useUpdateResourceServer';
+import {getActionKindIcon} from '../../config/get-action-kind-icon';
+import {getActionKindLabel} from '../../config/get-action-kind-label';
 import type {ResourceServer} from '../../models/resource-server';
 
 interface ResourceDetailPanelProps {
@@ -73,6 +76,7 @@ function DetailForm({selectedNode, resourceServer, onRefresh}: DetailFormProps):
   const [description, setDescription] = useState(initial.description);
   const [identifier, setIdentifier] = useState(initial.identifier);
   const [dirty, setDirty] = useState(false);
+  const [copiedPermission, setCopiedPermission] = useState(false);
 
   const updateRs = useUpdateResourceServer();
   const updateResource = useUpdateResource(resourceServer.id);
@@ -148,7 +152,6 @@ function DetailForm({selectedNode, resourceServer, onRefresh}: DetailFormProps):
     updateRs.isPending || updateResource.isPending || updateServerAction.isPending || updateResourceAction.isPending;
 
   const permission = selectedNode.type === 'server' ? selectedNode.data.handle : selectedNode.data.permission;
-  const [copiedPermission, setCopiedPermission] = useState(false);
 
   const handleCopyPermission = (): void => {
     navigator.clipboard
@@ -160,11 +163,15 @@ function DetailForm({selectedNode, resourceServer, onRefresh}: DetailFormProps):
       .catch((err: unknown) => logger.error('Failed to copy permission', {error: err}));
   };
 
-  const nodeTypeLabel: Record<SelectedNode['type'], string> = {
-    server: t('resourceServers:detail.types.resourceServer', 'Resource Server'),
-    resource: t('resourceServers:detail.types.resource', 'Resource'),
-    'server-action': t('resourceServers:detail.types.action', 'Action'),
-    'resource-action': t('resourceServers:detail.types.action', 'Action'),
+  const resolveNodeTypeLabel = (): string => {
+    if (selectedNode.type === 'server') return t('resourceServers:detail.types.resourceServer', 'Resource Server');
+    if (selectedNode.type === 'resource') {
+      if (resourceServer.type === 'MCP') return getActionKindLabel(undefined, t);
+      return t('resourceServers:detail.types.resource', 'Resource');
+    }
+    const action = selectedNode.data;
+    if (action.kind) return getActionKindLabel(action.kind, t);
+    return t('resourceServers:detail.types.action', 'Action');
   };
 
   const handleField = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,11 +179,47 @@ function DetailForm({selectedNode, resourceServer, onRefresh}: DetailFormProps):
     setDirty(true);
   };
 
+  const isMcpNonServer = resourceServer.type === 'MCP' && selectedNode.type !== 'server';
+
+  const resolveMcpKindLabel = (): string => {
+    if (selectedNode.type === 'server') return '';
+
+    if (selectedNode.type === 'resource') {
+      return t('resourceServers:mcp.types.namespace', 'Namespace');
+    }
+
+    const action = selectedNode.data;
+    if (action.kind === 'tool') {
+      return t('resourceServers:mcp.types.tool', 'Tool');
+    }
+    if (action.kind === 'resource') {
+      return t('resourceServers:mcp.types.resource', 'Resource');
+    }
+    return '';
+  };
+
+  const kindNoun = resolveMcpKindLabel().toLowerCase() || 'item';
+
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, p: 2, height: '100%', overflowY: 'auto'}}>
-      <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
-        {nodeTypeLabel[selectedNode.type]}
-      </Typography>
+      {/* MCP non-server: Quick-Copy-style header (name + kind subtitle) */}
+      {isMcpNonServer ? (
+        <Stack spacing={0}>
+          <Typography variant="h5">{name}</Typography>
+          {resolveMcpKindLabel() && (
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{mt: 0.5, color: 'text.disabled'}}>
+              {getActionKindIcon(selectedNode.type === 'resource' ? undefined : selectedNode.data.kind, 14)}
+              <Typography variant="body2" color="inherit">
+                {resolveMcpKindLabel()}
+              </Typography>
+            </Stack>
+          )}
+        </Stack>
+      ) : (
+        <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
+          {resolveNodeTypeLabel()}
+        </Typography>
+      )}
 
       {isReadOnly && (
         <Alert severity="info">
@@ -187,8 +230,63 @@ function DetailForm({selectedNode, resourceServer, onRefresh}: DetailFormProps):
       <Stack spacing={2}>
         <FormControl fullWidth>
           <FormLabel>{t('resourceServers:detail.fields.name', 'Name')}</FormLabel>
-          <TextField value={name} onChange={handleField(setName)} fullWidth size="small" disabled={isReadOnly} />
+          <TextField
+            value={name}
+            onChange={handleField(setName)}
+            fullWidth
+            size="small"
+            disabled={isReadOnly}
+            helperText={
+              isMcpNonServer
+                ? t('resourceServers:mcp.detail.nameHint', 'A human-readable name for this {{kind}}.', {
+                    kind: kindNoun,
+                  })
+                : undefined
+            }
+          />
         </FormControl>
+
+        {isMcpNonServer && (
+          <>
+            <FormControl fullWidth>
+              <FormLabel htmlFor="mcp-detail-handle">
+                {t('resourceServers:detail.fields.handle', 'Handle (immutable)')}
+              </FormLabel>
+              <TextField
+                fullWidth
+                id="mcp-detail-handle"
+                value={selectedNode.data.handle}
+                InputProps={{readOnly: true}}
+                size="small"
+                helperText={t(
+                  'resourceServers:mcp.detail.handleHint',
+                  'Stable identifier for this {{kind}}, used to build the permission scope.',
+                  {kind: kindNoun},
+                )}
+                sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <FormLabel htmlFor="mcp-detail-delimiter">
+                {t('resourceServers:detail.fields.delimiter', 'Delimiter (immutable)')}
+              </FormLabel>
+              <TextField
+                fullWidth
+                id="mcp-detail-delimiter"
+                value={resourceServer.delimiter}
+                InputProps={{readOnly: true}}
+                size="small"
+                helperText={t(
+                  'resourceServers:mcp.detail.delimiterHint',
+                  'Separates segments in the permission scope. Defined by the resource server.',
+                )}
+                sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+              />
+            </FormControl>
+          </>
+        )}
+
         <FormControl fullWidth>
           <FormLabel>{t('resourceServers:detail.fields.description', 'Description')}</FormLabel>
           <TextField
@@ -199,67 +297,116 @@ function DetailForm({selectedNode, resourceServer, onRefresh}: DetailFormProps):
             multiline
             rows={3}
             disabled={isReadOnly}
+            helperText={
+              isMcpNonServer
+                ? t('resourceServers:mcp.detail.descriptionHint', 'Optional. Describe what this {{kind}} is for.', {
+                    kind: kindNoun,
+                  })
+                : undefined
+            }
           />
         </FormControl>
       </Stack>
 
       <Divider />
 
-      <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-        <Typography variant="body2" color="text.secondary">
-          {t('resourceServers:detail.permission', 'Permission')}
-        </Typography>
-        <Chip label={permission} size="small" variant="outlined" sx={{fontFamily: 'monospace', fontSize: '0.78rem'}} />
-        <Tooltip title={copiedPermission ? t('common:copied', 'Copied!') : t('common:copy', 'Copy permission')}>
-          <IconButton size="small" sx={{p: 0.25}} onClick={handleCopyPermission}>
-            {copiedPermission ? <Check size={14} /> : <Copy size={14} />}
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      <Box>
-        <Typography variant="caption" color="text.secondary">
-          {t('resourceServers:detail.fields.handle', 'Handle (immutable)')}
-        </Typography>
-        <Box>
-          <Chip
-            label={selectedNode.data.handle}
-            size="small"
-            sx={{fontFamily: 'monospace', fontSize: '0.75rem', mt: 0.5}}
-          />
-        </Box>
-      </Box>
-
-      {selectedNode.type === 'server' && (
-        <Box>
-          <Typography variant="caption" color="text.secondary">
-            {t('resourceServers:detail.fields.delimiter', 'Delimiter (immutable)')}
-          </Typography>
-          <Box>
-            <Chip
-              label={selectedNode.data.delimiter}
-              size="small"
-              sx={{fontFamily: 'monospace', fontSize: '0.75rem', mt: 0.5}}
-            />
-          </Box>
-        </Box>
-      )}
-
-      {selectedNode.type === 'server' && (
+      {/* MCP non-server: read-only Permission field */}
+      {isMcpNonServer ? (
         <FormControl fullWidth>
-          <FormLabel>{t('resourceServers:detail.fields.identifier', 'Identifier')}</FormLabel>
+          <FormLabel htmlFor="mcp-detail-permission">{t('resourceServers:detail.permission', 'Permission')}</FormLabel>
           <TextField
-            value={identifier}
-            onChange={handleField(setIdentifier)}
             fullWidth
+            id="mcp-detail-permission"
+            value={permission}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title={copiedPermission ? t('common:copied', 'Copied!') : t('common:copy', 'Copy')}>
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={handleCopyPermission}
+                      aria-label={t('common:copy', 'Copy')}
+                    >
+                      {copiedPermission ? <Check size={16} /> : <Copy size={16} />}
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
             size="small"
             helperText={t(
-              'resourceServers:detail.fields.identifierHint',
-              'Used as audience parameter in OAuth2 flows.',
+              'resourceServers:mcp.detail.permissionScopeHelp',
+              'Built from the resource server handle, the resource path, and the name, joined by the delimiter.',
             )}
-            disabled={isReadOnly}
+            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
           />
         </FormControl>
+      ) : (
+        <>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+            <Typography variant="body2" color="text.secondary">
+              {t('resourceServers:detail.permission', 'Permission')}
+            </Typography>
+            <Chip
+              label={permission}
+              size="small"
+              variant="outlined"
+              sx={{fontFamily: 'monospace', fontSize: '0.78rem'}}
+            />
+            <Tooltip title={copiedPermission ? t('common:copied', 'Copied!') : t('common:copy', 'Copy permission')}>
+              <IconButton size="small" sx={{p: 0.25}} onClick={handleCopyPermission}>
+                {copiedPermission ? <Check size={14} /> : <Copy size={14} />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              {t('resourceServers:detail.fields.handle', 'Handle (immutable)')}
+            </Typography>
+            <Box>
+              <Chip
+                label={selectedNode.data.handle}
+                size="small"
+                sx={{fontFamily: 'monospace', fontSize: '0.75rem', mt: 0.5}}
+              />
+            </Box>
+          </Box>
+
+          {selectedNode.type === 'server' && (
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                {t('resourceServers:detail.fields.delimiter', 'Delimiter (immutable)')}
+              </Typography>
+              <Box>
+                <Chip
+                  label={selectedNode.data.delimiter}
+                  size="small"
+                  sx={{fontFamily: 'monospace', fontSize: '0.75rem', mt: 0.5}}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {selectedNode.type === 'server' && (
+            <FormControl fullWidth>
+              <FormLabel>{t('resourceServers:detail.fields.identifier', 'Identifier')}</FormLabel>
+              <TextField
+                value={identifier}
+                onChange={handleField(setIdentifier)}
+                fullWidth
+                size="small"
+                helperText={t(
+                  'resourceServers:detail.fields.identifierHint',
+                  'Used as audience parameter in OAuth2 flows.',
+                )}
+                disabled={isReadOnly}
+              />
+            </FormControl>
+          )}
+        </>
       )}
 
       {!isReadOnly && dirty && (
