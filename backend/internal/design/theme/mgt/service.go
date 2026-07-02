@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
@@ -312,7 +313,8 @@ func validatePaginationParams(limit, offset int) *tidcommon.ServiceError {
 	if limit < 1 || limit > serverconst.MaxPageSize {
 		return tidcommon.CustomServiceError(ErrorInvalidLimitValue, tidcommon.I18nMessage{
 			Key:          "error.themeservice.invalid_limit_value_description",
-			DefaultValue: fmt.Sprintf("Limit must be between 1 and %d", serverconst.MaxPageSize),
+			DefaultValue: "Limit must be between 1 and {{param(max)}}",
+			Params:       map[string]string{"max": strconv.Itoa(serverconst.MaxPageSize)},
 		})
 	}
 

@@ -160,7 +160,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_UnsupportedResolveFrom() {
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue,
+	assert.Contains(suite.T(), resp.Error.ErrorDescription.String(),
 		"Unsupported OU resolution strategy: unsupported")
 }
 

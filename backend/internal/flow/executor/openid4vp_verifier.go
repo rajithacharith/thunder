@@ -146,7 +146,8 @@ func (e *openid4vpVerifier) poll(
 		execResp.Error = tidcommon.CustomServiceError(ErrOpenID4VPVerificationFailed,
 			tidcommon.I18nMessage{
 				Key:          ErrOpenID4VPVerificationFailed.ErrorDescription.Key,
-				DefaultValue: "OpenID4VP presentation verification failed: " + rs.FailureReason,
+				DefaultValue: "OpenID4VP presentation verification failed: {{param(reason)}}",
+				Params:       map[string]string{"reason": rs.FailureReason},
 			})
 	default:
 		// Still pending: keep the state, re-emit the QR data so the wait view

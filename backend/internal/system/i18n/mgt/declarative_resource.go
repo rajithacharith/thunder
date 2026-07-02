@@ -107,8 +107,9 @@ func (e *translationExporter) GetResourceByID(ctx context.Context, id string) (
 			Code: "TRANSLATION_NOT_FOUND",
 			Type: tidcommon.ClientErrorType,
 			Error: tidcommon.I18nMessage{
-				Key:          "error.i18nservice.translation_not_found",
-				DefaultValue: fmt.Sprintf("Translation not found for %s", id),
+				Key:          "error.i18nservice.translation_not_found_for_language",
+				DefaultValue: "Translation not found for {{param(id)}}",
+				Params:       map[string]string{"id": id},
 			},
 		}
 	}

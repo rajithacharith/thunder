@@ -2774,7 +2774,7 @@ func (s *AcrValidationTestSuite) TestValidateAcrValues_UnknownACR() {
 
 	s.NotNil(svcErr)
 	s.Equal("APP-1033", svcErr.Code)
-	s.Contains(svcErr.ErrorDescription.DefaultValue, "urn:thunder:acr:unknown-method")
+	s.Contains(svcErr.ErrorDescription.String(), "urn:thunder:acr:unknown-method")
 }
 
 func (s *AcrValidationTestSuite) TestValidateAcrValues_FirstEntryInvalid() {
@@ -2784,7 +2784,7 @@ func (s *AcrValidationTestSuite) TestValidateAcrValues_FirstEntryInvalid() {
 
 	s.NotNil(svcErr)
 	s.Equal("APP-1033", svcErr.Code)
-	s.Contains(svcErr.ErrorDescription.DefaultValue, "totally-invalid-acr")
+	s.Contains(svcErr.ErrorDescription.String(), "totally-invalid-acr")
 }
 
 func (s *AcrValidationTestSuite) TestIsValidACR_KnownACR() {
@@ -3198,7 +3198,7 @@ func (suite *ServiceTestSuite) TestTranslateConsentSyncError() {
 	suite.Require().NotNil(svcErr)
 	suite.Equal(ErrorConsentSyncFailed.Code, svcErr.Code)
 	suite.Equal("error.applicationservice.consent_sync_failed_description", svcErr.ErrorDescription.Key)
-	suite.Contains(svcErr.ErrorDescription.DefaultValue, "CONSENT-1234")
+	suite.Contains(svcErr.ErrorDescription.String(), "CONSENT-1234")
 
 	serverErr := &inboundclient.ConsentSyncError{
 		Underlying: &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CONSENT-9000"},

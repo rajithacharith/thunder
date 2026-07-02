@@ -1636,13 +1636,7 @@ func (s *agentService) translateCertOperationError(
 // translateConsentSyncError maps a typed ConsentSyncError to an agent-service error.
 func translateConsentSyncError(err *inboundclient.ConsentSyncError) *tidcommon.ServiceError {
 	if err.IsClientError() {
-		return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
-			Key: "error.agentservice.consent_sync_failed_description",
-			DefaultValue: fmt.Sprintf(
-				ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s",
-				err.Underlying.Code,
-			),
-		})
+		return ErrorConsentSyncFailed.WithParams(map[string]string{"code": err.Underlying.Code})
 	}
 	return &tidcommon.InternalServerError
 }

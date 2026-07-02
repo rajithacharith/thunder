@@ -257,8 +257,9 @@ var (
 			DefaultValue: "Cannot modify declarative resource server",
 		},
 		ErrorDescription: tidcommon.I18nMessage{
-			Key:          "error.resourceservice.cannot_modify_declarative_resource_server_description",
-			DefaultValue: "Resource server %s is defined in declarative configuration and cannot be modified",
+			Key: "error.resourceservice.cannot_modify_declarative_resource_server_description",
+			DefaultValue: "Resource server {{param(id)}} is defined in declarative " +
+				"configuration and cannot be modified",
 		},
 	}
 	// ErrorImmutableResource is returned when attempting to modify a declarative resource.
@@ -271,7 +272,7 @@ var (
 		},
 		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.resourceservice.cannot_modify_declarative_resource_description",
-			DefaultValue: "Resource %s is defined in declarative configuration and cannot be modified",
+			DefaultValue: "Resource {{param(id)}} is defined in declarative configuration and cannot be modified",
 		},
 	}
 	// ErrorImmutableAction is returned when attempting to modify a declarative action.
@@ -284,7 +285,7 @@ var (
 		},
 		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.resourceservice.cannot_modify_declarative_action_description",
-			DefaultValue: "Action %s is defined in declarative configuration and cannot be modified",
+			DefaultValue: "Action {{param(id)}} is defined in declarative configuration and cannot be modified",
 		},
 	}
 	// ErrResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
@@ -335,8 +336,9 @@ var (
 			DefaultValue: "Consent sync failed",
 		},
 		ErrorDescription: tidcommon.I18nMessage{
-			Key:          "error.resourceservice.consent_sync_failed_description",
-			DefaultValue: "Failed to sync resource permission changes with the consent service",
+			Key: "error.resourceservice.consent_sync_failed_description",
+			DefaultValue: "Failed to sync resource permission changes with the consent " +
+				"service : code - {{param(code)}}",
 		},
 	}
 	// ErrorImmutableHandle is returned when attempting to change a resource server's handle.

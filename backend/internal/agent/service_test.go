@@ -1282,7 +1282,7 @@ func (suite *AgentServiceTestSuite) TestTranslateConsentSyncError() {
 	suite.Require().NotNil(svcErr)
 	suite.Equal(ErrorConsentSyncFailed.Code, svcErr.Code)
 	suite.Equal("error.agentservice.consent_sync_failed_description", svcErr.ErrorDescription.Key)
-	suite.Contains(svcErr.ErrorDescription.DefaultValue, "CONSENT-1234")
+	suite.Contains(svcErr.ErrorDescription.String(), "CONSENT-1234")
 
 	serverErr := &inboundclient.ConsentSyncError{
 		Underlying: &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CONSENT-9000"},

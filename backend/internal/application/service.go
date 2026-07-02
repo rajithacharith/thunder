@@ -1036,7 +1036,8 @@ func validateAcrValues(acrValues []string) *tidcommon.ServiceError {
 		if !isValidACR(acr) {
 			return tidcommon.CustomServiceError(ErrorInvalidAcrValues, tidcommon.I18nMessage{
 				Key:          "error.applicationservice.invalid_acr_values_unrecognized",
-				DefaultValue: fmt.Sprintf("ACR value %q is not recognized by the system", acr),
+				DefaultValue: "ACR value '{{param(acr)}}' is not recognized by the system",
+				Params:       map[string]string{"acr": acr},
 			})
 		}
 	}
@@ -1388,11 +1389,9 @@ func (as *applicationService) translateCertOperationError(ctx context.Context,
 func translateConsentSyncError(err *inboundclient.ConsentSyncError) *tidcommon.ServiceError {
 	if err.IsClientError() {
 		return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
-			Key: "error.applicationservice.consent_sync_failed_description",
-			DefaultValue: fmt.Sprintf(
-				ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s",
-				err.Underlying.Code,
-			),
+			Key:          "error.applicationservice.consent_sync_failed_description",
+			DefaultValue: "Failed to synchronize consent configurations for the application : code - {{param(code)}}",
+			Params:       map[string]string{"code": err.Underlying.Code},
 		})
 	}
 	return &tidcommon.InternalServerError
