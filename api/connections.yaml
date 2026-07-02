@@ -48,6 +48,8 @@ paths:
                   - type: "github"
                     configured: false
                     instanceCount: 0
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
 
   /connections/google:
@@ -56,6 +58,8 @@ paths:
       summary: List configured Google connections
       responses:
         "200": { $ref: '#/components/responses/InstanceList' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     post:
       tags: [Connections]
@@ -64,7 +68,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/GoogleConnectionRequest' }
+            schema: { $ref: '#/components/schemas/GoogleConnectionCreateRequest' }
       responses:
         "201":
           description: Connection created
@@ -73,6 +77,8 @@ paths:
               schema: { $ref: '#/components/schemas/GoogleConnectionResponse' }
         "400": { $ref: '#/components/responses/BadRequest' }
         "409": { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
   /connections/google/{id}:
     parameters:
@@ -87,6 +93,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/GoogleConnectionResponse' }
         "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     put:
       tags: [Connections]
@@ -96,7 +104,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/GoogleConnectionRequest' }
+            schema: { $ref: '#/components/schemas/GoogleConnectionUpdateRequest' }
       responses:
         "200":
           description: Connection updated
@@ -106,6 +114,8 @@ paths:
         "400": { $ref: '#/components/responses/BadRequest' }
         "404": { $ref: '#/components/responses/NotFound' }
         "409": { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     delete:
       tags: [Connections]
@@ -113,6 +123,8 @@ paths:
       responses:
         "204": { description: Connection deleted }
         "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
 
   /connections/github:
@@ -121,6 +133,8 @@ paths:
       summary: List configured GitHub connections
       responses:
         "200": { $ref: '#/components/responses/InstanceList' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     post:
       tags: [Connections]
@@ -129,7 +143,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/GitHubConnectionRequest' }
+            schema: { $ref: '#/components/schemas/GitHubConnectionCreateRequest' }
       responses:
         "201":
           description: Connection created
@@ -138,6 +152,8 @@ paths:
               schema: { $ref: '#/components/schemas/GitHubConnectionResponse' }
         "400": { $ref: '#/components/responses/BadRequest' }
         "409": { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
   /connections/github/{id}:
     parameters:
@@ -152,6 +168,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/GitHubConnectionResponse' }
         "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     put:
       tags: [Connections]
@@ -160,7 +178,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/GitHubConnectionRequest' }
+            schema: { $ref: '#/components/schemas/GitHubConnectionUpdateRequest' }
       responses:
         "200":
           description: Connection updated
@@ -170,6 +188,8 @@ paths:
         "400": { $ref: '#/components/responses/BadRequest' }
         "404": { $ref: '#/components/responses/NotFound' }
         "409": { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     delete:
       tags: [Connections]
@@ -177,6 +197,8 @@ paths:
       responses:
         "204": { description: Connection deleted }
         "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
 
   /connections/oidc:
@@ -185,6 +207,8 @@ paths:
       summary: List configured OIDC connections
       responses:
         "200": { $ref: '#/components/responses/InstanceList' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     post:
       tags: [Connections]
@@ -193,7 +217,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/OIDCConnectionRequest' }
+            schema: { $ref: '#/components/schemas/OIDCConnectionCreateRequest' }
       responses:
         "201":
           description: Connection created
@@ -202,6 +226,8 @@ paths:
               schema: { $ref: '#/components/schemas/OIDCConnectionResponse' }
         "400": { $ref: '#/components/responses/BadRequest' }
         "409": { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
   /connections/oidc/{id}:
     parameters:
@@ -216,6 +242,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OIDCConnectionResponse' }
         "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     put:
       tags: [Connections]
@@ -224,7 +252,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/OIDCConnectionRequest' }
+            schema: { $ref: '#/components/schemas/OIDCConnectionUpdateRequest' }
       responses:
         "200":
           description: Connection updated
@@ -234,6 +262,8 @@ paths:
         "400": { $ref: '#/components/responses/BadRequest' }
         "404": { $ref: '#/components/responses/NotFound' }
         "409": { $ref: '#/components/responses/Conflict' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
     delete:
       tags: [Connections]
@@ -241,6 +271,8 @@ paths:
       responses:
         "204": { description: Connection deleted }
         "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
 
 components:
@@ -291,6 +323,16 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Insufficient permissions to perform this operation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     InternalServerError:
       description: Internal server error
 
@@ -326,18 +368,23 @@ components:
         name: { type: string, example: "My Google" }
         description: { type: string }
 
-    GoogleConnectionRequest:
+    GoogleConnectionUpdateRequest:
       type: object
       required: [name, clientId, redirectUri]
       properties:
         name: { type: string, example: "My Google" }
         description: { type: string }
         clientId: { type: string }
-        clientSecret: { type: string, description: "Write-only. Omit to keep the stored value on update; required when creating." }
+        clientSecret: { type: string, description: "Write-only. Omit to keep the stored value on update." }
         redirectUri: { type: string }
         scopes: { type: array, items: { type: string } }
         prompt: { type: string }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
+    GoogleConnectionCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/GoogleConnectionUpdateRequest'
+        - type: object
+          required: [clientSecret]
     GoogleConnectionResponse:
       type: object
       properties:
@@ -352,18 +399,23 @@ components:
         prompt: { type: string }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
 
-    GitHubConnectionRequest:
+    GitHubConnectionUpdateRequest:
       type: object
       required: [name, clientId, redirectUri]
       properties:
         name: { type: string, example: "My GitHub" }
         description: { type: string }
         clientId: { type: string }
-        clientSecret: { type: string, description: "Write-only. Omit to keep the stored value on update; required when creating." }
+        clientSecret: { type: string, description: "Write-only. Omit to keep the stored value on update." }
         redirectUri: { type: string }
         scopes: { type: array, items: { type: string } }
         prompt: { type: string }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
+    GitHubConnectionCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/GitHubConnectionUpdateRequest'
+        - type: object
+          required: [clientSecret]
     GitHubConnectionResponse:
       type: object
       properties:
@@ -378,14 +430,14 @@ components:
         prompt: { type: string }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
 
-    OIDCConnectionRequest:
+    OIDCConnectionUpdateRequest:
       type: object
       required: [name, clientId, redirectUri, authorizationEndpoint, tokenEndpoint]
       properties:
         name: { type: string }
         description: { type: string }
         clientId: { type: string }
-        clientSecret: { type: string, description: "Write-only. Omit to keep the stored value on update; required when creating." }
+        clientSecret: { type: string, description: "Write-only. Omit to keep the stored value on update." }
         redirectUri: { type: string }
         authorizationEndpoint: { type: string }
         tokenEndpoint: { type: string }
@@ -397,6 +449,11 @@ components:
         prompt: { type: string }
         tokenExchangeEnabled: { type: boolean }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
+    OIDCConnectionCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/OIDCConnectionUpdateRequest'
+        - type: object
+          required: [clientSecret]
     OIDCConnectionResponse:
       type: object
       properties:
