@@ -21,7 +21,6 @@ package registration
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -67,7 +66,7 @@ var magicLinkRegistrationFlow = testutils.Flow{
 				"magicLinkURL": "https://localhost:8095/gate/signup",
 			},
 			"executor": map[string]interface{}{
-				"name": "MagicLinkAuthExecutor",
+				"name": "MagicLinkExecutor",
 				"mode": "generate",
 			},
 			"onSuccess": "email_magic_link",
@@ -96,7 +95,7 @@ var magicLinkRegistrationFlow = testutils.Flow{
 			"id":   "verify_magic_link",
 			"type": "TASK_EXECUTION",
 			"executor": map[string]interface{}{
-				"name": "MagicLinkAuthExecutor",
+				"name": "MagicLinkExecutor",
 				"mode": "verify",
 			},
 			"onSuccess": "provisioning",
@@ -195,10 +194,6 @@ func TestMagicLinkRegistrationTestSuite(t *testing.T) {
 }
 
 func (ts *MagicLinkRegistrationTestSuite) SetupSuite() {
-	if os.Getenv("THUNDER_EXTRACTED_HOME") == "" {
-		ts.T().Skip("Skipping magic link integration test - integration harness not initialized")
-	}
-
 	ts.config = &common.TestSuiteConfig{}
 
 	ts.mockSMTP = testutils.NewMockSMTPServer(0)
@@ -215,6 +210,9 @@ func (ts *MagicLinkRegistrationTestSuite) SetupSuite() {
 				"enable_start_tls":      false,
 				"enable_authentication": false,
 			},
+		},
+		"jwt": map[string]interface{}{
+			"leeway": 1,
 		},
 	}
 
@@ -315,6 +313,13 @@ func (ts *MagicLinkRegistrationTestSuite) SetupSuite() {
 						"action": map[string]interface{}{
 							"ref":      "dummy_action",
 							"nextNode": "verify_magic_link", // loops back
+						},
+					},
+					{
+						"inputs": []map[string]interface{}{},
+						"action": map[string]interface{}{
+							"ref":      "dummy_action2",
+							"nextNode": "provisioning",
 						},
 					},
 				},
@@ -495,12 +500,13 @@ func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_InvalidToken
 
 	time.Sleep(500 * time.Millisecond)
 
-	// Submit an invalid token — server must reject with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, map[string]string{"token": "invalid-token-123"},
+	// Submit an invalid token — server must reject with flowStatus=ERROR
+	errStep, err := common.CompleteFlow(flowStep.ExecutionID, map[string]string{"token": "invalid-token-123"}, "",
 		step2.ChallengeToken)
 	ts.Require().NoError(err, "Unexpected transport error submitting invalid magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for an invalid magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	ts.Require().Equal("ERROR", errStep.FlowStatus, "Expected ERROR flow status for an invalid magic link token")
+	ts.Require().NotNil(errStep.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(errStep.Error.Code, "Expected an error code in the error response")
 }
 
 func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_ExpiredToken() {
@@ -517,14 +523,16 @@ func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_ExpiredToken
 	token := common.ExtractMagicLinkToken(emailMessage)
 	ts.Require().NotEmpty(token, "Expected extracted magic-link token to be non-empty")
 
-	time.Sleep(3 * time.Second)
+	// Wait for TTL (2 seconds) plus leeway (1 second) to expire
+	time.Sleep(4 * time.Second)
 
-	// Submit the expired token — server must reject with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, map[string]string{"token": token},
+	// Submit the expired token — server must reject with flowStatus=ERROR
+	errStep, err := common.CompleteFlow(flowStep.ExecutionID, map[string]string{"token": token}, "",
 		step2.ChallengeToken)
 	ts.Require().NoError(err, "Unexpected transport error submitting expired magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for an expired magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	ts.Require().Equal("ERROR", errStep.FlowStatus, "Expected ERROR flow status for an expired magic link token")
+	ts.Require().NotNil(errStep.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(errStep.Error.Code, "Expected an error code in the error response")
 }
 
 func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_ReusedToken() {
@@ -550,15 +558,10 @@ func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_ReusedToken(
 	step4, err := common.CompleteFlow(flowStep.ExecutionID, map[string]string{"dummy": "test"}, "dummy_action",
 		step3.ChallengeToken)
 	ts.Require().NoError(err)
-	ts.Require().Equal("INCOMPLETE", step4.FlowStatus)
-	ts.Require().True(common.HasInput(step4.Data.Inputs, "token"))
-
-	// Try to submit the exact same token again — jti replay must be rejected with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, map[string]string{"token": token},
-		step4.ChallengeToken)
-	ts.Require().NoError(err, "Unexpected transport error submitting reused magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for a reused magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	// Loop back to verify_magic_link replays the same jti — must be rejected with flowStatus=ERROR
+	ts.Require().Equal("ERROR", step4.FlowStatus, "Expected ERROR flow status for a reused magic link token")
+	ts.Require().NotNil(step4.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(step4.Error.Code, "Expected an error code in the error response")
 }
 
 func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_CrossFlowToken() {
@@ -585,10 +588,11 @@ func (ts *MagicLinkRegistrationTestSuite) TestMagicLinkRegistration_CrossFlowTok
 		"magic_link_action", flowStepB.ChallengeToken)
 	ts.Require().NoError(err)
 
-	// Submit Token A to Execution B — execution ID mismatch must be rejected with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStepB.ExecutionID, map[string]string{"token": tokenA},
+	// Attempt to use flow A's token in flow B — server must reject with flowStatus=ERROR
+	errStep, err := common.CompleteFlow(flowStepB.ExecutionID, map[string]string{"token": tokenA}, "",
 		step2B.ChallengeToken)
 	ts.Require().NoError(err, "Unexpected transport error submitting cross-flow magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for a cross-flow magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	ts.Require().Equal("ERROR", errStep.FlowStatus, "Expected ERROR flow status for a cross-flow magic link token")
+	ts.Require().NotNil(errStep.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(errStep.Error.Code, "Expected an error code in the error response")
 }

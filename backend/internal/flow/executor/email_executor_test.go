@@ -1044,6 +1044,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SkipDelivery() {
 
 	suite.NoError(err)
 	suite.Equal(providers.ExecComplete, resp.Status)
+	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
 	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 

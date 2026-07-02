@@ -85,6 +85,7 @@ func (e *emailExecutor) executeSend(ctx *providers.NodeContext) (*providers.Exec
 
 	if skip, ok := ctx.RuntimeData[common.RuntimeKeySkipDelivery]; ok && skip == dataValueTrue {
 		logger.Debug(ctx.Context, "Delivery marked as skipped, completing without sending email")
+		execResp.AdditionalData[common.DataEmailSent] = dataValueTrue
 		execResp.Status = providers.ExecComplete
 		return execResp, nil
 	}
