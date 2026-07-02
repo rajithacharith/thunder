@@ -32,6 +32,7 @@
     "generate:changelog": "node ./scripts/generate-changelog.mjs",
     "generate:contributors": "node ./scripts/generate-contributors.mjs",
     "generate:postman-collections": "node ./scripts/generate-postman-collections.mjs",
+    "generate:sdk-releases": "node ./scripts/generate-sdk-releases.mjs",
     "setup": "node ./scripts/prebuild.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
