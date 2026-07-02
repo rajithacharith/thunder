@@ -39,6 +39,7 @@ var (
 // Logger is a wrapper around the slog logger.
 type Logger struct {
 	internal *slog.Logger
+	levelVar *slog.LevelVar
 }
 
 // contextHandler decorates a slog.Handler to add the trace ID (correlation ID)
@@ -85,19 +86,19 @@ func GetLogger() *Logger {
 
 // initLogger initializes the slog logger.
 func initLogger() error {
-	// Read log level from the environment variable.
-	logLevel := os.Getenv(constants.LogLevelEnvironmentVariable)
-	if logLevel == "" {
-		logLevel = constants.DefaultLogLevel
-	}
-	// Parse the log level.
-	level, err := parseLogLevel(logLevel)
+	// The logger is initialized before the deployment configuration is loaded, so it
+	// boots at the default level. The configured level from deployment.yaml is applied
+	// afterwards via SetLevel.
+	level, err := parseLogLevel(constants.DefaultLogLevel)
 	if err != nil {
 		return errors.New("error parsing log level: " + err.Error())
 	}
 
+	levelVar := new(slog.LevelVar)
+	levelVar.Set(level)
+
 	handlerOptions := &slog.HandlerOptions{
-		Level: level,
+		Level: levelVar,
 	}
 
 	logHandler := slog.NewTextHandler(os.Stdout, handlerOptions)
@@ -107,8 +108,19 @@ func initLogger() error {
 
 	logger = &Logger{
 		internal: slog.New(&contextHandler{Handler: logHandler}),
+		levelVar: levelVar,
 	}
 
+	return nil
+}
+
+// SetLevel updates the minimum log level at runtime.
+func (l *Logger) SetLevel(logLevel string) error {
+	level, err := parseLogLevel(logLevel)
+	if err != nil {
+		return err
+	}
+	l.levelVar.Set(level)
 	return nil
 }
 
@@ -116,6 +128,7 @@ func initLogger() error {
 func (l *Logger) With(fields ...Field) *Logger {
 	return &Logger{
 		internal: l.internal.With(convertFields(fields)...),
+		levelVar: l.levelVar,
 	}
 }
 

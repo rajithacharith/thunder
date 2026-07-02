@@ -29,13 +29,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
 
 // TestMain enables debug-level logging for the entire package test binary so that
 // every logger.IsDebugEnabled() branch in service.go is exercised.
 func TestMain(m *testing.M) {
-	_ = os.Setenv("LOG_LEVEL", "debug")
+	_ = log.GetLogger().SetLevel("debug")
 	security.InitSystemPermissions("")
 	os.Exit(m.Run())
 }

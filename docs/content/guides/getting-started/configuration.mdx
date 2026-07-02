@@ -58,6 +58,21 @@ Controls HTTPS/TLS settings for secure communication.
 <ProductName /> ships with a self-signed certificate for local development at `config/certs/server.cert`. For production, replace it with a certificate from a trusted Certificate Authority.
 :::
 
+## Logging Configuration
+
+Controls the verbosity of server logs.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `log.level` | `info` | Minimum log level to emit (`debug`, `info`, `warn`, or `error`) |
+
+```yaml
+log:
+  level: "info"
+```
+
+If `log.level` is omitted, <ProductName /> defaults to `info`. An unrecognized value causes the server to exit at startup.
+
 ## Database Configuration
 
 <ProductName /> uses three separate databases for different purposes. Each database can be configured independently.

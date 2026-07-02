@@ -749,11 +749,11 @@ Example:
 ```yaml
 deployment:
   env:
-    - name: LOG_LEVEL
-      value: debug
     - name: EXTERNAL_API_BASE_URL
       value: https://api.example.com
 ```
+
+The log level is configured via `deployment.yaml` (`log.level`).
 
 Environment variable item structure for secret-backed environment variables in `deployment.secretEnv` and `setup.secretEnv`:
 

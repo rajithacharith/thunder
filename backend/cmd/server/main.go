@@ -67,6 +67,13 @@ func main() {
 		logger.Fatal(ctx, "Failed to initialize configurations")
 	}
 
+	// Apply the configured log level from deployment.yaml, now that config is loaded.
+	if cfg.Log.Level != "" {
+		if err := logger.SetLevel(cfg.Log.Level); err != nil {
+			logger.Fatal(ctx, "Invalid log level in configuration", log.Error(err))
+		}
+	}
+
 	// Initialize the cache manager.
 	cacheManager := cache.Initialize(cfg.Cache, cfg.Server.Identifier)
 
