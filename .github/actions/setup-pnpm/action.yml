@@ -1,3 +1,5 @@
+# TODO: Remove this action and use the individual setup-node and setup-pnpm actions directly in workflows.
+
 name: Setup Node.js and pnpm
 description: Installs Node.js and pnpm with lockfile-based caching.
 
@@ -6,6 +8,10 @@ inputs:
     description: Node.js version to use
     required: false
     default: 'lts/*'
+  pnpm-version:
+    description: pnpm version to use
+    required: false
+    default: 'latest'
 
 runs:
   using: composite
@@ -18,3 +24,4 @@ runs:
       with:
         run_install: false
         cache_dependency_path: pnpm-lock.yaml
+        version: ${{ inputs.pnpm-version }}

@@ -206,7 +206,6 @@ export default function SDKShowcaseSection(): JSX.Element {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(5, 1fr)',
                 gap: {xs: 1.5, md: 2},
-                justifyItems: 'center',
               }}
             >
               {SDKS.map((sdk, index) => {
@@ -214,7 +213,7 @@ export default function SDKShowcaseSection(): JSX.Element {
                 const isActive = hoveredIndex === index;
 
                 return (
-                  <Link key={sdk.name} to={sdk.href} title={sdk.name} style={{textDecoration: 'none'}}>
+                  <Link key={sdk.name} to={sdk.href} title={sdk.name} style={{textDecoration: 'none', display: 'block'}}>
                     <Box
                       onMouseEnter={() => {
                         setHoveredIndex(index);
@@ -226,8 +225,8 @@ export default function SDKShowcaseSection(): JSX.Element {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: 88,
-                        height: 88,
+                        width: '100%',
+                        aspectRatio: '1',
                         borderRadius: '10px',
                         border: '1px solid',
                         borderColor: isActive ? 'rgba(255,255,255,0.25)' : 'divider',

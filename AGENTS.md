@@ -9,6 +9,12 @@ ThunderID is a lightweight user and identity management product. Go backend + Re
 Login Gate leverages v2 of the [ThunderID JavaScript SDK](https://github.com/thunder-id/thunderid/tree/main/sdks/javascript), consumed via its published package in typical setups.
 Clone the SDK repository only if you are developing or debugging the SDK itself, or testing the product against unreleased SDK changes.
 
+## Product Name Rules
+
+- Always use `ThunderID` (or the appropriate template placeholder for the file type). Never use the bare word `thunder`, `Thunder`, or `THUNDER` as a short form of the product name.
+- PRs that introduce bare `thunder`/`Thunder`/`THUNDER` (not part of `thunderid`, `ThunderID`, or `THUNDERID`) must not be merged until corrected.
+- Exceptions: import paths/package names (e.g., `@thunderid/...`) and code identifiers where `thunder` is a structural prefix immediately followed by `id` in any casing are allowed.
+
 ## General Rules
 
 - Keep changes minimal and focused on the task requested. Do not refactor, "improve", or clean up surrounding code.
@@ -25,6 +31,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 - Ensure all identity-related code aligns with relevant RFC specifications.
 - Declarative resource attributes use camelCase, matching the REST API. The `yaml` struct tag must use the same camelCase name as the field's `json` tag (for example `yaml:"ouId"`, not `yaml:"ou_id"`). This does not apply to non-declarative YAML such as `deployment.yaml` server config, or to `json` tags for protocol payloads (OAuth, DCR) that follow their own RFC conventions.
 - Use `make lint` and `make test` to verify code quality and correctness before committing.
+- For architecture diagrams, flow diagrams, sequence diagrams, and similar visuals in documentation, prefer Mermaid over hand-drawn rect/box components (e.g. raw SVG, ASCII art, or manually positioned shapes). Only fall back to non-Mermaid components when the diagram requires layout Mermaid cannot express.
 
 ## Git and PR Conventions
 
@@ -46,7 +53,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 
 - [`docs/content/community/contributing/contributing-code/backend-development/overview.mdx`](docs/content/community/contributing/contributing-code/backend-development/overview.mdx) — Go backend: package structure, database patterns, error handling, service initialization, transactions, testing
 - [`docs/content/community/contributing/contributing-code/frontend-development/overview.mdx`](docs/content/community/contributing/contributing-code/frontend-development/overview.mdx) — React/TypeScript: component patterns, testing, linting
-- [`docs/AGENTS.md`](/docs/AGENTS.md) — Documentation authoring standards
+- [`docs/AGENTS.md`](/docs/AGENTS.md) — Documentation authoring standards and component development standards (product name templating, Oxygen UI components, icons, styling, custom.css governance)
 
 # Agent Guidance Index
 

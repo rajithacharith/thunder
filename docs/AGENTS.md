@@ -44,6 +44,8 @@ You must follow these standards when creating documentation content for ThunderI
 - Do not invent shorthand names.
 - Do not change capitalization.
 - Do not alternate between long and short forms unless formally introduced.
+- Never use the bare word `thunder`, `Thunder`, or `THUNDER` as a short form of the product name. The accepted forms are `ThunderID`, `thunderid`, and `THUNDERID` only.
+- **PRs that introduce bare `thunder`/`Thunder`/`THUNDER` (where `thunder` is not immediately followed by `id`/`Id`/`ID`) must not be merged until corrected.**
 
 **Correct:**
 - ThunderID Console  
@@ -52,7 +54,8 @@ You must follow these standards when creating documentation content for ThunderI
 **Incorrect:**
 - ThunderID console  
 - Console  
-- Passkey auth  
+- Passkey auth
+- Thunder (as a short form of ThunderID)
 
 ### 2. Acronyms and Abbreviations
 
@@ -249,6 +252,56 @@ When documenting configuration:
 - Do not reference an image unless the user explicitly confirms it exists and is accessible.
 - Do not make images required to complete a task. Provide text alternatives.
 
+
+## Component Development Standards
+
+Follow these standards when creating or modifying `.tsx` and `.ts` files under `docs/src/`.
+
+### Product Name
+
+Do not hardcode `ThunderID` or any product name string. Always derive it from Docusaurus site config:
+
+```ts
+const {siteConfig} = useDocusaurusContext();
+const {project} = siteConfig.customFields?.product as DocusaurusProductConfig;
+const productName = project.name;
+```
+
+In JSX output, prefer the `<ProductName />` component (import from `@site/src/components/ProductName`). It is also globally registered as an MDX component — no import needed in `.mdx` files.
+
+### UI Components
+
+Use `@wso2/oxygen-ui` components instead of raw HTML elements. The package is an MUI wrapper — prefer its components (`Box`, `Typography`, `Button`, `Chip`, `Card`, etc.) over native `<div>`, `<span>`, `<p>`, `<button>`, `<a>`, and similar elements.
+
+Do not use native HTML elements for layout or structure when an equivalent Oxygen UI component exists.
+
+### Icons
+
+Use `@wso2/oxygen-ui-icons-react` (a Lucide React wrapper) for all icons. Do not import from other icon libraries (`lucide-react`, `react-icons`, `@heroicons/react`, etc.).
+
+Exception: custom brand or technology logos (e.g., `AndroidLogo`, `ReactLogo`) that do not exist in the Oxygen UI icon set may remain as custom SVG components under `docs/src/components/icons/`.
+
+### Styling
+
+Use the `sx` prop for component styling. Use `styled()` from `@wso2/oxygen-ui` only when `sx` alone is insufficient (for example, complex descendant selectors or keyframe animations).
+
+Do not use inline `style={{...}}` props. Do not add CSS class-based styles via `className` unless you are targeting Docusaurus-controlled elements where `sx` is not applicable.
+
+### Diagrams
+
+Use Mermaid for architecture diagrams, flow diagrams, sequence diagrams, and similar visuals. Do not hand-build diagrams out of raw SVG elements (`<svg>`, `<rect>`, `<path>`, `<text>`, etc.) or ASCII art.
+
+Only fall back to raw SVG when the diagram requires a layout Mermaid cannot express.
+
+### custom.css
+
+Do not add styles to `docs/src/css/custom.css`. That file is reserved for:
+
+- Infima CSS variable overrides.
+- Docusaurus structural adjustments with no Oxygen UI hook.
+- Third-party overrides outside our control (Scalar API reference, etc.).
+
+If a style can be expressed via `sx` or `styled()`, place it there instead.
 
 ## Documentation Structure Requirements
 

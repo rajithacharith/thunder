@@ -150,7 +150,7 @@ TEST_RUN="${4:-}"
 TEST_PACKAGE="${5:-}"
 
 # PNPM version to use for frontend builds and docs build
-PNPM_VERSION="11.0.9"
+PNPM_VERSION=$(grep -A2 '"packageManager"' package.json | grep -o '"version": *"[^"]*"' | sed 's/"version": *"\(.*\)"/\1/')
 
 # ============================================================================
 # Read Configuration from deployment.yaml

@@ -21,6 +21,7 @@ env:
   PRODUCT_NAME: "ThunderID"
   PRODUCT_NAME_LOWER: "thunderid"
   NODE_VERSION: "lts/*"
+  PNPM_VERSION: "latest"
 
 jobs:
   security-audit:
@@ -627,6 +628,7 @@ jobs:
         with:
           run_install: false
           cache_dependency_path: pnpm-lock.yaml
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📥 Download Built Distribution
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
