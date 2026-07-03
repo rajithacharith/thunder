@@ -23,8 +23,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
 
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
@@ -48,12 +46,6 @@ var (
 	errFlowIDExists     = errors.New("flow with id already exists")
 	errClientValidation = errors.New("client validation failed")
 )
-
-// handleFormatRegex matches valid handle format:
-// - starts with lowercase letter or digit
-// - contains only lowercase letters, digits, underscores, or dashes
-// - ends with lowercase letter or digit
-var handleFormatRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`)
 
 // FlowMgtServiceInterface defines the interface for the flow management service.
 type FlowMgtServiceInterface interface {
@@ -87,6 +79,7 @@ type flowMgtService struct {
 	graphBuilder        graphbuilder.GraphBuilderInterface
 	executorRegistry    executor.ExecutorRegistryInterface
 	interceptorRegistry interceptor.InterceptorRegistryInterface
+	flowValidator       FlowValidatorInterface
 	compositeStore      *compositeFlowStore
 	transactioner       transaction.Transactioner
 	dependencyRegistry  resourcedependency.Registry
@@ -100,6 +93,7 @@ func newFlowMgtService(
 	graphBuilder graphbuilder.GraphBuilderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
 	interceptorRegistry interceptor.InterceptorRegistryInterface,
+	flowValidator FlowValidatorInterface,
 	compositeStore *compositeFlowStore,
 	transactioner transaction.Transactioner,
 ) FlowMgtServiceInterface {
@@ -109,6 +103,7 @@ func newFlowMgtService(
 		graphBuilder:        graphBuilder,
 		executorRegistry:    executorRegistry,
 		interceptorRegistry: interceptorRegistry,
+		flowValidator:       flowValidator,
 		compositeStore:      compositeStore,
 		transactioner:       transactioner,
 		logger:              log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
@@ -154,10 +149,7 @@ func (s *flowMgtService) ListFlows(ctx context.Context, limit, offset int, flowT
 // CreateFlow creates a new flow definition with version 1.
 func (s *flowMgtService) CreateFlow(ctx context.Context, flowDef *FlowDefinition) (
 	*providers.CompleteFlowDefinition, *tidcommon.ServiceError) {
-	if err := validateFlowDefinition(flowDef); err != nil {
-		return nil, err
-	}
-	if err := s.validateInterceptorRegistration(flowDef.Interceptors); err != nil {
+	if err := s.flowValidator.ValidateFlowDefinition(ctx, flowDef); err != nil {
 		return nil, err
 	}
 
@@ -303,10 +295,7 @@ func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef 
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}
-	if err := validateFlowDefinition(flowDef); err != nil {
-		return nil, err
-	}
-	if err := s.validateInterceptorRegistration(flowDef.Interceptors); err != nil {
+	if err := s.flowValidator.ValidateFlowDefinition(ctx, flowDef); err != nil {
 		return nil, err
 	}
 
@@ -541,16 +530,6 @@ func (s *flowMgtService) IsValidFlow(
 	return flow.FlowType == flowType, nil
 }
 
-// Helper functions
-
-// isValidFlowType checks if the provided flow type is valid.
-func isValidFlowType(flowType providers.FlowType) bool {
-	return flowType == providers.FlowTypeAuthentication ||
-		flowType == providers.FlowTypeRegistration ||
-		flowType == providers.FlowTypeUserOnboarding ||
-		flowType == providers.FlowTypeRecovery
-}
-
 // buildPaginationLinks constructs pagination links for the flow list response.
 func buildPaginationLinks(limit, offset, totalCount int) []Link {
 	links := make([]Link, 0)
@@ -591,123 +570,6 @@ func buildPaginationLinks(limit, offset, totalCount int) []Link {
 	}
 
 	return links
-}
-
-// validateFlowDefinition validates the flow definition request.
-func validateFlowDefinition(flowDef *FlowDefinition) *tidcommon.ServiceError {
-	if flowDef == nil {
-		return &ErrorInvalidRequestFormat
-	}
-	if flowDef.Handle == "" {
-		return &ErrorMissingFlowHandle
-	}
-	if !isValidHandleFormat(flowDef.Handle) {
-		return &ErrorInvalidFlowHandleFormat
-	}
-	if flowDef.Name == "" {
-		return &ErrorMissingFlowName
-	}
-	if !isValidFlowType(flowDef.FlowType) {
-		return &ErrorInvalidFlowType
-	}
-	if flowDef.ID != "" && !utils.IsValidUUID(flowDef.ID) {
-		return &ErrorInvalidFlowIDFormat
-	}
-
-	if len(flowDef.Nodes) < 2 {
-		return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-			Key:          "error.flowmgtservice.flow_requires_start_and_end_nodes_description",
-			DefaultValue: "Flow definition must contain at least a start and an end node",
-		})
-	} else if len(flowDef.Nodes) == 2 {
-		return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-			Key:          "error.flowmgtservice.flow_requires_intermediate_nodes_description",
-			DefaultValue: "Flow definition must contain nodes between start and end nodes",
-		})
-	}
-
-	if err := validateInterceptors(flowDef.Interceptors); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateInterceptors validates the interceptor definitions declared in a flow.
-func validateInterceptors(interceptors []providers.InterceptorDefinition) *tidcommon.ServiceError {
-	validModes := providers.ValidInterceptorModes
-	validScopes := providers.ValidInterceptorScopes
-
-	for i, ic := range interceptors {
-		if ic.Name == "" {
-			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-				Key:          "error.flowmgtservice.interceptor_name_required",
-				DefaultValue: "Interceptor at index {{param(index)}} must have a name",
-				Params:       map[string]string{"index": strconv.Itoa(i)},
-			})
-		}
-		if isDefaultInterceptor(ic.Name) {
-			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-				Key:          "error.flowmgtservice.interceptor_default_not_configurable",
-				DefaultValue: "Default interceptor '{{param(name)}}' cannot be configured in a flow definition",
-				Params:       map[string]string{"name": ic.Name},
-			})
-		}
-		if !validModes[ic.Mode] {
-			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-				Key:          "error.flowmgtservice.interceptor_invalid_mode",
-				DefaultValue: "Interceptor '{{param(name)}}' has invalid mode '{{param(mode)}}'",
-				Params:       map[string]string{"name": ic.Name, "mode": string(ic.Mode)},
-			})
-		}
-		if ic.Scope != "" && !validScopes[ic.Scope] {
-			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-				Key:          "error.flowmgtservice.interceptor_invalid_scope",
-				DefaultValue: "Interceptor '{{param(name)}}' has invalid scope '{{param(scope)}}'",
-				Params:       map[string]string{"name": ic.Name, "scope": string(ic.Scope)},
-			})
-		}
-		if ic.Scope == providers.InterceptorScopeSelected && len(ic.ApplyTo) == 0 {
-			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-				Key:          "error.flowmgtservice.interceptor_selected_scope_requires_apply_to",
-				DefaultValue: "Interceptor with scope SELECTED must specify at least one node in applyTo",
-			})
-		}
-	}
-
-	return nil
-}
-
-// isDefaultInterceptor checks whether the given interceptor name matches any default interceptor.
-func isDefaultInterceptor(name string) bool {
-	_, ok := interceptor.DefaultInterceptorNames[name]
-	return ok
-}
-
-// validateInterceptorRegistration checks that every interceptor referenced in the flow
-// is registered in the interceptor registry.
-func (s *flowMgtService) validateInterceptorRegistration(
-	interceptors []providers.InterceptorDefinition,
-) *tidcommon.ServiceError {
-	for _, ic := range interceptors {
-		if !s.interceptorRegistry.IsRegistered(ic.Name) {
-			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
-				Key:          "error.flowmgtservice.interceptor_not_registered",
-				DefaultValue: "Interceptor '{{param(name)}}' is not registered",
-				Params:       map[string]string{"name": ic.Name},
-			})
-		}
-	}
-	return nil
-}
-
-// isValidHandleFormat validates that the handle follows the required format:
-// - all lowercase
-// - alphanumeric characters
-// - can contain underscores (_) or dashes (-)
-// - cannot start or end with underscore or dash
-func isValidHandleFormat(handle string) bool {
-	return handleFormatRegex.MatchString(handle)
 }
 
 // tryInferRegistrationFlow attempts to infer and create a registration flow from an authentication flow

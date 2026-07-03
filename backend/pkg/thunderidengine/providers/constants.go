@@ -55,6 +55,14 @@ const (
 	FlowTypeRecovery FlowType = "RECOVERY"
 )
 
+// ValidFlowTypes is the set of supported flow types.
+var ValidFlowTypes = []FlowType{
+	FlowTypeAuthentication,
+	FlowTypeRegistration,
+	FlowTypeUserOnboarding,
+	FlowTypeRecovery,
+}
+
 // NodeVariant identifies a PROMPT node sub-type that activates a variant-specific code path.
 type NodeVariant string
 
@@ -351,6 +359,12 @@ const (
 	InputTypeHidden = "HIDDEN"
 	// InputTypeSelect represents a select (dropdown) input type.
 	InputTypeSelect = "SELECT"
+	// InputTypeOUSelect represents an organization unit selection input type.
+	InputTypeOUSelect = "OU_SELECT"
+	// InputTypeNumber represents a numeric input type.
+	InputTypeNumber = "NUMBER_INPUT"
+	// InputTypeDate represents a date input type.
+	InputTypeDate = "DATE_INPUT"
 
 	// TODO: Add support for other sensitive input types:
 	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
@@ -358,6 +372,21 @@ const (
 	// - OIDC nonce
 	// - Invite tokens
 )
+
+// ValidInputTypes is the set of valid input type strings.
+var ValidInputTypes = map[string]bool{
+	InputTypeText:     true,
+	InputTypeEmail:    true,
+	InputTypePassword: true,
+	InputTypeOTP:      true,
+	InputTypePhone:    true,
+	InputTypeConsent:  true,
+	InputTypeHidden:   true,
+	InputTypeSelect:   true,
+	InputTypeOUSelect: true,
+	InputTypeNumber:   true,
+	InputTypeDate:     true,
+}
 
 // ExecutorType defines the type of an executor in the flow execution.
 type ExecutorType string
@@ -427,6 +456,13 @@ const (
 	// FlowStatusError indicates that there was an error during the flow execution.
 	FlowStatusError FlowStatus = "ERROR"
 )
+
+// ValidValidationRuleTypes is the set of valid validation rule type strings.
+var ValidValidationRuleTypes = map[string]bool{
+	string(ValidationTypeRegex):     true,
+	string(ValidationTypeMinLength): true,
+	string(ValidationTypeMaxLength): true,
+}
 
 // EventType is a type alias for event type strings.
 // This allows for type-safe event type constants while keeping the Event struct generic.

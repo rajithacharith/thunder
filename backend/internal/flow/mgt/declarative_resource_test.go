@@ -40,11 +40,12 @@ import (
 
 type DeclarativeResourceTestSuite struct {
 	suite.Suite
+	mockValidator *FlowValidatorInterfaceMock
 }
 
 func (s *DeclarativeResourceTestSuite) SetupTest() {
-	// Reset logger
 	_ = log.GetLogger()
+	s.mockValidator = NewFlowValidatorInterfaceMock(s.T())
 }
 
 // TestParseToCompleteFlowDefinition tests parsing YAML to providers.CompleteFlowDefinition
@@ -92,15 +93,13 @@ func (s *DeclarativeResourceTestSuite) TestValidateFlowGraphWrapper_ValidFlow() 
 		Handle:   "basic-auth",
 		Name:     "Basic Auth",
 		FlowType: "AUTHENTICATION",
-		Nodes: []providers.NodeDefinition{
-			{ID: "start", Type: "START"},
-			{ID: "login", Type: "BASIC_AUTHENTICATION"},
-			{ID: "mfa", Type: "TOTP_AUTHENTICATION"},
-			{ID: "end", Type: "END"},
-		},
+		Nodes:    validFlowNodes(),
 	}
 
-	err := validateFlowGraphWrapper(flow)
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
+
+	validate := validateFlowGraphWrapper(s.mockValidator)
+	err := validate(flow)
 	assert.NoError(s.T(), err)
 }
 
@@ -117,14 +116,21 @@ func (s *DeclarativeResourceTestSuite) TestValidateFlowGraphWrapper_MissingHandl
 		},
 	}
 
-	err := validateFlowGraphWrapper(flow)
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).
+		Return(&tidcommon.ServiceError{
+			Code: "VALIDATION_ERROR", Error: tidcommon.I18nMessage{DefaultValue: "missing handle"},
+		})
+
+	validate := validateFlowGraphWrapper(s.mockValidator)
+	err := validate(flow)
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "validation failed")
 }
 
 // TestValidateFlowGraphWrapper_InvalidType tests validation with wrong type
 func (s *DeclarativeResourceTestSuite) TestValidateFlowGraphWrapper_InvalidType() {
-	err := validateFlowGraphWrapper("not a flow definition")
+	validate := validateFlowGraphWrapper(s.mockValidator)
+	err := validate("not a flow definition")
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "invalid type")
 }
@@ -142,7 +148,13 @@ func (s *DeclarativeResourceTestSuite) TestValidateFlowGraphWrapper_Insufficient
 		},
 	}
 
-	err := validateFlowGraphWrapper(flow)
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).
+		Return(&tidcommon.ServiceError{
+			Code: "VALIDATION_ERROR", Error: tidcommon.I18nMessage{DefaultValue: "insufficient nodes"},
+		})
+
+	validate := validateFlowGraphWrapper(s.mockValidator)
+	err := validate(flow)
 	assert.Error(s.T(), err)
 }
 
@@ -609,7 +621,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_InvalidStore
 	// Create a mock store that's not a file-based store
 	mockStore := &flowStoreInterfaceMock{}
 
-	err := loadDeclarativeResources(mockStore)
+	err := loadDeclarativeResources(mockStore, s.mockValidator)
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "failed to assert flowStore to *fileBasedStore")
 }

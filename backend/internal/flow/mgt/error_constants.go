@@ -262,6 +262,73 @@ var (
 			DefaultValue: "Flow ID already exists",
 		},
 	}
+	// ErrorInvalidFlowStructure is the error returned when the flow graph has structural issues
+	// (missing/duplicate start or end nodes, duplicate node IDs, orphaned nodes, no termination path).
+	ErrorInvalidFlowStructure = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "FLM-1020",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_flow_structure",
+			DefaultValue: "Invalid flow structure",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_flow_structure_description",
+			DefaultValue: "Flow definition has structural issues",
+		},
+	}
+	// ErrorInvalidNodeConfig is the error returned when a node has invalid configuration
+	// (invalid type, missing required fields, invalid targets).
+	ErrorInvalidNodeConfig = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "FLM-1021",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_node_config",
+			DefaultValue: "Invalid node configuration",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_node_config_description",
+			DefaultValue: "Node has invalid configuration",
+		},
+	}
+	// ErrorInvalidNodeReference is the error returned when a node or interceptor references a non-existent node.
+	ErrorInvalidNodeReference = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "FLM-1022",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_node_reference",
+			DefaultValue: "Invalid node reference",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_node_reference_description",
+			DefaultValue: "References a non-existent node",
+		},
+	}
+	// ErrorInvalidExecutorConfig is the error returned when an executor is missing or not registered.
+	ErrorInvalidExecutorConfig = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "FLM-1023",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_executor_config",
+			DefaultValue: "Invalid executor configuration",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_executor_config_description",
+			DefaultValue: "Executor configuration is invalid",
+		},
+	}
+	// ErrorInvalidInputConfig is the error returned when an input has an invalid type or validation rule.
+	ErrorInvalidInputConfig = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "FLM-1024",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_input_config",
+			DefaultValue: "Invalid input configuration",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_input_config_description",
+			DefaultValue: "Input configuration is invalid",
+		},
+	}
 )
 
 // Internal errors
