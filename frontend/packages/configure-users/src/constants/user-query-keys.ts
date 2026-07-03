@@ -29,6 +29,10 @@ const UserQueryKeys = {
    */
   USER: 'user',
   /**
+   * Key for a user usages query.
+   */
+  USER_USAGES: 'user-usages',
+  /**
    * Base key for user type list queries.
    */
   USER_TYPES: 'userTypes',

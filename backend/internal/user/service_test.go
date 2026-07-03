@@ -33,6 +33,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -3476,4 +3477,120 @@ func TestUserDeclarativeYAML_OUHandleParsed(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "default", user.OUHandle)
 	require.Empty(t, user.OUID)
+}
+
+// --- GetUserUsages tests ---
+
+// stubUsageRegistry is a minimal resourcedependency.Registry for tests.
+type stubUsageRegistry struct {
+	resp *resourcedependency.DependenciesResponse
+	err  error
+}
+
+func (s *stubUsageRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (s *stubUsageRegistry) GetDependencies(
+	_ context.Context, _, _ string) (*resourcedependency.DependenciesResponse, error) {
+	return s.resp, s.err
+}
+
+func newUserForUsages(id string) *providers.Entity {
+	return &providers.Entity{ID: id, Category: providers.EntityCategoryUser, Type: "Person"}
+}
+
+func TestUserService_GetUserUsages_MissingID(t *testing.T) {
+	service := &userService{}
+
+	result, err := service.GetUserUsages(context.Background(), "")
+	require.Nil(t, result)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorMissingUserID.Code, err.Code)
+}
+
+func TestUserService_GetUserUsages_NotFound(t *testing.T) {
+	entityMock := entitymock.NewEntityServiceInterfaceMock(t)
+	entityMock.On("GetEntity", mock.Anything, svcTestUserID1).
+		Return((*providers.Entity)(nil), entitypkg.ErrEntityNotFound).Once()
+
+	service := &userService{entityService: entityMock}
+
+	result, err := service.GetUserUsages(context.Background(), svcTestUserID1)
+	require.Nil(t, result)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorUserNotFound.Code, err.Code)
+}
+
+func TestUserService_GetUserUsages_WrongCategory(t *testing.T) {
+	entityMock := entitymock.NewEntityServiceInterfaceMock(t)
+	entityMock.On("GetEntity", mock.Anything, svcTestUserID1).
+		Return(&providers.Entity{ID: svcTestUserID1, Category: providers.EntityCategoryAgent}, nil).Once()
+
+	service := &userService{entityService: entityMock}
+
+	result, err := service.GetUserUsages(context.Background(), svcTestUserID1)
+	require.Nil(t, result)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorUserNotFound.Code, err.Code)
+}
+
+func TestUserService_GetUserUsages_RegistryNotSet(t *testing.T) {
+	entityMock := entitymock.NewEntityServiceInterfaceMock(t)
+	entityMock.On("GetEntity", mock.Anything, svcTestUserID1).
+		Return(newUserForUsages(svcTestUserID1), nil).Once()
+
+	service := &userService{entityService: entityMock}
+
+	result, err := service.GetUserUsages(context.Background(), svcTestUserID1)
+	require.Nil(t, err)
+	require.NotNil(t, result)
+	require.Nil(t, result.TotalResults)
+	require.Nil(t, result.Summary)
+	require.Empty(t, result.Usages)
+}
+
+func TestUserService_GetUserUsages_WithUsages(t *testing.T) {
+	entityMock := entitymock.NewEntityServiceInterfaceMock(t)
+	entityMock.On("GetEntity", mock.Anything, svcTestUserID1).
+		Return(newUserForUsages(svcTestUserID1), nil).Once()
+
+	total := 1
+	service := &userService{
+		entityService: entityMock,
+		dependencyRegistry: &stubUsageRegistry{
+			resp: &resourcedependency.DependenciesResponse{
+				TotalResults: &total,
+				Count:        1,
+				Summary:      map[string]int{resourcedependency.ResourceTypeAgent: 1},
+				Usages: []resourcedependency.ResourceDependency{
+					{ResourceType: resourcedependency.ResourceTypeAgent, ID: "agent-1",
+						DisplayName: "Support Agent", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+				},
+			},
+		},
+	}
+
+	result, err := service.GetUserUsages(context.Background(), svcTestUserID1)
+	require.Nil(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.TotalResults)
+	require.Equal(t, 1, *result.TotalResults)
+	require.Equal(t, 1, result.Summary[resourcedependency.ResourceTypeAgent])
+	require.Len(t, result.Usages, 1)
+	require.Equal(t, resourcedependency.ResourceTypeAgent, result.Usages[0].ResourceType)
+	require.Equal(t, "agent-1", result.Usages[0].ID)
+}
+
+func TestUserService_GetUserUsages_RegistryError(t *testing.T) {
+	entityMock := entitymock.NewEntityServiceInterfaceMock(t)
+	entityMock.On("GetEntity", mock.Anything, svcTestUserID1).
+		Return(newUserForUsages(svcTestUserID1), nil).Once()
+
+	service := &userService{
+		entityService:      entityMock,
+		dependencyRegistry: &stubUsageRegistry{err: errors.New("registry error")},
+	}
+
+	result, err := service.GetUserUsages(context.Background(), svcTestUserID1)
+	require.Nil(t, result)
+	require.NotNil(t, err)
 }

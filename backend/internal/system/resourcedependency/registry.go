@@ -37,6 +37,7 @@ const BehaviorFallback = "fallback"
 const (
 	ResourceTypeTheme       = "theme"
 	ResourceTypeFlow        = "flow"
+	ResourceTypeUser        = "user"
 	ResourceTypeApplication = "application"
 	ResourceTypeAgent       = "agent"
 )

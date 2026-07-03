@@ -197,6 +197,28 @@ func (uh *userHandler) HandleUserGroupsGetRequest(w http.ResponseWriter, r *http
 		log.Int("count", groupListResponse.Count))
 }
 
+// HandleUserUsagesGetRequest handles the get user usages request.
+func (uh *userHandler) HandleUserUsagesGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
+
+	id := r.PathValue("id")
+	if id == "" {
+		handleError(ctx, w, &ErrorMissingUserID)
+		return
+	}
+
+	result, svcErr := uh.userService.GetUserUsages(ctx, id)
+	if svcErr != nil {
+		handleError(ctx, w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, result)
+
+	logger.Debug(ctx, "Successfully retrieved user usages", log.MaskedString(log.LoggerKeyUserID, id))
+}
+
 // HandleUserPutRequest handles the user request.
 func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

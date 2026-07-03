@@ -734,6 +734,10 @@ const translations = {
     'delete.disclaimer': 'All associated data will be permanently removed.',
     'delete.success': 'User deleted successfully.',
     'delete.error': 'Failed to delete user. Please try again.',
+    'delete.usages.loading': 'Checking affected resources…',
+    'delete.usages.none': 'No agents currently list this user as their owner.',
+    'delete.usages.title': 'The following agents list this user as their owner:',
+    'delete.usages.more': '+{{count}} more',
   },
 
   // ============================================================================

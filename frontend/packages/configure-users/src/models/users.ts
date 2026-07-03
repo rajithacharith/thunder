@@ -201,3 +201,30 @@ export interface SchemaInterface {
   name: string;
   ouId: string;
 }
+
+/**
+ * A single resource that references a user (e.g. an agent that lists the user as its owner).
+ */
+export interface UserUsage {
+  resourceType: string;
+  id: string;
+  displayName: string;
+  behaviorOnDelete: 'fallback' | 'cascade';
+}
+
+/**
+ * Per-resource-type count of usages, keyed by resource type (e.g. `agent`).
+ * Null when the counts could not be determined.
+ */
+export type UserUsagesSummary = Record<string, number> | null;
+
+/**
+ * Response for the user usages endpoint.
+ * totalResults is null when usage data is unavailable; 0 means confirmed empty.
+ */
+export interface UserUsagesResponse {
+  totalResults: number | null;
+  count: number;
+  summary: UserUsagesSummary;
+  usages: UserUsage[];
+}
