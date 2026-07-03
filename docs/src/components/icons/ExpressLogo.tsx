@@ -17,7 +17,7 @@
  */
 
 
-export default function ExpressLogo({size = 64, fill = 'white'}: {size?: number, fill?: string}) {
+export default function ExpressLogo({size = 64, fill = 'currentColor'}: {size?: number, fill?: string}) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 353 258" fill={fill}>
       <g clipPath="url(#express-clip)">

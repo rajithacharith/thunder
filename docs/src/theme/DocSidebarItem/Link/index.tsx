@@ -90,7 +90,7 @@ export default function DocSidebarItemLink({item, ...rest}: OriginalProps): Reac
           aria-current={isActive ? 'page' : undefined}
         >
           <span className="sidebar-tech-label">
-            <span className="sidebar-tech-icon" aria-hidden="true">{logo}</span>
+            <span className="sidebar-tech-icon" aria-hidden="true" style={{filter: 'grayscale(1) opacity(0.75)'}}>{logo}</span>
             {item.label}
           </span>
         </Link>

@@ -17,7 +17,7 @@
  */
 
 
-export default function IOSLogo({size = 64, fill = 'white'}: {size?: number, fill?: string}) {
+export default function IOSLogo({size = 64, fill = 'currentColor'}: {size?: number, fill?: string}) {
   return (
     <svg width={size} height={size} viewBox="-73 0 960 1000">
       <path

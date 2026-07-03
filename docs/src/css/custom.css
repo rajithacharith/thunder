@@ -272,15 +272,6 @@ h5 {
   max-width: 100%;
 }
 
-/* Package manager tab label icons (npm, pnpm, yarn, bun) — greyscale, code content unaffected */
-.pkg-manager-icon {
-  filter: grayscale(1) opacity(0.7);
-}
-
-.tabs__item--active .pkg-manager-icon,
-.tabs__item:hover .pkg-manager-icon {
-  filter: grayscale(1) opacity(1);
-}
 
 /* ── Code block title (filename tab) ──────────────────────────────────── */
 [class*='codeBlockTitle'] {
@@ -1381,11 +1372,6 @@ aside.theme-doc-sidebar-container {
   background: color-mix(in srgb, var(--ifm-color-primary) 8%, transparent) !important;
 }
 
-/* Hide the Scalar "Powered by Scalar" footer link, which is not relevant to our docs site */
-.apis-page a[href="https://www.scalar.com"] {
-  display: none;
-}
-
 /* ========================= MOBILE API PAGE ================================ */
 @media (max-width: 996px) {
   /* Mobile API docs uses MobileApiReference — a purpose-built component that
@@ -1610,7 +1596,6 @@ html[data-connect-type='mcp'] .connect-section--agent {
 
 .sidebar-tech-icon svg,
 .sidebar-tech-icon img {
-  filter: grayscale(1);
   height: 100%;
   width: 100%;
 }
