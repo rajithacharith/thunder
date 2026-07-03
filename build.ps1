@@ -677,6 +677,8 @@ function Prepare-Backend-For-Packaging {
     # Copy bootstrap directory
     Write-Host "Copying bootstrap scripts..."
     Copy-Item -Path (Join-Path $BACKEND_DIR "bootstrap") -Destination $package_folder -Recurse -Force
+    # Never ship the dev-only CORS seed that Run stages into the source bootstrap dir.
+    Remove-Item -Path (Join-Path $package_folder "bootstrap/02-server-configurations.yaml") -Force -ErrorAction SilentlyContinue
 
     Write-Host "=== Ensuring server certificates exist in the distribution ==="
     Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "server"
@@ -1547,6 +1549,20 @@ function Run {
     # enabled; the bootstrap runs through the service layer under a runtime context).
     Write-Host "⚙️  Creating default resources..."
     Write-Host ""
+
+    # Dev-only: seed CORS allowed origins for the Gate and Console apps so they can call
+    # the backend without manual configuration. Regenerated on every run and picked up by
+    # the bootstrap one-shot; it is git-ignored and never packaged (see Build).
+    $devServerConfig = @"
+# resource_type: server_config
+name: cors
+value:
+  allowedOrigins:
+    - "https://localhost:$GATE_APP_DEFAULT_PORT"
+    - "https://localhost:$CONSOLE_APP_DEFAULT_PORT"
+"@
+    Set-Content -Path (Join-Path $BACKEND_DIR "bootstrap/02-server-configurations.yaml") -Value $devServerConfig
+
     $env:PUBLIC_URL = $PUBLIC_URL
     Push-Location $BACKEND_DIR
     try {
