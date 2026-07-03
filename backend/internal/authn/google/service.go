@@ -206,7 +206,8 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 					log.String("expectedDomain", domain))
 				return tidcommon.CustomServiceError(authnoidc.ErrorInvalidIDToken, tidcommon.I18nMessage{
 					Key:          "error.authnservice.google.invalid_id_token_hosted_domain_description",
-					DefaultValue: "The ID token is not from the expected hosted domain: " + domain,
+					DefaultValue: "The ID token is not from the expected hosted domain: {{param(domain)}}",
+					Params:       map[string]string{"domain": domain},
 				})
 			}
 		}

@@ -176,6 +176,17 @@ describe('ImportConfigurationSummaryPage', () => {
       expect(screen.getByText(/user.*1/i)).toBeInTheDocument();
       expect(screen.getByText(/flow.*1/i)).toBeInTheDocument();
     });
+
+    it('displays a server configurations section', () => {
+      const original = mockLocationState.configData;
+      mockLocationState.configData = {server_config: [{name: 'cors'}]} as ProductConfig;
+
+      render(<ImportConfigurationSummaryPage />);
+
+      expect(screen.getByText(/serverConfigs.*1/i)).toBeInTheDocument();
+
+      mockLocationState.configData = original;
+    });
   });
 
   describe('breadcrumb navigation', () => {

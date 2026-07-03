@@ -60,7 +60,7 @@ func newOUResolverExecutor(
 		{
 			Ref:        "ou_selection_input",
 			Identifier: ouIDKey,
-			Type:       "OU_SELECT",
+			Type:       providers.InputTypeOUSelect,
 			Required:   true,
 		},
 	}
@@ -110,7 +110,8 @@ func (e *ouResolverExecutor) Execute(ctx *providers.NodeContext) (*providers.Exe
 		execResp.Status = providers.ExecFailure
 		execResp.Error = tidcommon.CustomServiceError(ErrOUResolutionFailed, tidcommon.I18nMessage{
 			Key:          ErrOUResolutionFailed.ErrorDescription.Key,
-			DefaultValue: "Unsupported OU resolution strategy: " + resolveFrom,
+			DefaultValue: "Unsupported OU resolution strategy: {{param(strategy)}}",
+			Params:       map[string]string{"strategy": resolveFrom},
 		})
 		return execResp, nil
 	}

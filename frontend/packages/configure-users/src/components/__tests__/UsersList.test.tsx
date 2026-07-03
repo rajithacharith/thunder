@@ -29,7 +29,6 @@ const {mockLoggerError} = vi.hoisted(() => ({
 }));
 
 const mockNavigate = vi.fn();
-const mockDeleteMutateAsync = vi.fn();
 
 // Mock DataGrid to avoid CSS import issues
 interface MockRow {
@@ -167,27 +166,24 @@ interface UseGetUsersReturn {
   error: Error | null;
 }
 
-interface UseDeleteUserReturn {
-  mutate: ReturnType<typeof vi.fn>;
-  mutateAsync: ReturnType<typeof vi.fn>;
-  isPending: boolean;
-  error: Error | null;
-  data: unknown;
-  isError: boolean;
-  isSuccess: boolean;
-  isIdle: boolean;
-  reset: () => void;
-}
-
 const mockUseGetUsers = vi.fn<() => UseGetUsersReturn>();
-const mockUseDeleteUser = vi.fn<() => UseDeleteUserReturn>();
 
 vi.mock('@/api/useGetUsers', () => ({
   default: () => mockUseGetUsers(),
 }));
 
-vi.mock('@/api/useDeleteUser', () => ({
-  default: () => mockUseDeleteUser(),
+// The delete flow lives in UserDeleteDialog (covered by its own test). Stub it here so these
+// tests focus on UsersList's responsibility: opening the dialog for the selected user.
+vi.mock('@/components/UserDeleteDialog', () => ({
+  default: ({open, userId, onClose}: {open: boolean; userId: string | null; onClose: () => void}) =>
+    open ? (
+      <div data-testid="user-delete-dialog">
+        <span data-testid="delete-dialog-user-id">{userId}</span>
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    ) : null,
 }));
 
 describe('UsersList', () => {
@@ -223,27 +219,13 @@ describe('UsersList', () => {
     ],
   };
 
-  const defaultDeleteReturn: UseDeleteUserReturn = {
-    mutate: vi.fn(),
-    mutateAsync: mockDeleteMutateAsync,
-    isPending: false,
-    error: null,
-    data: undefined,
-    isError: false,
-    isSuccess: false,
-    isIdle: true,
-    reset: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDeleteMutateAsync.mockResolvedValue(undefined);
     mockUseGetUsers.mockReturnValue({
       data: mockUsersData,
       isLoading: false,
       error: null,
     });
-    mockUseDeleteUser.mockReturnValue({...defaultDeleteReturn});
   });
 
   it('renders DataGrid with users', async () => {
@@ -318,7 +300,7 @@ describe('UsersList', () => {
     });
   });
 
-  it('opens delete dialog when Delete is clicked', async () => {
+  it('opens delete dialog for the selected user when Delete is clicked', async () => {
     const user = userEvent.setup();
     render(<UsersList />);
 
@@ -326,40 +308,18 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
+    expect(screen.queryByTestId('user-delete-dialog')).not.toBeInTheDocument();
+
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
     await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete User')).toBeInTheDocument();
-      expect(screen.getByText('Are you sure you want to delete this user?')).toBeInTheDocument();
+      expect(screen.getByTestId('user-delete-dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('delete-dialog-user-id')).toHaveTextContent('user1');
     });
   });
 
-  it('deletes user when confirmed', async () => {
-    const user = userEvent.setup();
-
-    render(<UsersList />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
-    });
-
-    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-    await user.click(deleteButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete User')).toBeInTheDocument();
-    });
-
-    const confirmButton = screen.getByRole('button', {name: /^delete$/i});
-    await user.click(confirmButton);
-
-    await waitFor(() => {
-      expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user1');
-    });
-  });
-
-  it('cancels delete when Cancel button is clicked', async () => {
+  it('cancels delete when the dialog requests close', async () => {
     const user = userEvent.setup();
     render(<UsersList />);
 
@@ -371,38 +331,14 @@ describe('UsersList', () => {
     await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete User')).toBeInTheDocument();
+      expect(screen.getByTestId('user-delete-dialog')).toBeInTheDocument();
     });
 
     const cancelButton = screen.getByRole('button', {name: /cancel/i});
     await user.click(cancelButton);
 
     await waitFor(() => {
-      expect(screen.queryByText('Delete User')).not.toBeInTheDocument();
-    });
-  });
-
-  it('displays delete error in dialog', async () => {
-    const user = userEvent.setup();
-
-    mockUseDeleteUser.mockReturnValue({
-      ...defaultDeleteReturn,
-      error: new Error('Failed to delete'),
-      isError: true,
-      isIdle: false,
-    });
-
-    render(<UsersList />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
-    });
-
-    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-    await user.click(deleteButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to delete')).toBeInTheDocument();
+      expect(screen.queryByTestId('user-delete-dialog')).not.toBeInTheDocument();
     });
   });
 
@@ -426,36 +362,6 @@ describe('UsersList', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Failed to load users')).not.toBeInTheDocument();
-    });
-  });
-
-  it('handles error when delete user fails', async () => {
-    const user = userEvent.setup();
-    const deleteError = new Error('Delete failed');
-    const failingDeleteMutateAsync = vi.fn().mockRejectedValue(deleteError);
-    mockUseDeleteUser.mockReturnValue({
-      ...defaultDeleteReturn,
-      mutateAsync: failingDeleteMutateAsync,
-    });
-
-    render(<UsersList />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
-    });
-
-    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-    await user.click(deleteButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete User')).toBeInTheDocument();
-    });
-
-    const confirmButton = screen.getByRole('button', {name: /^delete$/i});
-    await user.click(confirmButton);
-
-    await waitFor(() => {
-      expect(failingDeleteMutateAsync).toHaveBeenCalledWith('user1');
     });
   });
 
@@ -594,28 +500,5 @@ describe('UsersList', () => {
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
     expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('displays loading state when deleting user', async () => {
-    const user = userEvent.setup();
-    mockUseDeleteUser.mockReturnValue({
-      ...defaultDeleteReturn,
-      isPending: true,
-      isIdle: false,
-    });
-
-    render(<UsersList />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
-    });
-
-    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-    await user.click(deleteButtons[0]);
-
-    await waitFor(() => {
-      const confirmButton = screen.getByRole('button', {name: /loading/i});
-      expect(confirmButton).toBeDisabled();
-    });
   });
 });

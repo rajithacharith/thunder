@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
 
@@ -1095,4 +1096,61 @@ func TestHandleSelfUserExits_MissingContextTokens(t *testing.T) {
 		handler.HandleSelfUserCredentialUpdateRequest(rr, req)
 		require.Equal(t, http.StatusUnauthorized, rr.Code)
 	})
+}
+
+func TestHandleUserUsagesGetRequest_Success(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	total := 1
+	mockSvc.On("GetUserUsages", mock.Anything, testUserID123).
+		Return(&resourcedependency.DependenciesResponse{
+			TotalResults: &total,
+			Count:        1,
+			Summary:      map[string]int{resourcedependency.ResourceTypeAgent: 1},
+			Usages: []resourcedependency.ResourceDependency{
+				{ResourceType: resourcedependency.ResourceTypeAgent, ID: "agent-1",
+					DisplayName: "Support Agent", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+			},
+		}, nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users/"+testUserID123+"/usages", nil)
+	req.SetPathValue("id", testUserID123)
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserUsagesGetRequest(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var response resourcedependency.DependenciesResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&response))
+	require.NotNil(t, response.TotalResults)
+	require.Equal(t, 1, *response.TotalResults)
+	require.Len(t, response.Usages, 1)
+	require.Equal(t, resourcedependency.ResourceTypeAgent, response.Usages[0].ResourceType)
+}
+
+func TestHandleUserUsagesGetRequest_MissingID(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users//usages", nil)
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserUsagesGetRequest(rr, req)
+
+	// ErrorMissingUserID maps to 404 in the user handler's error mapping.
+	require.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestHandleUserUsagesGetRequest_NotFound(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	mockSvc.On("GetUserUsages", mock.Anything, testUserID123).
+		Return(nil, &ErrorUserNotFound)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users/"+testUserID123+"/usages", nil)
+	req.SetPathValue("id", testUserID123)
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserUsagesGetRequest(rr, req)
+
+	require.Equal(t, http.StatusNotFound, rr.Code)
 }

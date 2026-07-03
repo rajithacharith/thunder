@@ -1259,7 +1259,8 @@ func wrapConsentServiceError(
 		logger.Debug(ctx, "Failed to sync consent elements for the schema changes", log.Any("error", err))
 		return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
 			Key:          "error.entitytypeservice.consent_sync_failed_description",
-			DefaultValue: fmt.Sprintf("%s : code - %s", ErrorConsentSyncFailed.ErrorDescription.DefaultValue, err.Code),
+			DefaultValue: "Failed to synchronize consent configurations for the entity type : code - {{param(code)}}",
+			Params:       map[string]string{"code": err.Code},
 		})
 	}
 

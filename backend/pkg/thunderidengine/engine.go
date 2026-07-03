@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
@@ -37,6 +38,7 @@ import (
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/jose"
+	joseconfig "github.com/thunder-id/thunderid/internal/system/jose/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
@@ -78,7 +80,8 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize key manager provider", log.Error(err))
 	}
-	engineCtx.jwtService, engineCtx.jweService, err = jose.Initialize(engineCtx.runtimeCryptoSvc)
+	engineCtx.jwtService, engineCtx.jweService, err = jose.Initialize(
+		engineCtx.runtimeCryptoSvc, engineCtx.joseConfig())
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize JOSE services", log.Error(err))
 	}
@@ -171,6 +174,19 @@ func validateEngineContext(ctx *engineContext) error {
 		return errors.New("thunderidengine: authorization provider is not set")
 	}
 	return nil
+}
+
+// joseConfig builds the JOSE configuration from the engine's injected JWT and server
+// configuration, decoupling the JOSE services from the global server runtime.
+func (e *engineContext) joseConfig() joseconfig.Config {
+	return joseconfig.Config{
+		Issuer:         e.jwtConfig.Issuer,
+		ValidityPeriod: e.jwtConfig.ValidityPeriod,
+		Audience:       e.jwtConfig.Audience,
+		PreferredKeyID: e.jwtConfig.PreferredKeyID,
+		Leeway:         e.jwtConfig.Leeway,
+		JWKSCacheTTL:   time.Duration(e.serverConfig.SecurityConfig.JWKSCacheTTL) * time.Second,
+	}
 }
 
 // applyCustomExecutors registers the custom executors with the executor registry.

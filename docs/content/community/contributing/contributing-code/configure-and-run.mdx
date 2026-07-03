@@ -9,20 +9,12 @@ hide_table_of_contents: false
 
 ## Configure the Server
 
-**Add CORS allowed origins:**
+**CORS allowed origins:**
 
-Create or open `backend/cmd/server/config/resources/server_configs/cors.yaml` and make the following changes:
-
-```yaml
-name: cors
-value:
-  allowedOrigins:
-    - "https://localhost:5190"
-    - "https://localhost:5191"
-```
+`make run` (and `.\build.ps1 run` on Windows) automatically configures the Gate and Console development origins (`https://localhost:5190` and `https://localhost:5191`) on startup, so no manual CORS setup is required for the standard flow.
 
 :::tip
-This lets the <ProductName /> Gate and <ProductName /> Console development servers call the backend. You can also update the same CORS section at runtime with `PUT /server-config/cors`.
+To allow additional origins, add them to `backend/cmd/server/config/resources/server_configs/cors.yaml` or set them at runtime with `PUT /server-config/cors`.
 :::
 
 Open `backend/cmd/server/deployment.yaml` and make the following change:

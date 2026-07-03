@@ -620,6 +620,84 @@ paths:
                   key: "error.internal_server_error_description"
                   defaultValue: "An unexpected error occurred while processing the request"
 
+  /users/{id}/usages:
+    get:
+      tags:
+        - Users
+      summary: Get user usages
+      description: |
+        Returns the resources that reference this user, aggregated across all resource types.
+        For example, agents that list this user as their owner. This endpoint is informational
+        only — it drives the pre-delete confirmation dialog in the UI and does not gate deletion
+        on the server.
+
+        Each usage entry includes a `behaviorOnDelete` field describing what happens to the
+        referencing resource if the user is deleted:
+        - `fallback`: the reference is kept as-is.
+        - `cascade`: the resource is permanently deleted along with the user.
+
+        When usage data is unavailable (e.g. the server has not fully initialised),
+        `totalResults` and `summary` are `null` rather than `0`/empty. Consumers must treat
+        `null` as "unknown" and `0` as "confirmed empty".
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The unique identifier of the user"
+          example: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+      responses:
+        "200":
+          description: Resources that reference this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceUsagesResponse'
+              example:
+                totalResults: 2
+                count: 2
+                summary:
+                  agent: 2
+                usages:
+                  - resourceType: agent
+                    id: "a1b2c3d4-0000-0000-0000-000000000001"
+                    displayName: "Support Agent"
+                    behaviorOnDelete: fallback
+                  - resourceType: agent
+                    id: "a1b2c3d4-0000-0000-0000-000000000002"
+                    displayName: "Billing Agent"
+                    behaviorOnDelete: fallback
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USR-1003"
+                message:
+                  key: "error.userservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.userservice.user_not_found_description"
+                  defaultValue: "The user with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USR-5000"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
+
   /users/tree/{path}:
     get:
       tags:
@@ -1732,6 +1810,73 @@ components:
           summary: Complex filtering
           value: 'address.city eq "Mountain View"'
   schemas:
+    ResourceUsage:
+      type: object
+      description: A single resource that references the target resource.
+      required:
+        - resourceType
+        - id
+        - displayName
+        - behaviorOnDelete
+      properties:
+        resourceType:
+          type: string
+          description: Type of the referencing resource.
+          enum: [application, agent]
+          example: agent
+        id:
+          type: string
+          format: uuid
+          description: Identifier of the referencing resource.
+          example: "a1b2c3d4-0000-0000-0000-000000000001"
+        displayName:
+          type: string
+          description: Human-readable name of the referencing resource.
+          example: "Support Agent"
+        behaviorOnDelete:
+          type: string
+          description: |
+            What happens to this resource when the target resource is deleted.
+            - `fallback`: the reference is kept as-is.
+            - `cascade`: the resource is permanently deleted.
+          enum: [fallback, cascade]
+          example: fallback
+
+    ResourceUsagesSummary:
+      type: object
+      nullable: true
+      description: |
+        Per-resource-type count of usages, keyed by resource type
+        (e.g. `agent`). Null when the counts could not be determined.
+      additionalProperties:
+        type: integer
+      example:
+        agent: 2
+
+    ResourceUsagesResponse:
+      type: object
+      description: |
+        Resources that reference a target resource, aggregated across all resource types.
+        Drives pre-delete confirmation dialogs; informational only.
+      properties:
+        totalResults:
+          type: integer
+          nullable: true
+          description: |
+            Total number of resources that reference the target resource.
+            Null when usage data is unavailable; 0 means confirmed empty.
+          example: 2
+        count:
+          type: integer
+          description: Number of results returned.
+          example: 2
+        summary:
+          $ref: '#/components/schemas/ResourceUsagesSummary'
+        usages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceUsage'
+
     User:
       type: object
       required: [id]

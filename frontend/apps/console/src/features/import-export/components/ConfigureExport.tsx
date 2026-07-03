@@ -32,6 +32,7 @@ import {
   Layout as LayoutIcon,
   Palette,
   Server,
+  Settings,
   Terminal,
   UserRoundCog,
   Users,
@@ -109,6 +110,7 @@ export default function ConfigureExport({
   const [expandedRoles, setExpandedRoles] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(false);
   const [expandedAgents, setExpandedAgents] = useState(false);
+  const [expandedServerConfigs, setExpandedServerConfigs] = useState(false);
 
   const nextSteps = [
     t('importExport:configureExport.nextSteps.startWithConfig', {productName}),
@@ -285,6 +287,8 @@ export default function ConfigureExport({
   const rolesCount = resourceCounts?.role ?? (Array.isArray(configData?.role) ? configData.role.length : 0);
   const groupsCount = resourceCounts?.group ?? (Array.isArray(configData?.group) ? configData.group.length : 0);
   const agentsCount = resourceCounts?.agent ?? (Array.isArray(configData?.agent) ? configData.agent.length : 0);
+  const serverConfigsCount =
+    resourceCounts?.server_config ?? (Array.isArray(configData?.server_config) ? configData.server_config.length : 0);
 
   const items: ConfigSummaryItem[] = [];
 
@@ -1112,6 +1116,55 @@ export default function ConfigureExport({
                   size="small"
                   variant="outlined"
                   onClick={() => setExpandedAgents(!expandedAgents)}
+                  sx={{cursor: 'pointer'}}
+                />
+              </Box>
+            )}
+          </Stack>
+        </Box>
+      ),
+    });
+  }
+
+  // Add server configurations if present
+  if (serverConfigsCount > 0) {
+    const serverConfigs = (configData?.server_config as {name?: string}[]) ?? [];
+    const displayedServerConfigs = expandedServerConfigs ? serverConfigs : serverConfigs.slice(0, 5);
+    const remainingCount = serverConfigs.length - 5;
+
+    items.push({
+      id: 'server-configs',
+      label: t('importExport:configureExport.labels.serverConfigs'),
+      icon: <Settings size={16} />,
+      value: serverConfigsCount,
+      status: 'ready',
+      dependencyCount: 0,
+      content: (
+        <Box sx={{px: 3, py: 2, bgcolor: 'background.default'}}>
+          <Stack spacing={2}>
+            <Stack spacing={2} divider={<Box sx={{borderBottom: 1, borderColor: 'divider'}} />}>
+              {displayedServerConfigs.map((serverConfig, idx) => (
+                <Stack key={serverConfig.name ?? `server-config-${idx}`} spacing={0.5}>
+                  <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+                    <Settings size={14} />
+                    <Typography variant="body2" fontWeight={600}>
+                      {serverConfig.name ?? t('importExport:configureExport.fallback.unnamedServerConfig')}
+                    </Typography>
+                  </Stack>
+                </Stack>
+              ))}
+            </Stack>
+            {remainingCount > 0 && (
+              <Box sx={{pt: 1, textAlign: 'center'}}>
+                <Chip
+                  label={
+                    expandedServerConfigs
+                      ? t('importExport:configureExport.actions.showLess')
+                      : t('importExport:configureExport.actions.more', {count: remainingCount})
+                  }
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setExpandedServerConfigs(!expandedServerConfigs)}
                   sx={{cursor: 'pointer'}}
                 />
               </Box>

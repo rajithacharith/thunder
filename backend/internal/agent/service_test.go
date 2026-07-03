@@ -1284,7 +1284,7 @@ func (suite *AgentServiceTestSuite) TestTranslateConsentSyncError() {
 	suite.Require().NotNil(svcErr)
 	suite.Equal(ErrorConsentSyncFailed.Code, svcErr.Code)
 	suite.Equal("error.agentservice.consent_sync_failed_description", svcErr.ErrorDescription.Key)
-	suite.Contains(svcErr.ErrorDescription.DefaultValue, "CONSENT-1234")
+	suite.Contains(svcErr.ErrorDescription.String(), "CONSENT-1234")
 
 	serverErr := &inboundclient.ConsentSyncError{
 		Underlying: &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CONSENT-9000"},
@@ -2103,7 +2103,9 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_ExplicitOUIDChanged_Validate
 // --- GetResourceDependencies tests ---
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_UnknownResourceType() {
-	svc, _, _, _ := suite.setupService()
+	svc, _, mockInbound, _ := suite.setupService()
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, "unknown", "id-1",
+		serverconst.MaxCompositeStoreRecords, 0).Return([]string{}, 0, nil)
 
 	result, err := svc.GetResourceDependencies(context.Background(), "unknown", "id-1")
 	assert.NoError(suite.T(), err)
@@ -2112,7 +2114,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_UnknownResourceT
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_InboundClientError() {
 	svc, _, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return(nil, 0, errors.New("store error"))
 
 	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeTheme, "theme-1")
@@ -2122,7 +2125,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_InboundClientErr
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_EmptyIDs() {
 	svc, _, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{}, 0, nil)
 
 	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeTheme, "theme-1")
@@ -2132,7 +2136,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_EmptyIDs() {
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_Success() {
 	svc, mockEntity, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"agent-1"}, 1, nil)
 
 	sysAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent One"})
@@ -2152,7 +2157,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_Success() {
 // Applications share the inbound-client store; the agent provider must skip non-agent entities.
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_FiltersOutNonAgentEntities() {
 	svc, mockEntity, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"agent-1", "app-1"}, 2, nil)
 
 	sysAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent One"})
@@ -2165,6 +2171,58 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_FiltersOutNonAge
 	assert.NoError(suite.T(), err)
 	suite.Require().Len(result, 1)
 	assert.Equal(suite.T(), "agent-1", result[0].ID)
+}
+
+// Owner dependencies are resolved by listing agents and matching the owner system attribute in
+// memory, because the entity list filter only searches the public attributes column.
+func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Success() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntityList")
+
+	ownedAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent One", "owner": "user-1"})
+	otherAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent Two", "owner": "user-2"})
+	mockEntity.On("GetEntityList", mock.Anything, providers.EntityCategoryAgent,
+		serverconst.MaxCompositeStoreRecords, 0, mock.Anything).
+		Return([]providers.Entity{
+			{ID: "agent-1", Category: providers.EntityCategoryAgent, SystemAttributes: ownedAttrs},
+			{ID: "agent-2", Category: providers.EntityCategoryAgent, SystemAttributes: otherAttrs},
+		}, nil)
+
+	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	assert.NoError(suite.T(), err)
+	suite.Require().Len(result, 1)
+	assert.Equal(suite.T(), resourcedependency.ResourceTypeAgent, result[0].ResourceType)
+	assert.Equal(suite.T(), resourcedependency.BehaviorFallback, result[0].BehaviorOnDelete)
+	assert.Equal(suite.T(), "agent-1", result[0].ID)
+	assert.Equal(suite.T(), "Agent One", result[0].DisplayName)
+}
+
+func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Empty() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntityList")
+
+	otherAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent Two", "owner": "user-2"})
+	mockEntity.On("GetEntityList", mock.Anything, providers.EntityCategoryAgent,
+		serverconst.MaxCompositeStoreRecords, 0, mock.Anything).
+		Return([]providers.Entity{
+			{ID: "agent-2", Category: providers.EntityCategoryAgent, SystemAttributes: otherAttrs},
+		}, nil)
+
+	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Error() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntityList")
+	mockEntity.On("GetEntityList", mock.Anything, providers.EntityCategoryAgent,
+		serverconst.MaxCompositeStoreRecords, 0, mock.Anything).
+		Return(nil, errors.New("store error"))
+
+	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	assert.Nil(suite.T(), result)
+	assert.Error(suite.T(), err)
 }
 
 // --- error-branch coverage ---

@@ -79,6 +79,10 @@ export interface ExportRequest {
    */
   agents?: string[];
   /**
+   * List of server config names to export. Use `["*"]` to export all.
+   */
+  serverConfigs?: string[];
+  /**
    * Optional configuration for export behavior
    */
   options?: ExportOptions;

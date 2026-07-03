@@ -129,3 +129,6 @@ docs/static/api/next/postman/
 # Claude Code
 .claude/
 
+# Dev-only CORS seed staged by `build.sh run` / `build.ps1 run` for the bootstrap one-shot (never committed or packaged)
+backend/cmd/server/bootstrap/02-server-configurations.yaml
+

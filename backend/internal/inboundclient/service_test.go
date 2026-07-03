@@ -38,6 +38,7 @@ import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	sysconfig "github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/tests/mocks/certmock"
 	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
@@ -2347,33 +2348,37 @@ func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_UpdatesWhenA
 
 func (suite *InboundClientServiceTestSuite) TestGetEntityIDsByThemeID_NegativeLimit() {
 	svc := newServiceForTest(newInboundClientStoreInterfaceMock(suite.T()))
-	_, _, err := svc.GetEntityIDsByThemeID(context.Background(), "theme-1", -1, 0)
+	_, _, err := svc.GetEntityIDsByReference(
+		context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", -1, 0)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "limit")
 }
 
 func (suite *InboundClientServiceTestSuite) TestGetEntityIDsByThemeID_NegativeOffset() {
 	svc := newServiceForTest(newInboundClientStoreInterfaceMock(suite.T()))
-	_, _, err := svc.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, -1)
+	_, _, err := svc.GetEntityIDsByReference(
+		context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, -1)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "offset")
 }
 
 func (suite *InboundClientServiceTestSuite) TestGetEntityIDsByThemeID_StoreError() {
 	store := newInboundClientStoreInterfaceMock(suite.T())
-	store.EXPECT().GetEntityIDsByThemeID(mock.Anything, "theme-1", 10, 0).
+	store.EXPECT().GetEntityIDsByReference(mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", 10, 0).
 		Return(nil, 0, errors.New("db error"))
 	svc := newServiceForTest(store)
-	_, _, err := svc.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+	_, _, err := svc.GetEntityIDsByReference(
+		context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 	assert.Error(suite.T(), err)
 }
 
 func (suite *InboundClientServiceTestSuite) TestGetEntityIDsByThemeID_Success() {
 	store := newInboundClientStoreInterfaceMock(suite.T())
-	store.EXPECT().GetEntityIDsByThemeID(mock.Anything, "theme-1", 10, 0).
+	store.EXPECT().GetEntityIDsByReference(mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1", 10, 0).
 		Return([]string{"app-1", "app-2"}, 2, nil)
 	svc := newServiceForTest(store)
-	ids, total, err := svc.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+	ids, total, err := svc.GetEntityIDsByReference(
+		context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 2, total)
 	assert.Equal(suite.T(), []string{"app-1", "app-2"}, ids)

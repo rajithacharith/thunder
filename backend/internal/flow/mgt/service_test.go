@@ -31,8 +31,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/executormock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/interceptormock"
@@ -48,6 +48,7 @@ type FlowMgtServiceTestSuite struct {
 	mockGraphBuilder        *graphBuilderInterfaceMock
 	mockExecutorRegistry    *executormock.ExecutorRegistryInterfaceMock
 	mockInterceptorRegistry *interceptormock.InterceptorRegistryInterfaceMock
+	mockValidator           *FlowValidatorInterfaceMock
 }
 
 func TestFlowMgtServiceTestSuite(t *testing.T) {
@@ -61,14 +62,30 @@ func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Co
 	return txFunc(ctx)
 }
 
+// stubDependencyRegistry is a stub implementation of resourcedependency.Registry for testing.
+// The real registry never returns an error from GetDependencies, so a stub is required to
+// exercise the error branch of GetFlowUsages.
+type stubDependencyRegistry struct {
+	resp *resourcedependency.DependenciesResponse
+	err  error
+}
+
+func (r *stubDependencyRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (r *stubDependencyRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return r.resp, r.err
+}
+
 func (s *FlowMgtServiceTestSuite) SetupTest() {
 	s.mockStore = newFlowStoreInterfaceMock(s.T())
 	s.mockInference = newFlowInferenceServiceInterfaceMock(s.T())
 	s.mockGraphBuilder = newGraphBuilderInterfaceMock(s.T())
 	s.mockExecutorRegistry = executormock.NewExecutorRegistryInterfaceMock(s.T())
 	s.mockInterceptorRegistry = interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	s.mockValidator = NewFlowValidatorInterfaceMock(s.T())
 	s.service = newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		s.mockExecutorRegistry, s.mockInterceptorRegistry, nil, &stubTransactioner{})
+		s.mockExecutorRegistry, s.mockInterceptorRegistry, s.mockValidator, nil, &stubTransactioner{})
 
 	testConfig := &config.Config{
 		Flow: engineconfig.FlowConfig{
@@ -81,6 +98,14 @@ func (s *FlowMgtServiceTestSuite) SetupTest() {
 
 func (s *FlowMgtServiceTestSuite) TearDownTest() {
 	config.ResetServerRuntime()
+}
+
+func validFlowNodes() []providers.NodeDefinition {
+	return []providers.NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "prompt"},
+		{ID: "prompt", Type: "PROMPT", Next: "end"},
+		{ID: "end", Type: "END"},
+	}
 }
 
 // ListFlows tests
@@ -193,11 +218,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_Success() {
 		Handle:   "test-handle",
 		Name:     "Test Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes: []providers.NodeDefinition{
-			{Type: "start"},
-			{Type: "action"},
-			{Type: "end"},
-		},
+		Nodes:    validFlowNodes(),
 	}
 	expectedFlow := &providers.CompleteFlowDefinition{
 		Handle:        "test-handle",
@@ -205,6 +226,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_Success() {
 		FlowType:      providers.FlowTypeAuthentication,
 		ActiveVersion: 1,
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle",
 		providers.FlowTypeAuthentication).Return(false, nil)
 	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
@@ -224,6 +246,8 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_ValidationError() {
 		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "end"}},
 	}
 
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorMissingFlowHandle)
+
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
@@ -236,8 +260,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidProvidedFlowID() {
 		Handle:   "test-handle",
 		Name:     "Test Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowIDFormat)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -252,9 +278,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_DuplicateProvidedFlowID() {
 		Handle:   "test-handle",
 		Name:     "Test Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
 
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(&providers.CompleteFlowDefinition{ID: flowID}, nil)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
@@ -268,8 +295,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_Uppercase()
 		Handle:   "Test-Handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowHandleFormat)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -282,8 +311,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_Spaces() {
 		Handle:   "test handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowHandleFormat)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -296,8 +327,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_SpecialChar
 		Handle:   "test@handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowHandleFormat)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -310,8 +343,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_StartsWithD
 		Handle:   "-test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowHandleFormat)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -324,8 +359,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_EndsWithUnd
 		Handle:   "test_handle_",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowHandleFormat)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -354,7 +391,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_ValidHandleFormats() {
 				Handle:   tc.handle,
 				Name:     "Test",
 				FlowType: providers.FlowTypeAuthentication,
-				Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+				Nodes:    validFlowNodes(),
 			}
 
 			flowID, _ := utils.GenerateUUIDv7()
@@ -367,6 +404,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_ValidHandleFormats() {
 				Nodes:         flowDef.Nodes,
 			}
 
+			s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 			s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, tc.handle,
 				providers.FlowTypeAuthentication).Return(false, nil)
 			s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
@@ -385,8 +423,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidFlowType() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: "invalid",
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorInvalidFlowType)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -402,6 +442,11 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InsufficientNodes() {
 		Nodes:    []providers.NodeDefinition{{Type: "start"}},
 	}
 
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "insufficient nodes",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
+
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
@@ -416,6 +461,11 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_OnlyStartAndEnd() {
 		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "end"}},
 	}
 
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "only start and end",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
+
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
@@ -427,8 +477,9 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_StoreError() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle",
 		providers.FlowTypeAuthentication).Return(false, nil)
 	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(nil, errors.New("db error"))
@@ -446,7 +497,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithInterceptors_Success() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{
 				Name:  "CaptchaInterceptor",
@@ -462,7 +513,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithInterceptors_Success() {
 		ActiveVersion: 1,
 		Interceptors:  flowDef.Interceptors,
 	}
-	s.mockInterceptorRegistry.EXPECT().IsRegistered("CaptchaInterceptor").Return(true)
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle",
 		providers.FlowTypeAuthentication).Return(false, nil)
 	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
@@ -480,11 +531,16 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorMissingName() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "", Mode: providers.InterceptorModePreRequest},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "interceptor missing name",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -497,11 +553,16 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorInvalidMode() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "MyInterceptor", Mode: "INVALID_MODE"},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "invalid interceptor mode",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -514,11 +575,16 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorEmptyMode() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "MyInterceptor", Mode: ""},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "empty interceptor mode",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -531,11 +597,16 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorInvalidScope() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "MyInterceptor", Mode: providers.InterceptorModePreNode, Scope: "INVALID_SCOPE"},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "invalid interceptor scope",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -548,7 +619,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorSelectedScopeEmptyAp
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{
 				Name:    "MyInterceptor",
@@ -559,6 +630,11 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorSelectedScopeEmptyAp
 		},
 	}
 
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "selected scope requires applyTo",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
+
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
@@ -566,24 +642,20 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorSelectedScopeEmptyAp
 }
 
 func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorDefaultNotConfigurable() {
-	original := interceptor.DefaultInterceptors
-	originalNames := interceptor.DefaultInterceptorNames
-	interceptor.DefaultInterceptors = nil
-	interceptor.DefaultInterceptorNames = map[string]struct{}{"DefaultIC": {}}
-	defer func() {
-		interceptor.DefaultInterceptors = original
-		interceptor.DefaultInterceptorNames = originalNames
-	}()
-
 	flowDef := &FlowDefinition{
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "DefaultIC", Mode: providers.InterceptorModePreRequest},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "default interceptor not configurable",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -592,16 +664,20 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorDefaultNotConfigurab
 }
 
 func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorNotRegistered() {
-	s.mockInterceptorRegistry.EXPECT().IsRegistered("UnknownInterceptor").Return(false)
 	flowDef := &FlowDefinition{
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "UnknownInterceptor", Mode: providers.InterceptorModePreRequest},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "interceptor not registered",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
@@ -612,7 +688,6 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorNotRegistered() {
 // Interceptor update tests (UpdateFlow)
 
 func (s *FlowMgtServiceTestSuite) TestUpdateFlow_WithInterceptors_Success() {
-	s.mockInterceptorRegistry.EXPECT().IsRegistered("RateLimitInterceptor").Return(true)
 	existingFlow := &providers.CompleteFlowDefinition{
 		ID:            testFlowIDService,
 		Handle:        "test-handle",
@@ -623,13 +698,13 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_WithInterceptors_Success() {
 		Handle:   "test-handle",
 		Name:     "Updated Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{
 				Name:    "RateLimitInterceptor",
 				Mode:    providers.InterceptorModePreNode,
 				Scope:   providers.InterceptorScopeSelected,
-				ApplyTo: []string{"action"},
+				ApplyTo: []string{"prompt"},
 			},
 		},
 	}
@@ -640,6 +715,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_WithInterceptors_Success() {
 		ActiveVersion: 2,
 		Interceptors:  flowDef.Interceptors,
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(expectedFlow, nil)
 	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
@@ -665,7 +741,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_RemoveInterceptors() {
 		Handle:       "test-handle",
 		Name:         "Updated Flow",
 		FlowType:     providers.FlowTypeAuthentication,
-		Nodes:        []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:        validFlowNodes(),
 		Interceptors: nil,
 	}
 	expectedFlow := &providers.CompleteFlowDefinition{
@@ -674,6 +750,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_RemoveInterceptors() {
 		FlowType:      providers.FlowTypeAuthentication,
 		ActiveVersion: 2,
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(expectedFlow, nil)
 	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
@@ -690,11 +767,16 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_InvalidInterceptorMode() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 		Interceptors: []providers.InterceptorDefinition{
 			{Name: "MyInterceptor", Mode: "BAD_MODE"},
 		},
 	}
+
+	validationErr := tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
+		DefaultValue: "invalid interceptor mode",
+	})
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(validationErr)
 
 	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
@@ -717,7 +799,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithAutoInference() {
 		Handle:   "test-handle",
 		Name:     "Auth Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
 	expectedFlow := &providers.CompleteFlowDefinition{
 		Handle:        "test-handle",
@@ -729,9 +811,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithAutoInference() {
 		Handle:   "test-handle-reg",
 		Name:     "Auth Flow - Registration",
 		FlowType: providers.FlowTypeRegistration,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
 
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle",
 		providers.FlowTypeAuthentication).Return(false, nil)
 	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
@@ -759,7 +842,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_AutoInferenceFailure() {
 		Handle:   "test-handle",
 		Name:     "Auth Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
 	expectedFlow := &providers.CompleteFlowDefinition{
 		Handle:        "test-handle",
@@ -769,6 +852,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_AutoInferenceFailure() {
 	}
 
 	// Mock expectations in the correct order of execution
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle",
 		providers.FlowTypeAuthentication).Return(false, nil)
 	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
@@ -786,8 +870,9 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_DuplicateHandle() {
 		Handle:   "existing-handle",
 		Name:     "Test Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().
 		IsFlowExistsByHandle(mock.Anything, "existing-handle", providers.FlowTypeAuthentication).
 		Return(
@@ -804,8 +889,9 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_DuplicateHandleCheckError() {
 		Handle:   "test-handle",
 		Name:     "Test Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle", providers.FlowTypeAuthentication).Return(
 		false, errors.New("db error"))
 
@@ -856,7 +942,77 @@ func (s *FlowMgtServiceTestSuite) TestGetFlow_StoreError() {
 	s.Equal(&tidcommon.InternalServerError, err)
 }
 
-// GetFlowByHandle tests
+// GetFlowUsages tests
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_EmptyID() {
+	result, err := s.service.GetFlowUsages(context.Background(), "")
+
+	s.Nil(result)
+	s.Equal(&ErrorMissingFlowID, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_NotFound() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(result)
+	s.Equal(&ErrorFlowNotFound, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_StoreError() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errors.New("db error"))
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(result)
+	s.Equal(&tidcommon.InternalServerError, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_NoRegistrySet() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).
+		Return(&providers.CompleteFlowDefinition{ID: testFlowIDService}, nil)
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Nil(result.TotalResults)
+	s.Nil(result.Summary)
+	s.Empty(result.Usages)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_RegistryError() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).
+		Return(&providers.CompleteFlowDefinition{ID: testFlowIDService}, nil)
+	s.service.SetDependencyRegistry(&stubDependencyRegistry{err: errors.New("registry error")})
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(result)
+	s.Equal(&tidcommon.InternalServerError, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetFlowUsages_Success() {
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).
+		Return(&providers.CompleteFlowDefinition{ID: testFlowIDService}, nil)
+	total := 1
+	expected := &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Summary:      map[string]int{resourcedependency.ResourceTypeApplication: 1},
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-1",
+				DisplayName: "App One", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+		},
+	}
+	s.service.SetDependencyRegistry(&stubDependencyRegistry{resp: expected})
+
+	result, err := s.service.GetFlowUsages(context.Background(), testFlowIDService)
+
+	s.Nil(err)
+	s.Equal(expected, result)
+}
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_Success() {
 	expectedFlow := &providers.CompleteFlowDefinition{
@@ -951,13 +1107,14 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_Success() {
 		Handle:   "test-handle",
 		Name:     "Updated",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
 	updatedFlow := &providers.CompleteFlowDefinition{
 		Handle:        "test-handle",
 		Name:          "Updated",
 		ActiveVersion: 2,
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(updatedFlow, nil)
 	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
@@ -980,6 +1137,8 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_EmptyID() {
 func (s *FlowMgtServiceTestSuite) TestUpdateFlow_ValidationError() {
 	flowDef := &FlowDefinition{Handle: "", Name: "", FlowType: providers.FlowTypeAuthentication}
 
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(&ErrorMissingFlowHandle)
+
 	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(result)
@@ -991,8 +1150,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_FlowNotFound() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
 
 	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
@@ -1011,8 +1171,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CannotChangeFlowType() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeRegistration,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 
 	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
@@ -1031,8 +1192,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CannotChangeHandle() {
 		Handle:   "new-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 
 	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
@@ -1051,8 +1213,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_StoreError() {
 		Handle:   "test-handle",
 		Name:     "Test",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes:    []providers.NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Nodes:    validFlowNodes(),
 	}
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(nil, errors.New("db error"))
 
@@ -1367,8 +1530,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_Success() {
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, mockValidator, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1428,8 +1592,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_SkipsNonAuthFlow(
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, mockValidator, nil, &stubTransactioner{})
 
 	regFlowDef := &FlowDefinition{
 		Handle:   "reg-flow",
@@ -1457,8 +1622,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesInferenceE
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, mockValidator, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1488,8 +1654,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesStoreError
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, mockValidator, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1529,8 +1696,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_DisabledAutoInfer
 	// Auto-inference is disabled in SetupTest, so just verify early return
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, mockValidator, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1558,8 +1726,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_SkipsPasskeyRegis
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, mockValidator, nil, &stubTransactioner{})
 
 	// Auth flow with PasskeyAuthExecutor in register_start and register_finish modes
 	authFlowDef := &FlowDefinition{
@@ -1617,11 +1786,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CompositeDisabled_AllowsUpdate(
 		Handle:   "test-flow",
 		Name:     "Test Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes: []providers.NodeDefinition{
-			{ID: "start", Type: "START"},
-			{ID: "login", Type: "BASIC_AUTHENTICATION", OnSuccess: "end"},
-			{ID: "end", Type: "END"},
-		},
+		Nodes:    validFlowNodes(),
 	}
 
 	existingFlow := &providers.CompleteFlowDefinition{
@@ -1634,6 +1799,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CompositeDisabled_AllowsUpdate(
 	}
 
 	// Mock the store to return the existing flow
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(existingFlow, nil).Once()
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, flowID, mock.Anything).Return(existingFlow, nil).Once()
 	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, flowID).Once()
@@ -1683,11 +1849,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_MutableFlowAllowed() {
 		Handle:   "test-flow",
 		Name:     "Updated Flow",
 		FlowType: providers.FlowTypeAuthentication,
-		Nodes: []providers.NodeDefinition{
-			{ID: "start", Type: "START"},
-			{ID: "login", Type: "BASIC_AUTHENTICATION", OnSuccess: "end"},
-			{ID: "end", Type: "END"},
-		},
+		Nodes:    validFlowNodes(),
 	}
 
 	existingFlow := &providers.CompleteFlowDefinition{
@@ -1708,6 +1870,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_MutableFlowAllowed() {
 		Nodes:         flowDef.Nodes,
 	}
 
+	s.mockValidator.EXPECT().ValidateFlowDefinition(mock.Anything, mock.Anything).Return(nil)
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(existingFlow, nil).Once()
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, flowID, mock.MatchedBy(func(fd *FlowDefinition) bool {
 		return fd.Name == "Updated Flow"

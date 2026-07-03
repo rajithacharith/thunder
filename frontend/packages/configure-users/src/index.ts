@@ -20,6 +20,7 @@
 export {default as useCreateUser} from './api/useCreateUser';
 export {default as useDeleteUser} from './api/useDeleteUser';
 export {default as useGetUser} from './api/useGetUser';
+export {default as useGetUserUsages} from './api/useGetUserUsages';
 export {default as useGetUsers} from './api/useGetUsers';
 export {default as useGetUserType} from './api/useGetUserType';
 export {default as useGetUserTypes} from './api/useGetUserTypes';

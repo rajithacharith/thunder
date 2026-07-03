@@ -19,26 +19,12 @@
 import {ResourceAvatar, getInitials} from '@thunderid/components';
 import {useDataGridLocaleText} from '@thunderid/hooks';
 import {useLogger} from '@thunderid/logger/react';
-import {
-  IconButton,
-  Tooltip,
-  Typography,
-  Snackbar,
-  Alert,
-  ListingTable,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  DataGrid,
-} from '@wso2/oxygen-ui';
+import {IconButton, Tooltip, Typography, Snackbar, Alert, ListingTable, DataGrid} from '@wso2/oxygen-ui';
 import {Eye, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useState, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useDeleteUser from '../api/useDeleteUser';
+import UserDeleteDialog from './UserDeleteDialog';
 import useGetUsers from '../api/useGetUsers';
 import type {UserWithDetails} from '../models/users';
 
@@ -49,7 +35,6 @@ export default function UsersList() {
   const dataGridLocaleText = useDataGridLocaleText();
 
   const {data: userData, isLoading, error: usersRequestError} = useGetUsers();
-  const deleteUserMutation = useDeleteUser();
 
   const error = usersRequestError;
 
@@ -89,20 +74,6 @@ export default function UsersList() {
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setSelectedUserId(null);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedUserId) return;
-
-    try {
-      await deleteUserMutation.mutateAsync(selectedUserId);
-      setDeleteDialogOpen(false);
-      setSelectedUserId(null);
-    } catch (err) {
-      // Error is already handled in the hook
-      setDeleteDialogOpen(false);
-      logger.error('Failed to delete user', {error: err, userId: selectedUserId});
-    }
   };
 
   const columns: DataGrid.GridColDef<UserWithDetails>[] = useMemo(
@@ -229,36 +200,7 @@ export default function UsersList() {
       </ListingTable.Provider>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
-        <DialogTitle>{t('users:deleteUser')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{t('users:confirmDeleteUser')}</DialogContentText>
-          {deleteUserMutation.error && (
-            <Alert severity="error" sx={{mt: 2}}>
-              <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserMutation.error.message}
-              </Typography>
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={deleteUserMutation.isPending}>
-            {t('common:actions.cancel')}
-          </Button>
-          <Button
-            onClick={() => {
-              handleDeleteConfirm().catch(() => {
-                // Handle error
-              });
-            }}
-            color="error"
-            variant="contained"
-            disabled={deleteUserMutation.isPending}
-          >
-            {deleteUserMutation.isPending ? t('common:status.loading') : t('common:actions.delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <UserDeleteDialog open={deleteDialogOpen} userId={selectedUserId} onClose={handleDeleteCancel} />
 
       <Snackbar
         open={snackbarOpen}

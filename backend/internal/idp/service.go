@@ -359,9 +359,9 @@ func (is *idpService) validateAttributeConfiguration(
 		}
 		if seenUserTypes[entry.UserType] {
 			return tidcommon.CustomServiceError(ErrorInvalidAttributeConfiguration, tidcommon.I18nMessage{
-				Key: "error.idpservice.attribute_configuration_duplicate_user_type_description",
-				DefaultValue: fmt.Sprintf(
-					"user type '%s' is configured more than once", entry.UserType),
+				Key:          "error.idpservice.attribute_configuration_duplicate_user_type_description",
+				DefaultValue: "user type '{{param(userType)}}' is configured more than once",
+				Params:       map[string]string{"userType": entry.UserType},
 			})
 		}
 		seenUserTypes[entry.UserType] = true
@@ -390,8 +390,9 @@ func (is *idpService) validateAttributeConfiguration(
 			if !validTargets[m.LocalAttribute] {
 				return tidcommon.CustomServiceError(ErrorInvalidAttributeConfiguration, tidcommon.I18nMessage{
 					Key: "error.idpservice.attribute_configuration_target_not_in_schema_description",
-					DefaultValue: fmt.Sprintf("local claim '%s' is not an attribute of user type '%s'",
-						m.LocalAttribute, entry.UserType),
+					DefaultValue: "local claim '{{param(claim)}}' is not an attribute of " +
+						"user type '{{param(userType)}}'",
+					Params: map[string]string{"claim": m.LocalAttribute, "userType": entry.UserType},
 				})
 			}
 		}

@@ -115,6 +115,8 @@ func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 				userHandler.HandleUserGetRequest(w, r)
 			} else if len(segments) == 2 && segments[1] == "groups" {
 				userHandler.HandleUserGroupsGetRequest(w, r)
+			} else if len(segments) == 2 && segments[1] == "usages" {
+				userHandler.HandleUserUsagesGetRequest(w, r)
 			} else {
 				http.NotFound(w, r)
 			}

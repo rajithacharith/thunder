@@ -393,24 +393,21 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *tidcomm
 
 // GetResourceDependencies returns the agents that reference the resource identified by
 // (resourceType, id). It implements the resourcedependency.Provider interface.
+//
+// Agents reference a user through their owner attribute, which lives on the agent entity rather
+// than in the inbound-client store, so user dependencies are resolved separately. All other
+// reference types are resolved via the inbound-client store, which decides what is tracked. The
+// number of referencing entities is bounded by MaxCompositeStoreRecords.
 func (s *agentService) GetResourceDependencies(
 	ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error) {
-	switch resourceType {
-	case resourcedependency.ResourceTypeTheme:
-		return s.getAgentsByThemeID(ctx, id)
-	default:
-		return []resourcedependency.ResourceDependency{}, nil
+	if resourceType == resourcedependency.ResourceTypeUser {
+		return s.getAgentsByOwner(ctx, id)
 	}
-}
 
-// getAgentsByThemeID returns agents referencing the given theme. The number of referencing
-// entities is bounded by MaxCompositeStoreRecords (the inbound-client store limit).
-func (s *agentService) getAgentsByThemeID(
-	ctx context.Context, themeID string) ([]resourcedependency.ResourceDependency, error) {
-	ids, _, err := s.inboundClientService.GetEntityIDsByThemeID(
-		ctx, themeID, serverconst.MaxCompositeStoreRecords, 0)
+	ids, _, err := s.inboundClientService.GetEntityIDsByReference(
+		ctx, resourceType, id, serverconst.MaxCompositeStoreRecords, 0)
 	if err != nil {
-		s.logger.Error(ctx, "Failed to get entity IDs by theme ID", log.Error(err))
+		s.logger.Error(ctx, "Failed to get entity IDs by reference", log.Error(err))
 		return nil, err
 	}
 	if len(ids) == 0 {
@@ -430,6 +427,38 @@ func (s *agentService) getAgentsByThemeID(
 			continue
 		}
 		name, _, _, _ := readSystemAttributes(e.SystemAttributes)
+		usages = append(usages, resourcedependency.ResourceDependency{
+			ResourceType:     resourcedependency.ResourceTypeAgent,
+			ID:               e.ID,
+			DisplayName:      name,
+			BehaviorOnDelete: resourcedependency.BehaviorFallback,
+		})
+	}
+	return usages, nil
+}
+
+// getAgentsByOwner returns the agents that list the given user as their owner. The owner is stored
+// in the agent entity's system attributes, which the entity list filter does not search (it only
+// matches the public attributes column), so agents are listed and matched on owner in memory. The
+// number of agents scanned is bounded by MaxCompositeStoreRecords.
+func (s *agentService) getAgentsByOwner(
+	ctx context.Context, ownerID string) ([]resourcedependency.ResourceDependency, error) {
+	entities, err := s.entityService.GetEntityList(
+		ctx, providers.EntityCategoryAgent, serverconst.MaxCompositeStoreRecords, 0, nil)
+	if err != nil {
+		s.logger.Error(ctx, "Failed to list agents", log.Error(err))
+		return nil, err
+	}
+
+	usages := make([]resourcedependency.ResourceDependency, 0)
+	for _, e := range entities {
+		if e.Category != providers.EntityCategoryAgent {
+			continue
+		}
+		name, _, owner, _ := readSystemAttributes(e.SystemAttributes)
+		if owner != ownerID {
+			continue
+		}
 		usages = append(usages, resourcedependency.ResourceDependency{
 			ResourceType:     resourcedependency.ResourceTypeAgent,
 			ID:               e.ID,
@@ -1689,13 +1718,7 @@ func (s *agentService) translateCertOperationError(
 // translateConsentSyncError maps a typed ConsentSyncError to an agent-service error.
 func translateConsentSyncError(err *inboundclient.ConsentSyncError) *tidcommon.ServiceError {
 	if err.IsClientError() {
-		return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
-			Key: "error.agentservice.consent_sync_failed_description",
-			DefaultValue: fmt.Sprintf(
-				ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s",
-				err.Underlying.Code,
-			),
-		})
+		return ErrorConsentSyncFailed.WithParams(map[string]string{"code": err.Underlying.Code})
 	}
 	return &tidcommon.InternalServerError
 }

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/agent"
@@ -45,6 +46,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/authzen"
 	"github.com/thunder-id/thunderid/internal/cert"
+	"github.com/thunder-id/thunderid/internal/connection"
 	"github.com/thunder-id/thunderid/internal/consent"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	"github.com/thunder-id/thunderid/internal/design/resolve"
@@ -86,6 +88,7 @@ import (
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/importer"
 	"github.com/thunder-id/thunderid/internal/system/jose"
+	joseconfig "github.com/thunder-id/thunderid/internal/system/jose/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki"
@@ -126,7 +129,16 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize key manager provider", log.Error(err))
 	}
 
-	jwtService, jweService, err := jose.Initialize(runtimeCryptoSvc)
+	runtime := config.GetServerRuntime()
+	joseCfg := joseconfig.Config{
+		Issuer:         runtime.Config.JWT.Issuer,
+		ValidityPeriod: runtime.Config.JWT.ValidityPeriod,
+		Audience:       runtime.Config.JWT.Audience,
+		PreferredKeyID: runtime.Config.JWT.PreferredKeyID,
+		Leeway:         runtime.Config.JWT.Leeway,
+		JWKSCacheTTL:   time.Duration(runtime.Config.Server.SecurityConfig.JWKSCacheTTL) * time.Second,
+	}
+	jwtService, jweService, err := jose.Initialize(runtimeCryptoSvc, joseCfg)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize JOSE services", log.Error(err))
 	}
@@ -245,6 +257,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize IDPService", log.Error(err))
 	}
 	exporters = append(exporters, idpExporter)
+
+	// Register the /connections API as a thin layer over the identity-provider service.
+	connection.Initialize(mux, idpService)
 
 	templateService, err := template.Initialize()
 	if err != nil {
@@ -381,8 +396,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, agentExporter)
 
-	// Wire the dependency registry into the theme service (two-phase init to avoid cyclic imports).
-	registerDependencyRegistry(themeMgtService, applicationService, agentService)
+	// Wire the dependency registry into the theme and flow services (two-phase init to avoid
+	// cyclic imports).
+	registerDependencyRegistry(themeMgtService, flowMgtService, userService, applicationService, agentService)
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
@@ -446,11 +462,17 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 }
 
 // registerDependencyRegistry builds the dependency registry from the given providers and wires
-// it into the theme management service.
+// it into the theme, flow and user management services.
 func registerDependencyRegistry(
-	themeMgtService thememgt.ThemeMgtServiceInterface, providers ...resourcedependency.Provider,
+	themeMgtService thememgt.ThemeMgtServiceInterface,
+	flowMgtService flowmgt.FlowMgtServiceInterface,
+	userService user.UserServiceInterface,
+	providers ...resourcedependency.Provider,
 ) {
-	themeMgtService.SetDependencyRegistry(resourcedependency.Initialize(providers...))
+	registry := resourcedependency.Initialize(providers...)
+	themeMgtService.SetDependencyRegistry(registry)
+	flowMgtService.SetDependencyRegistry(registry)
+	userService.SetDependencyRegistry(registry)
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

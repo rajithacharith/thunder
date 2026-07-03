@@ -606,25 +606,16 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 }
 
 // GetResourceDependencies returns the applications that reference the resource identified
-// by (resourceType, id). It implements the resourcedependency.Provider interface.
+// by (resourceType, id). It implements the resourcedependency.Provider interface. The
+// inbound-client store resolves which reference types are tracked, so no per-type handling is
+// needed here. The number of referencing entities is bounded by MaxCompositeStoreRecords
+// (the inbound-client store limit).
 func (as *applicationService) GetResourceDependencies(
 	ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error) {
-	switch resourceType {
-	case resourcedependency.ResourceTypeTheme:
-		return as.getApplicationsByThemeID(ctx, id)
-	default:
-		return []resourcedependency.ResourceDependency{}, nil
-	}
-}
-
-// getApplicationsByThemeID returns applications referencing the given theme. The number of
-// referencing entities is bounded by MaxCompositeStoreRecords (the inbound-client store limit).
-func (as *applicationService) getApplicationsByThemeID(
-	ctx context.Context, themeID string) ([]resourcedependency.ResourceDependency, error) {
-	ids, _, err := as.inboundClientService.GetEntityIDsByThemeID(
-		ctx, themeID, serverconst.MaxCompositeStoreRecords, 0)
+	ids, _, err := as.inboundClientService.GetEntityIDsByReference(
+		ctx, resourceType, id, serverconst.MaxCompositeStoreRecords, 0)
 	if err != nil {
-		as.logger.Error(ctx, "Failed to get entity IDs by theme ID", log.Error(err))
+		as.logger.Error(ctx, "Failed to get entity IDs by reference", log.Error(err))
 		return nil, err
 	}
 	if len(ids) == 0 {
@@ -1166,7 +1157,8 @@ func validateAcrValues(acrValues []string) *tidcommon.ServiceError {
 		if !isValidACR(acr) {
 			return tidcommon.CustomServiceError(ErrorInvalidAcrValues, tidcommon.I18nMessage{
 				Key:          "error.applicationservice.invalid_acr_values_unrecognized",
-				DefaultValue: fmt.Sprintf("ACR value %q is not recognized by the system", acr),
+				DefaultValue: "ACR value '{{param(acr)}}' is not recognized by the system",
+				Params:       map[string]string{"acr": acr},
 			})
 		}
 	}
@@ -1518,11 +1510,9 @@ func (as *applicationService) translateCertOperationError(ctx context.Context,
 func translateConsentSyncError(err *inboundclient.ConsentSyncError) *tidcommon.ServiceError {
 	if err.IsClientError() {
 		return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
-			Key: "error.applicationservice.consent_sync_failed_description",
-			DefaultValue: fmt.Sprintf(
-				ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s",
-				err.Underlying.Code,
-			),
+			Key:          "error.applicationservice.consent_sync_failed_description",
+			DefaultValue: "Failed to synchronize consent configurations for the application : code - {{param(code)}}",
+			Params:       map[string]string{"code": err.Underlying.Code},
 		})
 	}
 	return &tidcommon.InternalServerError

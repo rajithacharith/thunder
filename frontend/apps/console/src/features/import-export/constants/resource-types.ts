@@ -35,6 +35,7 @@ export const ALLOWED_RESOURCE_TYPES = [
   'agent',
   'presentation_definition',
   'credential_configuration',
+  'server_config',
 ] as const;
 
 export type ResourceType = (typeof ALLOWED_RESOURCE_TYPES)[number];

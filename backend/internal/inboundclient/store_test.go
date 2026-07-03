@@ -30,6 +30,7 @@ import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
@@ -723,7 +724,8 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByThemeID() {
 		suite.mockDBProvider.On("GetConfigDBClient").
 			Return((*providermock.DBClientInterfaceMock)(nil), errors.New("db unavailable")).Once()
 
-		ids, total, err := suite.store.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 		suite.Error(err)
 		suite.Nil(ids)
 		suite.Equal(0, total)
@@ -734,7 +736,8 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByThemeID() {
 		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetEntityIDsByThemeIDCount,
 			"theme-1", testServerID).Return(nil, errors.New("count query failed")).Once()
 
-		ids, total, err := suite.store.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 		suite.Error(err)
 		suite.Nil(ids)
 		suite.Equal(0, total)
@@ -749,7 +752,8 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByThemeID() {
 			"theme-1", testServerID, 10, 0).
 			Return(nil, errors.New("list query failed")).Once()
 
-		ids, total, err := suite.store.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 		suite.Error(err)
 		suite.Nil(ids)
 		suite.Equal(0, total)
@@ -764,7 +768,8 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByThemeID() {
 			"theme-1", testServerID, 10, 0).
 			Return([]map[string]interface{}{{"entity_id": 12345}}, nil).Once()
 
-		ids, total, err := suite.store.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 		suite.Error(err)
 		suite.Nil(ids)
 		suite.Equal(0, total)
@@ -782,7 +787,8 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByThemeID() {
 				{"entity_id": "app-2"},
 			}, nil).Once()
 
-		ids, total, err := suite.store.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 		suite.NoError(err)
 		suite.Equal(2, total)
 		suite.Equal([]string{"app-1", "app-2"}, ids)
@@ -797,9 +803,40 @@ func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByThemeID() {
 			"theme-1", testServerID, 10, 0).
 			Return([]map[string]interface{}{}, nil).Once()
 
-		ids, total, err := suite.store.GetEntityIDsByThemeID(context.Background(), "theme-1", 10, 0)
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 		suite.NoError(err)
 		suite.Equal(0, total)
 		suite.Empty(ids)
 	})
+}
+
+func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByReference_Flow() {
+	suite.Run("uses flow queries and repeats the id across slots", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetEntityIDsByFlowIDCount,
+			"flow-1", "flow-1", "flow-1", testServerID).
+			Return([]map[string]interface{}{{"total": int64(2)}}, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetEntityIDsByFlowID,
+			"flow-1", "flow-1", "flow-1", testServerID, 10, 0).
+			Return([]map[string]interface{}{
+				{"entity_id": "app-1"},
+				{"entity_id": "app-2"},
+			}, nil).Once()
+
+		ids, total, err := suite.store.GetEntityIDsByReference(
+			context.Background(), resourcedependency.ResourceTypeFlow, "flow-1", 10, 0)
+		suite.NoError(err)
+		suite.Equal(2, total)
+		suite.Equal([]string{"app-1", "app-2"}, ids)
+	})
+}
+
+func (suite *InboundClientStoreTestSuite) TestGetEntityIDsByReference_UnknownTypeSkipsDB() {
+	ids, total, err := suite.store.GetEntityIDsByReference(
+		context.Background(), "layout", "layout-1", 10, 0)
+	suite.NoError(err)
+	suite.Equal(0, total)
+	suite.Empty(ids)
+	suite.mockDBProvider.AssertNotCalled(suite.T(), "GetConfigDBClient")
 }

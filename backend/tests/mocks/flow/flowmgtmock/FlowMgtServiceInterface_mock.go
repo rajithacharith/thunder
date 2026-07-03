@@ -10,6 +10,7 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/mgt"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -312,6 +313,76 @@ func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) Return(completeFlowD
 }
 
 func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string, flowType providers.FlowType) (*providers.CompleteFlowDefinition, *common.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetFlowUsages provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) GetFlowUsages(ctx context.Context, flowID string) (*resourcedependency.DependenciesResponse, *common.ServiceError) {
+	ret := _mock.Called(ctx, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFlowUsages")
+	}
+
+	var r0 *resourcedependency.DependenciesResponse
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*resourcedependency.DependenciesResponse, *common.ServiceError)); ok {
+		return returnFunc(ctx, flowID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *resourcedependency.DependenciesResponse); ok {
+		r0 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*resourcedependency.DependenciesResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*common.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// FlowMgtServiceInterfaceMock_GetFlowUsages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFlowUsages'
+type FlowMgtServiceInterfaceMock_GetFlowUsages_Call struct {
+	*mock.Call
+}
+
+// GetFlowUsages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlowUsages(ctx interface{}, flowID interface{}) *FlowMgtServiceInterfaceMock_GetFlowUsages_Call {
+	return &FlowMgtServiceInterfaceMock_GetFlowUsages_Call{Call: _e.mock.On("GetFlowUsages", ctx, flowID)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowUsages_Call) Run(run func(ctx context.Context, flowID string)) *FlowMgtServiceInterfaceMock_GetFlowUsages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowUsages_Call) Return(dependenciesResponse *resourcedependency.DependenciesResponse, serviceError *common.ServiceError) *FlowMgtServiceInterfaceMock_GetFlowUsages_Call {
+	_c.Call.Return(dependenciesResponse, serviceError)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowUsages_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*resourcedependency.DependenciesResponse, *common.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlowUsages_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -761,6 +832,46 @@ func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) Return(completeFl
 
 func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) RunAndReturn(run func(ctx context.Context, flowID string, version int) (*providers.CompleteFlowDefinition, *common.ServiceError)) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
 	_c.Call.Return(run)
+	return _c
+}
+
+// SetDependencyRegistry provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) SetDependencyRegistry(r resourcedependency.Registry) {
+	_mock.Called(r)
+	return
+}
+
+// FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetDependencyRegistry'
+type FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call struct {
+	*mock.Call
+}
+
+// SetDependencyRegistry is a helper method to define mock.On call
+//   - r resourcedependency.Registry
+func (_e *FlowMgtServiceInterfaceMock_Expecter) SetDependencyRegistry(r interface{}) *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call {
+	return &FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call{Call: _e.mock.On("SetDependencyRegistry", r)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call) Run(run func(r resourcedependency.Registry)) *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 resourcedependency.Registry
+		if args[0] != nil {
+			arg0 = args[0].(resourcedependency.Registry)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call) Return() *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call) RunAndReturn(run func(r resourcedependency.Registry)) *FlowMgtServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Run(run)
 	return _c
 }
 

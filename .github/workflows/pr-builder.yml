@@ -683,8 +683,8 @@ jobs:
       
       - name: 🔑 Obtain Admin Access Token
         run: |
-          # The server now runs with security enabled (SKIP_SECURITY is gone), so the
-          # management /import and /applications calls below need an admin token.
+          # The server runs with security enabled, so the management /import and
+          # /applications calls below need an admin token.
           # Obtain one via OAuth2 authorization code + PKCE through the CONSOLE app,
           # authenticating the bootstrapped admin user.
           SERVER_URL="https://localhost:8090"

@@ -229,7 +229,7 @@ func TestOpenID4VPExecutorPollFailed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, providers.ExecFailure, resp.Status)
 	assert.Equal(t, ErrOpenID4VPVerificationFailed.Code, resp.Error.Code)
-	assert.Contains(t, resp.Error.ErrorDescription.DefaultValue, "nonce mismatch")
+	assert.Contains(t, resp.Error.ErrorDescription.String(), "nonce mismatch")
 }
 
 func TestOpenID4VPExecutorPollExpired(t *testing.T) {

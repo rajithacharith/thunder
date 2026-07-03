@@ -16,10 +16,26 @@
  * under the License.
  */
 
-import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
+import {
+  Alert,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+} from '@wso2/oxygen-ui';
 import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import useDeleteUser from '../api/useDeleteUser';
+import useGetUserUsages from '../api/useGetUserUsages';
+
+const MAX_VISIBLE_USAGES = 5;
 
 export interface UserDeleteDialogProps {
   open: boolean;
@@ -40,6 +56,12 @@ export default function UserDeleteDialog({
   const {t} = useTranslation();
   const deleteUser = useDeleteUser();
   const [error, setError] = useState<string | null>(null);
+
+  const {data: usagesData, isLoading: isLoadingUsages} = useGetUserUsages(userId, open);
+
+  const usagesKnown = usagesData !== undefined && usagesData.totalResults !== null;
+  const visibleUsages = usagesData?.usages.slice(0, MAX_VISIBLE_USAGES) ?? [];
+  const hiddenCount = (usagesData?.totalResults ?? 0) - visibleUsages.length;
 
   const handleCancel = (): void => {
     if (deleteUser.isPending) return;
@@ -70,9 +92,45 @@ export default function UserDeleteDialog({
         <DialogContentText sx={{mb: 2}}>
           {t('users:delete.message', 'Are you sure you want to delete this user? This action cannot be undone.')}
         </DialogContentText>
-        <Alert severity="warning" sx={{mb: 2}}>
-          {t('users:delete.disclaimer', 'All associated data will be permanently removed.')}
-        </Alert>
+
+        {isLoadingUsages ? (
+          <Alert severity="info" icon={<CircularProgress size={16} />} sx={{mb: 2}}>
+            {t('users:delete.usages.loading', 'Checking affected resources…')}
+          </Alert>
+        ) : !usagesKnown ? (
+          <Alert severity="warning" sx={{mb: 2}}>
+            {t('users:delete.disclaimer', 'All associated data will be permanently removed.')}
+          </Alert>
+        ) : (usagesData?.totalResults ?? 0) > 0 ? (
+          <Alert severity="warning" sx={{mb: 2}}>
+            <Typography variant="body2" sx={{mb: 1}}>
+              {t('users:delete.usages.title', 'The following agents list this user as their owner:')}
+            </Typography>
+            <List dense disablePadding>
+              {visibleUsages.map((usage) => (
+                <ListItem key={usage.id} disableGutters sx={{py: 0}}>
+                  <ListItemText primary={<Typography variant="body2">{usage.displayName}</Typography>} />
+                </ListItem>
+              ))}
+              {hiddenCount > 0 && (
+                <ListItem disableGutters sx={{py: 0}}>
+                  <ListItemText
+                    primary={
+                      <Typography variant="body2" color="text.secondary">
+                        {t('users:delete.usages.more', {count: hiddenCount, defaultValue: '+{{count}} more'})}
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+              )}
+            </List>
+          </Alert>
+        ) : (
+          <Alert severity="info" sx={{mb: 2}}>
+            {t('users:delete.usages.none', 'No agents currently list this user as their owner.')}
+          </Alert>
+        )}
+
         {error && (
           <Alert severity="error" sx={{mt: 2}}>
             {error}
@@ -83,7 +141,12 @@ export default function UserDeleteDialog({
         <Button onClick={handleCancel} disabled={deleteUser.isPending}>
           {t('common:actions.cancel')}
         </Button>
-        <Button onClick={handleConfirm} color="error" variant="contained" disabled={deleteUser.isPending || !userId}>
+        <Button
+          onClick={handleConfirm}
+          color="error"
+          variant="contained"
+          disabled={deleteUser.isPending || !userId || isLoadingUsages}
+        >
           {deleteUser.isPending ? t('common:status.deleting', 'Deleting...') : t('common:actions.delete', 'Delete')}
         </Button>
       </DialogActions>
