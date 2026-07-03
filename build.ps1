@@ -683,6 +683,7 @@ function Prepare-Backend-For-Packaging {
     Write-Host "=== Ensuring server certificates exist in the distribution ==="
     Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "server"
     Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "signing"
+    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "ecdsa-signing" -Algorithm "ECDSA"
     Write-Host "================================================================"
 
     Write-Host "=== Ensuring crypto file exists in the distribution ==="
@@ -806,7 +807,7 @@ function Package {
             }
         }
         if (-not $consentDisabled) {
-            throw "Failed to disable consent in '$targetYaml' — packaging cannot continue with consent still enabled."
+            throw "Failed to disable consent in '$targetYaml' - packaging cannot continue with consent still enabled."
         }
     }
 
@@ -1234,7 +1235,7 @@ function Export-CertificateAndKeyToPem {
         [System.Security.Cryptography.X509Certificates.X509Certificate2]$cert,
         [string]$certPath,
         [string]$keyPath,
-        [System.Security.Cryptography.RSA]$privateRSA = $null
+        [System.Security.Cryptography.AsymmetricAlgorithm]$privateKey = $null
     )
     # Export cert to PEM
     $rawCert = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
@@ -1243,50 +1244,53 @@ function Export-CertificateAndKeyToPem {
     $certPem = "-----BEGIN CERTIFICATE-----`n" + ($certLines -join "`n") + "`n-----END CERTIFICATE-----`n"
     Set-Content -Path $certPath -Value $certPem -Encoding ascii
 
-    # Obtain RSA private key. If a privateRSA instance was provided by the caller use it
+    # Obtain private key. If a privateKey instance was provided by the caller use it
     # (this avoids relying on PFX export/import semantics which can vary across runtimes).
-    $rsa = $null
+    $keyAlg = $null
     $reloadCert = $null
     try {
-        if ($null -ne $privateRSA) {
-            $rsa = $privateRSA
+        if ($null -ne $privateKey) {
+            $keyAlg = $privateKey
         }
         else {
             # Export as PFX and reload with Exportable flag so we can export the private key
             $pfxBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, '')
             $reloadCert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($pfxBytes, '', [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
 
-            # Try the modern API first
-            try { $rsa = $reloadCert.GetRSAPrivateKey() } catch { $rsa = $null }
+            # Try modern APIs
+            try { $keyAlg = $reloadCert.GetRSAPrivateKey() } catch { $keyAlg = $null }
+            if (-not $keyAlg) {
+                try { $keyAlg = $reloadCert.GetECDsaPrivateKey() } catch { $keyAlg = $null }
+            }
 
-            # Fallback: some runtimes expose PrivateKey which can export parameters
-            if (-not $rsa -and $null -ne $reloadCert.PrivateKey) {
+            # Fallback for RSA if modern API fails
+            if (-not $keyAlg -and $null -ne $reloadCert.PrivateKey) {
                 try {
-                    $privateKey = $reloadCert.PrivateKey
+                    $pk = $reloadCert.PrivateKey
                     $rsaFallback = [System.Security.Cryptography.RSA]::Create()
-                    $rsaFallback.ImportParameters($privateKey.ExportParameters($true))
-                    $rsa = $rsaFallback
+                    $rsaFallback.ImportParameters($pk.ExportParameters($true))
+                    $keyAlg = $rsaFallback
                 }
                 catch {
                     if ($rsaFallback -is [System.IDisposable]) { $rsaFallback.Dispose() }
-                    $rsa = $null
+                    $keyAlg = $null
                 }
             }
         }
 
-        if (-not $rsa) { throw "Certificate does not contain an RSA private key" }
+        if (-not $keyAlg) { throw "Certificate does not contain an exportable private key" }
 
         # Export private key to PEM (PKCS#8)
-        $pkcs8 = $rsa.ExportPkcs8PrivateKey()
+        $pkcs8 = $keyAlg.ExportPkcs8PrivateKey()
         $keyBase64 = [System.Convert]::ToBase64String($pkcs8)
         $pkcs8Lines = $keyBase64 -split '(.{64})' | Where-Object { $_ -ne '' }
         $keyPem = "-----BEGIN PRIVATE KEY-----`n" + ($pkcs8Lines -join "`n") + "`n-----END PRIVATE KEY-----`n"
         Set-Content -Path $keyPath -Value $keyPem -Encoding ascii
     }
     finally {
-        # Only dispose RSA if we created it locally (i.e., privateRSA was not passed in)
-        if ($null -eq $privateRSA) {
-            if ($rsa -is [System.IDisposable]) { $rsa.Dispose() }
+        # Only dispose keyAlg if we created it locally (i.e., privateKey was not passed in)
+        if ($null -eq $privateKey) {
+            if ($keyAlg -is [System.IDisposable]) { $keyAlg.Dispose() }
             if ($reloadCert -is [System.IDisposable]) { $reloadCert.Dispose() }
         }
     }
@@ -1295,7 +1299,8 @@ function Export-CertificateAndKeyToPem {
 function Ensure-Certificates {
     param(
         [string]$cert_dir,
-        [string]$cert_name_prefix = "server"  # Default to "server" if not specified
+        [string]$cert_name_prefix = "server",
+        [string]$Algorithm = "RSA"
     )
     
     $cert_file_name = "${cert_name_prefix}.cert"
@@ -1308,15 +1313,22 @@ function Ensure-Certificates {
     if (-not (Test-Path $local_cert_file) -or -not (Test-Path $local_key_file)) {
         New-Item -Path $LOCAL_CERT_DIR -ItemType Directory -Force | Out-Null
         
-        Write-Host "Generating certificates ($cert_name_prefix) in $LOCAL_CERT_DIR..."
+        Write-Host "Generating certificates ($cert_name_prefix) in $LOCAL_CERT_DIR using $Algorithm..."
         
         try {
             $openssl = Get-Command openssl -ErrorAction SilentlyContinue
             if ($openssl) {
-                & openssl req -x509 -nodes -days 365 -newkey rsa:2048 `
-                    -keyout $local_key_file `
-                    -out $local_cert_file `
-                    -subj "/O=WSO2/OU=$PRODUCT_NAME/CN=localhost" 2>$null
+                if ($Algorithm -eq "ECDSA") {
+                    & openssl ecparam -name prime256v1 -genkey -noout -param_enc named_curve -out $local_key_file 2>$null
+                    if ($LASTEXITCODE -ne 0) { throw "Error generating EC key: OpenSSL failed with exit code $LASTEXITCODE" }
+                    & openssl req -new -x509 -nodes -key $local_key_file -out $local_cert_file -days 3650 -subj "/O=WSO2/OU=$PRODUCT_NAME/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>$null
+                }
+                else {
+                    & openssl req -x509 -nodes -days 365 -newkey rsa:2048 `
+                        -keyout $local_key_file `
+                        -out $local_cert_file `
+                        -subj "/O=WSO2/OU=$PRODUCT_NAME/CN=localhost" 2>$null
+                }
                 if ($LASTEXITCODE -ne 0) {
                     throw "Error generating certificates: OpenSSL failed with exit code $LASTEXITCODE"
                 }
@@ -1326,10 +1338,17 @@ function Ensure-Certificates {
                 Write-Host "OpenSSL not found - generating certificates using .NET CertificateRequest (no UI)."
                 # Use .NET CertificateRequest to avoid CertEnroll / smartcard enrollment UI issues.
                 try {
-                    $rsa = [System.Security.Cryptography.RSA]::Create(2048)
-
+                    $keyAlg = $null
+                    $certReq = $null
                     $subjectName = New-Object System.Security.Cryptography.X509Certificates.X500DistinguishedName("CN=localhost, O=WSO2, OU=$PRODUCT_NAME")
-                    $certReq = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest($subjectName, $rsa, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+
+                    if ($Algorithm -eq "ECDSA") {
+                        $keyAlg = [System.Security.Cryptography.ECDsa]::Create([System.Security.Cryptography.ECCurve+NamedCurves]::nistP256)
+                        $certReq = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest($subjectName, $keyAlg, [System.Security.Cryptography.HashAlgorithmName]::SHA256)
+                    } else {
+                        $keyAlg = [System.Security.Cryptography.RSA]::Create(2048)
+                        $certReq = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest($subjectName, $keyAlg, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+                    }
 
                     # Add standard server usages
                     $basicConstraints = New-Object System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension($false, $false, 0, $false)
@@ -1346,6 +1365,10 @@ function Ensure-Certificates {
                     $certReq.CertificateExtensions.Add($keyUsage)
                     $certReq.CertificateExtensions.Add($eku)
 
+                    $sanBuilder = New-Object System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder
+                    $sanBuilder.AddDnsName("localhost")
+                    $certReq.CertificateExtensions.Add($sanBuilder.Build())
+
                     $notBefore = (Get-Date).AddDays(-1)
                     $notAfter = (Get-Date).AddYears(1)
 
@@ -1353,13 +1376,21 @@ function Ensure-Certificates {
 
                     # Ensure the generated certificate has the private key associated. Use CopyWithPrivateKey
                     # so that when we export the PFX it includes the private key and can be reloaded as exportable.
-                    # Use the RSA extension helper to avoid overload resolution issues in PowerShell.
                     try {
-                        $certWithKey = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::CopyWithPrivateKey($cert, $rsa)
+                        if ($Algorithm -eq "ECDSA") {
+                            $certWithKey = [System.Security.Cryptography.X509Certificates.ECDsaCertificateExtensions]::CopyWithPrivateKey($cert, $keyAlg)
+                        } else {
+                            $certWithKey = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::CopyWithPrivateKey($cert, $keyAlg)
+                        }
                     }
                     catch {
                         try {
-                            $certWithKey = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::CopyWithPrivateKey(([System.Security.Cryptography.X509Certificates.X509Certificate2]::new($cert.RawData)), $rsa)
+                            $cert2 = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($cert.RawData)
+                            if ($Algorithm -eq "ECDSA") {
+                                $certWithKey = [System.Security.Cryptography.X509Certificates.ECDsaCertificateExtensions]::CopyWithPrivateKey($cert2, $keyAlg)
+                            } else {
+                                $certWithKey = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::CopyWithPrivateKey($cert2, $keyAlg)
+                            }
                         }
                         catch {
                             throw "Failed to associate private key with certificate: $_"
@@ -1370,14 +1401,14 @@ function Ensure-Certificates {
                     $pfxBytes = $certWithKey.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, '')
                     $exportableCert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($pfxBytes, '', [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
 
-                    # Pass the RSA instance used to sign the certificate to the exporter so it
+                    # Pass the algorithm instance used to sign the certificate to the exporter so it
                     # can directly export the private key (avoids re-import issues on some runtimes).
-                    Export-CertificateAndKeyToPem -cert $exportableCert -certPath $local_cert_file -keyPath $local_key_file -privateRSA $rsa
+                    Export-CertificateAndKeyToPem -cert $exportableCert -certPath $local_cert_file -keyPath $local_key_file -privateKey $keyAlg
 
                     if ($exportableCert -is [System.IDisposable]) { $exportableCert.Dispose() }
                     if ($certWithKey -is [System.IDisposable]) { $certWithKey.Dispose() }
                     if ($cert -is [System.IDisposable]) { $cert.Dispose() }
-                    if ($rsa -is [System.IDisposable]) { $rsa.Dispose() }
+                    if ($keyAlg -is [System.IDisposable]) { $keyAlg.Dispose() }
 
                     Write-Host "Certificates generated successfully in $LOCAL_CERT_DIR using .NET CertificateRequest." 
                 }
@@ -1540,6 +1571,7 @@ function Run {
     Write-Host "=== Ensuring server certificates exist ==="
     Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "server"
     Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "signing"
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "ecdsa-signing" -Algorithm "ECDSA"
     Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
     Ensure-Crypto-File -key_dir (Join-Path $BACKEND_DIR "config/certs")
     Write-Host "Initializing databases..."
@@ -1616,6 +1648,7 @@ function Run-Backend {
     Write-Host "=== Ensuring server certificates exist ==="
     Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "server"
     Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "signing"
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "ecdsa-signing" -Algorithm "ECDSA"
 
     Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
     Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
@@ -1634,20 +1667,20 @@ function Run-Backend {
     Start-Backend -ShowFinalOutput $ShowFinalOutput
 }
 
+ # Kill processes on known ports
+function Kill-Port {
+    param([int]$port)
+    
+    $processes = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess
+    foreach ($process in $processes) {
+        Stop-Process -Id $process -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Start-Backend {
     param(
         [bool]$ShowFinalOutput = $true
     )
-
-    # Kill processes on known ports
-    function Kill-Port {
-        param([int]$port)
-        
-        $processes = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess
-        foreach ($process in $processes) {
-            Stop-Process -Id $process -Force -ErrorAction SilentlyContinue
-        }
-    }
 
     Kill-Port $PORT
 
@@ -1766,6 +1799,7 @@ function Run-Consent {
 
     Write-Host "=== Starting consent server ==="
     $consentPort = if ($env:CONSENT_SERVER_PORT) { $env:CONSENT_SERVER_PORT } else { "9090" }
+    
     $script:CONSENT_PROCESS = Start-Process -FilePath $consentBinary -WorkingDirectory $consentDir -PassThru -NoNewWindow
     $consentTimeout = 30
     $consentElapsed = 0
