@@ -207,18 +207,31 @@ func (h *handler) usagesInstance(idpType providers.IDPType) http.HandlerFunc {
 }
 
 // handleListConnections handles GET /connections, returning the available connection types
-// with their configured status and instance count.
+// with their configured status and instance count, across both IdP- and SMS-backed vendors.
 func (h *handler) handleListConnections(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	counts, svcErr := h.svc.typeCounts(ctx)
+	idpCounts, svcErr := h.svc.typeCounts(ctx)
+	if svcErr != nil {
+		writeServiceError(ctx, w, svcErr)
+		return
+	}
+	smsCounts, svcErr := h.svc.smsProviderCounts(ctx)
 	if svcErr != nil {
 		writeServiceError(ctx, w, svcErr)
 		return
 	}
 
-	summaries := make([]connectionTypeSummary, 0, len(idpBackedVendors))
+	summaries := make([]connectionTypeSummary, 0, len(idpBackedVendors)+len(smsBackedVendors))
 	for _, vendor := range idpBackedVendors {
-		count := counts[vendor.idpType]
+		count := idpCounts[vendor.idpType]
+		summaries = append(summaries, connectionTypeSummary{
+			Type:          vendor.name,
+			Configured:    count > 0,
+			InstanceCount: count,
+		})
+	}
+	for _, vendor := range smsBackedVendors {
+		count := smsCounts[vendor.provider]
 		summaries = append(summaries, connectionTypeSummary{
 			Type:          vendor.name,
 			Configured:    count > 0,

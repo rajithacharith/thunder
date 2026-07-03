@@ -36,6 +36,7 @@ export const CONNECTION_VENDOR_META: ConnectionVendorMeta[] = [
     logo: <Google />,
     categories: ['social-login'],
     presentation: 'branded',
+    supportsAttributeMapping: true,
   },
   {
     key: 'github',
@@ -45,6 +46,7 @@ export const CONNECTION_VENDOR_META: ConnectionVendorMeta[] = [
     logo: <GitHub />,
     categories: ['social-login'],
     presentation: 'branded',
+    supportsAttributeMapping: true,
   },
   {
     key: 'oidc',
@@ -54,24 +56,25 @@ export const CONNECTION_VENDOR_META: ConnectionVendorMeta[] = [
     logo: <ShieldCheck />,
     categories: ['enterprise'],
     presentation: 'custom',
+    supportsAttributeMapping: true,
   },
   {
     key: 'twilio',
+    backendType: ConnectionTypes.TWILIO,
     displayName: 'Twilio',
     descriptionKey: 'connections:vendor.twilio.description',
     logo: <MessageSquare />,
     categories: ['sms'],
-    presentation: 'coming-soon',
-    comingSoon: true,
+    presentation: 'branded',
   },
   {
     key: 'vonage',
+    backendType: ConnectionTypes.VONAGE,
     displayName: 'Vonage',
     descriptionKey: 'connections:vendor.vonage.description',
     logo: <Send />,
     categories: ['sms'],
-    presentation: 'coming-soon',
-    comingSoon: true,
+    presentation: 'branded',
   },
 ];
 

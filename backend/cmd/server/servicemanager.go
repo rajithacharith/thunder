@@ -262,9 +262,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, idpExporter)
 
-	// Register the /connections API as a thin layer over the identity-provider service.
-	connection.Initialize(mux, idpService)
-
 	templateService, err := template.Initialize()
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize template service", log.Error(err))
@@ -276,6 +273,10 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize NotificationService", log.Error(err))
 	}
 	exporters = append(exporters, notificationExporter)
+
+	// Register the /connections API as a thin layer over the identity-provider and
+	// notification-sender services.
+	connection.Initialize(mux, idpService, notifSenderMgtSvc)
 
 	// Initialize passkey service
 	passkeyService := passkey.Initialize(entityService)

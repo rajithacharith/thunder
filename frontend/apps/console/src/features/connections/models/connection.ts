@@ -25,6 +25,8 @@ export const ConnectionTypes = {
   GOOGLE: 'google',
   GITHUB: 'github',
   OIDC: 'oidc',
+  TWILIO: 'twilio',
+  VONAGE: 'vonage',
 } as const;
 
 export type ConnectionType = (typeof ConnectionTypes)[keyof typeof ConnectionTypes];
@@ -146,14 +148,51 @@ export interface OIDCConnectionRequest extends OAuthConnectionRequest {
   trustedTokenAudience?: string;
 }
 
-export type ConnectionRequest = OAuthConnectionRequest | OIDCConnectionRequest;
+/**
+ * Request payload for a Twilio SMS connection.
+ */
+export interface TwilioConnectionRequest {
+  name: string;
+  description?: string;
+  accountSid: string;
+  /** Write-only. Omit to keep the stored value on update; required when creating. */
+  authToken?: string;
+  senderId: string;
+}
 
 /**
- * Vendor response — secrets returned masked as "******".
+ * Request payload for a Vonage SMS connection.
+ */
+export interface VonageConnectionRequest {
+  name: string;
+  description?: string;
+  apiKey: string;
+  /** Write-only. Omit to keep the stored value on update; required when creating. */
+  apiSecret?: string;
+  senderId: string;
+}
+
+export type ConnectionRequest =
+  | OAuthConnectionRequest
+  | OIDCConnectionRequest
+  | TwilioConnectionRequest
+  | VonageConnectionRequest;
+
+/**
+ * Vendor response — secrets returned masked as "******". A superset carrying every vendor's
+ * fields (IdP + SMS); the shared form mapping reads only the fields relevant to each type.
  */
 export interface ConnectionResponse extends OIDCConnectionRequest {
   id: string;
   type: ConnectionType;
+  /** SMS (Twilio) fields. */
+  accountSid?: string;
+  authToken?: string;
+  /** SMS (Vonage) fields. */
+  apiKey?: string;
+  apiSecret?: string;
+  /** SMS (shared) field. */
+  senderId?: string;
 }
 
 /**
@@ -179,6 +218,8 @@ export interface ConnectionVendorMeta {
   categories: ConnectionCategory[];
   presentation: ConnectionPresentation;
   comingSoon?: boolean;
+  /** Whether this connection provisions users and therefore exposes attribute mapping (IdPs only). */
+  supportsAttributeMapping?: boolean;
 }
 
 /**

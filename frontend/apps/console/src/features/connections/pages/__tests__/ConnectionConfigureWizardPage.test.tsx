@@ -23,17 +23,22 @@ import ConnectionConfigureWizardPage from '../ConnectionConfigureWizardPage';
 
 const mutateMock = vi.fn();
 const navigateMock = vi.fn();
+const mockParams = {type: 'google'};
 
 vi.mock('react-i18next', () => ({useTranslation: () => ({t: (key: string) => key})}));
-vi.mock('react-router', () => ({useNavigate: () => navigateMock, useParams: () => ({type: 'google'})}));
+vi.mock('react-router', () => ({useNavigate: () => navigateMock, useParams: () => mockParams}));
 vi.mock('@thunderid/contexts', () => ({useConfig: () => ({getServerUrl: () => 'https://id.acme.io'})}));
 vi.mock('../../api/useCreateConnection', () => ({default: () => ({mutate: mutateMock, isPending: false})}));
 
 vi.mock('../../components/ConnectionForm', () => ({
   default: function StubConnectionForm({onFieldChange}: {onFieldChange: (name: string, value: string) => void}) {
     useEffect(() => {
+      // Populate both IdP and SMS fields; each type's form only reads the ones it declares.
       onFieldChange('clientId', 'x');
       onFieldChange('clientSecret', 's');
+      onFieldChange('accountSid', 'AC00000000000000000000000000000000');
+      onFieldChange('authToken', 's');
+      onFieldChange('senderId', '+15005550006');
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return <div data-testid="stub-connection-form" />;
@@ -60,7 +65,10 @@ vi.mock('../../components/create-connection/ConnectionAttributeMappingStep', () 
 }));
 
 describe('ConnectionConfigureWizardPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockParams.type = 'google';
+  });
 
   it('walks configure → attribute mapping and creates with the fixed vendor name', () => {
     render(<ConnectionConfigureWizardPage />);
@@ -79,5 +87,19 @@ describe('ConnectionConfigureWizardPage', () => {
     const payload = mutateMock.mock.calls[0][0] as {name: string; clientId: string; attributeConfiguration?: unknown};
     expect(payload).toMatchObject({name: 'Google', clientId: 'x', clientSecret: 's'});
     expect(payload.attributeConfiguration).toBeUndefined();
+  });
+
+  it('SMS vendor: single configure step creates without attribute mapping', () => {
+    mockParams.type = 'twilio';
+    render(<ConnectionConfigureWizardPage />);
+
+    // Single step: the credentials form with a Create button (no attribute-mapping step).
+    expect(screen.getByTestId('stub-connection-form')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('wizard-create'));
+
+    expect(mutateMock).toHaveBeenCalledTimes(1);
+    const payload = mutateMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toMatchObject({name: 'Twilio', accountSid: 'AC00000000000000000000000000000000', senderId: '+15005550006'});
+    expect('attributeConfiguration' in payload).toBe(false);
   });
 });

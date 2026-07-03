@@ -38,12 +38,12 @@ import isConflictError from '../utils/isConflictError';
 
 const Step = {CONFIGURE: 'CONFIGURE', ATTRIBUTES: 'ATTRIBUTES'} as const;
 type Step = (typeof Step)[keyof typeof Step];
-const ALL_STEPS: Step[] = [Step.CONFIGURE, Step.ATTRIBUTES];
 
 /**
- * Two-step full-screen wizard for configuring a branded catalog vendor (Google/GitHub):
- * step 1 collects credentials, step 2 the optional attribute mapping. The connection name is
- * fixed to the vendor display name.
+ * Full-screen wizard for configuring a branded catalog vendor. IdP vendors (Google/GitHub) get
+ * two steps — credentials then the optional attribute mapping; vendors without attribute mapping
+ * (SMS: Twilio/Vonage) get a single credentials step. The connection name is fixed to the vendor
+ * display name.
  */
 export default function ConnectionConfigureWizardPage(): JSX.Element | null {
   const {t} = useTranslation('connections');
@@ -53,6 +53,8 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
 
   const connectionType = type as ConnectionType;
   const meta = VENDOR_META_BY_TYPE[connectionType];
+  const supportsAttributes: boolean = meta?.supportsAttributeMapping ?? false;
+  const steps: Step[] = supportsAttributes ? [Step.CONFIGURE, Step.ATTRIBUTES] : [Step.CONFIGURE];
 
   const createMutation = useCreateConnection(connectionType);
 
@@ -85,7 +87,7 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
     void navigate('/connections');
   };
 
-  const progress: number = ((ALL_STEPS.indexOf(step) + 1) / ALL_STEPS.length) * 100;
+  const progress: number = ((steps.indexOf(step) + 1) / steps.length) * 100;
 
   const handleCreate = (): void => {
     if (!formValid || !attrValid) {
@@ -95,7 +97,7 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
     const payload = {
       ...formValuesToRequest(values, fields, {mode: 'create', secretReplaced: true}),
       name: meta.displayName,
-      attributeConfiguration: attrConfig,
+      ...(supportsAttributes ? {attributeConfiguration: attrConfig} : {}),
     };
     createMutation.mutate(payload, {
       onSuccess: () => close(),
@@ -155,14 +157,25 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
           </Paper>
 
           <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
-            <Button
-              variant="contained"
-              disabled={!formValid}
-              onClick={() => setStep(Step.ATTRIBUTES)}
-              data-testid="wizard-continue"
-            >
-              {t('common:actions.continue')}
-            </Button>
+            {supportsAttributes ? (
+              <Button
+                variant="contained"
+                disabled={!formValid}
+                onClick={() => setStep(Step.ATTRIBUTES)}
+                data-testid="wizard-continue"
+              >
+                {t('common:actions.continue')}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                disabled={!formValid || createMutation.isPending}
+                onClick={handleCreate}
+                data-testid="wizard-create"
+              >
+                {t('form.actions.create')}
+              </Button>
+            )}
           </Box>
         </Stack>
       ) : (

@@ -44,8 +44,20 @@ const CONNECTION = {
   attributeConfiguration: ATTR_CONFIG,
 };
 
+const TWILIO_CONNECTION = {
+  id: 'tw1',
+  type: 'twilio',
+  name: 'Twilio',
+  accountSid: 'AC00000000000000000000000000000000',
+  authToken: '******',
+  senderId: '+15005550006',
+};
+
+const mockParams: {type: string; id: string} = {type: 'google', id: 'g1'};
+const mockConn: {data: Record<string, unknown>} = {data: CONNECTION};
+
 vi.mock('react-i18next', () => ({useTranslation: () => ({t: (key: string) => key})}));
-vi.mock('react-router', () => ({useNavigate: () => navigateMock, useParams: () => ({type: 'google', id: 'g1'})}));
+vi.mock('react-router', () => ({useNavigate: () => navigateMock, useParams: () => mockParams}));
 vi.mock('@thunderid/contexts', () => ({
   useConfig: () => ({getServerUrl: () => 'https://id.acme.io'}),
   useToast: () => ({showToast: vi.fn()}),
@@ -62,7 +74,7 @@ vi.mock('@thunderid/components', () => ({
 }));
 
 vi.mock('../../api/useConnection', () => ({
-  default: () => ({data: CONNECTION, isLoading: false, isError: false, refetch: refetchMock}),
+  default: () => ({data: mockConn.data, isLoading: false, isError: false, refetch: refetchMock}),
 }));
 vi.mock('../../api/useConnectionInstances', () => ({default: () => ({data: [], isLoading: false})}));
 vi.mock('../../api/useUpdateConnection', () => ({default: () => ({mutateAsync: updateMock, isPending: false})}));
@@ -93,7 +105,12 @@ vi.mock('../../components/AttributeMappingSection', () => ({
 }));
 
 describe('ConnectionDetailPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockParams.type = 'google';
+    mockParams.id = 'g1';
+    mockConn.data = CONNECTION;
+  });
 
   it('renders the general tab with quick-copy, the credentials form, and a danger-zone delete', () => {
     render(<ConnectionDetailPage />);
@@ -132,5 +149,23 @@ describe('ConnectionDetailPage', () => {
     fireEvent.click(screen.getByTestId('connection-delete-confirm'));
     expect(deleteMock).toHaveBeenCalledWith('g1', expect.anything());
     expect(navigateMock).toHaveBeenCalledWith('/connections');
+  });
+
+  it('SMS vendor: hides the attribute-mapping tab and save omits attributeConfiguration', () => {
+    mockParams.type = 'twilio';
+    mockParams.id = 'tw1';
+    mockConn.data = TWILIO_CONNECTION;
+    render(<ConnectionDetailPage />);
+
+    expect(screen.getByTestId('connection-tab-general')).toBeInTheDocument();
+    expect(screen.queryByTestId('connection-tab-attributes')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('edit-client-id'));
+    fireEvent.click(screen.getByTestId('save-bar'));
+
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    const payload = updateMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toMatchObject({name: 'Twilio', accountSid: 'AC00000000000000000000000000000000', senderId: '+15005550006'});
+    expect('attributeConfiguration' in payload).toBe(false);
   });
 });

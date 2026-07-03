@@ -29,18 +29,21 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/idp"
+	ncommon "github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
+	"github.com/thunder-id/thunderid/tests/mocks/notification/notificationmock"
 )
 
 // HandlerTestSuite covers the shared HTTP plumbing (decode, status mapping, empty-id and
 // list/delete handlers), exercised through Google as the representative vendor.
 type HandlerTestSuite struct {
 	suite.Suite
-	handler *handler
-	mockIDP *idpmock.IDPServiceInterfaceMock
+	handler   *handler
+	mockIDP   *idpmock.IDPServiceInterfaceMock
+	mockNotif *notificationmock.NotificationSenderMgtSvcInterfaceMock
 }
 
 func TestHandlerSuite(t *testing.T) {
@@ -48,7 +51,7 @@ func TestHandlerSuite(t *testing.T) {
 }
 
 func (s *HandlerTestSuite) SetupTest() {
-	s.handler, s.mockIDP = newConnectionTestHandler(s.T())
+	s.handler, s.mockIDP, s.mockNotif = newConnectionTestHandler(s.T())
 }
 
 func (s *HandlerTestSuite) TestListConnections() {
@@ -56,6 +59,9 @@ func (s *HandlerTestSuite) TestListConnections() {
 		{ID: "1", Type: providers.IDPTypeGoogle},
 		{ID: "2", Type: providers.IDPTypeGoogle},
 		{ID: "3", Type: providers.IDPTypeOIDC},
+	}, (*tidcommon.ServiceError)(nil))
+	s.mockNotif.On("ListSenders", mock.Anything).Return([]ncommon.NotificationSenderDTO{
+		{ID: "s1", Type: ncommon.NotificationSenderTypeMessage, Provider: ncommon.MessageProviderTypeTwilio},
 	}, (*tidcommon.ServiceError)(nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/connections", nil)
@@ -70,12 +76,16 @@ func (s *HandlerTestSuite) TestListConnections() {
 	for _, c := range resp.Connections {
 		byType[c.Type] = c
 	}
-	s.Len(resp.Connections, len(idpBackedVendors))
+	s.Len(resp.Connections, len(idpBackedVendors)+len(smsBackedVendors))
 	s.Equal(2, byType["google"].InstanceCount)
 	s.True(byType["google"].Configured)
 	s.Equal(1, byType["oidc"].InstanceCount)
 	s.Equal(0, byType["github"].InstanceCount)
 	s.False(byType["github"].Configured)
+	s.Equal(1, byType["twilio"].InstanceCount)
+	s.True(byType["twilio"].Configured)
+	s.Equal(0, byType["vonage"].InstanceCount)
+	s.False(byType["vonage"].Configured)
 }
 
 func (s *HandlerTestSuite) TestListConnectionsServiceError() {

@@ -73,6 +73,7 @@ export default function ConnectionDetailPage(): JSX.Element | null {
   const connectionType = type as ConnectionType;
   const meta = VENDOR_META_BY_TYPE[connectionType];
   const isCustom: boolean = meta?.presentation === 'custom';
+  const supportsAttributes: boolean = meta?.supportsAttributeMapping ?? false;
 
   // Branded vendors are singletons and route without an id — resolve the single instance.
   const instancesQuery = useConnectionInstances(connectionType, {enabled: Boolean(meta) && !id});
@@ -134,7 +135,7 @@ export default function ConnectionDetailPage(): JSX.Element | null {
     }
     const payload = {
       ...formValuesToRequest(values, fields, {mode: 'edit', secretReplaced: secretReplacing}),
-      attributeConfiguration: editedAttr ?? baselineAttr,
+      ...(supportsAttributes ? {attributeConfiguration: editedAttr ?? baselineAttr} : {}),
     };
     updateMutation
       .mutateAsync(payload)
@@ -208,11 +209,13 @@ export default function ConnectionDetailPage(): JSX.Element | null {
             aria-label="connection settings tabs"
           >
             <Tab label={t('detail.tabs.general')} sx={{textTransform: 'none'}} data-testid="connection-tab-general" />
-            <Tab
-              label={t('detail.tabs.attributeMapping')}
-              sx={{textTransform: 'none'}}
-              data-testid="connection-tab-attributes"
-            />
+            {supportsAttributes && (
+              <Tab
+                label={t('detail.tabs.attributeMapping')}
+                sx={{textTransform: 'none'}}
+                data-testid="connection-tab-attributes"
+              />
+            )}
           </Tabs>
 
           <TabPanel value={activeTab} index={0}>
@@ -260,18 +263,20 @@ export default function ConnectionDetailPage(): JSX.Element | null {
             </Stack>
           </TabPanel>
 
-          <TabPanel value={activeTab} index={1}>
-            <SettingsCard title={t('detail.provisioning.title')} description={t('detail.provisioning.description')}>
-              <AttributeMappingSection
-                key={`attrs-${resolvedId}-${attrsKey}`}
-                initialConfig={baselineAttr}
-                onChange={(config, isValid) => {
-                  setEditedAttr(config);
-                  setAttrValid(isValid);
-                }}
-              />
-            </SettingsCard>
-          </TabPanel>
+          {supportsAttributes && (
+            <TabPanel value={activeTab} index={1}>
+              <SettingsCard title={t('detail.provisioning.title')} description={t('detail.provisioning.description')}>
+                <AttributeMappingSection
+                  key={`attrs-${resolvedId}-${attrsKey}`}
+                  initialConfig={baselineAttr}
+                  onChange={(config, isValid) => {
+                    setEditedAttr(config);
+                    setAttrValid(isValid);
+                  }}
+                />
+              </SettingsCard>
+            </TabPanel>
+          )}
 
           {dirty && (
             <UnsavedChangesBar
