@@ -498,8 +498,6 @@ function prepare_backend_for_packaging() {
     cp -r "$BACKEND_DIR/bootstrap" "$DIST_DIR/$PRODUCT_FOLDER/"
     # Never ship the dev-only CORS seed that `run` stages into the source bootstrap dir.
     rm -f "$DIST_DIR/$PRODUCT_FOLDER/bootstrap/02-server-configurations.yaml"
-    # Ensure execute permissions on bootstrap scripts
-    chmod +x "$DIST_DIR/$PRODUCT_FOLDER/bootstrap/"*.sh 2>/dev/null || true
 
     echo "=== Ensuring server certificates exist in the distribution ==="
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "server"
