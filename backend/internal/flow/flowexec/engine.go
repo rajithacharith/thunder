@@ -199,6 +199,9 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 		// Clear sensitive inputs from context after executor has consumed them.
 		fe.clearSensitiveInputs(ctx, currentNode)
 
+		// Clear one-time-use inputs that have been marked as consumed.
+		fe.clearOneTimeUseInputs(ctx, currentNode)
+
 		recordNodeExecution(ctx, currentNode, nodeResp, nodeErr, executionStartTime, executionEndTime)
 
 		// Publish node execution completed or failed event
@@ -331,6 +334,9 @@ func (fe *flowEngine) runInterceptors(
 	if svcErr != nil {
 		return false, svcErr
 	}
+
+	// Clear one-time-use inputs that interceptors marked as consumed.
+	fe.clearConsumedOneTimeUseInputs(ctx, execCtx.CurrentNodeInputs)
 
 	fe.updateContextWithInterceptorResponse(ctx, resp)
 
@@ -531,6 +537,37 @@ func (fe *flowEngine) clearSensitiveInputs(ctx *EngineContext, node core.NodeInt
 	for _, input := range inputs {
 		if input.IsSensitive() {
 			delete(ctx.UserInputs, input.Identifier)
+		}
+	}
+}
+
+// clearOneTimeUseInputs removes inputs that are both OneTimeUse and Consumed
+// from the engine context's UserInputs, and resets the Consumed flag.
+func (fe *flowEngine) clearOneTimeUseInputs(ctx *EngineContext, node core.NodeInterface) {
+	execNode, ok := node.(core.ExecutorBackedNodeInterface)
+	if !ok {
+		return
+	}
+
+	// Get inputs from the node configuration. If the node does not define its own inputs,
+	// fall back to the executor's default inputs.
+	inputs := execNode.GetInputs()
+	if len(inputs) == 0 {
+		if executor := execNode.GetExecutor(); executor != nil {
+			inputs = executor.GetDefaultInputs()
+		}
+	}
+
+	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
+}
+
+// clearConsumedOneTimeUseInputs removes inputs that are both OneTimeUse and Consumed
+// from the engine context's UserInputs, and resets the Consumed flag.
+func (fe *flowEngine) clearConsumedOneTimeUseInputs(ctx *EngineContext, inputs []providers.Input) {
+	for i := range inputs {
+		if inputs[i].OneTimeUse && inputs[i].Consumed {
+			delete(ctx.UserInputs, inputs[i].Identifier)
+			inputs[i].Consumed = false
 		}
 	}
 }

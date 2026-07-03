@@ -868,6 +868,12 @@ type Input struct {
 	Options     []string         `json:"options,omitempty"`
 	DisplayName string           `json:"-"`
 	Validation  []ValidationRule `json:"validation,omitempty"`
+
+	// OneTimeUse indicates that the input can only be consumed once.
+	OneTimeUse bool `json:"oneTimeUse,omitempty"`
+
+	// Consumed indicates whether a OneTimeUse input has already been consumed and is pending cleanup.
+	Consumed bool `json:"-"`
 }
 
 // IsSensitive checks whether this input's type is considered sensitive.

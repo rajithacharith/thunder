@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/suite"
 
@@ -108,6 +109,31 @@ func (s *InterceptorTestSuite) TestInterceptorResponse_Fail() {
 	s.Equal(common.InterceptorStatusFailure, result.Status)
 	s.Equal("INT-001", result.Error.Code)
 	s.Nil(result.EngineOutputs)
+}
+
+// GetInputs tests
+
+func (s *InterceptorTestSuite) TestGetInputs_ReturnsNilByDefault() {
+	ic := newInterceptor(testInterceptorName, false, 1)
+	s.Nil(ic.GetInputs())
+}
+
+func (s *InterceptorTestSuite) TestGetInputs_ReturnsPopulatedInputs() {
+	ic := &interceptor{
+		Name:      testInterceptorName,
+		isDefault: false,
+		Priority:  1,
+		Inputs: []providers.Input{
+			{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
+			{Identifier: "token", Type: "TEXT_INPUT", OneTimeUse: true},
+		},
+	}
+
+	inputs := ic.GetInputs()
+	s.Len(inputs, 2)
+	s.Equal("challenge", inputs[0].Identifier)
+	s.True(inputs[0].OneTimeUse)
+	s.Equal("token", inputs[1].Identifier)
 }
 
 // Interface compliance
