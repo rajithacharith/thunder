@@ -991,6 +991,10 @@ func (ous *organizationUnitService) GetOrganizationUnitUsersByPath(
 		return nil, serviceError
 	}
 
+	if ous.userResolver == nil {
+		return nil, &tidcommon.InternalServerError
+	}
+
 	ou, err := ous.ouStore.GetOrganizationUnitByPath(ctx, handles)
 	if err != nil {
 		if errors.Is(err, ErrOrganizationUnitNotFound) {
@@ -1000,7 +1004,30 @@ func (ous *organizationUnitService) GetOrganizationUnitUsersByPath(
 		return nil, &tidcommon.InternalServerError
 	}
 
-	return ous.GetOrganizationUnitUsers(ctx, ou.ID, limit, offset, includeDisplay)
+	if svcErr := ous.checkOUAccess(ctx, security.ActionReadUser, ou.ID); svcErr != nil {
+		return nil, svcErr
+	}
+
+	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
+		ctx, ou.ID, limit, offset, "users",
+		func(ctx context.Context, id string, limit, offset int) (interface{}, error) {
+			return ous.userResolver.GetUserListByOUID(ctx, id, limit, offset, includeDisplay)
+		},
+		ous.userResolver.GetUserCountByOUID,
+		false,
+	)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	users, ok := items.([]User)
+	if !ok {
+		logger.Error(ctx, "Failed to cast user list response for organization unit", log.String("ouPath", handlePath))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	base := fmt.Sprintf("/organization-units/tree/%s/users", handlePath)
+	return buildUserListResponse(base, users, totalCount, limit, offset, includeDisplay)
 }
 
 // GetOrganizationUnitGroupsByPath retrieves a list of groups by hierarchical handle path.
@@ -1015,6 +1042,10 @@ func (ous *organizationUnitService) GetOrganizationUnitGroupsByPath(
 		return nil, serviceError
 	}
 
+	if ous.groupResolver == nil {
+		return nil, &tidcommon.InternalServerError
+	}
+
 	ou, err := ous.ouStore.GetOrganizationUnitByPath(ctx, handles)
 	if err != nil {
 		if errors.Is(err, ErrOrganizationUnitNotFound) {
@@ -1024,7 +1055,24 @@ func (ous *organizationUnitService) GetOrganizationUnitGroupsByPath(
 		return nil, &tidcommon.InternalServerError
 	}
 
-	return ous.GetOrganizationUnitGroups(ctx, ou.ID, limit, offset)
+	if svcErr := ous.checkOUAccess(ctx, security.ActionReadGroup, ou.ID); svcErr != nil {
+		return nil, svcErr
+	}
+
+	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
+		ctx, ou.ID, limit, offset, "groups",
+		func(ctx context.Context, id string, limit, offset int) (interface{}, error) {
+			return ous.groupResolver.GetGroupListByOUID(ctx, id, limit, offset)
+		},
+		ous.groupResolver.GetGroupCountByOUID,
+		false,
+	)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	base := fmt.Sprintf("/organization-units/tree/%s/groups", handlePath)
+	return buildGroupListResponse(base, items, totalCount, limit, offset)
 }
 
 // checkCircularDependency checks if setting the parent would create a circular dependency.
