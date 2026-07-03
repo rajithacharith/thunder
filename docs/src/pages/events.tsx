@@ -91,7 +91,7 @@ interface Star {
   y: number;
 }
 
-function BoltCanvas(): JSX.Element {
+function BoltCanvas({dark}: {dark: boolean}): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -161,22 +161,37 @@ function BoltCanvas(): JSX.Element {
       ctx.clearRect(0, 0, W, H);
       const cx = W * 0.5, cy = H * 0.5;
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * 0.58);
-      g.addColorStop(0, 'rgba(0,140,255,0.11)');
-      g.addColorStop(0.5, 'rgba(0,80,200,0.06)');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
+      if (dark) {
+        g.addColorStop(0, 'rgba(0,140,255,0.11)');
+        g.addColorStop(0.5, 'rgba(0,80,200,0.06)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+      } else {
+        g.addColorStop(0, 'rgba(0,120,255,0.09)');
+        g.addColorStop(0.5, 'rgba(0,80,200,0.04)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+      }
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
       for (const s of stars) {
         const a = s.a * (0.4 + 0.6 * Math.sin(t * s.sp + s.tw));
-        ctx.fillStyle = `rgba(200,230,255,${a.toFixed(3)})`;
+        ctx.fillStyle = dark
+          ? `rgba(200,230,255,${a.toFixed(3)})`
+          : `rgba(30,90,200,${(a * 0.6).toFixed(3)})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
       }
       for (const p of pts) {
         const tw = 0.5 + 0.5 * Math.sin(t * p.sp + p.tw);
         const a = p.base * (0.28 + 0.72 * tw);
-        const rr = Math.floor(p.h * 54);
-        const gg = Math.floor(160 + p.h * 60 + tw * 35);
-        const bb = Math.floor(210 + p.h * 45);
+        let rr: number, gg: number, bb: number;
+        if (dark) {
+          rr = Math.floor(p.h * 54);
+          gg = Math.floor(160 + p.h * 60 + tw * 35);
+          bb = Math.floor(210 + p.h * 45);
+        } else {
+          rr = Math.floor(10 + p.h * 40);
+          gg = Math.floor(70 + p.h * 80 + tw * 20);
+          bb = Math.floor(180 + p.h * 50);
+        }
         ctx.fillStyle = `rgba(${rr},${gg},${bb},${Math.min(a, 1).toFixed(3)})`;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
       }
@@ -188,7 +203,7 @@ function BoltCanvas(): JSX.Element {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     return () => { cancelAnimationFrame(rafId); ro.disconnect(); };
-  }, []);
+  }, [dark]);
 
   return <canvas ref={canvasRef} style={{position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block'}} />;
 }
@@ -221,8 +236,8 @@ export default function EventsPage(): JSX.Element {
       <Box sx={{display: 'flex', height: 'calc(100vh - var(--ifm-navbar-height))', minHeight: 480, overflow: 'hidden'}}>
 
         {/* LEFT: animated canvas */}
-        <Box sx={{flex: '0 0 50%', position: 'relative', overflow: 'hidden', bgcolor: '#020c1b', display: {xs: 'none', md: 'block'}}}>
-          <BoltCanvas />
+        <Box sx={{flex: '0 0 50%', position: 'relative', overflow: 'hidden', bgcolor: isDark ? '#020c1b' : '#e8f2ff', display: {xs: 'none', md: 'block'}}}>
+          <BoltCanvas dark={isDark} />
         </Box>
 
         {/* RIGHT: events panel */}
@@ -263,10 +278,10 @@ export default function EventsPage(): JSX.Element {
                   sx={{borderRadius: '14px', border: '1px solid rgba(54,136,255,0.3)', bgcolor: 'rgba(54,136,255,0.055)', p: '22px 22px 20px', display: 'flex', flexDirection: 'column', gap: 1.625, mb: 3.5, transition: 'border-color 0.2s', '&:hover': {borderColor: 'rgba(54,136,255,0.52)'}}}
                 >
                   <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                    <Box component="span" sx={{fontFamily: '"JetBrains Mono", monospace', fontSize: '0.69rem', color: '#8bf9fa', letterSpacing: '0.04em'}}>
+                    <Box component="span" sx={{fontFamily: '"JetBrains Mono", monospace', fontSize: '0.69rem', color: isDark ? '#8bf9fa' : '#1a6fe8', letterSpacing: '0.04em'}}>
                       {formatCardDate(event.startDate, event.endDate)}
                     </Box>
-                    <Box component="span" sx={{fontFamily: '"JetBrains Mono", monospace', fontSize: '0.53rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8bf9fa', bgcolor: 'rgba(54,136,255,0.15)', border: '1px solid rgba(54,136,255,0.3)', borderRadius: '999px', px: 1.25, py: '3px'}}>
+                    <Box component="span" sx={{fontFamily: '"JetBrains Mono", monospace', fontSize: '0.53rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: isDark ? '#8bf9fa' : '#1a6fe8', bgcolor: 'rgba(54,136,255,0.12)', border: '1px solid rgba(54,136,255,0.35)', borderRadius: '999px', px: 1.25, py: '3px'}}>
                       Upcoming
                     </Box>
                   </Box>
@@ -285,7 +300,7 @@ export default function EventsPage(): JSX.Element {
                   {event.tags.length > 0 && (
                     <Box sx={{display: 'flex', gap: 0.75, flexWrap: 'wrap'}}>
                       {event.tags.map((tag) => (
-                        <Box component="span" key={tag} sx={{fontSize: '0.66rem', color: 'text.secondary', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', px: 1.125, py: '3px'}}>
+                        <Box component="span" key={tag} sx={{fontSize: '0.66rem', color: 'text.secondary', bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)', borderRadius: '6px', px: 1.125, py: '3px'}}>
                           {tag}
                         </Box>
                       ))}
@@ -325,8 +340,8 @@ export default function EventsPage(): JSX.Element {
                       alignItems: 'baseline',
                       gap: 3,
                       py: 2.25,
-                      borderTop: '1px solid rgba(255,255,255,0.07)',
-                      ...(i === past.length - 1 ? {borderBottom: '1px solid rgba(255,255,255,0.07)'} : {}),
+                      borderTop: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.07)',
+                      ...(i === past.length - 1 ? {borderBottom: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.07)'} : {}),
                       opacity: 0.55,
                     }}
                   >

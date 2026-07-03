@@ -1207,6 +1207,60 @@ aside.theme-doc-sidebar-container {
   display: none;
 }
 
+/* Indent tag items under their tag-group category headers with a connecting line */
+.apis-page [data-sidebar-id*="/tag-group/"] > ul {
+  margin-left: 0.1rem;
+  padding-left: 0.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  gap: 0.25rem;
+}
+
+.apis-page [data-sidebar-id*="/tag-group/"] > ul > li > div > button {
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  color: var(--ifm-color-emphasis-600) !important;
+  border-radius: 6px !important;
+  transition: color 0.15s, background 0.15s !important;
+}
+
+/* Category section header style */
+.apis-page [data-sidebar-id*="/tag-group/"] > div[aria-selected],
+.apis-page [data-sidebar-id$="/models"] > div > button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--ifm-font-color-base) !important;
+  padding: 0.75rem 0.875rem !important;
+  user-select: none !important;
+}
+
+/* Models has no spacer-before div — use margin-top to match section spacing */
+.apis-page [data-sidebar-id$="/models"] {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-100);
+}
+
+/* Category section icons — primary color, full opacity */
+.apis-page [data-sidebar-id*="/tag-group/"] > div[aria-selected] .apis-category-icon,
+.apis-page [data-sidebar-id$="/models"] .apis-category-icon {
+  opacity: 1;
+}
+
+/* Asymmetric section spacing: more above each header, tighter below */
+.apis-page [data-sidebar-id*="/tag-group/"] > div[class*="spacer-before"] {
+  height: 1.5rem !important;
+}
+.apis-page [data-sidebar-id*="/tag-group/"] > div[class*="spacer-after"] {
+  height: 0.25rem !important;
+}
+
 .apis-page .scalar-api-reference main .introduction-section {
   display: none;
 }
