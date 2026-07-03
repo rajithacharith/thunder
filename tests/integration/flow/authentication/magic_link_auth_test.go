@@ -21,7 +21,6 @@ package authentication
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -176,10 +175,6 @@ func TestMagicLinkAuthFlowTestSuite(t *testing.T) {
 }
 
 func (ts *magicLinkAuthFlowTestSuite) SetupSuite() {
-	if os.Getenv("THUNDER_EXTRACTED_HOME") == "" {
-		ts.T().Skip("Skipping magic link integration test - integration harness not initialized")
-	}
-
 	ts.config = &common.TestSuiteConfig{}
 
 	ts.mockSMTP = testutils.NewMockSMTPServer(0)
@@ -196,6 +191,9 @@ func (ts *magicLinkAuthFlowTestSuite) SetupSuite() {
 				"enable_start_tls":      false,
 				"enable_authentication": false,
 			},
+		},
+		"jwt": map[string]interface{}{
+			"leeway": 1,
 		},
 	}
 
@@ -294,6 +292,13 @@ func (ts *magicLinkAuthFlowTestSuite) SetupSuite() {
 				"action": map[string]interface{}{
 					"ref":      "dummy_action",
 					"nextNode": "verify_magic_link",
+				},
+			},
+			{
+				"inputs": []map[string]interface{}{},
+				"action": map[string]interface{}{
+					"ref":      "dummy_action2",
+					"nextNode": "auth_assert",
 				},
 			},
 		},
@@ -456,12 +461,13 @@ func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_InvalidToken() {
 
 	time.Sleep(500 * time.Millisecond)
 
-	// Submit an invalid token — server must reject with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, map[string]string{"token": "invalid-token-123"},
+	// Submit an invalid token — server must reject with flowStatus=ERROR
+	errStep, err := common.CompleteFlow(flowStep.ExecutionID, map[string]string{"token": "invalid-token-123"}, "",
 		step2.ChallengeToken)
 	ts.Require().NoError(err, "Unexpected transport error submitting invalid magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for an invalid magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	ts.Require().Equal("ERROR", errStep.FlowStatus, "Expected ERROR flow status for an invalid magic link token")
+	ts.Require().NotNil(errStep.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(errStep.Error.Code, "Expected an error code in the error response")
 }
 
 func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_ExpiredToken() {
@@ -478,15 +484,16 @@ func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_ExpiredToken() {
 	token := common.ExtractMagicLinkToken(emailMessage)
 	ts.Require().NotEmpty(token)
 
-	// Wait for TTL (2 seconds) to expire
-	time.Sleep(3 * time.Second)
+	// Wait for TTL (2 seconds) plus leeway (1 second) to expire
+	time.Sleep(5 * time.Second)
 
-	// Submit the expired token — server must reject with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, map[string]string{"token": token},
+	// Submit the expired token — server must reject with flowStatus=ERROR
+	errStep, err := common.CompleteFlow(flowStep.ExecutionID, map[string]string{"token": token}, "",
 		step2.ChallengeToken)
 	ts.Require().NoError(err, "Unexpected transport error submitting expired magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for an expired magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	ts.Require().Equal("ERROR", errStep.FlowStatus, "Expected ERROR flow status for an expired magic link token")
+	ts.Require().NotNil(errStep.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(errStep.Error.Code, "Expected an error code in the error response")
 }
 
 func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_ReusedToken() {
@@ -513,15 +520,10 @@ func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_ReusedToken() {
 	step4, err := common.CompleteFlow(flowStep1.ExecutionID, map[string]string{"dummy": "test"}, "dummy_action",
 		step3.ChallengeToken)
 	ts.Require().NoError(err)
-	ts.Require().Equal("INCOMPLETE", step4.FlowStatus)
-	ts.Require().True(common.HasInput(step4.Data.Inputs, "token"), "Flow should prompt for token again")
-
-	// Try to submit the exact same token again — jti replay must be rejected with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStep1.ExecutionID, map[string]string{"token": token},
-		step4.ChallengeToken)
-	ts.Require().NoError(err, "Unexpected transport error submitting reused magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for a reused magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	// Loop back to verify_magic_link replays the same jti — must be rejected with flowStatus=ERROR
+	ts.Require().Equal("ERROR", step4.FlowStatus, "Expected ERROR flow status for jti replay")
+	ts.Require().NotNil(step4.Error, "Expected an error in the flow response for jti replay")
+	ts.Require().NotEmpty(step4.Error.Code, "Expected an error code in the error response")
 }
 
 func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_CrossFlowToken() {
@@ -548,10 +550,11 @@ func (ts *magicLinkAuthFlowTestSuite) TestMagicLinkLoginFlow_CrossFlowToken() {
 		"magic_link_action", flowStepB.ChallengeToken)
 	ts.Require().NoError(err)
 
-	// Submit Token A to Execution B — execution ID mismatch must be rejected with 400
-	errResp, err := common.CompleteAuthFlowWithError(flowStepB.ExecutionID, map[string]string{"token": tokenA},
+	// Submit Token A to Execution B — execution ID mismatch must be rejected with flowStatus=ERROR
+	errStep, err := common.CompleteFlow(flowStepB.ExecutionID, map[string]string{"token": tokenA}, "",
 		step2B.ChallengeToken)
 	ts.Require().NoError(err, "Unexpected transport error submitting cross-flow magic link token")
-	ts.Require().NotNil(errResp, "Expected a 400 error response for a cross-flow magic link token")
-	ts.Require().NotEmpty(errResp.Code, "Expected an error code in the error response")
+	ts.Require().Equal("ERROR", errStep.FlowStatus, "Expected ERROR flow status for a cross-flow magic link token")
+	ts.Require().NotNil(errStep.Error, "Expected an error in the flow response")
+	ts.Require().NotEmpty(errStep.Error.Code, "Expected an error code in the error response")
 }

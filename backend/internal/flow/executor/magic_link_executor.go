@@ -234,7 +234,7 @@ func (m *magicLinkExecutor) InitiateMagicLink(ctx *providers.NodeContext,
 func (m *magicLinkExecutor) getTokenExpiry(ctx *providers.NodeContext) int64 {
 	if ctx.NodeProperties != nil {
 		if val, ok := ctx.NodeProperties[propertyKeyTokenExpiry]; ok {
-			if str, valid := val.(string); valid && str != "" {
+			if str := utils.ConvertInterfaceValueToString(val); str != "" {
 				if parsed, err := strconv.ParseInt(str, 10, 64); err == nil && parsed > 0 {
 					return parsed
 				}

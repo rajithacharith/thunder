@@ -976,16 +976,16 @@ func (suite *MagicLinkExecutorTestSuite) TestGetTokenExpiry_EmptyString_UsesDefa
 	assert.Equal(suite.T(), int64(magiclink.DefaultExpirySeconds), expiry)
 }
 
-func (suite *MagicLinkExecutorTestSuite) TestGetTokenExpiry_NonStringValue_UsesDefault() {
+func (suite *MagicLinkExecutorTestSuite) TestGetTokenExpiry_NonStringValue_ParsesSuccessfully() {
 	ctx := &providers.NodeContext{
 		NodeProperties: map[string]interface{}{
-			propertyKeyTokenExpiry: 123,
+			propertyKeyTokenExpiry: float64(123),
 		},
 	}
 
 	expiry := suite.executor.getTokenExpiry(ctx)
 
-	assert.Equal(suite.T(), int64(magiclink.DefaultExpirySeconds), expiry)
+	assert.Equal(suite.T(), int64(123), expiry)
 }
 
 func (suite *MagicLinkExecutorTestSuite) TestGetMagicLinkURL_DefaultEmpty() {
