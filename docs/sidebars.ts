@@ -324,12 +324,35 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Decentralised Identity',
+          label: 'Decentralized Identity',
           collapsible: true,
           collapsed: true,
           key: 'use-cases-vc',
           items: [
             {type: 'doc', id: 'use-cases/vc/overview', label: 'Overview', key: 'vc-overview'},
+            {
+              type: 'category',
+              label: 'Try It Out',
+              collapsible: true,
+              collapsed: true,
+              key: 'vc-try-it-out',
+              link: {type: 'doc', id: 'use-cases/vc/try-it-out/index'},
+              items: [
+                {type: 'doc', id: 'use-cases/vc/try-it-out/setup', label: 'Set up the sample', key: 'vc-setup'},
+                {type: 'doc', id: 'use-cases/vc/try-it-out/configure-it-yourself', label: 'Configure It Yourself', key: 'vc-configure'},
+                {
+                  type: 'category',
+                  label: 'Walkthroughs',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'vc-walkthroughs',
+                  items: [
+                    {type: 'doc', id: 'use-cases/vc/try-it-out/issue-credential', label: 'Issue Credential', key: 'vc-issue'},
+                    {type: 'doc', id: 'use-cases/vc/try-it-out/verify-at-lounge', label: 'Verify Credential', key: 'vc-verify'},
+                  ],
+                },
+              ],
+            },
           ],
         },
       ],
@@ -738,6 +761,11 @@ const sidebars: SidebarsConfig = {
                 id: 'guides/guides/protocols/openid4vc/index',
               },
               items: [
+                {
+                  type: 'doc',
+                  id: 'guides/guides/protocols/openid4vc/openid4vci',
+                  label: 'OpenID for Verifiable Credential Issuance',
+                },
                 {
                   type: 'doc',
                   id: 'guides/guides/protocols/openid4vc/openid4vp',

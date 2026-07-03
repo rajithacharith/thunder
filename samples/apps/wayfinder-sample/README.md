@@ -61,13 +61,14 @@ The sample uses two OAuth clients and three token types:
 - A **self-service profile page** at `/profile` that calls Thunder's `/users/me` directly with the `WAYFINDER` user token to read account details, edit attributes, and change the password.
 - **Multi-LLM support** — the Wayfinder Concierge works with both **Anthropic Claude** and **Google Gemini**, selectable via an environment variable.
 - **CIBA-based flight upgrade** — a background upgrade scheduler uses CIBA (Client-Initiated Backchannel Authentication) to authenticate the customer out-of-band via email or SMS notification. The customer approves the upgrade on their own device; the scheduler then processes it with a CIBA-issued token carrying `upgrade:process` scope.
+- **Verifiable Credentials (OID4VCI / OID4VP)** — members can add a Wayfinder Sky Pass to their EUDI wallet straight from the profile page (OpenID4VCI issuance). The Skyline Lounge kiosk (`lounge/`) verifies the pass using OpenID4VP selective disclosure, reading only the `tier` and `full_name` claims.
 
 ## Project Structure
 
 ```
 wayfinder-sample/
-├── frontend/          React + Vite UI. Hosts the chat widget and the
-│                      /agent-callback route used by the consent popup.
+├── frontend/          React + Vite UI. Hosts the chat widget, the
+│                      /agent-callback route, and the Sky Pass issuance QR.
 ├── backend/           Node server backed by SQLite. Hosts both the REST API
 │                      (/api/*) and the MCP server (/mcp), validates JWTs,
 │                      enforces scopes per route and per MCP tool.
@@ -75,6 +76,8 @@ wayfinder-sample/
 │                      Captures emails sent by ThunderID flows (recovery,
 │                      onboarding, CIBA). No external email relay required.
 ├── ai-agent/          HTTP Wayfinder Concierge API (LangChain + Claude/Gemini).
+├── lounge/            Skyline Lounge kiosk. Verifies the Sky Pass via OID4VP
+│                      and grants access based on the disclosed tier claim.
 ├── thunderid-config/  Importable YAML config for ThunderID setup.
 └── README.md
 ```

@@ -122,7 +122,7 @@ Before you begin, make sure you have:
       - "http://localhost:5173"
   ```
 
-- The Wayfinder sample distribution. The [Get <ProductName />](/docs/next/guides/getting-started/get-thunderid) step above already pulls the archive that ships it. It contains a `thunderid-config/` directory with an importable YAML config and a `thunderid.env` file, plus the Wayfinder web frontend and the Concierge services.
+- The Wayfinder sample distribution. The [Get <ProductName />](/docs/next/guides/getting-started/get-thunderid) step above already pulls the archive that ships it. It contains a `thunderid-config/redirect/` bundle with an importable YAML config and a `thunderid.env` file, plus the Wayfinder web frontend and the Concierge services.
 - **Node.js 20+** for running the sample's services.
 - **An LLM API key.** One of an Anthropic API key from [console.anthropic.com](https://console.anthropic.com) or a Google Gemini API key from [aistudio.google.com](https://aistudio.google.com).
 
@@ -131,14 +131,14 @@ Before you begin, make sure you have:
 
 Import the Wayfinder configuration bundle.
 
-1. **Edit `thunderid-config/thunderid.env`** if you want to change the agent's client secret. The default value (`wayfinder-agent-secret`) matches the sample's defaults.
+1. **Edit `thunderid-config/redirect/thunderid.env`** if you want to change the agent's client secret. The default value (`wayfinder-agent-secret`) matches the sample's defaults.
 
 2. **Import the bundle into <ProductName />.**
 
    - Sign in to the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console).
    - On first sign-in, a welcome screen appears with an **Open** button. (Later, reach the same screen from the user profile menu in the top-right corner of the Console.)
-   - Click **Open** and select your `thunderid-config/thunderid-config.yaml` file from the sample distribution.
-   - Select your `thunderid-config/thunderid.env` file to provide the environment variables referenced in the YAML.
+   - Click **Open** and select your `thunderid-config/redirect/thunderid-config.yaml` file from the sample distribution.
+   - Select your `thunderid-config/redirect/thunderid.env` file to provide the environment variables referenced in the YAML.
    - The Console imports the files and reports the resources it created when the import completes.
 
    The import creates:

@@ -40,6 +40,21 @@ schema: {
       "type": "string",
       "displayName": "Mobile Number",
       "required": false
+    },
+    "full_name": {
+      "type": "string",
+      "displayName": "Full Name",
+      "required": false
+    },
+    "member_id": {
+      "type": "string",
+      "displayName": "Member ID",
+      "required": false
+    },
+    "tier": {
+      "type": "string",
+      "displayName": "Tier",
+      "required": false
     }
   }
 
@@ -1663,8 +1678,11 @@ attributes:
   username: john.doe
   given_name: John
   family_name: Doe
+  full_name: "John Doe"
   email: john.doe@example.com
   mobile_number: "+15550192837"
+  member_id: "WF-100245"
+  tier: "Gold"
 credentials:
   password: "{{.JOHN_DOE_PASSWORD}}"
 
@@ -1695,10 +1713,103 @@ credentials:
   password: "{{.ALEX_CARTER_PASSWORD}}"
 
 ---
-# resource_type: server_config
-# Allows the Wayfinder web app's browser origin to call Thunder. CORS origins come only from the
-# server-config "cors" section (no default ships), so importing this bundle sets the frontend origin.
-name: cors
-value:
-  allowedOrigins:
-    - "http://localhost:5173"
+# resource_type: credential_configuration
+# The Wayfinder Sky Pass issued to the wallet via OID4VCI. handle =
+# credential_configuration_id (and the OAuth scope). Every claim is individually
+# disclosable (SD-JWT); the lounge requests only a subset at verification time.
+id: wayfinder-skypass
+handle: wayfinder-skypass
+ouHandle: default
+vct: urn:wayfinder:skypass:1
+name: Wayfinder Sky Pass
+display:
+  locale: en-US
+claims:
+  - name: full_name
+    displayName: Full Name
+  - name: given_name
+    displayName: First Name
+  - name: family_name
+    displayName: Last Name
+  - name: email
+    displayName: Email
+  - name: member_id
+    displayName: Member ID
+  - name: tier
+    displayName: Tier
+
+---
+# resource_type: presentation_definition
+# The Skyline Lounge kiosk's OpenID4VP request. Selective disclosure: it asks only
+# for `tier` (to prove status) and optionally `full_name` (to greet the guest) —
+# the wallet discloses nothing else from the pass.
+id: wayfinder-skypass
+handle: wayfinder-skypass
+ouHandle: default
+name: Skyline Lounge Access
+vct: urn:wayfinder:skypass:1
+mandatoryClaims:
+  - tier
+optionalClaims:
+  - full_name
+
+---
+# resource_type: application
+# The Heidi / Funke wallet's OAuth client for the OID4VCI issuance flow (its fixed
+# vendor client_id + redirect). Lets the Heidi wallet receive the Sky Pass.
+id: heidi-wallet-app
+name: Heidi Wallet
+description: OpenID4VCI issuance client for the Heidi / Funke wallet
+template: wallet
+ouHandle: default
+url: http://localhost:3000
+logoUrl: "emoji:🪪"
+authFlowHandle: default-basic-flow
+isRegistrationFlowEnabled: false
+isRecoveryFlowEnabled: false
+allowedUserTypes:
+  - Customer
+inboundAuthConfig:
+  - type: oauth2
+    config:
+      clientId: "c3ce7a6c-2bbb-4abe-909c-41bc9463d3c5"
+      redirectUris:
+        - "ch.ubique.funke://issuance"
+      grantTypes:
+        - authorization_code
+      responseTypes:
+        - code
+      tokenEndpointAuthMethod: none
+      pkceRequired: true
+      publicClient: true
+
+---
+# resource_type: application
+# The Lissi wallet's OAuth client for the OID4VCI issuance flow (its fixed vendor
+# client_id + redirect). Lets the Lissi wallet receive the Sky Pass.
+id: lissi-wallet-app
+name: Lissi Wallet
+description: OpenID4VCI issuance client for the Lissi wallet
+template: wallet
+ouHandle: default
+url: http://localhost:3000
+logoUrl: "emoji:🪪"
+authFlowHandle: default-basic-flow
+isRegistrationFlowEnabled: false
+isRecoveryFlowEnabled: false
+allowedUserTypes:
+  - Customer
+inboundAuthConfig:
+  - type: oauth2
+    config:
+      clientId: "9c481dc3-2ad0-4fe0-881d-c32ad02fe0fc"
+      redirectUris:
+        - "https://oob.lissi.io/vci-cb"
+      grantTypes:
+        - authorization_code
+      responseTypes:
+        - code
+      tokenEndpointAuthMethod: none
+      pkceRequired: true
+      publicClient: true
+
