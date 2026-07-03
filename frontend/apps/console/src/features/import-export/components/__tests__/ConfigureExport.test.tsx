@@ -76,6 +76,7 @@ vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
     Layout: () => <span data-testid="icon-layout" />,
     Palette: () => <span data-testid="icon-palette" />,
     Server: () => <span data-testid="icon-server" />,
+    Settings: () => <span data-testid="icon-settings" />,
     Terminal: () => <span data-testid="icon-terminal" />,
     UserRoundCog: () => <span data-testid="icon-user-round-cog" />,
     Users: () => <span data-testid="icon-users" />,
@@ -188,6 +189,11 @@ name: Valid Flow
 
       render(<ConfigureExport resourceCounts={resourceCounts} />);
       expect(screen.getByTestId('icon-terminal')).toBeInTheDocument();
+    });
+
+    it('adds a server configurations row when server configs are present', () => {
+      render(<ConfigureExport resourceCounts={{server_config: 2}} />);
+      expect(screen.getByTestId('icon-settings')).toBeInTheDocument();
     });
 
     it('shows loading state when exporting', () => {

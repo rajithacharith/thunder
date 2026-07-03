@@ -2343,6 +2343,8 @@ const translations = {
     'configureExport.fallback.unnamedCredentialConfiguration': 'Unnamed Credential Configuration',
     'configureExport.labels.agents': 'Agents',
     'configureExport.fallback.unnamedAgent': 'Unnamed Agent',
+    'configureExport.labels.serverConfigs': 'Server Configurations',
+    'configureExport.fallback.unnamedServerConfig': 'Unnamed Server Configuration',
     'configureExport.fallback.unnamedUser': 'User {{index}}',
     'configureExport.labels.projectDetails': 'Project Details',
     'configureExport.labels.totalResources': 'Total Resources',

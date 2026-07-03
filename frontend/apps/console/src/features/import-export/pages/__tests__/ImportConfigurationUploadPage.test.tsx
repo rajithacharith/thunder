@@ -223,6 +223,35 @@ describe('ImportConfigurationUploadPage', () => {
     );
   });
 
+  it('accepts a server_config resource without flagging it as unknown', async () => {
+    const user = userEvent.setup();
+    render(<ImportConfigurationUploadPage />);
+
+    const yamlContent =
+      '---\n# resource_type: server_config\nname: cors\nvalue:\n  allowedOrigins:\n    - https://example.com\n';
+    const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
+    Object.defineProperty(yamlFile, 'text', {value: () => Promise.resolve(yamlContent)});
+
+    await user.upload(document.getElementById('file-upload') as HTMLInputElement, yamlFile);
+    await user.click(screen.getByRole('button', {name: 'common:actions.continue'}));
+
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          '/welcome/import-configuration/validate',
+          expect.objectContaining({
+            state: expect.objectContaining({
+              method: 'file',
+              parseErrors: [],
+              parseStats: {successCount: 1, failCount: 0},
+            }) as Record<string, unknown>,
+          }),
+        );
+      },
+      {timeout: 5000},
+    );
+  });
+
   it('shows error when file.text() throws during continue', async () => {
     const user = userEvent.setup();
     render(<ImportConfigurationUploadPage />);
