@@ -1996,6 +1996,8 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 // runResolverPathListTests runs common path-based list tests for user/group resolver-backed endpoints.
 func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 	invalidPath string,
+	makeResolvers func() (OUUserResolver, OUGroupResolver),
+	errorResolvers func() (OUUserResolver, OUGroupResolver),
 	setupResolvers func() (OUUserResolver, OUGroupResolver),
 	invoke func(*organizationUnitService, string, int, int) (interface{}, *tidcommon.ServiceError),
 ) {
@@ -2008,12 +2010,22 @@ func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 		suite.Require().Equal(ErrorInvalidHandlePath, *err)
 	})
 
+	suite.Run("nil resolver", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		service := suite.newServiceWithResolvers(store, newAllowAllAuthz(suite.T()), nil, nil)
+
+		resp, err := invoke(service, "root", 5, 0)
+		suite.Require().Nil(resp)
+		suite.Require().Equal(tidcommon.InternalServerError, *err)
+	})
+
 	suite.Run("not found", func() {
 		store := newOrganizationUnitStoreInterfaceMock(suite.T())
 		store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
 			Return(providers.OrganizationUnit{}, ErrOrganizationUnitNotFound).Once()
 
-		service := suite.newService(store, newAllowAllAuthz(suite.T()))
+		userRes, groupRes := makeResolvers()
+		service := suite.newServiceWithResolvers(store, newAllowAllAuthz(suite.T()), userRes, groupRes)
 		resp, err := invoke(service, "root", 5, 0)
 		suite.Require().Nil(resp)
 		suite.Require().Equal(ErrorOrganizationUnitNotFound, *err)
@@ -2024,7 +2036,22 @@ func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 		store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
 			Return(providers.OrganizationUnit{}, errors.New("db connection failed")).Once()
 
-		service := suite.newService(store, newAllowAllAuthz(suite.T()))
+		userRes, groupRes := makeResolvers()
+		service := suite.newServiceWithResolvers(store, newAllowAllAuthz(suite.T()), userRes, groupRes)
+		resp, err := invoke(service, "root", 5, 0)
+		suite.Require().Nil(resp)
+		suite.Require().Equal(tidcommon.InternalServerError, *err)
+	})
+
+	suite.Run("resolver error", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
+			Return(providers.OrganizationUnit{ID: "ou-1"}, nil).Once()
+		store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+			Return(true, nil).Once()
+
+		userRes, groupRes := errorResolvers()
+		service := suite.newServiceWithResolvers(store, newAllowAllAuthz(suite.T()), userRes, groupRes)
 		resp, err := invoke(service, "root", 5, 0)
 		suite.Require().Nil(resp)
 		suite.Require().Equal(tidcommon.InternalServerError, *err)
@@ -2049,6 +2076,15 @@ func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsersByPath() {
 	suite.runResolverPathListTests("   ",
+		func() (OUUserResolver, OUGroupResolver) {
+			return NewOUUserResolverMock(suite.T()), nil
+		},
+		func() (OUUserResolver, OUGroupResolver) {
+			userRes := NewOUUserResolverMock(suite.T())
+			userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
+				Return(nil, errors.New("resolver unavailable")).Once()
+			return userRes, nil
+		},
 		func() (OUUserResolver, OUGroupResolver) {
 			userRes := new(OUUserResolverMock)
 			userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
@@ -2094,12 +2130,31 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 	suite.Equal("employee", resp.Users[1].Type)
 	suite.Equal("bob@example.com", resp.Users[1].Display)
 
-	// Verify pagination links preserve the include=display query parameter
+	// Verify pagination links preserve the include=display query parameter and use the tree path
 	suite.Require().NotEmpty(resp.Links)
 	for _, link := range resp.Links {
 		suite.Contains(link.Href, "include=display",
 			"pagination link %q should preserve include=display", link.Rel)
+		suite.Contains(link.Href, "/organization-units/tree/engineering/users",
+			"pagination link %q href must use tree path, got %q", link.Rel, link.Href)
 	}
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsersByPath_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
+		Return(providers.OrganizationUnit{ID: "ou-1"}, nil).Once()
+
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	service := suite.newServiceWithResolvers(store, authzMock, userRes, nil)
+
+	resp, err := service.GetOrganizationUnitUsersByPath(context.Background(), "root", 5, 0, false)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(tidcommon.ErrorUnauthorized.Code, err.Code)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups() {
@@ -2222,6 +2277,15 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildOrganizationUn
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroupsByPath() {
 	suite.runResolverPathListTests("  ",
 		func() (OUUserResolver, OUGroupResolver) {
+			return nil, NewOUGroupResolverMock(suite.T())
+		},
+		func() (OUUserResolver, OUGroupResolver) {
+			groupRes := NewOUGroupResolverMock(suite.T())
+			groupRes.On("GetGroupListByOUID", mock.Anything, "ou-1", 5, 0).
+				Return(nil, errors.New("resolver unavailable")).Once()
+			return nil, groupRes
+		},
+		func() (OUUserResolver, OUGroupResolver) {
 			groupRes := new(OUGroupResolverMock)
 			groupRes.On("GetGroupListByOUID", mock.Anything, "ou-1", 5, 0).
 				Return([]Group{}, nil).Once()
@@ -2234,6 +2298,48 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			return svc.GetOrganizationUnitGroupsByPath(context.Background(), path, limit, offset)
 		},
 	)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroupsByPath_LinksUseTreePath() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("GetOrganizationUnitByPath", mock.Anything, []string{"finance"}).
+		Return(providers.OrganizationUnit{ID: "ou-1"}, nil).Once()
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	groupRes := NewOUGroupResolverMock(suite.T())
+	groupRes.On("GetGroupListByOUID", mock.Anything, "ou-1", 2, 2).
+		Return([]Group{{ID: "g1"}, {ID: "g2"}}, nil).Once()
+	groupRes.On("GetGroupCountByOUID", mock.Anything, "ou-1").
+		Return(5, nil).Once()
+
+	service := suite.newServiceWithResolvers(store, newAllowAllAuthz(suite.T()), nil, groupRes)
+	resp, err := service.GetOrganizationUnitGroupsByPath(context.Background(), "finance", 2, 2)
+	suite.Require().Nil(err)
+	suite.Require().NotNil(resp)
+	suite.Require().Equal(5, resp.TotalResults)
+	suite.Require().Len(resp.Links, 4)
+	for _, link := range resp.Links {
+		suite.Contains(link.Href, "/organization-units/tree/finance/groups",
+			"link %q href must use tree path, got %q", link.Rel, link.Href)
+	}
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroupsByPath_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
+		Return(providers.OrganizationUnit{ID: "ou-1"}, nil).Once()
+
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	groupRes := NewOUGroupResolverMock(suite.T())
+	service := suite.newServiceWithResolvers(store, authzMock, nil, groupRes)
+
+	resp, err := service.GetOrganizationUnitGroupsByPath(context.Background(), "root", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(tidcommon.ErrorUnauthorized.Code, err.Code)
 }
 
 func TestOUService_ValidateAndProcessHandlePath(t *testing.T) {
