@@ -223,3 +223,5 @@ token_url
 static_token
 tls_verify
 refresh_skew
+Lissi
+[Dd]isclosable
