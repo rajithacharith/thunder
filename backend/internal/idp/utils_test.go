@@ -304,7 +304,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_UnsupportedProperty() {
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorUnsupportedIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription.DefaultValue, "unsupported_prop")
+	s.Contains(err.ErrorDescription.String(), "unsupported_prop")
 	s.Contains(err.ErrorDescription.DefaultValue, "not supported")
 }
 
@@ -638,7 +638,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeEnabled_Missi
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
 	s.Contains(err.ErrorDescription.DefaultValue, "required property")
-	s.Contains(err.ErrorDescription.DefaultValue, PropIssuer)
+	s.Contains(err.ErrorDescription.String(), PropIssuer)
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeEnabled_MissingJWKS_Fails() {
@@ -655,7 +655,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeEnabled_Missi
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
 	s.Contains(err.ErrorDescription.DefaultValue, "required property")
-	s.Contains(err.ErrorDescription.DefaultValue, PropJwksEndpoint)
+	s.Contains(err.ErrorDescription.String(), PropJwksEndpoint)
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OIDCWithoutTokenExchange_StillRequiresRedirectProps() {
@@ -690,7 +690,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OIDCWithoutTokenExchange_M
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
 	s.Contains(err.ErrorDescription.DefaultValue, "required property")
-	s.Contains(err.ErrorDescription.DefaultValue, PropClientSecret)
+	s.Contains(err.ErrorDescription.String(), PropClientSecret)
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDP_PropertyValidationFailure() {

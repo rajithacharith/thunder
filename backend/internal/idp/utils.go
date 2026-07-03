@@ -20,7 +20,6 @@ package idp
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -154,8 +153,9 @@ func validateAttributeMappingShape(mappings []providers.AttributeMapping) *tidco
 		if seenTargets[local] {
 			return tidcommon.CustomServiceError(ErrorInvalidAttributeConfiguration, tidcommon.I18nMessage{
 				Key: "error.idpservice.attribute_configuration_duplicate_target_description",
-				DefaultValue: fmt.Sprintf(
-					"local attribute name '%s' appears as a mapping target more than once", local),
+				DefaultValue: "local attribute name '{{param(attribute)}}' appears " +
+					"as a mapping target more than once",
+				Params: map[string]string{"attribute": local},
 			})
 		}
 		seenTargets[local] = true
@@ -219,7 +219,8 @@ func validateIDPProperties(ctx context.Context, idpType providers.IDPType, prope
 		if !slices.Contains(allowedProps, propName) {
 			return nil, tidcommon.CustomServiceError(ErrorUnsupportedIDPProperty, tidcommon.I18nMessage{
 				Key:          "error.idpservice.property_not_supported_for_type_description",
-				DefaultValue: fmt.Sprintf("property '%s' is not supported for IDP type '%s'", propName, idpType),
+				DefaultValue: "property '{{param(property)}}' is not supported for IDP type '{{param(idpType)}}'",
+				Params:       map[string]string{"property": propName, "idpType": string(idpType)},
 			})
 		}
 
@@ -227,13 +228,15 @@ func validateIDPProperties(ctx context.Context, idpType providers.IDPType, prope
 		if err != nil {
 			return nil, tidcommon.CustomServiceError(ErrorInvalidIDPProperty, tidcommon.I18nMessage{
 				Key:          "error.idpservice.property_value_get_failed_description",
-				DefaultValue: fmt.Sprintf("failed to get value for property '%s': %v", propName, err),
+				DefaultValue: "failed to get value for property '{{param(property)}}': {{param(error)}}",
+				Params:       map[string]string{"property": propName, "error": err.Error()},
 			})
 		}
 		if strings.TrimSpace(propertyValue) == "" {
 			return nil, tidcommon.CustomServiceError(ErrorInvalidIDPProperty, tidcommon.I18nMessage{
 				Key:          "error.idpservice.property_value_empty_description",
-				DefaultValue: fmt.Sprintf("value cannot be empty for property '%s'", propName),
+				DefaultValue: "value cannot be empty for property '{{param(property)}}'",
+				Params:       map[string]string{"property": propName},
 			})
 		}
 
@@ -253,8 +256,10 @@ func validateIDPProperties(ctx context.Context, idpType providers.IDPType, prope
 	for _, requiredProp := range requiredProps {
 		if !slices.Contains(filteredPropKeys, requiredProp) {
 			return nil, tidcommon.CustomServiceError(ErrorInvalidIDPProperty, tidcommon.I18nMessage{
-				Key:          "error.idpservice.required_property_missing_description",
-				DefaultValue: fmt.Sprintf("required property '%s' is missing for IDP type '%s'", requiredProp, idpType),
+				Key: "error.idpservice.required_property_missing_description",
+				DefaultValue: "required property '{{param(property)}}' is missing " +
+					"for IDP type '{{param(idpType)}}'",
+				Params: map[string]string{"property": requiredProp, "idpType": string(idpType)},
 			})
 		}
 	}
@@ -295,7 +300,8 @@ func ensureOpenIDScope(ctx context.Context, propertyMap map[string]cmodels.Prope
 	if err != nil {
 		return tidcommon.CustomServiceError(ErrorInvalidIDPProperty, tidcommon.I18nMessage{
 			Key:          "error.idpservice.scopes_value_get_failed_description",
-			DefaultValue: fmt.Sprintf("failed to get scopes value: %v", err),
+			DefaultValue: "failed to get scopes value: {{param(error)}}",
+			Params:       map[string]string{"error": err.Error()},
 		})
 	}
 

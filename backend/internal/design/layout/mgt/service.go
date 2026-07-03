@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
@@ -255,7 +256,8 @@ func (ls *layoutMgtService) DeleteLayout(ctx context.Context, id string) *tidcom
 	if count > 0 {
 		return tidcommon.CustomServiceError(ErrorLayoutInUse, tidcommon.I18nMessage{
 			Key:          "error.layoutservice.layout_in_use_description",
-			DefaultValue: fmt.Sprintf("Layout is being used by %d application(s)", count),
+			DefaultValue: "Layout is being used by {{param(count)}} application(s)",
+			Params:       map[string]string{"count": strconv.Itoa(count)},
 		})
 	}
 
@@ -304,7 +306,8 @@ func validatePaginationParams(limit, offset int) *tidcommon.ServiceError {
 	if limit < 1 || limit > serverconst.MaxPageSize {
 		return tidcommon.CustomServiceError(ErrorInvalidLimitValue, tidcommon.I18nMessage{
 			Key:          "error.layoutservice.invalid_limit_value_description",
-			DefaultValue: fmt.Sprintf("Limit must be between 1 and %d", serverconst.MaxPageSize),
+			DefaultValue: "Limit must be between 1 and {{param(max)}}",
+			Params:       map[string]string{"max": strconv.Itoa(serverconst.MaxPageSize)},
 		})
 	}
 

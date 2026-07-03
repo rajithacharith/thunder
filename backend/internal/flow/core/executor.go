@@ -167,7 +167,8 @@ func (e *executor) ValidatePrerequisites(ctx *providers.NodeContext, execResp *p
 		execResp.Error = tidcommon.CustomServiceError(ErrExecutorPrerequisiteNotMet,
 			tidcommon.I18nMessage{
 				Key:          ErrExecutorPrerequisiteNotMet.ErrorDescription.Key,
-				DefaultValue: "Prerequisite not met: " + prerequisite.Identifier,
+				DefaultValue: "Prerequisite not met: {{param(identifier)}}",
+				Params:       map[string]string{"identifier": prerequisite.Identifier},
 			})
 		return false
 	}

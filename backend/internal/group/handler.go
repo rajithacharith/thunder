@@ -126,7 +126,9 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 			Message: ErrorInvalidRequestFormat.Error,
 			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.create_group_request_parse_failed_description",
-				DefaultValue: "Failed to parse request body: " + err.Error()},
+				DefaultValue: "Failed to parse request body: {{param(error)}}",
+				Params:       map[string]string{"error": err.Error()},
+			},
 		}
 		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
@@ -167,7 +169,9 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 			Message: ErrorInvalidRequestFormat.Error,
 			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.create_group_by_path_request_parse_failed_description",
-				DefaultValue: "Failed to parse request body: " + err.Error()},
+				DefaultValue: "Failed to parse request body: {{param(error)}}",
+				Params:       map[string]string{"error": err.Error()},
+			},
 		}
 		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
@@ -244,7 +248,8 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 			Message: ErrorInvalidRequestFormat.Error,
 			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.update_group_request_parse_failed_description",
-				DefaultValue: "Failed to parse request body: " + err.Error(),
+				DefaultValue: "Failed to parse request body: {{param(error)}}",
+				Params:       map[string]string{"error": err.Error()},
 			},
 		}
 		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)

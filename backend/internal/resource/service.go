@@ -419,10 +419,7 @@ func (rs *resourceService) UpdateResourceServer(
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
 		rs.logger.Debug(ctx, "Cannot modify declarative resource server", log.String("id", id))
-		return nil, tidcommon.CustomServiceError(ErrorImmutableResourceServer, tidcommon.I18nMessage{
-			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
-			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
-		})
+		return nil, ErrorImmutableResourceServer.WithParams(map[string]string{"id": id})
 	}
 
 	// Delimiter is always preserved from the existing record
@@ -509,10 +506,7 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
 		rs.logger.Debug(ctx, "Cannot delete declarative resource server", log.String("id", id))
-		return tidcommon.CustomServiceError(ErrorImmutableResourceServer, tidcommon.I18nMessage{
-			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
-			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
-		})
+		return ErrorImmutableResourceServer.WithParams(map[string]string{"id": id})
 	}
 
 	_, err := rs.resourceStore.GetResourceServer(ctx, id)
@@ -784,10 +778,7 @@ func (rs *resourceService) UpdateResource(
 			"Cannot modify resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		return nil, tidcommon.CustomServiceError(ErrorImmutableResource, tidcommon.I18nMessage{
-			Key:          ErrorImmutableResource.ErrorDescription.Key,
-			DefaultValue: fmt.Sprintf(ErrorImmutableResource.ErrorDescription.DefaultValue, id),
-		})
+		return nil, ErrorImmutableResource.WithParams(map[string]string{"id": id})
 	}
 
 	// Validate resource server exists
@@ -851,10 +842,7 @@ func (rs *resourceService) DeleteResource(
 			"Cannot delete resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		return tidcommon.CustomServiceError(ErrorImmutableResource, tidcommon.I18nMessage{
-			Key:          ErrorImmutableResource.ErrorDescription.Key,
-			DefaultValue: fmt.Sprintf(ErrorImmutableResource.ErrorDescription.DefaultValue, id),
-		})
+		return ErrorImmutableResource.WithParams(map[string]string{"id": id})
 	}
 
 	// Validate resource server exists
@@ -1142,7 +1130,7 @@ func (rs *resourceService) UpdateAction(
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(resourceServerID) {
-		return nil, &ErrorImmutableAction
+		return nil, ErrorImmutableAction.WithParams(map[string]string{"id": id})
 	}
 	// Validate resource server exists
 	_, svcErr := rs.validateAndGetResourceServer(ctx, resourceServerID)
@@ -1229,10 +1217,7 @@ func (rs *resourceService) DeleteAction(
 			"Cannot delete action in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		return tidcommon.CustomServiceError(ErrorImmutableAction, tidcommon.I18nMessage{
-			Key:          ErrorImmutableAction.ErrorDescription.Key,
-			DefaultValue: fmt.Sprintf(ErrorImmutableAction.ErrorDescription.DefaultValue, id),
-		})
+		return ErrorImmutableAction.WithParams(map[string]string{"id": id})
 	}
 
 	// Validate resource server exists
@@ -1700,13 +1685,7 @@ func translateTxError(err error) *tidcommon.ServiceError {
 	var consentErr *consentSyncError
 	if errors.As(err, &consentErr) {
 		if consentErr.IsClientError() {
-			return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
-				Key: "error.resourceservice.consent_sync_failed_description",
-				DefaultValue: fmt.Sprintf(
-					ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s",
-					consentErr.Underlying.Code,
-				),
-			})
+			return ErrorConsentSyncFailed.WithParams(map[string]string{"code": consentErr.Underlying.Code})
 		}
 		return &tidcommon.InternalServerError
 	}

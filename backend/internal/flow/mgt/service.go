@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
@@ -641,26 +642,29 @@ func validateInterceptors(interceptors []providers.InterceptorDefinition) *tidco
 		if ic.Name == "" {
 			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
 				Key:          "error.flowmgtservice.interceptor_name_required",
-				DefaultValue: fmt.Sprintf("Interceptor at index %d must have a name", i),
+				DefaultValue: "Interceptor at index {{param(index)}} must have a name",
+				Params:       map[string]string{"index": strconv.Itoa(i)},
 			})
 		}
 		if isDefaultInterceptor(ic.Name) {
-			msg := fmt.Sprintf("Default interceptor '%s' cannot be configured in a flow definition", ic.Name)
 			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
 				Key:          "error.flowmgtservice.interceptor_default_not_configurable",
-				DefaultValue: msg,
+				DefaultValue: "Default interceptor '{{param(name)}}' cannot be configured in a flow definition",
+				Params:       map[string]string{"name": ic.Name},
 			})
 		}
 		if !validModes[ic.Mode] {
 			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
 				Key:          "error.flowmgtservice.interceptor_invalid_mode",
-				DefaultValue: fmt.Sprintf("Interceptor '%s' has invalid mode '%s'", ic.Name, ic.Mode),
+				DefaultValue: "Interceptor '{{param(name)}}' has invalid mode '{{param(mode)}}'",
+				Params:       map[string]string{"name": ic.Name, "mode": string(ic.Mode)},
 			})
 		}
 		if ic.Scope != "" && !validScopes[ic.Scope] {
 			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
 				Key:          "error.flowmgtservice.interceptor_invalid_scope",
-				DefaultValue: fmt.Sprintf("Interceptor '%s' has invalid scope '%s'", ic.Name, ic.Scope),
+				DefaultValue: "Interceptor '{{param(name)}}' has invalid scope '{{param(scope)}}'",
+				Params:       map[string]string{"name": ic.Name, "scope": string(ic.Scope)},
 			})
 		}
 		if ic.Scope == providers.InterceptorScopeSelected && len(ic.ApplyTo) == 0 {
@@ -689,7 +693,8 @@ func (s *flowMgtService) validateInterceptorRegistration(
 		if !s.interceptorRegistry.IsRegistered(ic.Name) {
 			return tidcommon.CustomServiceError(ErrorInvalidFlowData, tidcommon.I18nMessage{
 				Key:          "error.flowmgtservice.interceptor_not_registered",
-				DefaultValue: fmt.Sprintf("Interceptor '%s' is not registered", ic.Name),
+				DefaultValue: "Interceptor '{{param(name)}}' is not registered",
+				Params:       map[string]string{"name": ic.Name},
 			})
 		}
 	}

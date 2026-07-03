@@ -440,7 +440,7 @@ var (
 		},
 		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.agentservice.consent_sync_failed_description",
-			DefaultValue: "Failed to sync agent attribute changes with the consent service",
+			DefaultValue: "Failed to sync agent attribute changes with the consent service : code - {{param(code)}}",
 		},
 	}
 
