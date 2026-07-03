@@ -25,6 +25,10 @@ Get <ProductName /> running locally. Follow [Get <ProductName />](/docs/next/gui
 
 Add the Wayfinder origin to the server-config `cors` section. Create or update `config/resources/server_configs/cors.yaml`, or use `PUT /server-config/cors` after startup.
 
+:::note Running from source with make run
+In development, `make run` (or `.\build.ps1 run` on Windows) seeds the Console and Gate origins automatically, so you only need to add the sample app's origin here. Distributions started with `start.sh` are not seeded; configure all origins manually.
+:::
+
 ```yaml
 name: cors
 value:
