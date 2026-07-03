@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 
 	mock "github.com/stretchr/testify/mock"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/user"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
@@ -491,6 +492,76 @@ func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// GetUserUsages provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetUserUsages(ctx context.Context, userID string) (*resourcedependency.DependenciesResponse, *common.ServiceError) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserUsages")
+	}
+
+	var r0 *resourcedependency.DependenciesResponse
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*resourcedependency.DependenciesResponse, *common.ServiceError)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *resourcedependency.DependenciesResponse); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*resourcedependency.DependenciesResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*common.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_GetUserUsages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserUsages'
+type UserServiceInterfaceMock_GetUserUsages_Call struct {
+	*mock.Call
+}
+
+// GetUserUsages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+func (_e *UserServiceInterfaceMock_Expecter) GetUserUsages(ctx interface{}, userID interface{}) *UserServiceInterfaceMock_GetUserUsages_Call {
+	return &UserServiceInterfaceMock_GetUserUsages_Call{Call: _e.mock.On("GetUserUsages", ctx, userID)}
+}
+
+func (_c *UserServiceInterfaceMock_GetUserUsages_Call) Run(run func(ctx context.Context, userID string)) *UserServiceInterfaceMock_GetUserUsages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserUsages_Call) Return(dependenciesResponse *resourcedependency.DependenciesResponse, serviceError *common.ServiceError) *UserServiceInterfaceMock_GetUserUsages_Call {
+	_c.Call.Return(dependenciesResponse, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserUsages_Call) RunAndReturn(run func(ctx context.Context, userID string) (*resourcedependency.DependenciesResponse, *common.ServiceError)) *UserServiceInterfaceMock_GetUserUsages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUsersByPath provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) GetUsersByPath(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}, includeDisplay bool) (*user.UserListResponse, *common.ServiceError) {
 	ret := _mock.Called(ctx, handlePath, limit, offset, filters, includeDisplay)
@@ -641,6 +712,46 @@ func (_c *UserServiceInterfaceMock_ResolveUserOUHandle_Call) Return(serviceError
 
 func (_c *UserServiceInterfaceMock_ResolveUserOUHandle_Call) RunAndReturn(run func(ctx context.Context, user1 *user.User) *common.ServiceError) *UserServiceInterfaceMock_ResolveUserOUHandle_Call {
 	_c.Call.Return(run)
+	return _c
+}
+
+// SetDependencyRegistry provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) SetDependencyRegistry(r resourcedependency.Registry) {
+	_mock.Called(r)
+	return
+}
+
+// UserServiceInterfaceMock_SetDependencyRegistry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetDependencyRegistry'
+type UserServiceInterfaceMock_SetDependencyRegistry_Call struct {
+	*mock.Call
+}
+
+// SetDependencyRegistry is a helper method to define mock.On call
+//   - r resourcedependency.Registry
+func (_e *UserServiceInterfaceMock_Expecter) SetDependencyRegistry(r interface{}) *UserServiceInterfaceMock_SetDependencyRegistry_Call {
+	return &UserServiceInterfaceMock_SetDependencyRegistry_Call{Call: _e.mock.On("SetDependencyRegistry", r)}
+}
+
+func (_c *UserServiceInterfaceMock_SetDependencyRegistry_Call) Run(run func(r resourcedependency.Registry)) *UserServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 resourcedependency.Registry
+		if args[0] != nil {
+			arg0 = args[0].(resourcedependency.Registry)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_SetDependencyRegistry_Call) Return() *UserServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_SetDependencyRegistry_Call) RunAndReturn(run func(r resourcedependency.Registry)) *UserServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Run(run)
 	return _c
 }
 

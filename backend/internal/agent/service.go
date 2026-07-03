@@ -392,12 +392,18 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *tidcomm
 }
 
 // GetResourceDependencies returns the agents that reference the resource identified by
-// (resourceType, id). It implements the resourcedependency.Provider interface. The
-// inbound-client store resolves which reference types are tracked, so no per-type handling is
-// needed here. The number of referencing entities is bounded by MaxCompositeStoreRecords
-// (the inbound-client store limit).
+// (resourceType, id). It implements the resourcedependency.Provider interface.
+//
+// Agents reference a user through their owner attribute, which lives on the agent entity rather
+// than in the inbound-client store, so user dependencies are resolved separately. All other
+// reference types are resolved via the inbound-client store, which decides what is tracked. The
+// number of referencing entities is bounded by MaxCompositeStoreRecords.
 func (s *agentService) GetResourceDependencies(
 	ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error) {
+	if resourceType == resourcedependency.ResourceTypeUser {
+		return s.getAgentsByOwner(ctx, id)
+	}
+
 	ids, _, err := s.inboundClientService.GetEntityIDsByReference(
 		ctx, resourceType, id, serverconst.MaxCompositeStoreRecords, 0)
 	if err != nil {
@@ -421,6 +427,38 @@ func (s *agentService) GetResourceDependencies(
 			continue
 		}
 		name, _, _, _ := readSystemAttributes(e.SystemAttributes)
+		usages = append(usages, resourcedependency.ResourceDependency{
+			ResourceType:     resourcedependency.ResourceTypeAgent,
+			ID:               e.ID,
+			DisplayName:      name,
+			BehaviorOnDelete: resourcedependency.BehaviorFallback,
+		})
+	}
+	return usages, nil
+}
+
+// getAgentsByOwner returns the agents that list the given user as their owner. The owner is stored
+// in the agent entity's system attributes, which the entity list filter does not search (it only
+// matches the public attributes column), so agents are listed and matched on owner in memory. The
+// number of agents scanned is bounded by MaxCompositeStoreRecords.
+func (s *agentService) getAgentsByOwner(
+	ctx context.Context, ownerID string) ([]resourcedependency.ResourceDependency, error) {
+	entities, err := s.entityService.GetEntityList(
+		ctx, providers.EntityCategoryAgent, serverconst.MaxCompositeStoreRecords, 0, nil)
+	if err != nil {
+		s.logger.Error(ctx, "Failed to list agents", log.Error(err))
+		return nil, err
+	}
+
+	usages := make([]resourcedependency.ResourceDependency, 0)
+	for _, e := range entities {
+		if e.Category != providers.EntityCategoryAgent {
+			continue
+		}
+		name, _, owner, _ := readSystemAttributes(e.SystemAttributes)
+		if owner != ownerID {
+			continue
+		}
 		usages = append(usages, resourcedependency.ResourceDependency{
 			ResourceType:     resourcedependency.ResourceTypeAgent,
 			ID:               e.ID,

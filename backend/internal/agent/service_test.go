@@ -2173,6 +2173,58 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_FiltersOutNonAge
 	assert.Equal(suite.T(), "agent-1", result[0].ID)
 }
 
+// Owner dependencies are resolved by listing agents and matching the owner system attribute in
+// memory, because the entity list filter only searches the public attributes column.
+func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Success() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntityList")
+
+	ownedAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent One", "owner": "user-1"})
+	otherAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent Two", "owner": "user-2"})
+	mockEntity.On("GetEntityList", mock.Anything, providers.EntityCategoryAgent,
+		serverconst.MaxCompositeStoreRecords, 0, mock.Anything).
+		Return([]providers.Entity{
+			{ID: "agent-1", Category: providers.EntityCategoryAgent, SystemAttributes: ownedAttrs},
+			{ID: "agent-2", Category: providers.EntityCategoryAgent, SystemAttributes: otherAttrs},
+		}, nil)
+
+	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	assert.NoError(suite.T(), err)
+	suite.Require().Len(result, 1)
+	assert.Equal(suite.T(), resourcedependency.ResourceTypeAgent, result[0].ResourceType)
+	assert.Equal(suite.T(), resourcedependency.BehaviorFallback, result[0].BehaviorOnDelete)
+	assert.Equal(suite.T(), "agent-1", result[0].ID)
+	assert.Equal(suite.T(), "Agent One", result[0].DisplayName)
+}
+
+func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Empty() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntityList")
+
+	otherAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent Two", "owner": "user-2"})
+	mockEntity.On("GetEntityList", mock.Anything, providers.EntityCategoryAgent,
+		serverconst.MaxCompositeStoreRecords, 0, mock.Anything).
+		Return([]providers.Entity{
+			{ID: "agent-2", Category: providers.EntityCategoryAgent, SystemAttributes: otherAttrs},
+		}, nil)
+
+	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Error() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntityList")
+	mockEntity.On("GetEntityList", mock.Anything, providers.EntityCategoryAgent,
+		serverconst.MaxCompositeStoreRecords, 0, mock.Anything).
+		Return(nil, errors.New("store error"))
+
+	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	assert.Nil(suite.T(), result)
+	assert.Error(suite.T(), err)
+}
+
 // --- error-branch coverage ---
 
 func (suite *AgentServiceTestSuite) TestCreateAgent_EntityCreationFails_NonMappableError() {

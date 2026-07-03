@@ -35,6 +35,7 @@ import (
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -61,15 +62,19 @@ type UserServiceInterface interface {
 		credentials json.RawMessage) *tidcommon.ServiceError
 	DeleteUser(ctx context.Context, userID string) *tidcommon.ServiceError
 	ResolveUserOUHandle(ctx context.Context, user *User) *tidcommon.ServiceError
+	SetDependencyRegistry(r resourcedependency.Registry)
+	GetUserUsages(ctx context.Context, userID string) (
+		*resourcedependency.DependenciesResponse, *tidcommon.ServiceError)
 }
 
 // userService is the default implementation of the UserServiceInterface.
 type userService struct {
-	authzService      sysauthz.SystemAuthorizationServiceInterface
-	entityService     entity.EntityServiceInterface
-	ouService         oupkg.OrganizationUnitServiceInterface
-	entityTypeService entitytype.EntityTypeServiceInterface
-	uuidGenerator     func() (string, error)
+	authzService       sysauthz.SystemAuthorizationServiceInterface
+	entityService      entity.EntityServiceInterface
+	ouService          oupkg.OrganizationUnitServiceInterface
+	entityTypeService  entitytype.EntityTypeServiceInterface
+	uuidGenerator      func() (string, error)
+	dependencyRegistry resourcedependency.Registry
 }
 
 // newUserService creates a new instance of userService with injected dependencies.
@@ -781,6 +786,56 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *tidcommon
 
 	logger.Debug(ctx, "Successfully deleted user", log.MaskedString(log.LoggerKeyUserID, userID))
 	return nil
+}
+
+// SetDependencyRegistry injects the dependency registry. Called by servicemanager after the
+// provider services are initialized to avoid a cyclic import.
+func (us *userService) SetDependencyRegistry(r resourcedependency.Registry) {
+	us.dependencyRegistry = r
+}
+
+// GetUserUsages returns the resources that reference this user, such as agents that list the user
+// as their owner. It is informational — it drives the pre-delete confirmation dialog and does not
+// gate deletion on the server.
+func (us *userService) GetUserUsages(
+	ctx context.Context, userID string,
+) (*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if userID == "" {
+		return nil, &ErrorMissingUserID
+	}
+
+	existingEntity, err := us.entityService.GetEntity(ctx, userID)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(ctx, logger, "Failed to retrieve user", err,
+			log.MaskedString(log.LoggerKeyUserID, userID))
+	}
+	if existingEntity.Category != providers.EntityCategoryUser {
+		return nil, &ErrorUserNotFound
+	}
+
+	if us.dependencyRegistry == nil {
+		logger.Warn(ctx, "Dependency registry not set; returning unknown dependencies",
+			log.MaskedString(log.LoggerKeyUserID, userID))
+		return &resourcedependency.DependenciesResponse{
+			TotalResults: nil,
+			Count:        0,
+			Summary:      nil,
+			Usages:       []resourcedependency.ResourceDependency{},
+		}, nil
+	}
+
+	result, err := us.dependencyRegistry.GetDependencies(ctx, resourcedependency.ResourceTypeUser, userID)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(ctx, logger, "Failed to get user usages", err,
+			log.MaskedString(log.LoggerKeyUserID, userID))
+	}
+
+	return result, nil
 }
 
 // populateUserDisplayNames resolves display names for a slice of users in-place.
