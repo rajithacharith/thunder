@@ -132,6 +132,7 @@ func (s *MappingTestSuite) TestWriteServiceErrorStatusMapping() {
 		{&idp.ErrorInvalidIDPID, http.StatusBadRequest},
 		{&notification.ErrorSenderNotFound, http.StatusNotFound},
 		{&notification.ErrorDuplicateSenderName, http.StatusConflict},
+		{&notification.ErrorSenderHasBlockingDependencies, http.StatusConflict},
 		{&notification.ErrorInvalidProvider, http.StatusBadRequest},
 		{&tidcommon.InternalServerError, http.StatusInternalServerError},
 	}

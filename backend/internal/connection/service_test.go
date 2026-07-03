@@ -197,6 +197,22 @@ func (s *ServiceTestSuite) TestListSMSByProviderFilters() {
 	s.Len(got, 2)
 }
 
+func (s *ServiceTestSuite) TestListSMSByProviderError() {
+	s.mockNotif.On("ListSenders", mock.Anything).
+		Return(([]ncommon.NotificationSenderDTO)(nil), &tidcommon.InternalServerError)
+
+	_, svcErr := s.svc.listSMSByProvider(context.Background(), ncommon.MessageProviderTypeTwilio)
+	s.NotNil(svcErr)
+}
+
+func (s *ServiceTestSuite) TestSMSProviderCountsError() {
+	s.mockNotif.On("ListSenders", mock.Anything).
+		Return(([]ncommon.NotificationSenderDTO)(nil), &tidcommon.InternalServerError)
+
+	_, svcErr := s.svc.smsProviderCounts(context.Background())
+	s.NotNil(svcErr)
+}
+
 func (s *ServiceTestSuite) TestSMSProviderCountsIgnoresNonMessage() {
 	s.mockNotif.On("ListSenders", mock.Anything).Return([]ncommon.NotificationSenderDTO{
 		{ID: "1", Type: ncommon.NotificationSenderTypeMessage, Provider: ncommon.MessageProviderTypeTwilio},
@@ -218,6 +234,24 @@ func (s *ServiceTestSuite) TestGetSMSByProviderMismatchReturnsNotFound() {
 	_, svcErr := s.svc.getSMSByProvider(context.Background(), ncommon.MessageProviderTypeTwilio, "x")
 	s.Require().NotNil(svcErr)
 	s.Equal(notification.ErrorSenderNotFound.Code, svcErr.Code)
+}
+
+func (s *ServiceTestSuite) TestGetSMSByProviderError() {
+	s.mockNotif.On("GetSender", mock.Anything, "missing").
+		Return((*ncommon.NotificationSenderDTO)(nil), &notification.ErrorSenderNotFound)
+
+	_, svcErr := s.svc.getSMSByProvider(context.Background(), ncommon.MessageProviderTypeTwilio, "missing")
+	s.Require().NotNil(svcErr)
+	s.Equal(notification.ErrorSenderNotFound.Code, svcErr.Code)
+}
+
+func (s *ServiceTestSuite) TestDeleteSMSByProviderGetFails() {
+	s.mockNotif.On("GetSender", mock.Anything, "missing").
+		Return((*ncommon.NotificationSenderDTO)(nil), &notification.ErrorSenderNotFound)
+
+	svcErr := s.svc.deleteSMSByProvider(context.Background(), ncommon.MessageProviderTypeTwilio, "missing")
+	s.Require().NotNil(svcErr)
+	s.mockNotif.AssertNotCalled(s.T(), "DeleteSender", mock.Anything, mock.Anything)
 }
 
 func (s *ServiceTestSuite) TestUpdateSMSOmittedSecretKeepsStored() {

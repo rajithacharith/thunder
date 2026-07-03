@@ -1664,6 +1664,7 @@ const translations = {
     'error.loadFailed': 'Failed to load connection.',
     'validation.required': 'This field is required.',
     'validation.url': 'Enter a valid URL.',
+    'validation.accountSid': 'Enter a valid Account SID: “AC” followed by 32 hexadecimal characters.',
   },
 
   // ============================================================================

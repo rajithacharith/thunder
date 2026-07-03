@@ -125,7 +125,8 @@ func writeServiceError(ctx context.Context, w http.ResponseWriter, svcErr *tidco
 			status = http.StatusNotFound
 		case idp.ErrorIDPAlreadyExists.Code,
 			idp.ErrorIDPHasBlockingDependencies.Code,
-			notification.ErrorDuplicateSenderName.Code:
+			notification.ErrorDuplicateSenderName.Code,
+			notification.ErrorSenderHasBlockingDependencies.Code:
 			status = http.StatusConflict
 		default:
 			status = http.StatusBadRequest
