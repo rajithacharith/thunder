@@ -28,6 +28,7 @@ import (
 	sysconfig "github.com/thunder-id/thunderid/internal/system/config"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/declarative_resource/entity"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
@@ -324,7 +325,7 @@ func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByThemeID_Empty() {
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
-	ids, total, err := store.GetEntityIDsByThemeID(ctx, "theme-1", 10, 0)
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeTheme, "theme-1", 10, 0)
 	suite.NoError(err)
 	suite.Equal(0, total)
 	suite.Empty(ids)
@@ -338,10 +339,37 @@ func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByThemeID_MatchesOnThemeID
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-2", ThemeID: "theme-b"}))
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-3", ThemeID: "theme-a"}))
 
-	ids, total, err := store.GetEntityIDsByThemeID(ctx, "theme-a", 10, 0)
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeTheme, "theme-a", 10, 0)
 	suite.NoError(err)
 	suite.Equal(2, total)
 	suite.ElementsMatch([]string{"app-1", "app-3"}, ids)
+}
+
+func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByReference_MatchesFlowAcrossSlots() {
+	store := newFileBasedStoreForTest()
+	ctx := context.Background()
+
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", AuthFlowID: "flow-x"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-2", RegistrationFlowID: "flow-x"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-3", RecoveryFlowID: "flow-x"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-4", AuthFlowID: "flow-y"}))
+
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeFlow, "flow-x", 10, 0)
+	suite.NoError(err)
+	suite.Equal(3, total)
+	suite.ElementsMatch([]string{"app-1", "app-2", "app-3"}, ids)
+}
+
+func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByReference_UnknownTypeReturnsEmpty() {
+	store := newFileBasedStoreForTest()
+	ctx := context.Background()
+
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", ThemeID: "theme-a"}))
+
+	ids, total, err := store.GetEntityIDsByReference(ctx, "unknown", "theme-a", 10, 0)
+	suite.NoError(err)
+	suite.Equal(0, total)
+	suite.Empty(ids)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByThemeID_Pagination() {
@@ -352,7 +380,7 @@ func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByThemeID_Pagination() {
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-2", ThemeID: "theme-a"}))
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-3", ThemeID: "theme-a"}))
 
-	ids, total, err := store.GetEntityIDsByThemeID(ctx, "theme-a", 2, 1)
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeTheme, "theme-a", 2, 1)
 	suite.NoError(err)
 	suite.Equal(3, total)
 	suite.Len(ids, 2)
@@ -364,7 +392,7 @@ func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByThemeID_OffsetBeyondTota
 
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", ThemeID: "theme-a"}))
 
-	ids, total, err := store.GetEntityIDsByThemeID(ctx, "theme-a", 10, 5)
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeTheme, "theme-a", 10, 5)
 	suite.NoError(err)
 	suite.Equal(1, total)
 	suite.Empty(ids)
@@ -376,8 +404,35 @@ func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByThemeID_ZeroLimit() {
 
 	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", ThemeID: "theme-a"}))
 
-	ids, total, err := store.GetEntityIDsByThemeID(ctx, "theme-a", 0, 0)
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeTheme, "theme-a", 0, 0)
 	suite.NoError(err)
 	suite.Equal(1, total)
+	suite.Empty(ids)
+}
+
+func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByFlowID_MatchesAnyFlowSlot() {
+	store := newFileBasedStoreForTest()
+	ctx := context.Background()
+
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", AuthFlowID: "flow-x"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-2", RegistrationFlowID: "flow-x"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-3", RecoveryFlowID: "flow-x"}))
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-4", AuthFlowID: "flow-y"}))
+
+	ids, total, err := store.GetEntityIDsByReference(ctx, resourcedependency.ResourceTypeFlow, "flow-x", 10, 0)
+	suite.NoError(err)
+	suite.Equal(3, total)
+	suite.ElementsMatch([]string{"app-1", "app-2", "app-3"}, ids)
+}
+
+func (suite *FileBasedStoreTestSuite) TestGetEntityIDsByReference_UnknownType() {
+	store := newFileBasedStoreForTest()
+	ctx := context.Background()
+
+	suite.NoError(store.CreateInboundClient(ctx, inboundmodel.InboundClient{ID: "app-1", ThemeID: "theme-a"}))
+
+	ids, total, err := store.GetEntityIDsByReference(ctx, "layout", "layout-1", 10, 0)
+	suite.NoError(err)
+	suite.Equal(0, total)
 	suite.Empty(ids)
 }

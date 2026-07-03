@@ -2103,7 +2103,9 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_ExplicitOUIDChanged_Validate
 // --- GetResourceDependencies tests ---
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_UnknownResourceType() {
-	svc, _, _, _ := suite.setupService()
+	svc, _, mockInbound, _ := suite.setupService()
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, "unknown", "id-1",
+		serverconst.MaxCompositeStoreRecords, 0).Return([]string{}, 0, nil)
 
 	result, err := svc.GetResourceDependencies(context.Background(), "unknown", "id-1")
 	assert.NoError(suite.T(), err)
@@ -2112,7 +2114,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_UnknownResourceT
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_InboundClientError() {
 	svc, _, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return(nil, 0, errors.New("store error"))
 
 	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeTheme, "theme-1")
@@ -2122,7 +2125,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_InboundClientErr
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_EmptyIDs() {
 	svc, _, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{}, 0, nil)
 
 	result, err := svc.GetResourceDependencies(context.Background(), resourcedependency.ResourceTypeTheme, "theme-1")
@@ -2132,7 +2136,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_EmptyIDs() {
 
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_Success() {
 	svc, mockEntity, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"agent-1"}, 1, nil)
 
 	sysAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent One"})
@@ -2152,7 +2157,8 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_Success() {
 // Applications share the inbound-client store; the agent provider must skip non-agent entities.
 func (suite *AgentServiceTestSuite) TestGetResourceDependencies_FiltersOutNonAgentEntities() {
 	svc, mockEntity, mockInbound, _ := suite.setupService()
-	mockInbound.On("GetEntityIDsByThemeID", mock.Anything, "theme-1", serverconst.MaxCompositeStoreRecords, 0).
+	mockInbound.On("GetEntityIDsByReference", mock.Anything, resourcedependency.ResourceTypeTheme, "theme-1",
+		serverconst.MaxCompositeStoreRecords, 0).
 		Return([]string{"agent-1", "app-1"}, 2, nil)
 
 	sysAttrs, _ := json.Marshal(map[string]interface{}{"name": "Agent One"})

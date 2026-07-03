@@ -49,6 +49,14 @@ vi.mock('../../api/useDeleteFlow', () => ({
   default: () => mockDeleteFlow,
 }));
 
+// Mock useGetFlowUsages hook
+vi.mock('../../api/useGetFlowUsages', () => ({
+  default: () => ({
+    data: undefined,
+    isLoading: false,
+  }),
+}));
+
 describe('FlowDeleteDialog', () => {
   const mockOnClose = vi.fn();
   const mockOnSuccess = vi.fn();
