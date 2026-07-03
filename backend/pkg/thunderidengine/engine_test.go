@@ -20,11 +20,13 @@ package thunderidengine
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	joseconfig "github.com/thunder-id/thunderid/internal/system/jose/config"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
@@ -169,6 +171,31 @@ func (suite *EngineTestSuite) TestEngineOptions() {
 	assert.Equal(suite.T(), customExec["custom"], ctx.customExecutors["custom"])
 	assert.NotNil(suite.T(), ctx.observabilitySvc)
 	assert.NotNil(suite.T(), ctx.authzProvider)
+}
+
+func (suite *EngineTestSuite) TestJOSEConfig() {
+	ctx := &engineContext{
+		jwtConfig: engineconfig.JWTConfig{
+			Issuer:         "https://auth.example.com",
+			ValidityPeriod: 3600,
+			Audience:       "https://api.example.com",
+			PreferredKeyID: "key-1",
+			Leeway:         30,
+		},
+		serverConfig: engineconfig.ServerConfig{
+			SecurityConfig: engineconfig.SecurityConfig{JWKSCacheTTL: 120},
+		},
+	}
+
+	expected := joseconfig.Config{
+		Issuer:         "https://auth.example.com",
+		ValidityPeriod: 3600,
+		Audience:       "https://api.example.com",
+		PreferredKeyID: "key-1",
+		Leeway:         30,
+		JWKSCacheTTL:   120 * time.Second,
+	}
+	assert.Equal(suite.T(), expected, ctx.joseConfig())
 }
 
 func (suite *EngineTestSuite) TestWithCustomExecutors_MergesIntoExistingMap() {
