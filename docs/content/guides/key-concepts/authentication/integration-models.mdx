@@ -51,11 +51,13 @@ The core principle is **shared responsibility**: <ProductName /> enforces authen
 Choose this approach when your application must render its own authentication screens (no redirects to hosted pages) while <ProductName /> enforces authentication logic, MFA, and policies server-side. This model suits native mobile and desktop apps, or confidential server-side applications, where the client can be trusted to drive the flow directly.
 
 :::warning
-App-native flow execution is **not supported for browser-based single-page applications (SPAs)** such as React, Angular, or Vue apps. SPAs are public clients that cannot be verified when calling the Flow Execution API directly, so they must use the [Redirect-Based](#redirect-based) model with the OAuth 2.0 Authorization Code grant and PKCE.
+App-native **sign-in** is **not supported for browser-based single-page applications (SPAs)** such as React, Angular, or Vue apps. SPAs are public clients that cannot be verified when calling the Flow Execution API directly, so they must sign users in through the [Redirect-Based](#redirect-based) model with the OAuth 2.0 Authorization Code grant and PKCE. Registration and recovery have no redirect-based equivalent today, so SPAs continue to drive those flows through the Flow Execution API.
 :::
 
 :::note[Grant Type Requirement]
-The Flow Execution API only accepts new flow initiation requests from applications that do **not** have the `authorization_code` grant type configured. Applications registered with `authorization_code` must initiate authentication through the [Authorization endpoint](/docs/next/apis/#tag/authorization) (`GET /oauth2/authorize`), which then drives the flow internally. Continuation requests that carry a valid `executionId` are always accepted regardless of grant type.
+This restriction applies to **authentication** flows only. The Flow Execution API rejects a new authentication-flow initiation request (`flowType: AUTHENTICATION` with no `executionId`) from an application configured with the `authorization_code` grant type. Such applications must initiate authentication through the [Authorization endpoint](/docs/next/apis/#tag/authorization) (`GET /oauth2/authorize`), which then drives the flow internally.
+
+Registration, recovery, and user onboarding flows are **not** restricted — they have no redirect-based equivalent and can still be initiated directly through the Flow Execution API regardless of grant type. Continuation requests that carry a valid `executionId` are also always accepted.
 :::
 
 ### Key Features
