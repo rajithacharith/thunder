@@ -84,6 +84,7 @@ describe('ExportPage', () => {
           flows: ['*'],
           groups: ['*'],
           agents: ['*'],
+          serverConfigs: ['*'],
         }),
       );
     });

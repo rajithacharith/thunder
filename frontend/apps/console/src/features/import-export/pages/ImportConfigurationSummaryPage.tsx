@@ -44,6 +44,7 @@ import {
   Layers,
   Palette,
   Server,
+  Settings,
   ShieldCheck,
   Upload,
   UserRoundCog,
@@ -417,6 +418,14 @@ const RESOURCE_VIEWS: ResourceView[] = [
     getKey: (item, idx) => item.id ?? item.name ?? `group-${idx}`,
     getName: (item, t) => item.name ?? t('configureExport.fallback.unnamedGroup'),
     renderDetails: (item) => (item.description ? detailLine(item.description) : null),
+  },
+  {
+    type: 'server_config',
+    id: 'server-configs',
+    icon: Settings,
+    getLabel: (t) => t('configureExport.labels.serverConfigs'),
+    getKey: (item, idx) => item.name ?? `server-config-${idx}`,
+    getName: (item, t) => item.name ?? t('configureExport.fallback.unnamedServerConfig'),
   },
 ];
 
