@@ -2192,7 +2192,7 @@ func (suite *AgentServiceTestSuite) TestGetResourceDependencies_ByOwner_Success(
 	assert.NoError(suite.T(), err)
 	suite.Require().Len(result, 1)
 	assert.Equal(suite.T(), resourcedependency.ResourceTypeAgent, result[0].ResourceType)
-	assert.Equal(suite.T(), resourcedependency.BehaviorFallback, result[0].BehaviorOnDelete)
+	assert.Equal(suite.T(), resourcedependency.BehaviorRestrict, result[0].BehaviorOnDelete)
 	assert.Equal(suite.T(), "agent-1", result[0].ID)
 	assert.Equal(suite.T(), "Agent One", result[0].DisplayName)
 }

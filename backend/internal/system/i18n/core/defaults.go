@@ -1069,6 +1069,8 @@ var defaultMessages = map[string]string{
 	"error.userservice.organization_unit_not_found_description": "The specified organization unit does not exist",
 	"error.userservice.schema_validation_failed": "Schema validation failed",
 	"error.userservice.schema_validation_failed_description": "User attributes do not conform to the required schema",
+	"error.userservice.user_has_blocking_dependencies": "User cannot be deleted",
+	"error.userservice.user_has_blocking_dependencies_description": "The user cannot be deleted because other resources depend on it. Remove or reassign them first.",
 	"error.userservice.user_not_found": "User not found",
 	"error.userservice.user_not_found_description": "The user with the specified id does not exist",
 	"error.userservice.user_type_not_found": "User type not found",

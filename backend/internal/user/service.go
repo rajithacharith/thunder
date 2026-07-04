@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
@@ -774,6 +775,11 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *tidcommon
 		return svcErr
 	}
 
+	// Refuse deletion while other resources block it (e.g. agents owned by the user).
+	if svcErr := us.ensureNoBlockingDependencies(ctx, userID, logger); svcErr != nil {
+		return svcErr
+	}
+
 	err = us.entityService.DeleteEntity(ctx, userID)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -786,6 +792,64 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *tidcommon
 
 	logger.Debug(ctx, "Successfully deleted user", log.MaskedString(log.LoggerKeyUserID, userID))
 	return nil
+}
+
+// ensureNoBlockingDependencies refuses deletion when other resources depend on the user in a way
+// that forbids it (behaviorOnDelete == restrict), such as agents that list the user as their owner.
+// Because deletion is destructive, it fails closed: if dependency data cannot be determined, the
+// deletion is refused rather than allowed.
+func (us *userService) ensureNoBlockingDependencies(
+	ctx context.Context, userID string, logger *log.Logger) *tidcommon.ServiceError {
+	if us.dependencyRegistry == nil {
+		logger.Error(ctx, "Dependency registry not set; refusing to delete user",
+			log.MaskedString(log.LoggerKeyUserID, userID))
+		return &tidcommon.InternalServerError
+	}
+
+	deps, err := us.dependencyRegistry.GetDependencies(ctx, resourcedependency.ResourceTypeUser, userID)
+	if err != nil {
+		return logErrorAndReturnServerError(ctx, logger, "Failed to evaluate user dependencies", err,
+			log.MaskedString(log.LoggerKeyUserID, userID))
+	}
+	// Fail closed: nil TotalResults means a provider failed to report, so usage is unknown.
+	if deps == nil || deps.TotalResults == nil {
+		logger.Error(ctx, "User dependency data unavailable; refusing to delete user",
+			log.MaskedString(log.LoggerKeyUserID, userID))
+		return &tidcommon.InternalServerError
+	}
+
+	blocking := resourcedependency.BlockingUsages(deps)
+	if len(blocking) == 0 {
+		return nil
+	}
+
+	logger.Debug(ctx, "User has blocking dependencies; deletion refused",
+		log.MaskedString(log.LoggerKeyUserID, userID), log.Int("blockingCount", len(blocking)))
+	return tidcommon.CustomServiceError(ErrorUserHasBlockingDependencies, tidcommon.I18nMessage{
+		Key: "error.userservice.user_has_blocking_dependencies_description",
+		DefaultValue: fmt.Sprintf(
+			"The user cannot be deleted because %s depend on it. Remove or reassign them first.",
+			summarizeBlockingUsages(blocking)),
+	})
+}
+
+// summarizeBlockingUsages renders a deterministic, human-readable summary of blocking dependencies
+// grouped by resource type, e.g. "2 agent(s)".
+func summarizeBlockingUsages(usages []resourcedependency.ResourceDependency) string {
+	counts := make(map[string]int)
+	for _, u := range usages {
+		counts[u.ResourceType]++
+	}
+	types := make([]string, 0, len(counts))
+	for rt := range counts {
+		types = append(types, rt)
+	}
+	sort.Strings(types)
+	parts := make([]string, 0, len(types))
+	for _, rt := range types {
+		parts = append(parts, fmt.Sprintf("%d %s(s)", counts[rt], rt))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // SetDependencyRegistry injects the dependency registry. Called by servicemanager after the

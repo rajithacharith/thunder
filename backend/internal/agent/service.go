@@ -459,11 +459,12 @@ func (s *agentService) getAgentsByOwner(
 		if owner != ownerID {
 			continue
 		}
+		// An agent cannot exist without its owner, so ownership blocks the owner's deletion.
 		usages = append(usages, resourcedependency.ResourceDependency{
 			ResourceType:     resourcedependency.ResourceTypeAgent,
 			ID:               e.ID,
 			DisplayName:      name,
-			BehaviorOnDelete: resourcedependency.BehaviorFallback,
+			BehaviorOnDelete: resourcedependency.BehaviorRestrict,
 		})
 	}
 	return usages, nil

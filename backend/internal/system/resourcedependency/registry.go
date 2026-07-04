@@ -33,6 +33,30 @@ const loggerComponentName = "DependencyRegistry"
 // resolves it to the system default at read time when the target is deleted.
 const BehaviorFallback = "fallback"
 
+// BehaviorRestrict indicates the referencing resource forbids deletion of the target while the
+// reference exists; the caller must remove or reassign the reference before the target can be deleted.
+const BehaviorRestrict = "restrict"
+
+// isBlocking reports whether a behaviorOnDelete value forbids deletion of the referenced resource.
+func isBlocking(behaviorOnDelete string) bool {
+	return behaviorOnDelete == BehaviorRestrict
+}
+
+// BlockingUsages returns the dependencies in the response whose behaviorOnDelete forbids deletion
+// of the target resource. Returns an empty slice when there are none.
+func BlockingUsages(resp *DependenciesResponse) []ResourceDependency {
+	blocking := make([]ResourceDependency, 0)
+	if resp == nil {
+		return blocking
+	}
+	for _, u := range resp.Usages {
+		if isBlocking(u.BehaviorOnDelete) {
+			blocking = append(blocking, u)
+		}
+	}
+	return blocking
+}
+
 // Resource type identifiers shared across dependency providers and consumers.
 const (
 	ResourceTypeTheme       = "theme"
