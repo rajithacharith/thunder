@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -35,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/introspect"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/par"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/token"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/userinfo"
@@ -82,12 +83,19 @@ func Initialize(
 	if err != nil {
 		return err
 	}
+	// Wire the revocation feature: registers the RFC 7009 endpoint (write path) and returns the
+	// shared deny-list enforcement service (read path) — a single enforcement instance with a circuit breaker
+	// and fail-closed policy, injected across the hot path: refresh grant, token exchange, and
+	// introspection.
+	_, enforcementService := revocation.Initialize(
+		mux, jwtService, actorProvider, authnProvider, discoveryService, observabilitySvc)
 	grantHandlerProvider := granthandlers.Initialize(
 		jwtService, oauth2AuthzService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService, cfg)
+		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService, cfg,
+		enforcementService)
 	token.Initialize(mux, jwtService, actorProvider, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, dpopVerifier, cfg)
-	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService)
+	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService, enforcementService)
 	userinfo.Initialize(mux, jwtService, jweService, resolver,
 		tokenValidator, actorProvider, attributeCacheSvc,
 		discoveryService, dpopVerifier, cfg)

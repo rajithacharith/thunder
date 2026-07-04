@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -33,6 +33,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
@@ -41,12 +42,13 @@ import (
 
 // refreshTokenGrantHandler handles the refresh token grant type.
 type refreshTokenGrantHandler struct {
-	cfg              oauthconfig.Config
-	jwtService       jwt.JWTServiceInterface
-	tokenBuilder     tokenservice.TokenBuilderInterface
-	tokenValidator   tokenservice.TokenValidatorInterface
-	attrCacheService attributecache.AttributeCacheServiceInterface
-	resourceService  providers.ResourceServerProvider
+	cfg                oauthconfig.Config
+	jwtService         jwt.JWTServiceInterface
+	tokenBuilder       tokenservice.TokenBuilderInterface
+	tokenValidator     tokenservice.TokenValidatorInterface
+	attrCacheService   attributecache.AttributeCacheServiceInterface
+	resourceService    providers.ResourceServerProvider
+	enforcementService revocation.EnforcementServiceInterface
 }
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
@@ -57,14 +59,16 @@ func newRefreshTokenGrantHandler(
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	resourceService providers.ResourceServerProvider,
 	cfg oauthconfig.Config,
+	enforcementService revocation.EnforcementServiceInterface,
 ) RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
-		cfg:              cfg,
-		jwtService:       jwtService,
-		tokenBuilder:     tokenBuilder,
-		tokenValidator:   tokenValidator,
-		attrCacheService: attrCacheService,
-		resourceService:  resourceService,
+		cfg:                cfg,
+		jwtService:         jwtService,
+		tokenBuilder:       tokenBuilder,
+		tokenValidator:     tokenValidator,
+		attrCacheService:   attrCacheService,
+		resourceService:    resourceService,
+		enforcementService: enforcementService,
 	}
 }
 
@@ -115,6 +119,18 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	}
 
 	if errResp := dpop.VerifyProofBinding(ctx, refreshTokenClaims.DPoPJkt, "refresh token"); errResp != nil {
+		return nil, errResp
+	}
+
+	// Reject refresh tokens that have been revoked (RFC 7009 deny list). Fail closed when the
+	// operation DB cannot be consulted.
+	revokedErr := &model.ErrorResponse{
+		Error:            constants.ErrorInvalidGrant,
+		ErrorDescription: "Invalid refresh token",
+	}
+	if errResp := enforceRevocation(
+		ctx, h.enforcementService, refreshTokenClaims.JTI, revokedErr, logger,
+	); errResp != nil {
 		return nil, errResp
 	}
 

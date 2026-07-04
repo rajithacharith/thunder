@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package introspect
+package revocation
 
 import (
 	"net/http"
@@ -28,16 +28,15 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
+	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/discoverymock"
-	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/revocationmock"
 )
 
 type InitTestSuite struct {
 	suite.Suite
-	mockJWTService         *jwtmock.JWTServiceInterfaceMock
-	mockDiscoveryService   *discoverymock.DiscoveryServiceInterfaceMock
-	mockEnforcementService *revocationmock.EnforcementServiceInterfaceMock
+	mockJWTService       *jwtmock.JWTServiceInterfaceMock
+	mockDiscoveryService *discoverymock.DiscoveryServiceInterfaceMock
 }
 
 func TestInitTestSuite(t *testing.T) {
@@ -45,36 +44,48 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupTest() {
+	// Initialize() builds the store, which reads the server runtime config.
+	_ = config.InitializeServerRuntime("test", &config.Config{
+		Database: config.DatabaseConfig{
+			Operation: config.DataSource{
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
+			},
+		},
+	})
+
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockDiscoveryService = discoverymock.NewDiscoveryServiceInterfaceMock(suite.T())
-	suite.mockEnforcementService = revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
 	suite.mockDiscoveryService.On("GetOAuth2AuthorizationServerMetadata", mock.Anything).
 		Return(&discovery.OAuth2AuthorizationServerMetadata{
-			IntrospectionEndpoint: "https://localhost:8090/oauth2/introspect",
+			RevocationEndpoint: "https://localhost:8090/oauth2/revoke",
 		})
+}
+
+func (suite *InitTestSuite) TearDownTest() {
+	config.ResetServerRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockJWTService, nil, nil, suite.mockDiscoveryService,
-		suite.mockEnforcementService)
+	service, enforcementService := Initialize(mux, suite.mockJWTService, nil, nil, suite.mockDiscoveryService, nil)
 
 	assert.NotNil(suite.T(), service)
-	assert.Implements(suite.T(), (*TokenIntrospectionServiceInterface)(nil), service)
+	assert.Implements(suite.T(), (*RevocationServiceInterface)(nil), service)
+	assert.NotNil(suite.T(), enforcementService)
+	assert.Implements(suite.T(), (*EnforcementServiceInterface)(nil), enforcementService)
 }
 
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	Initialize(mux, suite.mockJWTService, nil, nil, suite.mockDiscoveryService,
-		suite.mockEnforcementService)
+	Initialize(mux, suite.mockJWTService, nil, nil, suite.mockDiscoveryService, nil)
 
-	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.
-	_, pattern := mux.Handler(&http.Request{Method: "POST", URL: &url.URL{Path: "/oauth2/introspect"}})
-	assert.Contains(suite.T(), pattern, "/oauth2/introspect")
+	_, pattern := mux.Handler(&http.Request{Method: "POST", URL: &url.URL{Path: "/oauth2/revoke"}})
+	assert.Contains(suite.T(), pattern, "/oauth2/revoke")
 
-	_, pattern = mux.Handler(&http.Request{Method: "OPTIONS", URL: &url.URL{Path: "/oauth2/introspect"}})
-	assert.Contains(suite.T(), pattern, "/oauth2/introspect")
+	_, pattern = mux.Handler(&http.Request{Method: "OPTIONS", URL: &url.URL{Path: "/oauth2/revoke"}})
+	assert.Contains(suite.T(), pattern, "/oauth2/revoke")
 }

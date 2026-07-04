@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,11 @@
  * under the License.
  */
 
-package introspect
+// Package revocation implements single-token revocation over the database.operation deny list (the
+// JTI deny list): the RFC 7009 POST /oauth2/revoke write path (RevocationService) and the read/
+// enforcement path (the enforcement service) that rejects revoked tokens on the AS hot path — introspection, the
+// refresh grant, and token exchange — under a fail-closed policy.
+package revocation
 
 import (
 	"context"
@@ -24,31 +28,33 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/clientauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
-	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-// Initialize initializes the token introspection handler and registers its routes.
+// Initialize wires the revocation feature: it constructs the shared enforcement service (read path)
+// and registers the RFC 7009 revocation endpoint (write path), returning both so the enforcement service can be
+// injected into the hot paths (refresh grant, token exchange, introspection).
 func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
 	actorProvider providers.ActorProvider,
 	authnProvider providers.AuthnProviderManager,
 	discoveryService discovery.DiscoveryServiceInterface,
-	enforcementService revocation.EnforcementServiceInterface,
-) TokenIntrospectionServiceInterface {
-	introspectionService := newTokenIntrospectionService(jwtService, enforcementService)
-	introspectHandler := newTokenIntrospectionHandler(introspectionService)
-	registerRoutes(mux, introspectHandler, actorProvider, authnProvider, jwtService, discoveryService)
-	return introspectionService
+	observabilitySvc providers.ObservabilityProvider,
+) (RevocationServiceInterface, EnforcementServiceInterface) {
+	enforcementService := newEnforcementService(observabilitySvc)
+	revocationService := newRevocationService(jwtService, newRevokedTokenStore(), observabilitySvc)
+	revocationHandler := newRevocationHandler(revocationService)
+	registerRoutes(mux, revocationHandler, actorProvider, authnProvider, jwtService, discoveryService)
+	return revocationService, enforcementService
 }
 
-// registerRoutes registers the routes for the IntrospectionAPIService.
+// registerRoutes registers the routes for the token revocation endpoint.
 func registerRoutes(
 	mux *http.ServeMux,
-	introspectHandler *tokenIntrospectionHandler,
+	revocationHandler *revocationHandler,
 	actorProvider providers.ActorProvider,
 	authnProvider providers.AuthnProviderManager,
 	jwtService jwt.JWTServiceInterface,
@@ -61,17 +67,17 @@ func registerRoutes(
 		MaxAge:           600,
 	}
 
-	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).IntrospectionEndpoint
+	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).RevocationEndpoint
 	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, endpointURL)
-	handler := clientAuthMiddleware(http.HandlerFunc(introspectHandler.HandleIntrospect))
+	handler := clientAuthMiddleware(http.HandlerFunc(revocationHandler.HandleRevoke))
 
 	pattern, wrappedHandler := middleware.WithCORS(
-		"POST /oauth2/introspect",
+		"POST /oauth2/revoke",
 		handler.ServeHTTP,
 		opts,
 	)
 	mux.HandleFunc(pattern, wrappedHandler)
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/introspect",
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/revoke",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts))
