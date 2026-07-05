@@ -1079,160 +1079,6 @@
   },
   {
     "resourceType": "WIDGET",
-    "category": "FLOW",
-    "type": "PROVISIONING",
-    "display": {
-      "label": "Provisioning",
-      "description": "Provision a user and prompt for missing schema attributes using dynamic inputs",
-      "image": "assets/images/icons/user.svg",
-      "showOnResourcePanel": true
-    },
-    "config": {
-      "data": {
-        "__generationMeta__": {
-          "defaultPropertySelectorId": "{{PROVISIONING_EXECUTOR_STEP_ID}}",
-          "replacers": [
-            {
-              "key": "PROVISIONING_EXECUTOR_STEP_ID",
-              "type": "ID"
-            },
-            {
-              "key": "PROVISIONING_PROMPT_STEP_ID",
-              "type": "ID"
-            }
-          ]
-        },
-        "steps": [
-          {
-            "id": "{{PROVISIONING_EXECUTOR_STEP_ID}}",
-            "type": "TASK_EXECUTION",
-            "size": {
-              "width": 200,
-              "height": 113
-            },
-            "position": {
-              "x": 760,
-              "y": 360
-            },
-            "data": {
-              "action": {
-                "type": "EXECUTOR",
-                "executor": {
-                  "name": "ProvisioningExecutor"
-                },
-                "onSuccess": "",
-                "onFailure": "",
-                "onIncomplete": "{{PROVISIONING_PROMPT_STEP_ID}}"
-              },
-              "properties": {
-                "allowCrossOUProvisioning": false,
-                "includeOptional": false,
-                "includeOptionalCredentials": false,
-                "maxPerPrompt": 5,
-                "assignGroup": "",
-                "assignRole": ""
-              }
-            }
-          },
-          {
-            "id": "{{PROVISIONING_PROMPT_STEP_ID}}",
-            "type": "VIEW",
-            "size": {
-              "width": 360,
-              "height": 220
-            },
-            "position": {
-              "x": 1120,
-              "y": 260
-            },
-            "data": {
-              "components": [
-                {
-                  "id": "{{ID}}",
-                  "category": "DISPLAY",
-                  "type": "IMAGE",
-                  "src": "{{ meta(application.logoUrl) }}",
-                  "alt": "Application logo",
-                  "height": "60",
-                  "width": ""
-                },
-                {
-                  "id": "{{ID}}",
-                  "category": "DISPLAY",
-                  "type": "TEXT",
-                  "align": "center",
-                  "variant": "HEADING_1",
-                  "label": "Complete your details"
-                },
-                {
-                  "id": "{{ID}}",
-                  "category": "BLOCK",
-                  "type": "BLOCK",
-                  "components": [
-                    {
-                      "id": "{{ID}}",
-                      "category": "DISPLAY",
-                      "type": "DYNAMIC_INPUT_PLACEHOLDER"
-                    },
-                    {
-                      "id": "{{ID}}",
-                      "category": "ACTION",
-                      "type": "ACTION",
-                      "variant": "PRIMARY",
-                      "eventType": "SUBMIT",
-                      "label": "Continue",
-                      "action": {
-                        "type": "NEXT",
-                        "onSuccess": "{{PROVISIONING_EXECUTOR_STEP_ID}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "resourceType": "WIDGET",
-    "category": "COMPOSITE",
-    "type": "SELF_SIGN_UP_LINK",
-    "display": {
-      "label": "Self Sign Up Link",
-      "description": "A rich text link to redirect users to the self-registration page",
-      "image": "UserPlus",
-      "showOnResourcePanel": true
-    },
-    "config": {
-      "data": {
-        "__generationMeta__": {
-          "strategy": "MERGE_WITH_DROP_POINT"
-        },
-        "steps": [
-          {
-            "__generationMeta__": {
-              "strategy": "MERGE_WITH_DROP_POINT"
-            },
-            "type": "VIEW",
-            "data": {
-              "components": [
-                {
-                  "category": "DISPLAY",
-                  "type": "RICH_TEXT",
-                  "id": "{{ID}}",
-                  "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"{{meta(application.sign_up_url)}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "resourceType": "WIDGET",
     "category": "COMPOSITE",
     "type": "MAGIC_LINK",
     "display": {
@@ -1512,6 +1358,325 @@
                   "name": "AuthAssertExecutor"
                 },
                 "onSuccess": "END",
+                "onFailure": ""
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "PROVISIONING",
+    "display": {
+      "label": "Provisioning",
+      "description": "Provision a user and prompt for missing schema attributes using dynamic inputs",
+      "image": "assets/images/icons/user.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{PROVISIONING_EXECUTOR_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "PROVISIONING_EXECUTOR_STEP_ID",
+              "type": "ID"
+            },
+            {
+              "key": "PROVISIONING_PROMPT_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "{{PROVISIONING_EXECUTOR_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 760,
+              "y": 360
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "ProvisioningExecutor"
+                },
+                "onSuccess": "",
+                "onFailure": "",
+                "onIncomplete": "{{PROVISIONING_PROMPT_STEP_ID}}"
+              },
+              "properties": {
+                "allowCrossOUProvisioning": false,
+                "includeOptional": false,
+                "includeOptionalCredentials": false,
+                "maxPerPrompt": 5,
+                "assignGroup": "",
+                "assignRole": ""
+              }
+            }
+          },
+          {
+            "id": "{{PROVISIONING_PROMPT_STEP_ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 360,
+              "height": 220
+            },
+            "position": {
+              "x": 1120,
+              "y": 260
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "IMAGE",
+                  "src": "{{ meta(application.logoUrl) }}",
+                  "alt": "Application logo",
+                  "height": "60",
+                  "width": ""
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TEXT",
+                  "align": "center",
+                  "variant": "HEADING_1",
+                  "label": "Complete your details"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "BLOCK",
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "DISPLAY",
+                      "type": "DYNAMIC_INPUT_PLACEHOLDER"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Continue",
+                      "action": {
+                        "type": "NEXT",
+                        "onSuccess": "{{PROVISIONING_EXECUTOR_STEP_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "COMPOSITE",
+    "type": "SELF_SIGN_UP_LINK",
+    "display": {
+      "label": "Self Sign Up Link",
+      "description": "A rich text link plus a Call node that invokes a self-registration flow",
+      "image": "UserPlus",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "strategy": "MERGE_WITH_DROP_POINT",
+          "replacers": [
+            {
+              "key": "SELF_SIGN_UP_CALL_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "category": "DISPLAY",
+                  "type": "RICH_TEXT",
+                  "id": "{{ID}}",
+                  "action": {
+                    "ref": "action_signup",
+                    "onSuccess": "{{SELF_SIGN_UP_CALL_STEP_ID}}"
+                  },
+                  "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"#\" data-action-ref=\"action_signup\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>"
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{SELF_SIGN_UP_CALL_STEP_ID}}",
+            "type": "CALL",
+            "size": {
+              "width": 260,
+              "height": 130
+            },
+            "position": {
+              "x": 700,
+              "y": 300
+            },
+            "data": {
+              "flow": {"ref": "", "filterFlowType": "REGISTRATION"},
+              "action": {
+                "type": "CALL",
+                "flow": {"ref": ""},
+                "onSuccess": "",
+                "onFailure": ""
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "COMPOSITE",
+    "type": "SIGN_IN_LINK",
+    "display": {
+      "label": "Sign In Link",
+      "description": "A rich text link plus a Call node that invokes a sign-in flow",
+      "image": "LogIn",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "strategy": "MERGE_WITH_DROP_POINT",
+          "replacers": [
+            {
+              "key": "SIGN_IN_CALL_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "category": "DISPLAY",
+                  "type": "RICH_TEXT",
+                  "id": "{{ID}}",
+                  "action": {
+                    "ref": "action_signin",
+                    "onSuccess": "{{SIGN_IN_CALL_STEP_ID}}"
+                  },
+                  "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Already have an account? </span><a href=\"#\" data-action-ref=\"action_signin\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign in</span></a></p>"
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{SIGN_IN_CALL_STEP_ID}}",
+            "type": "CALL",
+            "size": {
+              "width": 260,
+              "height": 130
+            },
+            "position": {
+              "x": 700,
+              "y": 300
+            },
+            "data": {
+              "flow": {"ref": "", "filterFlowType": "AUTHENTICATION"},
+              "action": {
+                "type": "CALL",
+                "flow": {"ref": ""},
+                "onSuccess": "",
+                "onFailure": ""
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "COMPOSITE",
+    "type": "RECOVERY_LINK",
+    "display": {
+      "label": "Recovery Link",
+      "description": "A rich text link plus a Call node that invokes a password recovery flow",
+      "image": "KeyRound",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "strategy": "MERGE_WITH_DROP_POINT",
+          "replacers": [
+            {
+              "key": "RECOVERY_CALL_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "category": "DISPLAY",
+                  "type": "RICH_TEXT",
+                  "id": "{{ID}}",
+                  "action": {
+                    "ref": "action_recovery",
+                    "onSuccess": "{{RECOVERY_CALL_STEP_ID}}"
+                  },
+                  "label": "<p class=\"rich-text-paragraph\"><a href=\"#\" data-action-ref=\"action_recovery\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Forgot password?</span></a></p>"
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{RECOVERY_CALL_STEP_ID}}",
+            "type": "CALL",
+            "size": {
+              "width": 260,
+              "height": 130
+            },
+            "position": {
+              "x": 700,
+              "y": 300
+            },
+            "data": {
+              "flow": {"ref": "", "filterFlowType": "RECOVERY"},
+              "action": {
+                "type": "CALL",
+                "flow": {"ref": ""},
+                "onSuccess": "",
                 "onFailure": ""
               }
             }
