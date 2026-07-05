@@ -28,8 +28,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 )
 
 type appExportRequest struct {
@@ -164,8 +164,10 @@ func (s *ApplicationImportExportSuite) TestExportImportRoundTrip_ConfidentialOAu
 					AcrValues:               []string{"urn:thunder:acr:password"},
 					Token: &OAuthTokenConfig{
 						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 1800,
-							UserAttributes: []string{"email"},
+							UserConfig: &AccessTokenSubConfig{
+								ValidityPeriod: 1800,
+								Attributes:     []string{"email"},
+							},
 						},
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 1200,
@@ -287,7 +289,7 @@ func (s *ApplicationImportExportSuite) TestExportImportRoundTrip_ConfidentialOAu
 	s.Assert().ElementsMatch([]string{"urn:thunder:acr:password"}, cfg.AcrValues)
 	s.Require().NotNil(cfg.Token)
 	s.Require().NotNil(cfg.Token.AccessToken)
-	s.Assert().Equal(int64(1800), cfg.Token.AccessToken.ValidityPeriod)
+	s.Assert().Equal(int64(1800), cfg.Token.AccessToken.UserConfig.ValidityPeriod)
 	s.Require().NotNil(cfg.Token.IDToken)
 	s.Assert().Equal(int64(1200), cfg.Token.IDToken.ValidityPeriod)
 	s.Require().NotNil(cfg.UserInfo)
@@ -481,9 +483,9 @@ func (s *ApplicationImportExportSuite) importApps(reqBody appImportRequest) (*ap
 //
 //  1. Scalar:   clientId: {{.X_CLIENT_ID}}
 //  2. Array:    redirectUris:
-//                 {{- range .X_REDIRECT_URIS}}
-//                 - {{.}}
-//                 {{- end}}
+//     {{- range .X_REDIRECT_URIS}}
+//     - {{.}}
+//     {{- end}}
 //
 // Values come from the caller-supplied map keyed by yaml field name. Scalar values are
 // strings; array values are []string.

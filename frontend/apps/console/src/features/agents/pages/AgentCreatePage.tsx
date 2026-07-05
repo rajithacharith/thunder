@@ -148,7 +148,7 @@ export default function AgentCreatePage(): JSX.Element {
           tokenEndpointAuthMethod: 'client_secret_basic',
           responseTypes: [],
           token: {
-            accessToken: {validityPeriod: 3600, userAttributes: []},
+            accessToken: {userConfig: {validityPeriod: 3600, attributes: []}},
             // idToken is required by the shared OAuth2Token type; default agent grants don't issue
             // ID tokens, but the field must be present to satisfy the type.
             idToken: {validityPeriod: 3600, userAttributes: []},

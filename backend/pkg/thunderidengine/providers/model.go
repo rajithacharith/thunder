@@ -581,10 +581,27 @@ type OAuthTokenConfig struct {
 	RefreshToken *RefreshTokenConfig `json:"refreshToken,omitempty" yaml:"refreshToken,omitempty" jsonschema:"Refresh token configuration."`
 }
 
-// AccessTokenConfig is the access token configuration.
+// AccessTokenConfig is the access token configuration, split by token subject: an end user
+// (UserConfig) or the OAuth client itself, issued only via the client_credentials grant
+// (ClientConfig).
 type AccessTokenConfig struct {
+	UserConfig   *AccessTokenSubConfig `json:"userConfig,omitempty"   yaml:"userConfig,omitempty"   jsonschema:"Access token configuration applied when the token subject is an end user."`
+	ClientConfig *AccessTokenSubConfig `json:"clientConfig,omitempty" yaml:"clientConfig,omitempty" jsonschema:"Access token configuration applied when the token subject is the OAuth client itself, issued only via the client_credentials grant."`
+}
+
+// AccessTokenSubConfig holds the validity period and attribute selection for one access
+// token subject type (user or client).
+type AccessTokenSubConfig struct {
 	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validityPeriod,omitempty" jsonschema:"Access token validity period in seconds."`
-	UserAttributes []string `json:"userAttributes,omitempty" yaml:"userAttributes,omitempty" jsonschema:"User attributes to embed in the access token."`
+	Attributes     []string `json:"attributes,omitempty"     yaml:"attributes,omitempty"     jsonschema:"Attributes to embed in the access token."`
+}
+
+// ValidityPeriodOrZero returns the configured validity period, or 0 when the sub-config is unset.
+func (c *AccessTokenSubConfig) ValidityPeriodOrZero() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.ValidityPeriod
 }
 
 // IDTokenConfig is the ID token configuration.

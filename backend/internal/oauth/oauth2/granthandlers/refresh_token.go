@@ -189,18 +189,20 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		attrs = cacheEntry.Attributes
 	}
 
+	userSubConfig := oauthApp.UserAccessTokenConfig()
 	accessTokenCtx := &tokenservice.AccessTokenBuildContext{
-		Subject:          refreshTokenClaims.Sub,
-		Audiences:        audiences,
-		ClientID:         tokenRequest.ClientID,
-		Scopes:           newTokenScopes,
-		UserAttributes:   attrs,
-		AttributeCacheID: refreshTokenClaims.AttributeCacheID,
-		GrantType:        refreshTokenClaims.GrantType,
-		OAuthApp:         oauthApp,
-		ClaimsRequest:    refreshTokenClaims.ClaimsRequest,
-		ClaimsLocales:    refreshTokenClaims.ClaimsLocales,
-		DPoPJkt:          dpop.GetJkt(ctx),
+		Subject:           refreshTokenClaims.Sub,
+		Audiences:         audiences,
+		ClientID:          tokenRequest.ClientID,
+		Scopes:            newTokenScopes,
+		SubjectAttributes: tokenservice.FilterAttributesByAllowList(attrs, userSubConfig),
+		AttributeCacheID:  refreshTokenClaims.AttributeCacheID,
+		GrantType:         refreshTokenClaims.GrantType,
+		OAuthApp:          oauthApp,
+		ClaimsRequest:     refreshTokenClaims.ClaimsRequest,
+		ClaimsLocales:     refreshTokenClaims.ClaimsLocales,
+		ValidityPeriod:    userSubConfig.ValidityPeriodOrZero(),
+		DPoPJkt:           dpop.GetJkt(ctx),
 	}
 	// Replay the on-behalf-of decision frozen at issuance, sourced from the stored marker
 	// rather than the client's current setting.
@@ -266,7 +268,8 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	}
 
 	if errResp := h.extendCacheTTL(ctx, cacheEntry, oauthApp, refreshTokenClaims.Iat,
-		accessToken.ExpiresIn, renewRefreshToken, refreshTokenClaims.AttributeCacheID, logger); errResp != nil {
+		accessToken.ExpiresIn, renewRefreshToken, refreshTokenClaims.AttributeCacheID,
+		logger); errResp != nil {
 		return nil, errResp
 	}
 
@@ -345,7 +348,8 @@ func (h *refreshTokenGrantHandler) extendCacheTTL(
 		return nil
 	}
 	now := time.Now().Unix()
-	refreshValidity := tokenservice.ResolveTokenConfig(h.cfg, oauthApp, tokenservice.TokenTypeRefresh).ValidityPeriod
+	refreshValidity := tokenservice.ResolveTokenConfig(
+		h.cfg, oauthApp, tokenservice.TokenTypeRefresh, 0).ValidityPeriod
 	if renewRefreshToken {
 		refreshIat = now // newly issued token starts from now
 	}

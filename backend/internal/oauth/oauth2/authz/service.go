@@ -719,10 +719,11 @@ func getRequiredAttributes(oidcScopes []string, claimsRequest *oauth2model.Claim
 
 // appendAccessTokenAttributes appends access token attributes from app configuration.
 func appendAccessTokenAttributes(app *providers.OAuthClient, attributesMap map[string]bool) {
-	if app.Token.AccessToken != nil && len(app.Token.AccessToken.UserAttributes) > 0 {
-		for _, attr := range app.Token.AccessToken.UserAttributes {
-			attributesMap[attr] = true
-		}
+	if app.Token.AccessToken == nil || app.Token.AccessToken.UserConfig == nil {
+		return
+	}
+	for _, attr := range app.Token.AccessToken.UserConfig.Attributes {
+		attributesMap[attr] = true
 	}
 }
 
@@ -880,9 +881,10 @@ func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actual
 // A fixed buffer of attributeCacheTTLBufferSeconds is added to cover the window between
 // authentication completion and token issuance.
 func (as *authorizeService) resolveUserAttributesCacheTTL(app *providers.OAuthClient) int64 {
-	maxTTL := tokenservice.ResolveTokenConfig(as.cfg, app, tokenservice.TokenTypeAccess).ValidityPeriod
+	maxTTL := tokenservice.ResolveTokenConfig(
+		as.cfg, app, tokenservice.TokenTypeAccess, app.UserAccessTokenConfig().ValidityPeriodOrZero()).ValidityPeriod
 	if app.IsAllowedGrantType(providers.GrantTypeRefreshToken) {
-		refreshTTL := tokenservice.ResolveTokenConfig(as.cfg, app, tokenservice.TokenTypeRefresh).ValidityPeriod
+		refreshTTL := tokenservice.ResolveTokenConfig(as.cfg, app, tokenservice.TokenTypeRefresh, 0).ValidityPeriod
 		if refreshTTL > maxTTL {
 			maxTTL = refreshTTL
 		}
