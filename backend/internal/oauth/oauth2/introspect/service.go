@@ -86,8 +86,7 @@ func (s *tokenIntrospectionService) IntrospectToken(
 				Active: false,
 			}, nil
 		}
-		logger.Error(ctx, "Token revocation status could not be verified; failing closed",
-			log.Error(revErr))
+		logger.Error(ctx, "Token revocation status could not be verified", log.Error(revErr))
 		return nil, revErr
 	}
 

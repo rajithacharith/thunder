@@ -156,13 +156,11 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	}
 
 	// Reject a revoked subject token (RFC 7009 deny list). JTI is set only for self-issued tokens.
-	subjectRevoked := &model.ErrorResponse{
-		Error:            constants.ErrorInvalidRequest,
-		ErrorDescription: "Invalid subject_token",
-	}
-	if errResp := enforceRevocation(
-		ctx, h.enforcementService, subjectClaims.JTI, subjectRevoked, logger,
-	); errResp != nil {
+	if errResp := enforceRevocation(ctx, h.enforcementService, subjectClaims.JTI,
+		&model.ErrorResponse{
+			Error:            constants.ErrorInvalidRequest,
+			ErrorDescription: "Invalid subject_token",
+		}, logger); errResp != nil {
 		return nil, errResp
 	}
 
@@ -177,13 +175,11 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 				ErrorDescription: "Invalid actor_token",
 			}
 		}
-		actorRevoked := &model.ErrorResponse{
-			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: "Invalid actor_token",
-		}
-		if errResp := enforceRevocation(
-			ctx, h.enforcementService, actorClaims.JTI, actorRevoked, logger,
-		); errResp != nil {
+		if errResp := enforceRevocation(ctx, h.enforcementService, actorClaims.JTI,
+			&model.ErrorResponse{
+				Error:            constants.ErrorInvalidRequest,
+				ErrorDescription: "Invalid actor_token",
+			}, logger); errResp != nil {
 			return nil, errResp
 		}
 	}

@@ -124,13 +124,11 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 
 	// Reject refresh tokens that have been revoked (RFC 7009 deny list). Fail closed when the
 	// operation DB cannot be consulted.
-	revokedErr := &model.ErrorResponse{
-		Error:            constants.ErrorInvalidGrant,
-		ErrorDescription: "Invalid refresh token",
-	}
-	if errResp := enforceRevocation(
-		ctx, h.enforcementService, refreshTokenClaims.JTI, revokedErr, logger,
-	); errResp != nil {
+	if errResp := enforceRevocation(ctx, h.enforcementService, refreshTokenClaims.JTI,
+		&model.ErrorResponse{
+			Error:            constants.ErrorInvalidGrant,
+			ErrorDescription: "Invalid refresh token",
+		}, logger); errResp != nil {
 		return nil, errResp
 	}
 

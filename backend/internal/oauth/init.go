@@ -83,11 +83,7 @@ func Initialize(
 	if err != nil {
 		return err
 	}
-	// Wire the revocation feature: registers the RFC 7009 endpoint (write path) and returns the
-	// shared deny-list enforcement service (read path) — a single enforcement instance with a circuit breaker
-	// and fail-closed policy, injected across the hot path: refresh grant, token exchange, and
-	// introspection.
-	_, enforcementService := revocation.Initialize(
+	enforcementService := revocation.Initialize(
 		mux, jwtService, actorProvider, authnProvider, discoveryService, observabilitySvc)
 	grantHandlerProvider := granthandlers.Initialize(
 		jwtService, oauth2AuthzService, tokenBuilder, tokenValidator,
