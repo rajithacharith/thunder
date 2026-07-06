@@ -254,6 +254,7 @@ const (
 	ClaimCompletedAuthClass string = "completed_auth_class"
 	ClaimDPoPJkt            string = "dpop_jkt"
 	ClaimCIBAAuthReqID      string = "ciba_auth_req_id"
+	ClaimClientID           string = "client_id"
 )
 
 // OIDC subject types.

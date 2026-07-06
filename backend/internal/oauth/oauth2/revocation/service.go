@@ -31,17 +31,6 @@ import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-// RevokeOutcome is the protocol-level result of a revocation request, mapped to HTTP by the handler.
-type RevokeOutcome int
-
-const (
-	// RevokeOutcomeRevoked indicates success — the token was revoked, or it was invalid/expired/unknown
-	// and treated as a no-op success per RFC 7009 §2.2. Maps to HTTP 200.
-	RevokeOutcomeRevoked RevokeOutcome = iota
-	// RevokeOutcomeNotOwned indicates the token was issued to a different client. Maps to 400 invalid_grant.
-	RevokeOutcomeNotOwned
-)
-
 // RevocationServiceInterface defines the OAuth2 token revocation service (RFC 7009).
 type RevocationServiceInterface interface {
 	// RevokeToken revokes the presented token on behalf of the authenticated client.
@@ -61,6 +50,7 @@ type revocationService struct {
 	jwtService       jwt.JWTServiceInterface
 	store            RevokedTokenStoreInterface
 	observabilitySvc providers.ObservabilityProvider
+	logger           *log.Logger
 }
 
 // newRevocationService creates a new revocationService (internal use).
@@ -73,6 +63,7 @@ func newRevocationService(
 		jwtService:       jwtService,
 		store:            store,
 		observabilitySvc: observabilitySvc,
+		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RevocationService")),
 	}
 }
 
@@ -85,34 +76,32 @@ func newRevocationService(
 func (s *revocationService) RevokeToken(
 	ctx context.Context, token, _, authenticatedClientID string,
 ) (RevokeOutcome, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RevocationService"))
-
 	// Signature-only verification: a token we did not issue (or a tampered one) must not pollute the
 	// deny list. Expiry is deliberately ignored so expired tokens remain revocable.
 	if err := s.jwtService.VerifyJWTSignature(ctx, token); err != nil {
-		logger.Debug(ctx, "Revocation request for a token that failed signature verification; "+
+		s.logger.Debug(ctx, "Revocation request for a token that failed signature verification; "+
 			"treating as a no-op success per RFC 7009")
 		return RevokeOutcomeRevoked, nil
 	}
 
 	_, payload, decodeErr := jwt.DecodeJWT(token)
 	if decodeErr != nil {
-		logger.Debug(ctx, "Revocation request for an undecodable token; treating as a no-op success")
+		s.logger.Debug(ctx, "Revocation request for an undecodable token; treating as a no-op success")
 		return RevokeOutcomeRevoked, nil
 	}
 
 	jti, _ := payload[constants.ClaimJTI].(string)
 	if jti == "" {
-		logger.Debug(ctx, "Revocation request for a token without a jti claim; nothing to revoke")
+		s.logger.Debug(ctx, "Revocation request for a token without a jti claim; nothing to revoke")
 		return RevokeOutcomeRevoked, nil
 	}
 
 	// Ownership enforcement: a client may only revoke tokens issued to it. ThunderID tokens carry the
 	// owning client in the client_id claim (no azp), so ownership is checked against client_id; a
 	// mismatch is rejected with invalid_grant per RFC 7009 §2.1.
-	tokenClientID, _ := payload["client_id"].(string)
+	tokenClientID, _ := payload[constants.ClaimClientID].(string)
 	if tokenClientID != "" && authenticatedClientID != "" && tokenClientID != authenticatedClientID {
-		logger.Debug(ctx, "Revocation request for a token belonging to a different client")
+		s.logger.Debug(ctx, "Revocation request for a token belonging to a different client")
 		return RevokeOutcomeNotOwned, nil
 	}
 
@@ -133,7 +122,7 @@ func (s *revocationService) RevokeToken(
 // extractExpiryTime returns the token's exp claim as a time, falling back to now when absent
 // (an absent/expired exp simply makes the deny-list row immediately cleanup-eligible).
 func extractExpiryTime(payload map[string]interface{}) time.Time {
-	if exp, ok := payload["exp"].(float64); ok {
+	if exp, ok := payload[constants.ClaimExp].(float64); ok {
 		return time.Unix(int64(exp), 0).UTC()
 	}
 	return time.Now().UTC()
@@ -153,7 +142,7 @@ func (s *revocationService) publishTokenRevokedEvent(ctx context.Context, client
 		WithStatus(providers.StatusSuccess).
 		WithData(event.DataKey.ClientID, clientID).
 		WithData(event.DataKey.JTI, jti).
-		WithData("revocation_reason", string(RevocationReasonExplicit))
+		WithData(event.DataKey.RevocationReason, string(RevocationReasonExplicit))
 
 	s.observabilitySvc.PublishEvent(ctx, evt)
 }

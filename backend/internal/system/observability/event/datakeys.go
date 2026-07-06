@@ -47,9 +47,10 @@ var DataKey = struct {
 	FailedStep    string
 
 	// OAuth/Token Keys
-	Scope     string
-	GrantType string
-	JTI       string
+	Scope            string
+	GrantType        string
+	JTI              string
+	RevocationReason string
 
 	// Event Metadata Keys
 	Message     string
@@ -83,9 +84,10 @@ var DataKey = struct {
 	FailedStep:    "failed_step",
 
 	// OAuth/Token Keys
-	Scope:     "scope",
-	GrantType: "grant_type",
-	JTI:       "jti",
+	Scope:            "scope",
+	GrantType:        "grant_type",
+	JTI:              "jti",
+	RevocationReason: "revocation_reason",
 
 	// Event Metadata Keys
 	Message:     "message",
