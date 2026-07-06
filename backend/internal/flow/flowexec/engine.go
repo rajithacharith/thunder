@@ -39,7 +39,7 @@ import (
 )
 
 // maxCallDepth is the maximum number of nested call frames allowed
-const maxCallDepth = 5
+const maxCallDepth = 10
 
 // flowEngineInterface defines the interface for the flow engine.
 type flowEngineInterface interface {
@@ -822,10 +822,9 @@ func (fe *flowEngine) handleCallResponse(ctx *EngineContext,
 	nodeResp *common.NodeResponse, logger *log.Logger) (
 	core.NodeInterface, *tidcommon.ServiceError) {
 	if ctx.frameDepth() >= maxCallDepth {
-		logger.Error(ctx.Context, "Maximum call depth exceeded",
-			log.String("callNodeID", ctx.CurrentNode.GetID()),
-			log.String("targetFlowID", nodeResp.CallTargetFlowID))
-		return nil, &tidcommon.InternalServerError
+		logger.Debug(ctx.Context, "Maximum call depth exceeded", log.Int("frameDepth", ctx.frameDepth()),
+			log.Int("maxCallDepth", maxCallDepth))
+		return nil, &ErrorMaxCallDepthExceeded
 	}
 
 	flow, svcErr := fe.flowProvider.GetFlow(ctx.Context, nodeResp.CallTargetFlowID)
