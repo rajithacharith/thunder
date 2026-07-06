@@ -374,6 +374,14 @@ packages:
       pkgname: template
       filename: "{{.InterfaceName}}_mock_test.go"
 
+  github.com/thunder-id/thunderid/internal/runtimestore/redisstore:
+    config:
+      all: true
+      dir: internal/runtimestore/redisstore
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: redisstore
+      filename: "{{.InterfaceName}}_mock_test.go"
+
   github.com/thunder-id/thunderid/pkg/thunderidengine/providers:
     interfaces:
       FlowProvider:
