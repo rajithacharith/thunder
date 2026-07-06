@@ -19,6 +19,10 @@ description: Monitor {{ProductName}} authentication events using console, file, 
 
 All backends are disabled by default. For the full list of configuration settings for each backend, see [Observability Configuration](../../getting-started/configuration#observability-configuration).
 
+:::note
+These backends carry structured **observability events** (token issuance, flow execution, authorization decisions), not the server's application log. To write the ordinary `INFO`/`WARN`/`ERROR` application log to a file, see [Log Output](../../getting-started/configuration#log-output).
+:::
+
 ## Set Up OpenTelemetry
 
 <ProductName /> can export observability events as OpenTelemetry (OTel) traces to any OpenTelemetry Protocol (OTLP)-compatible backend. This section walks through enabling the OpenTelemetry output and connecting it to a backend using an OpenTelemetry Collector, Jaeger, or Grafana Tempo.

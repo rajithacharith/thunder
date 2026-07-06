@@ -28,6 +28,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/log/rollingfile"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 
@@ -404,7 +406,132 @@ type TranslationConfig struct {
 
 // LogConfig holds logging configuration.
 type LogConfig struct {
-	Level string `yaml:"level" json:"level"`
+	Level  string          `yaml:"level"  json:"level"`
+	Output LogOutputConfig `yaml:"output" json:"output"`
+}
+
+// LogOutputConfig holds the log output destinations.
+type LogOutputConfig struct {
+	Console LogConsoleConfig `yaml:"console" json:"console"`
+	File    LogFileConfig    `yaml:"file"    json:"file"`
+}
+
+// LogConsoleConfig holds the console (stdout) output settings.
+//
+// Toggle and value fields in the log configuration use pointers so that a value
+// present in deployment.yaml overrides the default.json default even when it is
+// the zero value (for example console output explicitly disabled with `false`).
+// A nil pointer means "not set", in which case the merged default is kept.
+type LogConsoleConfig struct {
+	Enabled *bool `yaml:"enabled" json:"enabled"`
+}
+
+// BuildOutputOptions resolves the log configuration into the logger's output
+// options: it resolves a relative file path under serverHome and applies the
+// default rotation values when a trigger is enabled without an explicit value.
+// File paths are only resolved when file output is enabled, so a disabled file
+// output performs no path work and never requires a writable filesystem.
+func (c LogConfig) BuildOutputOptions(serverHome string) log.OutputOptions {
+	fileCfg := c.Output.File
+	fileEnabled := derefBool(fileCfg.Enabled)
+
+	filePath := ""
+	if fileEnabled {
+		dir := fileCfg.Path
+		if dir == "" {
+			dir = "logs"
+		}
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(serverHome, dir)
+		}
+		name := fileCfg.FileName
+		if name == "" {
+			name = "thunderid.log"
+		}
+		filePath = filepath.Join(dir, name)
+	}
+
+	var maxSizeMB float64
+	if derefBool(fileCfg.Rotation.Size.Enabled) {
+		maxSizeMB = derefFloat(fileCfg.Rotation.Size.MaxSizeMB, rollingfile.DefaultMaxSizeMB)
+		if maxSizeMB <= 0 {
+			maxSizeMB = rollingfile.DefaultMaxSizeMB
+		}
+	}
+
+	intervalDays := 0
+	if derefBool(fileCfg.Rotation.Time.Enabled) {
+		intervalDays = derefInt(fileCfg.Rotation.Time.IntervalDays, rollingfile.DefaultIntervalDays)
+		if intervalDays <= 0 {
+			intervalDays = rollingfile.DefaultIntervalDays
+		}
+	}
+
+	return log.OutputOptions{
+		ConsoleEnabled: derefBool(c.Output.Console.Enabled),
+		FileEnabled:    fileEnabled,
+		Format:         fileCfg.Format,
+		File: rollingfile.Config{
+			Path:         filePath,
+			MaxSizeMB:    maxSizeMB,
+			IntervalDays: intervalDays,
+			MaxBackups:   derefInt(fileCfg.Rotation.MaxBackups, 0),
+			MaxAgeDays:   derefInt(fileCfg.Rotation.MaxAgeDays, 0),
+			Compress:     derefBool(fileCfg.Rotation.Compress),
+		},
+	}
+}
+
+// derefBool returns *p when p is non-nil, otherwise false (the disabled default
+// for every log toggle; an explicit default lives in default.json).
+func derefBool(p *bool) bool {
+	return p != nil && *p
+}
+
+// derefInt returns *p when p is non-nil, otherwise def.
+func derefInt(p *int, def int) int {
+	if p != nil {
+		return *p
+	}
+	return def
+}
+
+// derefFloat returns *p when p is non-nil, otherwise def.
+func derefFloat(p *float64, def float64) float64 {
+	if p != nil {
+		return *p
+	}
+	return def
+}
+
+// LogFileConfig holds the file output settings.
+type LogFileConfig struct {
+	Enabled  *bool             `yaml:"enabled"   json:"enabled"`
+	Path     string            `yaml:"path"      json:"path"`
+	FileName string            `yaml:"file_name" json:"file_name"`
+	Format   string            `yaml:"format"    json:"format"`
+	Rotation LogRotationConfig `yaml:"rotation"  json:"rotation"`
+}
+
+// LogRotationConfig holds the file rotation and retention settings.
+type LogRotationConfig struct {
+	Size       LogSizeRotationConfig `yaml:"size"         json:"size"`
+	Time       LogTimeRotationConfig `yaml:"time"         json:"time"`
+	MaxBackups *int                  `yaml:"max_backups"  json:"max_backups"`
+	MaxAgeDays *int                  `yaml:"max_age_days" json:"max_age_days"`
+	Compress   *bool                 `yaml:"compress"     json:"compress"`
+}
+
+// LogSizeRotationConfig holds the size-based rotation trigger settings.
+type LogSizeRotationConfig struct {
+	Enabled   *bool    `yaml:"enabled"     json:"enabled"`
+	MaxSizeMB *float64 `yaml:"max_size_mb" json:"max_size_mb"`
+}
+
+// LogTimeRotationConfig holds the time-based rotation trigger settings.
+type LogTimeRotationConfig struct {
+	Enabled      *bool `yaml:"enabled"       json:"enabled"`
+	IntervalDays *int  `yaml:"interval_days" json:"interval_days"`
 }
 
 // Config holds the complete configuration details of the server.
