@@ -39,21 +39,21 @@ describe('CertificateSection (agent)', () => {
     it('renders the certificate section', () => {
       render(<CertificateSection onCertificateChange={mockOnCertificateChange} />);
 
-      expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.certificate.intro')).toBeInTheDocument();
+      expect(screen.getByText('agents:edit.credentials.certificate.title')).toBeInTheDocument();
+      expect(screen.getByText('agents:edit.credentials.certificate.description')).toBeInTheDocument();
     });
 
     it('renders the certificate type dropdown', () => {
       render(<CertificateSection onCertificateChange={mockOnCertificateChange} />);
 
-      expect(screen.getByLabelText('applications:edit.advanced.labels.certificateType')).toBeInTheDocument();
+      expect(screen.getByLabelText('agents:edit.credentials.certificate.sourceLabel')).toBeInTheDocument();
     });
 
     it('does not render the value field when certificate is null', () => {
       render(<CertificateSection certificate={null} onCertificateChange={mockOnCertificateChange} />);
 
       expect(
-        screen.queryByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks'),
+        screen.queryByPlaceholderText('agents:edit.credentials.certificate.placeholder.jwks'),
       ).not.toBeInTheDocument();
     });
 
@@ -65,9 +65,7 @@ describe('CertificateSection (agent)', () => {
         />,
       );
 
-      expect(
-        screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks'),
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('agents:edit.credentials.certificate.placeholder.jwks')).toBeInTheDocument();
     });
 
     it('renders the JWKS URI value field when type is JWKS_URI', () => {
@@ -79,7 +77,7 @@ describe('CertificateSection (agent)', () => {
       );
 
       expect(
-        screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwksUri'),
+        screen.getByPlaceholderText('agents:edit.credentials.certificate.placeholder.jwksUri'),
       ).toBeInTheDocument();
     });
   });
@@ -93,7 +91,7 @@ describe('CertificateSection (agent)', () => {
         />,
       );
 
-      expect(screen.getByRole('combobox')).toHaveValue('applications:edit.advanced.certificate.type.jwks');
+      expect(screen.getByRole('combobox')).toHaveValue('agents:edit.credentials.certificate.type.jwks');
     });
 
     it('calls onCertificateChange with null when NONE is selected', async () => {
@@ -107,7 +105,7 @@ describe('CertificateSection (agent)', () => {
 
       await user.click(screen.getByRole('combobox'));
       const listbox = screen.getByRole('listbox');
-      await user.click(within(listbox).getByText('applications:edit.advanced.certificate.type.none'));
+      await user.click(within(listbox).getByText('agents:edit.credentials.certificate.type.none'));
 
       expect(mockOnCertificateChange).toHaveBeenCalledWith(null);
     });
@@ -118,7 +116,7 @@ describe('CertificateSection (agent)', () => {
 
       await user.click(screen.getByRole('combobox'));
       const listbox = screen.getByRole('listbox');
-      await user.click(within(listbox).getByText('applications:edit.advanced.certificate.type.jwks'));
+      await user.click(within(listbox).getByText('agents:edit.credentials.certificate.type.jwks'));
 
       expect(mockOnCertificateChange).toHaveBeenCalledWith({
         type: CertificateTypes.JWKS,
@@ -137,7 +135,7 @@ describe('CertificateSection (agent)', () => {
 
       await user.click(screen.getByRole('combobox'));
       const listbox = screen.getByRole('listbox');
-      await user.click(within(listbox).getByText('applications:edit.advanced.certificate.type.jwksUri'));
+      await user.click(within(listbox).getByText('agents:edit.credentials.certificate.type.jwksUri'));
 
       expect(mockOnCertificateChange).toHaveBeenCalledWith({
         type: CertificateTypes.JWKS_URI,
@@ -155,7 +153,7 @@ describe('CertificateSection (agent)', () => {
         />,
       );
 
-      expect(screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks')).toHaveValue(
+      expect(screen.getByPlaceholderText('agents:edit.credentials.certificate.placeholder.jwks')).toHaveValue(
         'jwks-value',
       );
     });
@@ -169,7 +167,7 @@ describe('CertificateSection (agent)', () => {
         />,
       );
 
-      const valueInput = screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks');
+      const valueInput = screen.getByPlaceholderText('agents:edit.credentials.certificate.placeholder.jwks');
       await user.type(valueInput, 'X');
 
       expect(mockOnCertificateChange).toHaveBeenCalledWith(expect.objectContaining({type: CertificateTypes.JWKS}));
@@ -180,7 +178,7 @@ describe('CertificateSection (agent)', () => {
     it('defaults to NONE when no certificate prop is provided', () => {
       render(<CertificateSection onCertificateChange={mockOnCertificateChange} />);
 
-      expect(screen.getByRole('combobox')).toHaveValue('applications:edit.advanced.certificate.type.none');
+      expect(screen.getByRole('combobox')).toHaveValue('agents:edit.credentials.certificate.type.none');
     });
 
     it('renders the JWKS value input as a multiline textarea with 3 rows', () => {
@@ -191,7 +189,7 @@ describe('CertificateSection (agent)', () => {
         />,
       );
 
-      expect(screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks')).toHaveAttribute(
+      expect(screen.getByPlaceholderText('agents:edit.credentials.certificate.placeholder.jwks')).toHaveAttribute(
         'rows',
         '3',
       );

@@ -56,6 +56,16 @@ interface EditTokenSettingsProps {
    * Singular noun used to refer to the entity in user-visible copy (default: 'application').
    */
   entityLabel?: string;
+  /**
+   * Whether to show the "User Info Endpoint" tab (OAuth mode only). Defaults to true;
+   * agents don't expose a userinfo endpoint of their own, so they pass false.
+   */
+  showUserInfoTab?: boolean;
+  /**
+   * Whether the access token preview should include the RFC 8693 `act` (actor) claim.
+   * Defaults to false (applications); agents pass true.
+   */
+  showActorClaim?: boolean;
 }
 
 const createTokenConfigSchema = (t: (key: string) => string) => {
@@ -122,6 +132,8 @@ export default function EditTokenSettings({
   onFieldChange,
   onValidationChange = undefined,
   entityLabel = 'application',
+  showUserInfoTab = true,
+  showActorClaim = false,
 }: EditTokenSettingsProps) {
   const logger = useLogger('EditTokenSettings');
   const {t} = useTranslation();
@@ -708,6 +720,8 @@ export default function EditTokenSettings({
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
             entityLabel={entityLabel}
+            showUserInfoTab={showUserInfoTab}
+            showActorClaim={showActorClaim}
             disabled={application.isReadOnly}
             idTokenResponseType={oauth2Config?.token?.idToken?.responseType}
             idTokenEncryptionAlg={oauth2Config?.token?.idToken?.encryptionAlg}
