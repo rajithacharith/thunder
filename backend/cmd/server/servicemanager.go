@@ -269,7 +269,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize template service", log.Error(err))
 	}
 
-	notifSenderMgtSvc, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(
+	notifSenderMgtSvc, notifOTPService, notifSenderSvc, notificationExporter, err := notification.Initialize(
 		mux, jwtService, templateService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize NotificationService", log.Error(err))
@@ -283,7 +283,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	magicLinkService := magiclink.Initialize(jwtService)
 
 	// Initialize otp core service
-	otpCoreService := otp.Initialize(otpService)
+	otpCoreService := otp.Initialize(notifOTPService)
 
 	// Initialize federated authentication services.
 	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
@@ -316,7 +316,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	consentEnforcer := authnConsent.Initialize(consentService, jwtService)
 
 	authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen, passkeyService,
-		otpCoreService, magicLinkService, oauthAuthnService, oidcAuthnService, googleAuthnService, githubAuthnService)
+		otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService, oidcAuthnService,
+		googleAuthnService, githubAuthnService)
 
 	attributeCacheService := attributecache.Initialize()
 
