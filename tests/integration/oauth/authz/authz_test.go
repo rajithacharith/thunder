@@ -32,8 +32,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 )
 
 const (
@@ -58,7 +58,7 @@ type TestCase struct {
 }
 
 var (
-	testOUID       string
+	testOUID     string
 	testUserType = testutils.UserType{
 		Name: "authz-test-person",
 		Schema: map[string]interface{}{
@@ -1535,4 +1535,81 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlow_IDToken_JWE() {
 	// A JWE compact serialisation has exactly 5 dot-separated parts.
 	parts := strings.Split(idToken, ".")
 	ts.Len(parts, 5, "Encrypted ID token must be a JWE compact serialisation (5 parts)")
+}
+
+// TestAssertionBoundToAuthorizationRequest exercises the assertion<->authorization request binding
+// enforced by the OAuth authorize callback. An assertion minted for one authorization request must
+// not be usable to complete a different authorization request, even if the caller supplies a valid
+// authId for the second request.
+func (ts *AuthzTestSuite) TestAssertionBoundToAuthorizationRequest() {
+	username := "assertion_binding_user"
+	password := "testpass123"
+
+	user := testutils.User{
+		OUID: testOUID,
+		Type: "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "assertion_binding_user",
+			"password": "testpass123",
+			"email": "assertion_binding_user@example.com",
+			"given_name": "Assertion",
+			"family_name": "Binding"
+		}`),
+	}
+	userID, err := testutils.CreateUser(user)
+	ts.Require().NoError(err, "Failed to create test user")
+	defer func() {
+		if err := testutils.DeleteUser(userID); err != nil {
+			ts.T().Logf("Warning: Failed to delete test user: %v", err)
+		}
+	}()
+
+	// Run two independent authorization flows to end up with two (authId, assertion) pairs.
+	authIDA, _ := ts.runFlowToAssertion(username, password, "binding_state_a")
+	authIDB, assertionB := ts.runFlowToAssertion(username, password, "binding_state_b")
+
+	// Cross the streams: submit flow A's authId with flow B's assertion. The binding claim in
+	// assertionB names authIDB, not authIDA, so the callback must reject with access_denied.
+	authzResponse, err := testutils.CompleteAuthorization(authIDA, assertionB)
+	ts.Require().NoError(err, "Callback should return a redirect (200), not an HTTP error")
+
+	parsed, err := url.Parse(authzResponse.RedirectURI)
+	ts.Require().NoError(err, "Failed to parse client redirect URI")
+	ts.Equal("access_denied", parsed.Query().Get("error"),
+		"Mismatched assertion must be rejected with access_denied")
+	ts.Empty(parsed.Query().Get("code"),
+		"No authorization code should be issued for a mismatched assertion")
+
+	// Positive control: submitting flow B's authId with its own assertion should still succeed
+	// (proves the binding check does not spuriously reject legitimate assertions).
+	successResp, err := testutils.CompleteAuthorization(authIDB, assertionB)
+	ts.Require().NoError(err, "Legitimate callback should succeed")
+	code, err := testutils.ExtractAuthorizationCode(successResp.RedirectURI)
+	ts.Require().NoError(err, "Legitimate callback should issue an authorization code")
+	ts.NotEmpty(code, "Authorization code must be issued for the matching authId/assertion pair")
+}
+
+// runFlowToAssertion initiates an OAuth2 authorize flow, drives the authentication flow to
+// completion, and returns the authId issued at initiation along with the resulting assertion.
+func (ts *AuthzTestSuite) runFlowToAssertion(username, password, state string) (string, string) {
+	resp, err := testutils.InitiateAuthorizationFlow(clientID, redirectURI, "code", "openid", state)
+	ts.Require().NoError(err, "Failed to initiate authorization flow")
+	defer resp.Body.Close()
+
+	ts.Require().Equal(http.StatusFound, resp.StatusCode, "Expected redirect status")
+
+	authID, executionID, err := testutils.ExtractAuthData(resp.Header.Get("Location"))
+	ts.Require().NoError(err, "Failed to extract auth data from redirect")
+
+	initialStep, err := testutils.ExecuteAuthenticationFlow(executionID, nil, "")
+	ts.Require().NoError(err, "Failed to initiate authentication flow")
+
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionID, map[string]string{
+		"username": username,
+		"password": password,
+	}, "action_001", initialStep.ChallengeToken)
+	ts.Require().NoError(err, "Failed to execute authentication flow")
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should complete successfully")
+
+	return authID, flowStep.Assertion
 }

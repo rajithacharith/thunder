@@ -136,7 +136,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 	cacheTTL := strconv.FormatInt(s.resolveUserAttributesCacheTTL(oauthApp), 10)
 
 	// authReqID is injected into runtime data for two reasons:
-	//   a) auth_assert_executor binds it as the ciba_auth_req_id claim in the assertion JWT,
+	//   a) auth_assert_executor binds it as the authorization_request_id claim in the assertion JWT,
 	//      enabling the callback to verify this assertion authorizes this specific request.
 	//   b) invite_executor includes it in the notification link URL so Gate UI can pass it
 	//      back in the CIBA callback call on flow completion.
@@ -146,7 +146,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 	}
 
 	runtimeData := map[string]string{
-		flowcm.RuntimeKeyAuthReqID:                   authReqID,
+		flowcm.RuntimeKeyAuthorizationRequestID:      authReqID,
 		flowcm.RuntimeKeyClientID:                    oauthApp.ClientID,
 		flowcm.RuntimeKeyRequestedPermissions:        utils.StringifyStringArray(permissionScopes, " "),
 		flowcm.RuntimeKeyRequiredEssentialAttributes: "",
@@ -274,10 +274,10 @@ func (s *cibaService) HandleCallback(ctx context.Context, authReqID, assertion s
 	}
 
 	// Bind the assertion to this specific CIBA request. The auth_req_id is threaded through the
-	// flow runtime data into the assertion as the ciba_auth_req_id claim; requiring it to match the
-	// record prevents an assertion minted for one CIBA request from authorizing another (e.g. a
-	// narrow-scope authentication being replayed against a broader-scope request for the same user).
-	if claims.cibaAuthReqID == "" || claims.cibaAuthReqID != record.AuthReqID {
+	// flow runtime data into the assertion as the authorization_request_id claim; requiring it to
+	// match the record prevents an assertion minted for one CIBA request from authorizing another
+	// (e.g. a narrow-scope authentication being replayed against a broader-scope request for the same user).
+	if claims.authReqID == "" || claims.authReqID != record.AuthReqID {
 		s.logger.Debug(ctx, "Assertion is not bound to the backchannel authentication request",
 			log.MaskedString("auth_req_id", authReqID))
 		return &CIBAError{
@@ -325,7 +325,7 @@ func (s *cibaService) HandleCallback(ctx context.Context, authReqID, assertion s
 
 // resolveExpectedAudience resolves the app entity ID for the given client ID, which the flow uses
 // as the assertion `aud`. It returns an empty string (skipping the audience check) on lookup
-// failure; the ciba_auth_req_id binding remains the primary protection in that case.
+// failure; the authorization_request_id binding remains the primary protection in that case.
 func (s *cibaService) resolveExpectedAudience(ctx context.Context, clientID string) string {
 	app, svcErr := s.inboundClient.GetOAuthClientByClientID(ctx, clientID)
 	if svcErr != nil {
@@ -536,12 +536,12 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 		completedACR:     base.CompletedACR,
 	}
 
-	if cibaValue, ok := payload[oauth2const.ClaimCIBAAuthReqID]; ok {
-		strValue, ok := cibaValue.(string)
+	if v, ok := payload[oauth2const.ClaimAuthorizationRequestID]; ok {
+		strValue, ok := v.(string)
 		if !ok {
-			return assertionClaims{}, time.Time{}, errors.New("JWT 'ciba_auth_req_id' claim is not a string")
+			return assertionClaims{}, time.Time{}, errors.New("JWT 'authorization_request_id' claim is not a string")
 		}
-		claims.cibaAuthReqID = strValue
+		claims.authReqID = strValue
 	}
 
 	if v, ok := payload["authorized_permissions"].(string); ok {

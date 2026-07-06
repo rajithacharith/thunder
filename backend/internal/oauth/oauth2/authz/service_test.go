@@ -69,12 +69,28 @@ func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Co
 	return txFunc(ctx)
 }
 
-// JWT constants used in service tests.
+// JWT constants used in service tests. All happy-path assertions are bound to testAuthID via
+// the authorization_request_id claim so they pass the assertion<->authorization request binding check.
 const (
-	// Header: {"alg":"none","typ":"JWT"}   Payload: {"sub":"test-user","iat":1701421200}
-	svcJWTWithIat = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE3MDE0MjEyMDB9."
-	// Header: {"alg":"none","typ":"JWT"}   Payload: {"sub":"test-user"}
-	svcJWTMinimal = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIifQ."
+	// Header: {"alg":"none","typ":"JWT"}
+	// Payload: {"sub":"test-user","iat":1701421200,"authorization_request_id":"test-auth-id"}
+	svcJWTWithIat = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE3MDE0MjEyMDAsImF1dGhvcml6YXRpb25fcmVxdWVzdF9pZCI6InRlc3QtYXV0aC1pZCJ9."
+	// Header: {"alg":"none","typ":"JWT"}
+	// Payload: {"sub":"test-user","authorization_request_id":"test-auth-id"}
+	svcJWTMinimal = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJhdXRob3JpemF0aW9uX3JlcXVlc3RfaWQiOiJ0ZXN0LWF1dGgtaWQifQ."
+	// Header: {"alg":"none","typ":"JWT"}
+	// Payload: {"sub":"test-user","iat":1701421200} — no authorization_request_id claim (unbound).
+	svcJWTUnbound = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE3MDE0MjEyMDB9."
+	// Header: {"alg":"none","typ":"JWT"}
+	// Payload: {"sub":"test-user","iat":1701421200,"authorization_request_id":"other-auth-id"}
+	svcJWTMismatched = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE3MDE0MjEyMDAsImF1dGhvcml6YXRpb25fcmVxdWVzdF9pZCI6Im90aGVyLWF1dGgtaWQifQ."
+	// Header: {"alg":"none","typ":"JWT"}
+	// Payload: {"sub":"test-user","iat":1701421200,"authorization_request_id":42}
+	svcJWTNonStringAuthReqID = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE3MDE0MjEyMDAsImF1dGhvcml6YXRpb25fcmVxdWVzdF9pZCI6NDJ9."
 )
 
 type AuthorizeServiceTestSuite struct {
@@ -544,6 +560,78 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_FailedTo
 	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
 }
 
+func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_UnboundAssertion() {
+	// Assertion has no auth_req_id claim → binding check must reject it.
+	authCtx := authRequestContext{
+		OAuthParameters: oauth2model.OAuthParameters{
+			ClientID:    "test-client",
+			RedirectURI: "https://client.example.com/callback",
+			State:       "test-state",
+		},
+	}
+	suite.mockAuthReqStore.EXPECT().GetRequest(mock.Anything, testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(mock.Anything, testAuthID).Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, svcJWTUnbound, "", "").Return(nil)
+
+	svc := suite.newService()
+	redirectURI, authErr := svc.HandleAuthorizationCallback(context.Background(), testAuthID, svcJWTUnbound)
+
+	assert.Empty(suite.T(), redirectURI)
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorAccessDenied, authErr.Code)
+	assert.Equal(suite.T(), "Assertion does not match the authorization request", authErr.Message)
+	assert.Equal(suite.T(), "test-state", authErr.State)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_MismatchedAssertion() {
+	// Assertion's auth_req_id claim identifies a different authorization request → must reject.
+	authCtx := authRequestContext{
+		OAuthParameters: oauth2model.OAuthParameters{
+			ClientID:    "test-client",
+			RedirectURI: "https://client.example.com/callback",
+			State:       "test-state",
+		},
+	}
+	suite.mockAuthReqStore.EXPECT().GetRequest(mock.Anything, testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(mock.Anything, testAuthID).Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, svcJWTMismatched, "", "").Return(nil)
+
+	svc := suite.newService()
+	redirectURI, authErr := svc.HandleAuthorizationCallback(context.Background(), testAuthID, svcJWTMismatched)
+
+	assert.Empty(suite.T(), redirectURI)
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorAccessDenied, authErr.Code)
+	assert.Equal(suite.T(), "Assertion does not match the authorization request", authErr.Message)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_NonStringAuthReqID() {
+	// Assertion's authorization_request_id claim is not a string → malformed client input,
+	// mapped to invalid_request rather than server_error.
+	authCtx := authRequestContext{
+		OAuthParameters: oauth2model.OAuthParameters{
+			ClientID:    "test-client",
+			RedirectURI: "https://client.example.com/callback",
+			State:       "test-state",
+		},
+	}
+	suite.mockAuthReqStore.EXPECT().GetRequest(mock.Anything, testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(mock.Anything, testAuthID).Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, svcJWTNonStringAuthReqID, "", "").Return(nil)
+
+	svc := suite.newService()
+	redirectURI, authErr := svc.HandleAuthorizationCallback(context.Background(), testAuthID, svcJWTNonStringAuthReqID)
+
+	assert.Empty(suite.T(), redirectURI)
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorInvalidRequest, authErr.Code)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
+	assert.Equal(suite.T(), "test-state", authErr.State)
+}
+
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_PersistAuthCodeError() {
 	authCtx := authRequestContext{
 		OAuthParameters: oauth2model.OAuthParameters{
@@ -615,7 +703,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_WithStat
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_EmptyAuthorizedPermissions() {
-	// svcJWTWithIat has only "sub" and "iat" — no authorized_permissions.
+	// svcJWTWithIat has no authorized_permissions claim.
 	// Permission scopes in the auth context should be cleared.
 	authCtx := authRequestContext{
 		OAuthParameters: oauth2model.OAuthParameters{

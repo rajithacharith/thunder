@@ -82,6 +82,6 @@ type assertionClaims struct {
 	userID                string
 	attributeCacheID      string
 	completedACR          string
-	cibaAuthReqID         string
+	authReqID             string
 	authorizedPermissions string
 }

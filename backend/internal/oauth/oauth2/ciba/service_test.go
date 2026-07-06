@@ -169,7 +169,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_AuthReqIDInjectedIntoRuntimeData
 	var capturedAuthReqID string
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
-			capturedAuthReqID = initCtx.RuntimeData[flowcm.RuntimeKeyAuthReqID]
+			capturedAuthReqID = initCtx.RuntimeData[flowcm.RuntimeKeyAuthorizationRequestID]
 			return capturedAuthReqID != ""
 		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.mockStore.EXPECT().Add(mock.Anything, mock.MatchedBy(func(r *CIBAAuthRequest) bool {
@@ -523,9 +523,9 @@ func (suite *CIBAServiceTestSuite) TestResolveExpectedAudience_NilApp() {
 		Return(nil, nil)
 
 	assertion := buildTestAssertion(map[string]interface{}{
-		"sub":              testUserID,
-		"ciba_auth_req_id": "auth-req-1",
-		"iat":              float64(time.Now().Unix()),
+		"sub":                      testUserID,
+		"authorization_request_id": "auth-req-1",
+		"iat":                      float64(time.Now().Unix()),
 	})
 	suite.mockStore.EXPECT().GetByID(mock.Anything, "auth-req-1").Return(suite.pendingRecord(), nil)
 	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
@@ -614,11 +614,11 @@ func (suite *CIBAServiceTestSuite) pendingRecord() *CIBAAuthRequest {
 func (suite *CIBAServiceTestSuite) TestCallback_Success() {
 	iat := time.Now().Unix()
 	assertion := buildTestAssertion(map[string]interface{}{
-		"sub":                  testUserID,
-		"aci":                  "cache-1",
-		"completed_auth_class": "urn:acr:pwd",
-		"ciba_auth_req_id":     "auth-req-1",
-		"iat":                  float64(iat),
+		"sub":                      testUserID,
+		"aci":                      "cache-1",
+		"completed_auth_class":     "urn:acr:pwd",
+		"authorization_request_id": "auth-req-1",
+		"iat":                      float64(iat),
 	})
 	suite.mockStore.EXPECT().GetByID(mock.Anything, "auth-req-1").Return(suite.pendingRecord(), nil)
 	suite.expectAudienceResolution()
@@ -634,9 +634,9 @@ func (suite *CIBAServiceTestSuite) TestCallback_Success() {
 
 func (suite *CIBAServiceTestSuite) TestCallback_SubMissing() {
 	assertion := buildTestAssertion(map[string]interface{}{
-		"aci":              "cache-1",
-		"ciba_auth_req_id": "auth-req-1",
-		"iat":              float64(time.Now().Unix()),
+		"aci":                      "cache-1",
+		"authorization_request_id": "auth-req-1",
+		"iat":                      float64(time.Now().Unix()),
 	})
 	suite.mockStore.EXPECT().GetByID(mock.Anything, "auth-req-1").Return(suite.pendingRecord(), nil)
 	suite.expectAudienceResolution()
@@ -649,10 +649,10 @@ func (suite *CIBAServiceTestSuite) TestCallback_SubMissing() {
 
 func (suite *CIBAServiceTestSuite) TestCallback_BindingMismatch() {
 	assertion := buildTestAssertion(map[string]interface{}{
-		"sub":              testUserID,
-		"aci":              "cache-1",
-		"ciba_auth_req_id": "other-req",
-		"iat":              float64(time.Now().Unix()),
+		"sub":                      testUserID,
+		"aci":                      "cache-1",
+		"authorization_request_id": "other-req",
+		"iat":                      float64(time.Now().Unix()),
 	})
 	suite.mockStore.EXPECT().GetByID(mock.Anything, "auth-req-1").Return(suite.pendingRecord(), nil)
 	suite.expectAudienceResolution()
@@ -681,10 +681,10 @@ func (suite *CIBAServiceTestSuite) TestCallback_BindingClaimMissing() {
 func (suite *CIBAServiceTestSuite) TestCallback_AudienceResolutionFailureStillBinds() {
 	iat := time.Now().Unix()
 	assertion := buildTestAssertion(map[string]interface{}{
-		"sub":              testUserID,
-		"aci":              "cache-1",
-		"ciba_auth_req_id": "auth-req-1",
-		"iat":              float64(iat),
+		"sub":                      testUserID,
+		"aci":                      "cache-1",
+		"authorization_request_id": "auth-req-1",
+		"iat":                      float64(iat),
 	})
 	suite.mockStore.EXPECT().GetByID(mock.Anything, "auth-req-1").Return(suite.pendingRecord(), nil)
 	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "client-1").
@@ -777,10 +777,10 @@ func (suite *CIBAServiceTestSuite) TestCallback_StoreLookupError() {
 
 func (suite *CIBAServiceTestSuite) TestCallback_MarkAuthenticatedError() {
 	assertion := buildTestAssertion(map[string]interface{}{
-		"sub":              testUserID,
-		"aci":              "cache-1",
-		"ciba_auth_req_id": "auth-req-1",
-		"iat":              float64(time.Now().Unix()),
+		"sub":                      testUserID,
+		"aci":                      "cache-1",
+		"authorization_request_id": "auth-req-1",
+		"iat":                      float64(time.Now().Unix()),
 	})
 	suite.mockStore.EXPECT().GetByID(mock.Anything, "auth-req-1").Return(suite.pendingRecord(), nil)
 	suite.expectAudienceResolution()
