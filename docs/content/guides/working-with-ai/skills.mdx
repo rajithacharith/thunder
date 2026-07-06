@@ -98,7 +98,7 @@ Add the <ProductName /> skill pack to your AI coding assistant once. All skills 
     value="oasci"
     label={
       <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-        <CliLogo size={16} />
+        <Box component="span" sx={{filter: 'grayscale(1) opacity(0.75)'}}><CliLogo size={16} /></Box>
         Open Agent Skills CLI
       </Box>
     }
@@ -116,7 +116,7 @@ npx skills add thunder-id/skills
     value="claude"
     label={
       <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-        <ClaudeLogo size={16} />
+        <Box component="span" sx={{filter: 'grayscale(1) opacity(0.75)'}}><ClaudeLogo size={16} /></Box>
         Claude Code
       </Box>
     }
@@ -135,7 +135,7 @@ Run the following slash command in Claude Code:
     value="codex"
     label={
       <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-        <CodexLogo size={16} />
+        <Box component="span" sx={{filter: 'grayscale(1) opacity(0.75)'}}><CodexLogo size={16} /></Box>
         Codex
       </Box>
     }
