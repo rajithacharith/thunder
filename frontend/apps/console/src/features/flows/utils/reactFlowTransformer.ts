@@ -22,7 +22,7 @@ import VisualFlowConstants from '../constants/VisualFlowConstants';
 import {ActionTypes} from '../models/actions';
 import type {Element} from '../models/elements';
 import {ElementCategories, ElementTypes, ActionEventTypes, ButtonTypes} from '../models/elements';
-import type {StepData} from '../models/steps';
+import type {StepAction, StepData} from '../models/steps';
 import {StepTypes, StaticStepTypes} from '../models/steps';
 
 /**
@@ -73,6 +73,9 @@ interface FlowNode {
   onFailure?: string;
   onIncomplete?: string;
   next?: string;
+  flow?: {
+    ref: string;
+  };
 }
 
 /**
@@ -144,6 +147,7 @@ const STEP_TO_NODE_TYPE_MAP: Record<string, string> = {
   [StepTypes.Execution]: 'TASK_EXECUTION',
   [StepTypes.Rule]: 'DECISION',
   [StepTypes.End]: 'END',
+  [StepTypes.Call]: 'CALL',
   [StaticStepTypes.Start]: 'START',
   [StaticStepTypes.UserOnboard]: 'END',
 };
@@ -203,7 +207,9 @@ function shouldPromoteToSubmit(components: Element[]): boolean {
  */
 function cleanComponents(components: Element[], promoteSubmit = false): Record<string, unknown>[] {
   return components.map((component) => {
-    // Extract and remove internal properties (including action which is defined in node.actions)
+    // Extract and remove internal properties (including action which is defined in node.actions
+    // for ACTION/RESEND components). For RICH_TEXT, `action` is the SDK-facing wiring
+    // (`{ref, eventType}`) and MUST be preserved end-to-end.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- config is excluded from output
     const {variants, display, config, action, ...rest} = component as Element & {
       variants?: unknown;
@@ -216,6 +222,17 @@ function cleanComponents(components: Element[], promoteSubmit = false): Record<s
     const cleanedComponent: Record<string, unknown> = {
       ...rest,
     };
+
+    // Preserve the SDK-facing `action` wiring on RICH_TEXT components so the runtime
+    // renderer can dispatch the anchor click as a flow action. Only `ref` survives —
+    // `onSuccess` is a canvas-only hint used by the widget-drop edge generator, and the
+    // nextNode wiring lives in `prompts.action.nextNode` from `extractActionFromComponent`.
+    if (component.type === ElementTypes.RichText && action !== undefined) {
+      const richTextAction = action as {ref?: string};
+      if (richTextAction.ref !== undefined) {
+        cleanedComponent.action = {ref: richTextAction.ref};
+      }
+    }
 
     // For input field components, ensure ref property is set
     // ref is the attribute selected from the dropdown (e.g., 'username', 'email')
@@ -360,6 +377,27 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
 
       return action.nextNode ? action : undefined;
     }
+
+    // RICH_TEXT components with a wired action expose a source handle on the component
+    // itself (id = `${component.id}${NEXT_HANDLE_SUFFIX}`), matching the button-handle
+    // convention. An edge drawn from that handle to a target step becomes a prompt-action
+    // `{ref: component.action.ref, nextNode: <target>}`. The `ref` value is author-defined
+    // (matches the anchor's `data-action-ref` in the sanitized HTML for SDK-side click
+    // dispatch); the handle id is component-scoped so the widget-drop edge generator can
+    // wire it without knowing the ref.
+    if (component.type === ElementTypes.RichText) {
+      const richTextAction = (component as Element & {action?: {ref?: string}}).action;
+      if (!richTextAction) {
+        return undefined;
+      }
+      const expectedHandle = `${component.id}${NEXT_HANDLE_SUFFIX}`;
+      const connectedEdge = edges.find((edge) => edge.source === nodeId && edge.sourceHandle === expectedHandle);
+      if (!connectedEdge) {
+        return undefined;
+      }
+      return {ref: richTextAction.ref ?? component.id, nextNode: connectedEdge.target};
+    }
+
     return undefined;
   }
 
@@ -556,6 +594,26 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
     const nextNode = findNextNode(canvasNode, edges);
     if (nextNode) {
       flowNode.onSuccess = nextNode;
+    }
+  }
+
+  // Handle CALL nodes (cross-flow invocation)
+  if (canvasNode.type === StepTypes.Call) {
+    const callData = stepData as (StepData & {flow?: {ref?: string}}) | undefined;
+    const actionFlow = (callData?.action as (StepAction & {flow?: {ref?: string}}) | undefined)?.flow;
+    const flowRef: string | undefined = callData?.flow?.ref ?? actionFlow?.ref;
+    if (flowRef) {
+      flowNode.flow = {ref: flowRef};
+    }
+
+    const successNode = findNextNode(canvasNode, edges);
+    if (successNode) {
+      flowNode.onSuccess = successNode;
+    }
+
+    const failureEdge = edges.find((edge) => edge.source === canvasNode.id && edge.sourceHandle === 'failure');
+    if (failureEdge) {
+      flowNode.onFailure = failureEdge.target;
     }
   }
 

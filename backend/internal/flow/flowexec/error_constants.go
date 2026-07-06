@@ -194,3 +194,18 @@ var ErrorFlowSecretInvalid = tidcommon.ServiceError{
 		DefaultValue: "The provided flow secret is invalid",
 	},
 }
+
+// ErrorMaxCallDepthExceeded defines the error when the maximum allowed call depth is exceeded
+// during flow execution.
+var ErrorMaxCallDepthExceeded = tidcommon.ServiceError{
+	Code: "FES-1013",
+	Type: tidcommon.ClientErrorType,
+	Error: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.max_call_depth_exceeded",
+		DefaultValue: "Maximum call depth exceeded",
+	},
+	ErrorDescription: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.max_call_depth_exceeded_description",
+		DefaultValue: "The maximum allowed call depth has been exceeded during flow execution",
+	},
+}

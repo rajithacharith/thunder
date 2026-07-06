@@ -3432,7 +3432,6 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusT
 func (s *EngineTestSuite) TestHandleCallResponse_DepthExceeded() {
 	t := s.T()
 	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
-	mockCurrentNode.On("GetID").Return("call-node-1")
 
 	fe := &flowEngine{logger: log.GetLogger()}
 	ctx := &EngineContext{Context: context.Background(), CurrentNode: mockCurrentNode}
@@ -3449,7 +3448,7 @@ func (s *EngineTestSuite) TestHandleCallResponse_DepthExceeded() {
 	next, svcErr := fe.handleCallResponse(ctx, nodeResp, log.GetLogger())
 	s.Nil(next)
 	s.NotNil(svcErr)
-	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
+	s.Equal(ErrorMaxCallDepthExceeded.Code, svcErr.Code)
 }
 
 func (s *EngineTestSuite) TestHandleCallResponse_FlowProviderError() {
@@ -3860,7 +3859,6 @@ func (s *EngineTestSuite) TestHandleCalleeFailure_OnFailureNodeNotFound() {
 func (s *EngineTestSuite) TestProcessNodeResponse_CallStatus_DepthExceeded() {
 	t := s.T()
 	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
-	mockCurrentNode.On("GetID").Return("call-node-1")
 
 	fe := &flowEngine{logger: log.GetLogger()}
 	ctx := &EngineContext{Context: context.Background(), CurrentNode: mockCurrentNode}

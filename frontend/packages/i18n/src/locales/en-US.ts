@@ -740,6 +740,7 @@ const translations = {
     'delete.usages.none': 'No agents currently list this user as their owner.',
     'delete.usages.title': 'The following agents list this user as their owner:',
     'delete.usages.more': '+{{count}} more',
+    'delete.blocking.title': 'This user cannot be deleted until the following agents are reassigned or removed:',
   },
 
   // ============================================================================
@@ -2964,6 +2965,10 @@ const translations = {
     // Validation messages - executor
     'core.validation.fields.executor.general': 'The executor <0>{{id}}</0> is not properly configured.',
 
+    // Validation messages - call
+    'core.validation.fields.call.general': 'The Call node <0>{{id}}</0> has no referenced flow.',
+    'core.validation.fields.call.flowRef': 'Referenced flow is required',
+
     // Validation messages - button
     'core.validation.fields.button.general':
       'Required fields are not properly configured for the button with ID <code>{{id}}</code>.',
@@ -3028,6 +3033,31 @@ const translations = {
     'core.elements.richText.linkEditor.apply': 'Apply',
     'core.elements.richText.linkEditor.editLink': 'Edit Link',
     'core.elements.richText.linkEditor.viewLink': 'Link',
+    'core.elements.richText.action.description':
+      'Turn this rich text into an interactive link. When on, the link inside triggers the connected step instead of navigating.',
+    'core.elements.richText.action.enabled.label': 'Use as an interactive link',
+    'core.elements.richText.action.ref.label': 'Connected step',
+
+    // Call step
+    'core.call.unconfiguredLabel': 'Call flow',
+    'core.call.selectFlow': 'Select a flow to invoke',
+    'core.call.referencedFlow': 'Referenced flow',
+    'core.call.tooltip.configure': 'Configure',
+    'core.call.tooltip.delete': 'Delete',
+    'core.call.tooltip.openFlow': 'Open referenced flow',
+    'core.call.tooltip.openFlowDisabled': 'Configure a referenced flow to enable',
+    'core.call.handles.success': 'On success',
+    'core.call.handles.failure': 'On failure',
+    'core.call.openFlow.dialog.title': 'Open referenced flow?',
+    'core.call.openFlow.dialog.description': 'Any unsaved changes to the current flow will be lost.',
+    'core.call.openFlow.dialog.cancel': 'Cancel',
+    'core.call.openFlow.dialog.confirm': 'Continue',
+    'core.call.properties.description': 'Pick the flow to invoke when this node executes.',
+    'core.call.properties.loadError': 'Failed to load available flows',
+    'core.call.properties.flow.label': 'Referenced flow',
+    'core.call.properties.flow.placeholder': 'Select a flow',
+    'core.call.properties.flow.loading': 'Loading flows…',
+    'core.call.properties.flow.error.unknown': 'The referenced flow no longer exists. Pick a valid flow.',
 
     // Elements - text element
     'core.elements.text.align.label': 'Align',

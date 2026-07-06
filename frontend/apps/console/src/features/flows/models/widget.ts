@@ -47,7 +47,10 @@ export const WidgetTypes = {
   EUDIWallet: 'EUDI_WALLET',
   PasskeyAuthentication: 'PASSKEY_AUTHENTICATION',
   Provisioning: 'PROVISIONING',
+  MagicLink: 'MAGIC_LINK',
   SelfSignUpLink: 'SELF_SIGN_UP_LINK',
+  SignInLink: 'SIGN_IN_LINK',
+  RecoveryLink: 'RECOVERY_LINK',
 } as const;
 
 export type WidgetTypes = (typeof WidgetTypes)[keyof typeof WidgetTypes];
