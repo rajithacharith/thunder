@@ -215,7 +215,7 @@ The node below has three actions. `action-password` and `action-otp` are conditi
 
 ### Task Execution Node
 
-A TASK EXECUTION node runs a named executor — a discrete unit of server-side logic such as sending a notification, creating a user, or validating a credential. The node routes to different successor nodes based on whether the executor succeeds, fails, or requires additional input.
+A **TASK EXECUTION** node runs a named executor — a discrete unit of server-side logic such as sending a notification, creating a user, or validating a credential. The node routes to different successor nodes based on whether the executor succeeds, fails, or requires additional input.
 
 **Node configuration**
 
@@ -247,6 +247,35 @@ Node-level `properties` are injected into runtime data before the executor runs,
   "onFailure": "login-screen"
 }
 ```
+
+### Call Node
+
+A **CALL** node invokes another flow as a sub-flow. When the callee flow reaches an END node, execution resumes in the caller at the CALL node's `onSuccess` target. If the callee terminates with an error, execution resumes at `onFailure` when set; otherwise the caller flow terminates with the callee's error.
+
+Any flow can call any other flow, regardless of `flowType`. The referenced flow is resolved at runtime by its ID, so the callee can be edited independently. Nested CALLs are supported up to a fixed maximum depth of 10; exceeding it terminates the flow with a call-depth-exceeded error.
+
+**Node configuration**
+
+| Field | Required | Description |
+|---|---|---|
+| `flow.ref` | Yes | ID of the flow to invoke. |
+| `onSuccess` | Yes | ID of the node to advance to when the callee flow completes successfully. |
+| `onFailure` | No | ID of the node to forward to when the callee flow terminates with an error. Unlike TASK EXECUTION, the target does not have to be a PROMPT. |
+
+**Example**
+
+```json
+{
+  "id": "call-signup",
+  "type": "CALL",
+  "flow": {
+    "ref": "self-registration-flow-id"
+  },
+  "onSuccess": "assert-generation",
+  "onFailure": "login-screen"
+}
+```
+
 ### END
 
 The **END** node marks a successful completion of the flow. When the flow reaches an END node, <ProductName /> issues an assertion confirming the user authenticated or registered successfully. A flow can have multiple END nodes if different paths each lead to a valid completion.
@@ -267,7 +296,9 @@ Widgets are pre-built, reusable flow segments that combine a View node and one o
 | **Continue with SMS OTP** | An OTP input view wired to the Verify SMS OTP executor. |
 | **Sign In with Passkey** | A passkey prompt wired to the passkey verification executors. |
 | **Provisioning** | A Provisioning executor wired to a dynamic input view that prompts for missing schema attributes. |
-| **Self Sign Up Link** | A rich text link that redirects the user to the self-registration flow. |
+| **Self Sign Up Link** | A rich text link wired to a CALL node that invokes a registration flow. |
+| **Sign In Link** | A rich text link wired to a CALL node that invokes an authentication flow. |
+| **Recovery Link** | A rich text link wired to a CALL node that invokes a recovery flow. |
 
 ### Steps
 
@@ -299,7 +330,7 @@ Components are the individual UI elements inside a View node. Add them to a Blan
 | **Button** | A clickable button that triggers a transition to the next node. |
 | **Resend** | A control that lets the user request a new OTP or code. |
 | **Text** | A read-only label or paragraph. |
-| **Rich Text** | A styled text block that supports links and formatting. |
+| **Rich Text** | A styled text block that supports links and formatting. Optionally carries an `action: { ref }` field; when set, anchors marked with `data-action-ref` dispatch a flow action instead of navigating, letting the rich text drive a CALL or other target the same way a button would. |
 | **Divider** | A horizontal rule that visually separates sections of a screen. |
 | **Image** | An image element such as a logo or illustration. |
 | **Stack** | A layout container that groups other components. |
