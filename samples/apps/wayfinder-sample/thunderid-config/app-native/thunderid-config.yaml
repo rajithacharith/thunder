@@ -1196,7 +1196,7 @@ nodes:
           components:
             - id: consent_input
               ref: consent_decisions
-              type: CONSENT
+              type: CONSENT_INPUT
               required: true
             - type: ACTION
               id: consent_action_deny
@@ -1212,7 +1212,7 @@ nodes:
       - inputs:
           - ref: consent_input
             identifier: consent_decisions
-            type: CONSENT
+            type: CONSENT_INPUT
             required: true
         action:
           ref: consent_action_allow
@@ -1220,7 +1220,7 @@ nodes:
       - inputs:
           - ref: consent_input
             identifier: consent_decisions
-            type: CONSENT
+            type: CONSENT_INPUT
             required: true
         action:
           ref: consent_action_deny
@@ -1401,7 +1401,7 @@ nodes:
           components:
             - id: consent_input
               ref: consent_decisions
-              type: CONSENT
+              type: CONSENT_INPUT
               required: true
             - type: ACTION
               id: consent_action_deny
@@ -1417,7 +1417,7 @@ nodes:
       - inputs:
           - ref: consent_input
             identifier: consent_decisions
-            type: CONSENT
+            type: CONSENT_INPUT
             required: true
         action:
           ref: consent_action_allow
@@ -1425,7 +1425,7 @@ nodes:
       - inputs:
           - ref: consent_input
             identifier: consent_decisions
-            type: CONSENT
+            type: CONSENT_INPUT
             required: true
         action:
           ref: consent_action_deny
@@ -1847,3 +1847,11 @@ attributes:
   displayName: Alex Carter
 credentials:
   password: "{{.ALEX_CARTER_PASSWORD}}"
+
+---
+# resource_type: server_config
+# Allows the Wayfinder web app's browser origin to call the server
+name: cors
+value:
+  allowedOrigins:
+    - "http://localhost:5173"
