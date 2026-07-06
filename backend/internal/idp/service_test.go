@@ -35,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/config"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
 )
@@ -43,6 +44,29 @@ type mockTransactioner struct{}
 
 func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
 	return operation(ctx)
+}
+
+// stubDependencyRegistry is a minimal resourcedependency.Registry for tests.
+type stubDependencyRegistry struct {
+	resp *resourcedependency.DependenciesResponse
+	err  error
+}
+
+func (r *stubDependencyRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (r *stubDependencyRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return r.resp, r.err
+}
+
+// newNoBlockingDepsRegistry returns a registry reporting confirmed-empty dependencies, so that
+// deletion is permitted by the blocking guard.
+func newNoBlockingDepsRegistry() *stubDependencyRegistry {
+	total := 0
+	return &stubDependencyRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Usages:       []resourcedependency.ResourceDependency{},
+	}}
 }
 
 type IDPServiceTestSuite struct {
@@ -73,11 +97,12 @@ func (s *IDPServiceTestSuite) SetupTest() {
 	s.mockStore = newIdpStoreInterfaceMock(s.T())
 	s.mockET = entitytypemock.NewEntityTypeServiceInterfaceMock(s.T())
 	s.idpService = &idpService{
-		idpStore:          s.mockStore,
-		transactioner:     &mockTransactioner{},
-		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
-		uuidGenerator:     utils.GenerateUUIDv7,
-		entityTypeService: s.mockET,
+		idpStore:           s.mockStore,
+		transactioner:      &mockTransactioner{},
+		dependencyRegistry: newNoBlockingDepsRegistry(),
+		logger:             log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+		uuidGenerator:      utils.GenerateUUIDv7,
+		entityTypeService:  s.mockET,
 	}
 }
 
@@ -751,6 +776,52 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_StoreError() {
 	s.mockStore.AssertExpectations(s.T())
 }
 
+// TestDeleteIdentityProvider_BlockedByFlow verifies deletion is refused when a flow references the IDP.
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_BlockedByFlow() {
+	total := 1
+	s.idpService.dependencyRegistry = &stubDependencyRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: resourcedependency.ResourceTypeFlow, ID: "flow-1",
+				DisplayName: "Google Login", BehaviorOnDelete: resourcedependency.BehaviorRestrict},
+		},
+	}}
+
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
+
+	s.NotNil(err)
+	s.Equal(ErrorIDPHasBlockingDependencies.Code, err.Code)
+	s.mockStore.AssertNotCalled(s.T(), "DeleteIdentityProvider", mock.Anything, mock.Anything)
+}
+
+// TestDeleteIdentityProvider_RefusedWhenDependenciesUnknown verifies deletion fails closed when a
+// provider fails to report dependency data.
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_RefusedWhenDependenciesUnknown() {
+	s.idpService.dependencyRegistry = &stubDependencyRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: nil,
+		Usages:       []resourcedependency.ResourceDependency{},
+	}}
+
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
+
+	s.NotNil(err)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
+	s.mockStore.AssertNotCalled(s.T(), "DeleteIdentityProvider", mock.Anything, mock.Anything)
+}
+
+// TestDeleteIdentityProvider_RefusedWhenRegistryUnset verifies deletion fails closed when the
+// dependency registry was never wired in.
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_RefusedWhenRegistryUnset() {
+	s.idpService.dependencyRegistry = nil
+
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
+
+	s.NotNil(err)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
+	s.mockStore.AssertNotCalled(s.T(), "DeleteIdentityProvider", mock.Anything, mock.Anything)
+}
+
 // TestCreateIdentityProvider_DeclarativeModeEnabled tests creation is blocked when declarative mode is enabled
 func (s *IDPServiceTestSuite) TestCreateIdentityProvider_DeclarativeModeEnabled() {
 	config.ResetServerRuntime()
@@ -1006,6 +1077,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP(
 	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
 
 	service := newIDPService(compositeStore, nil, &mockTransactioner{})
+	service.SetDependencyRegistry(newNoBlockingDepsRegistry())
 
 	err := service.DeleteIdentityProvider(context.Background(), idpID)
 
@@ -1043,6 +1115,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP()
 	dbStore.On("DeleteIdentityProvider", context.Background(), idpID).Return(nil)
 
 	service := newIDPService(compositeStore, nil, &mockTransactioner{})
+	service.SetDependencyRegistry(newNoBlockingDepsRegistry())
 
 	err := service.DeleteIdentityProvider(context.Background(), idpID)
 

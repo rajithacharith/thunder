@@ -23,6 +23,9 @@ package resourcedependency
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
@@ -59,12 +62,33 @@ func BlockingUsages(resp *DependenciesResponse) []ResourceDependency {
 
 // Resource type identifiers shared across dependency providers and consumers.
 const (
-	ResourceTypeTheme       = "theme"
-	ResourceTypeFlow        = "flow"
-	ResourceTypeUser        = "user"
-	ResourceTypeApplication = "application"
-	ResourceTypeAgent       = "agent"
+	ResourceTypeTheme              = "theme"
+	ResourceTypeFlow               = "flow"
+	ResourceTypeUser               = "user"
+	ResourceTypeApplication        = "application"
+	ResourceTypeAgent              = "agent"
+	ResourceTypeIDP                = "idp"
+	ResourceTypeNotificationSender = "notificationSender"
 )
+
+// SummarizeBlockingUsages renders a deterministic, human-readable summary of blocking dependencies
+// grouped by resource type, e.g. "2 flow(s)".
+func SummarizeBlockingUsages(usages []ResourceDependency) string {
+	counts := make(map[string]int)
+	for _, u := range usages {
+		counts[u.ResourceType]++
+	}
+	types := make([]string, 0, len(counts))
+	for rt := range counts {
+		types = append(types, rt)
+	}
+	sort.Strings(types)
+	parts := make([]string, 0, len(types))
+	for _, rt := range types {
+		parts = append(parts, fmt.Sprintf("%d %s(s)", counts[rt], rt))
+	}
+	return strings.Join(parts, ", ")
+}
 
 // ResourceDependency describes one resource that references another resource.
 type ResourceDependency struct {

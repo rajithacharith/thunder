@@ -1910,3 +1910,87 @@ func (s *FlowMgtServiceTestSuite) TestDeleteFlow_MutableFlowAllowed() {
 	s.mockStore.AssertExpectations(s.T())
 	s.mockGraphBuilder.AssertExpectations(s.T())
 }
+
+// GetResourceDependencies tests
+
+func (s *FlowMgtServiceTestSuite) TestGetResourceDependencies_UnrelatedResourceTypeReturnsEmpty() {
+	usages, err := s.service.GetResourceDependencies(
+		context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+
+	s.NoError(err)
+	s.Empty(usages)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetResourceDependencies_FlowReferencesIDP() {
+	idpID := "idp-1"
+	s.mockStore.EXPECT().ListActiveFlowsWithNodes(mock.Anything).Return([]*providers.CompleteFlowDefinition{
+		{
+			ID:   "flow1",
+			Name: "Google Login",
+			Nodes: []providers.NodeDefinition{
+				{ID: "start", Type: "START"},
+				{ID: "oidc", Type: "TASK_EXECUTION", Properties: map[string]interface{}{"idpId": idpID}},
+			},
+		},
+		{
+			ID:   "flow2",
+			Name: "Basic Login",
+			Nodes: []providers.NodeDefinition{
+				{ID: "start", Type: "START"},
+				{ID: "pw", Type: "TASK_EXECUTION", Properties: map[string]interface{}{"idpId": "other-idp"}},
+			},
+		},
+	}, nil)
+
+	usages, err := s.service.GetResourceDependencies(
+		context.Background(), resourcedependency.ResourceTypeIDP, idpID)
+
+	s.NoError(err)
+	s.Len(usages, 1)
+	s.Equal("flow1", usages[0].ID)
+	s.Equal(resourcedependency.ResourceTypeFlow, usages[0].ResourceType)
+	s.Equal("Google Login", usages[0].DisplayName)
+	s.Equal(resourcedependency.BehaviorRestrict, usages[0].BehaviorOnDelete)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetResourceDependencies_FlowReferencesNotificationSender() {
+	senderID := "sender-1"
+	s.mockStore.EXPECT().ListActiveFlowsWithNodes(mock.Anything).Return([]*providers.CompleteFlowDefinition{
+		{
+			ID:   "flow1",
+			Name: "SMS OTP",
+			Nodes: []providers.NodeDefinition{
+				{ID: "sms", Type: "TASK_EXECUTION", Properties: map[string]interface{}{"senderId": senderID}},
+			},
+		},
+	}, nil)
+
+	usages, err := s.service.GetResourceDependencies(
+		context.Background(), resourcedependency.ResourceTypeNotificationSender, senderID)
+
+	s.NoError(err)
+	s.Len(usages, 1)
+	s.Equal("flow1", usages[0].ID)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetResourceDependencies_NoReferencingFlows() {
+	s.mockStore.EXPECT().ListActiveFlowsWithNodes(mock.Anything).Return([]*providers.CompleteFlowDefinition{
+		{ID: "flow1", Nodes: []providers.NodeDefinition{{ID: "start", Type: "START"}}},
+	}, nil)
+
+	usages, err := s.service.GetResourceDependencies(
+		context.Background(), resourcedependency.ResourceTypeIDP, "idp-1")
+
+	s.NoError(err)
+	s.Empty(usages)
+}
+
+func (s *FlowMgtServiceTestSuite) TestGetResourceDependencies_ListError() {
+	s.mockStore.EXPECT().ListActiveFlowsWithNodes(mock.Anything).Return(nil, errors.New("db error"))
+
+	usages, err := s.service.GetResourceDependencies(
+		context.Background(), resourcedependency.ResourceTypeIDP, "idp-1")
+
+	s.Error(err)
+	s.Nil(usages)
+}
