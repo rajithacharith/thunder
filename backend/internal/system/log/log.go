@@ -22,6 +22,7 @@ package log
 import (
 	"context"
 	"errors"
+	stdlog "log"
 	"log/slog"
 	"os"
 	"strings"
@@ -181,6 +182,27 @@ func (l *Logger) Error(ctx context.Context, msg string, fields ...Field) {
 func (l *Logger) Fatal(ctx context.Context, msg string, fields ...Field) {
 	l.internal.ErrorContext(ctx, msg, convertFields(fields)...)
 	os.Exit(1)
+}
+
+// serverErrorWriter adapts the standard library logger output used by
+// http.Server.ErrorLog into the framework logger. Connection-level errors
+// such as TLS handshake failures are emitted at WARN level so they are
+// routed through the structured logger instead of being written raw to stderr.
+type serverErrorWriter struct {
+	logger *Logger
+}
+
+// Write forwards each http.Server error line to the framework logger at WARN level.
+func (w *serverErrorWriter) Write(p []byte) (int, error) {
+	w.logger.Warn(context.Background(), strings.TrimSpace(string(p)))
+	return len(p), nil
+}
+
+// NewServerErrorLog returns a standard library *log.Logger suitable for
+// http.Server.ErrorLog that routes server connection errors (e.g. TLS
+// handshake errors) through the framework logger at WARN level.
+func NewServerErrorLog(logger *Logger) *stdlog.Logger {
+	return stdlog.New(&serverErrorWriter{logger: logger}, "", 0)
 }
 
 // parseLogLevel parses the log level string and returns the corresponding slog.Level.

@@ -212,6 +212,7 @@ func createHTTPServer(ctx context.Context, logger *log.Logger, cfg *config.Confi
 		ReadHeaderTimeout: 10 * time.Second, // Mitigate Slowloris attacks
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,
+		ErrorLog:          log.NewServerErrorLog(logger),
 	}
 
 	return server
