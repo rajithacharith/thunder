@@ -514,7 +514,8 @@ func handleError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.S
 			ErrorUserNotFound.Code,
 			ErrorOrganizationUnitNotFound.Code:
 			statusCode = http.StatusNotFound
-		case ErrorAttributeConflict.Code:
+		case ErrorAttributeConflict.Code,
+			ErrorUserHasBlockingDependencies.Code:
 			statusCode = http.StatusConflict
 		case ErrorHandlePathRequired.Code,
 			ErrorInvalidHandlePath.Code,

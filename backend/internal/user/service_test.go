@@ -888,8 +888,9 @@ func TestUserService_DeleteUser(t *testing.T) {
 	storeMock.On("DeleteEntity", mock.Anything, userID).Return(nil).Once()
 
 	service := &userService{
-		entityService: storeMock,
-		authzService:  newAllowAllAuthz(t),
+		entityService:      storeMock,
+		authzService:       newAllowAllAuthz(t),
+		dependencyRegistry: newNoBlockingDepsRegistry(),
 	}
 
 	err := service.DeleteUser(context.Background(), userID)
@@ -1791,10 +1792,11 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 	entityTypeMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
 	authzMock := newAllowAllAuthz(t)
 	service := &userService{
-		entityService:     storeMock,
-		ouService:         ouServiceMock,
-		entityTypeService: entityTypeMock,
-		authzService:      authzMock,
+		entityService:      storeMock,
+		ouService:          ouServiceMock,
+		entityTypeService:  entityTypeMock,
+		authzService:       authzMock,
+		dependencyRegistry: newNoBlockingDepsRegistry(),
 	}
 	ctx := context.Background()
 
@@ -2793,6 +2795,101 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// DeleteUser – blocking dependency guard
+// ---------------------------------------------------------------------------
+
+// newDeletableUserStore builds an entity mock for a user that passes the pre-delete checks.
+func newDeletableUserStore(t *testing.T) *entitymock.EntityServiceInterfaceMock {
+	t.Helper()
+	storeMock := entitymock.NewEntityServiceInterfaceMock(t)
+	storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
+	storeMock.On("GetEntity", mock.Anything, svcTestUserID1).
+		Return(&providers.Entity{
+			Category: providers.EntityCategoryUser, ID: svcTestUserID1, OUID: testOrgID,
+		}, nil).Once()
+	return storeMock
+}
+
+func TestUserService_DeleteUser_BlockedByOwnedAgent(t *testing.T) {
+	userID := svcTestUserID1
+	storeMock := newDeletableUserStore(t)
+
+	service := &userService{
+		entityService:      storeMock,
+		authzService:       newAllowAllAuthz(t),
+		dependencyRegistry: newBlockingDepsRegistry(),
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorUserHasBlockingDependencies.Code, err.Code)
+	storeMock.AssertNotCalled(t, "DeleteEntity", mock.Anything, mock.Anything)
+}
+
+func TestUserService_DeleteUser_AllowedWhenOnlyNonBlockingDependencies(t *testing.T) {
+	userID := svcTestUserID1
+	storeMock := newDeletableUserStore(t)
+	storeMock.On("DeleteEntity", mock.Anything, userID).Return(nil).Once()
+
+	total := 1
+	registry := &stubUsageRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: resourcedependency.ResourceTypeApplication, ID: "app-1",
+				DisplayName: "Portal", BehaviorOnDelete: resourcedependency.BehaviorFallback},
+		},
+	}}
+
+	service := &userService{
+		entityService:      storeMock,
+		authzService:       newAllowAllAuthz(t),
+		dependencyRegistry: registry,
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.Nil(t, err)
+	storeMock.AssertNumberOfCalls(t, "DeleteEntity", 1)
+}
+
+func TestUserService_DeleteUser_RefusedWhenDependenciesUnknown(t *testing.T) {
+	userID := svcTestUserID1
+	storeMock := newDeletableUserStore(t)
+
+	// TotalResults nil signals a provider failed to report; deletion must fail closed.
+	registry := &stubUsageRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: nil,
+		Usages:       []resourcedependency.ResourceDependency{},
+	}}
+
+	service := &userService{
+		entityService:      storeMock,
+		authzService:       newAllowAllAuthz(t),
+		dependencyRegistry: registry,
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.NotNil(t, err)
+	require.Equal(t, tidcommon.InternalServerError.Code, err.Code)
+	storeMock.AssertNotCalled(t, "DeleteEntity", mock.Anything, mock.Anything)
+}
+
+func TestUserService_DeleteUser_RefusedWhenRegistryUnset(t *testing.T) {
+	userID := svcTestUserID1
+	storeMock := newDeletableUserStore(t)
+
+	service := &userService{
+		entityService: storeMock,
+		authzService:  newAllowAllAuthz(t),
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.NotNil(t, err)
+	require.Equal(t, tidcommon.InternalServerError.Code, err.Code)
+	storeMock.AssertNotCalled(t, "DeleteEntity", mock.Anything, mock.Anything)
+}
+
 // TestUpdateUser_DeclarativeResource tests that UpdateUser returns ErrorCannotModifyDeclarativeResource
 // when the user is declarative.
 func TestUpdateUser_DeclarativeResource(t *testing.T) {
@@ -3371,8 +3468,9 @@ func TestUserService_DeleteUser_NotFoundOnDelete(t *testing.T) {
 	storeMock.On("DeleteEntity", mock.Anything, userID).Return(entitypkg.ErrEntityNotFound).Once()
 
 	service := &userService{
-		entityService: storeMock,
-		authzService:  newAllowAllAuthz(t),
+		entityService:      storeMock,
+		authzService:       newAllowAllAuthz(t),
+		dependencyRegistry: newNoBlockingDepsRegistry(),
 	}
 
 	err := service.DeleteUser(context.Background(), userID)
@@ -3496,6 +3594,30 @@ func (s *stubUsageRegistry) GetDependencies(
 
 func newUserForUsages(id string) *providers.Entity {
 	return &providers.Entity{ID: id, Category: providers.EntityCategoryUser, Type: "Person"}
+}
+
+// newNoBlockingDepsRegistry returns a registry reporting confirmed-empty dependencies, so that
+// deletion is permitted by the blocking guard.
+func newNoBlockingDepsRegistry() *stubUsageRegistry {
+	total := 0
+	return &stubUsageRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Usages:       []resourcedependency.ResourceDependency{},
+	}}
+}
+
+// newBlockingDepsRegistry returns a registry reporting a single blocking (restrict) dependency.
+func newBlockingDepsRegistry() *stubUsageRegistry {
+	total := 1
+	return &stubUsageRegistry{resp: &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Summary:      map[string]int{resourcedependency.ResourceTypeAgent: 1},
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: resourcedependency.ResourceTypeAgent, ID: "agent-1",
+				DisplayName: "Support Agent", BehaviorOnDelete: resourcedependency.BehaviorRestrict},
+		},
+	}}
 }
 
 func TestUserService_GetUserUsages_MissingID(t *testing.T) {

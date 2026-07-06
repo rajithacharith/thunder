@@ -312,6 +312,21 @@ var (
 			DefaultValue: "Multiple users match the provided filters",
 		},
 	}
+	// ErrorUserHasBlockingDependencies is returned when a user cannot be deleted because other
+	// resources depend on it in a way that forbids deletion (e.g. agents owned by the user).
+	ErrorUserHasBlockingDependencies = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "USR-1027",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.userservice.user_has_blocking_dependencies",
+			DefaultValue: "User cannot be deleted",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key: "error.userservice.user_has_blocking_dependencies_description",
+			DefaultValue: "The user cannot be deleted because other resources depend on it. " +
+				"Remove or reassign them first.",
+		},
+	}
 )
 
 // Error variables
