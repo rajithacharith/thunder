@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -25,6 +25,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -32,9 +33,10 @@ import (
 
 // tokenExchangeGrantHandler handles the token exchange grant type.
 type tokenExchangeGrantHandler struct {
-	tokenBuilder    tokenservice.TokenBuilderInterface
-	tokenValidator  tokenservice.TokenValidatorInterface
-	resourceService providers.ResourceServerProvider
+	tokenBuilder       tokenservice.TokenBuilderInterface
+	tokenValidator     tokenservice.TokenValidatorInterface
+	resourceService    providers.ResourceServerProvider
+	enforcementService revocation.EnforcementServiceInterface
 }
 
 // newTokenExchangeGrantHandler creates a new instance of tokenExchangeGrantHandler.
@@ -42,11 +44,13 @@ func newTokenExchangeGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	resourceService providers.ResourceServerProvider,
+	enforcementService revocation.EnforcementServiceInterface,
 ) GrantHandlerInterface {
 	return &tokenExchangeGrantHandler{
-		tokenBuilder:    tokenBuilder,
-		tokenValidator:  tokenValidator,
-		resourceService: resourceService,
+		tokenBuilder:       tokenBuilder,
+		tokenValidator:     tokenValidator,
+		resourceService:    resourceService,
+		enforcementService: enforcementService,
 	}
 }
 
@@ -151,6 +155,17 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 		return nil, errResp
 	}
 
+	// Reject a revoked subject token (RFC 7009 deny list). JTI is set only for self-issued tokens.
+	subjectRevoked := &model.ErrorResponse{
+		Error:            constants.ErrorInvalidRequest,
+		ErrorDescription: "Invalid subject_token",
+	}
+	if errResp := enforceRevocation(
+		ctx, h.enforcementService, subjectClaims.JTI, subjectRevoked, logger,
+	); errResp != nil {
+		return nil, errResp
+	}
+
 	// Validate and extract actor token claims if present
 	var actorClaims *tokenservice.SubjectTokenClaims
 	if tokenRequest.ActorToken != "" {
@@ -161,6 +176,15 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 				Error:            constants.ErrorInvalidRequest,
 				ErrorDescription: "Invalid actor_token",
 			}
+		}
+		actorRevoked := &model.ErrorResponse{
+			Error:            constants.ErrorInvalidRequest,
+			ErrorDescription: "Invalid actor_token",
+		}
+		if errResp := enforceRevocation(
+			ctx, h.enforcementService, actorClaims.JTI, actorRevoked, logger,
+		); errResp != nil {
+			return nil, errResp
 		}
 	}
 
