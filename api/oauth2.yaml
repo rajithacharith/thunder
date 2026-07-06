@@ -23,6 +23,8 @@ tags:
     description: OAuth 2.0 token endpoint for issuing access tokens, refresh tokens, and ID tokens.
   - name: Introspection
     description: Token introspection per RFC 7662.
+  - name: Revocation
+    description: Token revocation per RFC 7009.
   - name: PAR
     description: Pushed Authorization Requests per RFC 9126.
   - name: JWKS
@@ -323,6 +325,51 @@ paths:
                 $ref: '#/components/schemas/OAuthError'
         "401":
           description: Unauthorized — client authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+
+  /oauth2/revoke:
+    post:
+      summary: Token revocation endpoint
+      description: |
+        Revokes a previously issued access or refresh token. On success the server responds with
+        HTTP 200 and an empty body. A token that cannot be validated — bad signature, malformed, or
+        unknown — is treated as a successful no-op per RFC 7009. Expired tokens with a valid
+        signature remain revocable. Requires client authentication; a client may only revoke tokens
+        issued to it. Implements RFC 7009.
+      tags:
+        - Revocation
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            example:
+              token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Token revoked, or a no-op success for a token that cannot be validated. Empty body.
+        "400":
+          description: >-
+            Bad Request — the token parameter is missing (`invalid_request`), or the token was
+            issued to a different client (`invalid_grant`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+        "401":
+          description: Unauthorized — client authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+        "500":
+          description: >-
+            Internal server error — the revocation could not be recorded, for example when the
+            operation database is unavailable.
           content:
             application/json:
               schema:
@@ -656,6 +703,21 @@ components:
         token_type_hint:
           type: string
           description: Hint about the type of the submitted token.
+
+    RevokeRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: The access or refresh token to revoke.
+        token_type_hint:
+          type: string
+          description: >-
+            Hint about the type of the submitted token (`access_token` or `refresh_token`). Accepted
+            per RFC 7009 §2.1 but optional; ThunderID tokens are self-describing, so the hint does not
+            affect processing.
 
     IntrospectResponse:
       type: object
