@@ -269,7 +269,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize template service", log.Error(err))
 	}
 
-	_, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(
+	notifSenderMgtSvc, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(
 		mux, jwtService, templateService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize NotificationService", log.Error(err))
@@ -399,9 +399,16 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, agentExporter)
 
-	// Wire the dependency registry into the theme and flow services (two-phase init to avoid
-	// cyclic imports).
-	registerDependencyRegistry(themeMgtService, flowMgtService, userService, applicationService, agentService)
+	// Wire the dependency registry into the consuming services (two-phase init to avoid cyclic
+	// imports). flowMgtService is both a consumer and a provider: it reports which flows reference an
+	// identity provider or notification sender.
+	registerDependencyRegistry(dependencyConsumers{
+		theme:       themeMgtService,
+		flow:        flowMgtService,
+		user:        userService,
+		idp:         idpService,
+		notifSender: notifSenderMgtSvc,
+	}, applicationService, agentService, flowMgtService)
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
@@ -464,18 +471,25 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	return jwtService, runtimeCryptoSvc, importService
 }
 
-// registerDependencyRegistry builds the dependency registry from the given providers and wires
-// it into the theme, flow and user management services.
-func registerDependencyRegistry(
-	themeMgtService thememgt.ThemeMgtServiceInterface,
-	flowMgtService flowmgt.FlowMgtServiceInterface,
-	userService user.UserServiceInterface,
-	providers ...resourcedependency.Provider,
-) {
+// dependencyConsumers groups the services that check the dependency registry before deleting their
+// own resources.
+type dependencyConsumers struct {
+	theme       thememgt.ThemeMgtServiceInterface
+	flow        flowmgt.FlowMgtServiceInterface
+	user        user.UserServiceInterface
+	idp         idp.IDPServiceInterface
+	notifSender notification.NotificationSenderMgtSvcInterface
+}
+
+// registerDependencyRegistry builds the dependency registry from the given providers and wires it
+// into the consuming services.
+func registerDependencyRegistry(consumers dependencyConsumers, providers ...resourcedependency.Provider) {
 	registry := resourcedependency.Initialize(providers...)
-	themeMgtService.SetDependencyRegistry(registry)
-	flowMgtService.SetDependencyRegistry(registry)
-	userService.SetDependencyRegistry(registry)
+	consumers.theme.SetDependencyRegistry(registry)
+	consumers.flow.SetDependencyRegistry(registry)
+	consumers.user.SetDependencyRegistry(registry)
+	consumers.idp.SetDependencyRegistry(registry)
+	consumers.notifSender.SetDependencyRegistry(registry)
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

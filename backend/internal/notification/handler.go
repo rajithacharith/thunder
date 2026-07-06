@@ -282,7 +282,8 @@ func (h *messageNotificationSenderHandler) handleError(ctx context.Context, w ht
 		switch svcErr.Code {
 		case ErrorSenderNotFound.Code:
 			statusCode = http.StatusNotFound
-		case ErrorDuplicateSenderName.Code:
+		case ErrorDuplicateSenderName.Code,
+			ErrorSenderHasBlockingDependencies.Code:
 			statusCode = http.StatusConflict
 		default:
 			statusCode = http.StatusBadRequest

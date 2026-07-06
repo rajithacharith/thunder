@@ -30,6 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -49,15 +50,17 @@ type IDPServiceInterface interface {
 		idp *providers.IDPDTO,
 	) (*providers.IDPDTO, *tidcommon.ServiceError)
 	DeleteIdentityProvider(ctx context.Context, idpID string) *tidcommon.ServiceError
+	SetDependencyRegistry(r resourcedependency.Registry)
 }
 
 // idpService is the default implementation of the IdPServiceInterface.
 type idpService struct {
-	idpStore          idpStoreInterface
-	entityTypeService entitytype.EntityTypeServiceInterface
-	transactioner     transaction.Transactioner
-	logger            *log.Logger
-	uuidGenerator     func() (string, error)
+	idpStore           idpStoreInterface
+	entityTypeService  entitytype.EntityTypeServiceInterface
+	transactioner      transaction.Transactioner
+	dependencyRegistry resourcedependency.Registry
+	logger             *log.Logger
+	uuidGenerator      func() (string, error)
 }
 
 // newIDPService creates a new instance of IdPService.
@@ -296,6 +299,11 @@ func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) 
 		return &ErrorInvalidIDPID
 	}
 
+	// Refuse deletion while other resources block it (e.g. flows that reference the identity provider).
+	if svcErr := is.ensureNoBlockingDependencies(ctx, idpID); svcErr != nil {
+		return svcErr
+	}
+
 	var svcErr *tidcommon.ServiceError
 	err := is.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		// Check if the identity provider exists
@@ -328,6 +336,51 @@ func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) 
 	}
 
 	return nil
+}
+
+// SetDependencyRegistry injects the dependency registry. Called by servicemanager after the
+// provider services are initialized to avoid a cyclic import.
+func (is *idpService) SetDependencyRegistry(r resourcedependency.Registry) {
+	is.dependencyRegistry = r
+}
+
+// ensureNoBlockingDependencies refuses deletion when other resources depend on the identity provider
+// in a way that forbids it (behaviorOnDelete == restrict), such as flows that reference it. Because
+// deletion is destructive, it fails closed: if dependency data cannot be determined, the deletion is
+// refused rather than allowed.
+func (is *idpService) ensureNoBlockingDependencies(ctx context.Context, idpID string) *tidcommon.ServiceError {
+	if is.dependencyRegistry == nil {
+		is.logger.Error(ctx, "Dependency registry not set; refusing to delete identity provider",
+			log.String("idpID", idpID))
+		return &tidcommon.InternalServerError
+	}
+
+	deps, err := is.dependencyRegistry.GetDependencies(ctx, resourcedependency.ResourceTypeIDP, idpID)
+	if err != nil {
+		is.logger.Error(ctx, "Failed to evaluate identity provider dependencies",
+			log.Error(err), log.String("idpID", idpID))
+		return &tidcommon.InternalServerError
+	}
+	// Fail closed: nil TotalResults means a provider failed to report, so usage is unknown.
+	if deps == nil || deps.TotalResults == nil {
+		is.logger.Error(ctx, "Identity provider dependency data unavailable; refusing to delete",
+			log.String("idpID", idpID))
+		return &tidcommon.InternalServerError
+	}
+
+	blocking := resourcedependency.BlockingUsages(deps)
+	if len(blocking) == 0 {
+		return nil
+	}
+
+	is.logger.Debug(ctx, "Identity provider has blocking dependencies; deletion refused",
+		log.String("idpID", idpID), log.Int("blockingCount", len(blocking)))
+	return tidcommon.CustomServiceError(ErrorIDPHasBlockingDependencies, tidcommon.I18nMessage{
+		Key: "error.idpservice.idp_has_blocking_dependencies_description",
+		DefaultValue: fmt.Sprintf(
+			"The identity provider cannot be deleted because %s depend on it. Remove or reassign them first.",
+			resourcedependency.SummarizeBlockingUsages(blocking)),
+	})
 }
 
 // validateAttributeConfiguration validates the IDP's attribute configuration: a required default user type, and
