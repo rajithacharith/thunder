@@ -475,3 +475,19 @@ const (
 	StatusInProgress = "in_progress"
 	StatusPending    = "pending"
 )
+
+// RuntimeStoreNamespace identifies the category of data stored in the runtime store.
+type RuntimeStoreNamespace string
+
+// Namespace constants for the runtime store. All namespaces follow the <category>:<type> format.
+const (
+	NamespaceFlow      RuntimeStoreNamespace = "flow:state"
+	NamespaceAuthzCode RuntimeStoreNamespace = "authz:code"
+	NamespaceAuthzReq  RuntimeStoreNamespace = "authz:req"
+	NamespacePAR       RuntimeStoreNamespace = "par:req"
+	NamespaceCIBA      RuntimeStoreNamespace = "ciba:req"
+	NamespaceJTI       RuntimeStoreNamespace = "jti:token"
+	NamespaceVCINonce  RuntimeStoreNamespace = "vci:nonce"
+	NamespaceVCIOffer  RuntimeStoreNamespace = "vci:offer"
+	NamespaceVPState   RuntimeStoreNamespace = "vp:state"
+)
