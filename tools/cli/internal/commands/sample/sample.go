@@ -283,6 +283,17 @@ func runWithResult(
 		}
 	}
 
+	// Free ports held by a previous run's sample services before restarting. A
+	// stale frontend still bound to 5173, for example, would otherwise push the
+	// new dev server to another port while the browser keeps hitting the old one.
+	ports := sampleServicePorts(aiEnabled)
+	for _, p := range ports {
+		setup.KillPort(p)
+	}
+	for _, p := range ports {
+		setup.WaitForPortFree(p, 10*time.Second)
+	}
+
 	// Start sample services.
 	progress("Starting " + sampleName + " services...")
 	if err := startSampleServices(sampleDir, aiEnabled); err != nil {
@@ -292,8 +303,16 @@ func runWithResult(
 	return proc, meta.sampleURL, serverURL, nil
 }
 
+// defaultAuthMode is the sample auth mode the CLI provisions. The wayfinder
+// config is organized by auth mode (e.g. "redirect", "app-native"); the
+// redirect flow is the default consumer experience.
+const defaultAuthMode = "redirect"
+
 // findSampleConfig locates the config YAML and env file within dir.
 // The ZIP may extract to a nested subdirectory, so we search one level deep.
+// The config may live under an auth-mode subdirectory such as
+// <slug>-config/redirect (current layout) or directly under <slug>-config
+// (legacy layout); both are checked, in that order.
 func findSampleConfig(dir string) (configYAML, configEnv, sampleDir string, err error) {
 	candidates := []string{dir}
 	entries, _ := os.ReadDir(dir)
@@ -302,15 +321,19 @@ func findSampleConfig(dir string) (configYAML, configEnv, sampleDir string, err 
 			candidates = append(candidates, filepath.Join(dir, e.Name()))
 		}
 	}
+	configDir := product.Slug + "-config"
+	configSubDirs := []string{filepath.Join(configDir, defaultAuthMode), configDir}
 	for _, base := range candidates {
-		configDir := product.Slug + "-config"
-		yaml := filepath.Join(base, configDir, configDir+".yaml")
-		env := filepath.Join(base, configDir, product.Slug+".env")
-		if _, err := os.Stat(yaml); err == nil {
-			return yaml, env, base, nil
+		for _, sub := range configSubDirs {
+			yaml := filepath.Join(base, sub, configDir+".yaml")
+			env := filepath.Join(base, sub, product.Slug+".env")
+			if _, err := os.Stat(yaml); err == nil {
+				return yaml, env, base, nil
+			}
 		}
 	}
-	return "", "", "", fmt.Errorf("%s-config/%s-config.yaml not found in %s", product.Slug, product.Slug, dir)
+	return "", "", "", fmt.Errorf("%s/%s.yaml not found in %s",
+		filepath.Join(configDir, defaultAuthMode), configDir, dir)
 }
 
 // parseEnvFile reads KEY=VALUE lines into a map.
@@ -361,7 +384,8 @@ func ReadServiceEnv(sampleDir, envTarget string) map[string]string {
 }
 
 // writeResources splits the multi-document YAML, substitutes template variables,
-// and writes each document to thunderRoot/repository/resources/<type>/<id>.yaml.
+// and writes each document to thunderRoot/config/resources/<type>/<id>.yaml,
+// the directory the server loads declarative resources from at startup.
 func writeResources(yamlPath string, vars map[string]string, thunderRoot string) error {
 	raw, err := os.ReadFile(yamlPath)
 	if err != nil {
@@ -398,7 +422,7 @@ func writeResources(yamlPath string, vars map[string]string, thunderRoot string)
 			filename = fmt.Sprintf("%s_%04d.yaml", resourceType, i)
 		}
 
-		target := filepath.Join(thunderRoot, "repository", "resources", dir)
+		target := filepath.Join(thunderRoot, "config", "resources", dir)
 		if err := os.MkdirAll(target, 0o755); err != nil {
 			return err
 		}
@@ -482,6 +506,23 @@ func writeServiceEnv(sampleDir, thunderURL string, vars map[string]string, opts 
 		b.WriteString(k + "=" + v + "\n")
 	}
 	return os.WriteFile(filepath.Join(sampleDir, opts.EnvTarget, ".env"), []byte(b.String()), 0o644)
+}
+
+// sampleServicePorts returns the localhost ports the sample's dev services bind,
+// so a previous run's orphaned processes can be freed before restarting. The
+// ai-agent (8790) only runs in AI mode.
+func sampleServicePorts(aiEnabled bool) []int {
+	ports := []int{
+		5173, // frontend (Vite)
+		8787, // backend API
+		8788, // SMTP inbox UI
+		2525, // SMTP server
+		8795, // lounge kiosk
+	}
+	if aiEnabled {
+		ports = append(ports, 8790) // ai-agent
+	}
+	return ports
 }
 
 // startSampleServices launches the sample services in the background via npm.
