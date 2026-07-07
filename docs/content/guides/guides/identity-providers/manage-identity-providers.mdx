@@ -130,7 +130,7 @@ curl -kL -X DELETE https://localhost:8090/identity-providers/<idp-id> \
 A successful delete returns `204 No Content`.
 
 :::warning
-Deleting an identity provider removes it permanently. Any authentication flow that references this IdP will fail at the social login step. Update or remove the flow node before deleting the IdP.
+Deleting an identity provider is permanent. If an authentication flow (or another resource) still references this identity provider, the delete request is rejected with `409 Conflict`. Remove or update the referencing resources — for example, the flow node that uses this IdP — before deleting it.
 :::
 
 :::note

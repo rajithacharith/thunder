@@ -448,6 +448,20 @@ paths:
                     description:
                       key: "error.idpservice.idp_declarative_read_only_description"
                       defaultValue: "The requested identity provider is declarative and cannot be modified or deleted"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "IDP-1013"
+                message:
+                  key: "error.idpservice.idp_has_blocking_dependencies"
+                  defaultValue: "Identity provider cannot be deleted"
+                description:
+                  key: "error.idpservice.idp_has_blocking_dependencies_description"
+                  defaultValue: "The identity provider cannot be deleted because other resources depend on it. Remove or reassign them first."
         "500":
           description: Internal server error
 
