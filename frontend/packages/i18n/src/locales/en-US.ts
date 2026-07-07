@@ -1628,6 +1628,9 @@ const translations = {
     // Delete dialog
     'delete.title': 'Delete connection',
     'delete.message': 'Are you sure you want to delete “{{name}}”? This action cannot be undone.',
+    'delete.usages.loading': 'Checking affected resources…',
+    'delete.usages.more': '+{{count}} more',
+    'delete.blocking.title': 'This connection cannot be deleted until the following resources are updated or removed:',
 
     // Toasts
     'create.success': 'Connection created successfully.',

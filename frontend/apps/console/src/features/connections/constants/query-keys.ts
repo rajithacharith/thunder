@@ -44,6 +44,11 @@ const ConnectionQueryKeys = {
    * Key for a single connection instance (GET /connections/{type}/{id})
    */
   CONNECTION: 'connection',
+
+  /**
+   * Key for the resources referencing a connection instance (GET /connections/{type}/{id}/usages)
+   */
+  CONNECTION_USAGES: 'connection-usages',
 } as const;
 
 export default ConnectionQueryKeys;

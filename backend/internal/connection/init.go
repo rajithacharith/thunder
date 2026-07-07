@@ -93,4 +93,13 @@ func registerVendorRoutes(mux *http.ServeMux, h *handler, base string, idpType p
 	mux.HandleFunc(middleware.WithCORS("PUT "+base+"/{id}", update, itemOpts))
 	mux.HandleFunc(middleware.WithCORS("DELETE "+base+"/{id}", h.deleteInstance(idpType), itemOpts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS "+base+"/{id}", noContent, itemOpts))
+
+	usagesOpts := middleware.CORSOptions{
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowCredentials: true,
+		MaxAge:           600,
+	}
+	mux.HandleFunc(middleware.WithCORS("GET "+base+"/{id}/usages", h.usagesInstance(idpType), usagesOpts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS "+base+"/{id}/usages", noContent, usagesOpts))
 }

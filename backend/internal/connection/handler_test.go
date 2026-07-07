@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
@@ -160,4 +161,52 @@ func (s *HandlerTestSuite) TestDeleteEmptyID() {
 	rr := httptest.NewRecorder()
 	s.handler.deleteInstance(providers.IDPTypeGoogle)(rr, req)
 	s.Equal(http.StatusBadRequest, rr.Code)
+}
+
+func (s *HandlerTestSuite) TestUsagesEmptyID() {
+	req := httptest.NewRequest(http.MethodGet, "/connections/google//usages", nil)
+	rr := httptest.NewRecorder()
+	s.handler.usagesInstance(providers.IDPTypeGoogle)(rr, req)
+	s.Equal(http.StatusBadRequest, rr.Code)
+	s.mockIDP.AssertNotCalled(s.T(), "GetIDPUsages", mock.Anything, mock.Anything)
+}
+
+func (s *HandlerTestSuite) TestUsagesServiceError() {
+	s.mockIDP.On("GetIdentityProvider", mock.Anything, "missing").
+		Return((*providers.IDPDTO)(nil), &idp.ErrorIDPNotFound)
+
+	req := httptest.NewRequest(http.MethodGet, "/connections/google/missing/usages", nil)
+	req.SetPathValue("id", "missing")
+	rr := httptest.NewRecorder()
+	s.handler.usagesInstance(providers.IDPTypeGoogle)(rr, req)
+	s.Equal(http.StatusNotFound, rr.Code)
+}
+
+func (s *HandlerTestSuite) TestUsagesSuccess() {
+	total := 1
+	usages := &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Summary:      map[string]int{"flow": 1},
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: "flow", ID: "flow-1", DisplayName: "Login Flow", BehaviorOnDelete: "restrict"},
+		},
+	}
+	s.mockIDP.On("GetIdentityProvider", mock.Anything, "g-1").
+		Return(&providers.IDPDTO{ID: "g-1", Type: providers.IDPTypeGoogle}, (*tidcommon.ServiceError)(nil))
+	s.mockIDP.On("GetIDPUsages", mock.Anything, "g-1").Return(usages, (*tidcommon.ServiceError)(nil))
+
+	req := httptest.NewRequest(http.MethodGet, "/connections/google/g-1/usages", nil)
+	req.SetPathValue("id", "g-1")
+	rr := httptest.NewRecorder()
+	s.handler.usagesInstance(providers.IDPTypeGoogle)(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	var resp resourcedependency.DependenciesResponse
+	s.Require().NoError(json.NewDecoder(rr.Body).Decode(&resp))
+	s.Require().NotNil(resp.TotalResults)
+	s.Equal(1, *resp.TotalResults)
+	s.Require().Len(resp.Usages, 1)
+	s.Equal("flow-1", resp.Usages[0].ID)
+	s.Equal("restrict", resp.Usages[0].BehaviorOnDelete)
 }
