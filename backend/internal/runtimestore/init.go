@@ -16,21 +16,22 @@
  * under the License.
  */
 
-// Package dbstore provides a database-backed runtime store implementation.
-package dbstore
+// Package runtimestore provides the factory that selects a runtime store backend.
+package runtimestore
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/internal/runtimestore/dbstore"
+	"github.com/thunder-id/thunderid/internal/runtimestore/redisstore"
+	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-// Initialize creates and returns a new DBStore instance for the given deployment.
-func Initialize(deploymentID string) (providers.RuntimeStoreProvider, transaction.Transactioner, error) {
-	dbProvider := provider.GetDBProvider()
-	transactioner, error := dbProvider.GetRuntimeDBTransactioner()
-	if error != nil {
-		return nil, nil, error
+// Initialize returns the runtime store provider backing the given runtime datasource type.
+// Redis-backed runtimes use the Redis store; all others use the relational database store.
+func Initialize(runtimeDBType, deploymentID string) (providers.RuntimeStoreProvider, transaction.Transactioner, error) {
+	if runtimeDBType == dbprovider.DataSourceTypeRedis {
+		return redisstore.Initialize(deploymentID)
 	}
-	return newDBStore(dbProvider, deploymentID), transactioner, nil
+	return dbstore.Initialize(deploymentID)
 }
