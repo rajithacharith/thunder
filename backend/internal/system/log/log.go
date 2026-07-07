@@ -22,6 +22,7 @@ package log
 import (
 	"context"
 	"errors"
+	"io"
 	stdlog "log"
 	"log/slog"
 	"os"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/constants"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
+	"github.com/thunder-id/thunderid/internal/system/log/rollingfile"
 )
 
 var (
@@ -39,8 +41,24 @@ var (
 
 // Logger is a wrapper around the slog logger.
 type Logger struct {
-	internal *slog.Logger
-	levelVar *slog.LevelVar
+	internal   *slog.Logger
+	levelVar   *slog.LevelVar
+	fileWriter *rollingfile.Writer
+}
+
+// OutputOptions describes where and how the logger writes. It is a log-package
+// local type (rather than config.LogConfig) so this package does not depend on
+// the config package, which already depends on it.
+type OutputOptions struct {
+	// ConsoleEnabled writes formatted records to stdout.
+	ConsoleEnabled bool
+	// FileEnabled writes formatted records to a rotating file.
+	FileEnabled bool
+	// Format selects the record format: "json" or "text" (default).
+	Format string
+	// File configures the rotating file writer (its Path must be resolved to an
+	// absolute path by the caller). Ignored when FileEnabled is false.
+	File rollingfile.Config
 }
 
 // contextHandler decorates a slog.Handler to add the trace ID (correlation ID)
@@ -122,6 +140,64 @@ func (l *Logger) SetLevel(logLevel string) error {
 		return err
 	}
 	l.levelVar.Set(level)
+	return nil
+}
+
+// Configure applies the output configuration, rebuilding the underlying slog
+// handler to write to the console, a rotating file, or both. It preserves the
+// shared level variable so a prior SetLevel keeps taking effect, and keeps the
+// trace ID decoration via contextHandler. It is intended to be called once during
+// startup, right after the configured level is applied.
+func (l *Logger) Configure(opts OutputOptions) error {
+	writers := make([]io.Writer, 0, 2)
+	if opts.ConsoleEnabled {
+		writers = append(writers, os.Stdout)
+	}
+
+	var fileWriter *rollingfile.Writer
+	if opts.FileEnabled {
+		w, err := rollingfile.New(opts.File)
+		if err != nil {
+			return err
+		}
+		fileWriter = w
+		writers = append(writers, w)
+	}
+
+	// Fall back to stdout so a misconfiguration never silences the logger.
+	if len(writers) == 0 {
+		writers = append(writers, os.Stdout)
+	}
+
+	var out io.Writer
+	if len(writers) == 1 {
+		out = writers[0]
+	} else {
+		out = io.MultiWriter(writers...)
+	}
+
+	handlerOptions := &slog.HandlerOptions{Level: l.levelVar}
+	var handler slog.Handler
+	if strings.EqualFold(opts.Format, "json") {
+		handler = slog.NewJSONHandler(out, handlerOptions)
+	} else {
+		handler = slog.NewTextHandler(out, handlerOptions)
+	}
+
+	previous := l.fileWriter
+	l.internal = slog.New(&contextHandler{Handler: handler})
+	l.fileWriter = fileWriter
+	if previous != nil {
+		_ = previous.Close()
+	}
+	return nil
+}
+
+// Close releases the file writer, if any. It should be called during shutdown.
+func (l *Logger) Close() error {
+	if l.fileWriter != nil {
+		return l.fileWriter.Close()
+	}
 	return nil
 }
 

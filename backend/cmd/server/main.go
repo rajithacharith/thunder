@@ -74,6 +74,12 @@ func main() {
 		}
 	}
 
+	// Apply the configured log output (console and/or rotating file), now that the
+	// server home is known and the file path can be resolved.
+	if err := logger.Configure(cfg.Log.BuildOutputOptions(serverHome)); err != nil {
+		logger.Fatal(ctx, "Failed to configure log output", log.Error(err))
+	}
+
 	// Initialize the cache manager.
 	cacheManager := cache.Initialize(cfg.Cache, cfg.Server.Identifier)
 
@@ -277,6 +283,11 @@ func gracefulShutdown(
 	if cacheManager != nil {
 		cacheManager.Close()
 		logger.Debug(ctx, "Cache manager closed successfully")
+	}
+
+	// Close the log file writer before the final shutdown log line.
+	if err := logger.Close(); err != nil {
+		logger.Error(ctx, "Error closing log file", log.Error(err))
 	}
 
 	logger.Info(ctx, "Server shutdown completed")
