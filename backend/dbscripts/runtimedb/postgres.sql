@@ -50,23 +50,6 @@ CREATE TABLE "CIBA_AUTH_REQUEST" (
 -- Index for expiry time on CIBA_AUTH_REQUEST (supports cleanup and expiry checks)
 CREATE INDEX idx_ciba_auth_request_expiry_time ON "CIBA_AUTH_REQUEST" (EXPIRY_TIME);
 
--- Table to store flow context
-CREATE TABLE "FLOW_CONTEXT" (
-    FLOW_ID VARCHAR(36) NOT NULL,
-    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    CONTEXT JSONB,
-    EXPIRY_TIME TIMESTAMP NOT NULL,
-    CREATED_AT TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UPDATED_AT TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (FLOW_ID, DEPLOYMENT_ID)
-);
-
--- Index for deployment isolation on FLOW_CONTEXT
-CREATE INDEX idx_flow_context_deployment_id ON "FLOW_CONTEXT" (DEPLOYMENT_ID);
-
--- Index for expiry time on FLOW_CONTEXT
-CREATE INDEX idx_flow_context_expiry_time ON "FLOW_CONTEXT" (EXPIRY_TIME);
-
 -- Table to store WebAuthn session data
 CREATE TABLE "WEBAUTHN_SESSION" (
     SESSION_KEY VARCHAR(255) NOT NULL,

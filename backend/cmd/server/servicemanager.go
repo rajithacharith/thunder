@@ -75,6 +75,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
+	"github.com/thunder-id/thunderid/internal/runtimestore"
 	"github.com/thunder-id/thunderid/internal/serverconfig"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -444,9 +445,15 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		serverConfigService,
 	)
 
+	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(runtime.Config.Database.Runtime.Type,
+		runtime.Config.Server.Identifier)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
+	}
+	flowCfg := flowconfig.FromServerRuntime()
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
 		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, graphBuilder,
-		flowconfig.FromServerRuntime())
+		runtimeStoreProvider, transactioner, flowCfg)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}

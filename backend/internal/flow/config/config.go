@@ -26,17 +26,13 @@ import (
 
 // Config holds configuration values required by flow services.
 type Config struct {
-	Flow          engineconfig.FlowConfig
-	DeploymentID  string
-	RuntimeDBType string
+	Flow engineconfig.FlowConfig
 }
 
 // FromServerRuntime builds flow configuration from the global server runtime.
 func FromServerRuntime() Config {
 	runtime := config.GetServerRuntime()
 	return Config{
-		Flow:          runtime.Config.Flow,
-		DeploymentID:  runtime.Config.Server.Identifier,
-		RuntimeDBType: runtime.Config.Database.Runtime.Type,
+		Flow: runtime.Config.Flow,
 	}
 }
