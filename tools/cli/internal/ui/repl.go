@@ -26,11 +26,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/thunder-id/thunderid/tools/cli/internal/commands/integrate"
 	"github.com/thunder-id/thunderid/tools/cli/internal/commands/sample"
@@ -614,8 +614,8 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 		m.width = msg.Width
 		m.onboardingList.SetSize(msg.Width, onboardingListHeight)
 
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+	case tea.KeyPressMsg:
+		if msg.String() == "ctrl+c" {
 			m.quitting = true
 			m.killThunder()
 			return m, tea.Quit
@@ -624,14 +624,14 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 		if m.showOnboarding && m.status == statusReady {
 			if m.onboardingCmdMode {
 				// ── Slash-command overlay ──────────────────────────────────────
-				switch msg.Type {
-				case tea.KeyEsc:
+				switch msg.String() {
+				case "esc":
 					m.onboardingCmdMode = false
 					m.input.SetValue("")
 					m.input.Blur()
 					m.showCompletions = false
 					m.selectedComp = 0
-				case tea.KeyEnter:
+				case "enter":
 					val := strings.TrimSpace(m.input.Value())
 					if m.showCompletions && len(m.completions) > 0 {
 						val = m.completions[m.selectedComp].Name
@@ -648,15 +648,15 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 							cmds = append(cmds, cmd)
 						}
 					}
-				case tea.KeyUp:
+				case "up":
 					if m.showCompletions && m.selectedComp > 0 {
 						m.selectedComp--
 					}
-				case tea.KeyDown:
+				case "down":
 					if m.showCompletions && m.selectedComp < len(m.completions)-1 {
 						m.selectedComp++
 					}
-				case tea.KeyTab:
+				case "tab":
 					if m.showCompletions && len(m.completions) > 0 {
 						m.input.SetValue(m.completions[m.selectedComp].Name)
 						m.input.CursorEnd()
@@ -664,11 +664,11 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 				}
 			} else {
 				// ── Onboarding list navigation ─────────────────────────────────
-				if msg.Type == tea.KeyEnter {
+				if msg.String() == "enter" {
 					if cmd := m.selectOnboarding(); cmd != nil {
 						cmds = append(cmds, cmd)
 					}
-				} else if msg.Type == tea.KeyRunes && (msg.String() == "/" || msg.String() == "?") {
+				} else if msg.String() == "/" || msg.String() == "?" {
 					m.onboardingCmdMode = true
 					m.input.Focus()
 					m.input.SetValue("/")
@@ -689,8 +689,8 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 			// ── Generic use-case config collection ────────────────────────────
 			inp := m.ucInputs[m.ucStep]
 			if len(inp.Choices) > 0 {
-				switch msg.Type {
-				case tea.KeyEnter:
+				switch msg.String() {
+				case "enter":
 					if ci, ok := m.ucList.SelectedItem().(choiceItem); ok {
 						if cmd := m.advanceUCStep(ci.choice.Value); cmd != nil {
 							cmds = append(cmds, cmd)
@@ -702,8 +702,8 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 					cmds = append(cmds, listCmd)
 				}
 			} else {
-				switch msg.Type {
-				case tea.KeyEnter:
+				switch msg.String() {
+				case "enter":
 					val := strings.TrimSpace(m.ucText.Value())
 					if val != "" || m.ucInputs[m.ucStep].Optional {
 						if cmd := m.advanceUCStep(val); cmd != nil {
@@ -719,22 +719,22 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 		} else if m.showWalkthrough {
 			// ── Walkthrough tab navigation ─────────────────────────────────────
 			switch {
-			case msg.Type == tea.KeyLeft:
+			case msg.String() == "left":
 				if m.walkthroughTab > 0 {
 					m.walkthroughTab--
 				}
-			case msg.Type == tea.KeyRight:
+			case msg.String() == "right":
 				if m.walkthroughTab < len(m.walkthroughPanes)-1 {
 					m.walkthroughTab++
 				}
-			case msg.Type == tea.KeyRunes && msg.String() == "o":
+			case msg.String() == "o":
 				if pane := m.walkthroughPanes[m.walkthroughTab]; pane.URL != "" {
 					utils.OpenBrowser(pane.URL) //nolint:errcheck
 				}
-			case msg.Type == tea.KeyEsc:
+			case msg.String() == "esc":
 				m.showWalkthrough = false
 				m.input.Focus()
-			case msg.Type == tea.KeyRunes && msg.String() == "/":
+			case msg.String() == "/":
 				m.showWalkthrough = false
 				m.input.Focus()
 				m.input.SetValue("/")
@@ -745,8 +745,8 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 		} else if m.showIntegrate {
 			// ── Integration guide navigation ───────────────────────────────────
 			if m.integrateCollecting {
-				switch msg.Type {
-				case tea.KeyEnter:
+				switch msg.String() {
+				case "enter":
 					val := strings.TrimSpace(m.integrateInput.Value())
 					m.integrateValues[m.integrateSteps[m.integrateStepIdx].CollectKey] = val
 					m.integrateCollecting = false
@@ -754,7 +754,7 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 					if len(m.integrateSteps[m.integrateStepIdx].Code) == 0 && m.integrateStepIdx < len(m.integrateSteps)-1 {
 						m.integrateStepIdx++
 					}
-				case tea.KeyEsc:
+				case "esc":
 					m.integrateCollecting = false
 					m.integrateInput.Blur()
 					if len(m.integrateSteps[m.integrateStepIdx].Code) == 0 && m.integrateStepIdx < len(m.integrateSteps)-1 {
@@ -766,8 +766,8 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 					cmds = append(cmds, tiCmd)
 				}
 			} else {
-				switch msg.Type {
-				case tea.KeyEnter:
+				switch msg.String() {
+				case "enter":
 					step := m.integrateSteps[m.integrateStepIdx]
 					if step.CollectKey != "" && m.integrateValues[step.CollectKey] == "" {
 						m.integrateCollecting = true
@@ -782,19 +782,19 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 						m.walkthroughTab = 0
 						m.showWalkthrough = true
 					}
-				case tea.KeyLeft:
+				case "left":
 					if m.integrateStepIdx > 0 {
 						m.integrateStepIdx--
 					}
-				case tea.KeyEsc:
+				case "esc":
 					m.showIntegrate = false
 					m.input.Focus()
 				}
 			}
 		} else {
 			// ── Regular REPL ───────────────────────────────────────────────────
-			switch msg.Type {
-			case tea.KeyEnter:
+			switch msg.String() {
+			case "enter":
 				if m.status != statusReady {
 					break
 				}
@@ -812,15 +812,15 @@ func (m ReplModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:cyclop,fu
 				if cmd := m.runCommand(val); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-			case tea.KeyUp:
+			case "up":
 				if m.showCompletions && m.selectedComp > 0 {
 					m.selectedComp--
 				}
-			case tea.KeyDown:
+			case "down":
 				if m.showCompletions && m.selectedComp < len(m.completions)-1 {
 					m.selectedComp++
 				}
-			case tea.KeyTab:
+			case "tab":
 				if m.showCompletions && len(m.completions) > 0 {
 					m.input.SetValue(m.completions[m.selectedComp].Name)
 					m.input.CursorEnd()
@@ -1364,7 +1364,14 @@ func renderIntegrate(m ReplModel) string {
 }
 
 // View implements tea.Model.
-func (m ReplModel) View() string {
+func (m ReplModel) View() tea.View {
+	v := tea.NewView(m.render())
+	v.AltScreen = true
+	return v
+}
+
+// render builds the REPL view content as a string.
+func (m ReplModel) render() string {
 	if m.quitting {
 		return Dim("Stopping " + product.Name + "...\n")
 	}
@@ -1478,7 +1485,7 @@ func RunREPL(
 	if port > 0 {
 		m.checkPort = port
 	}
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m)
 	finalModel, runErr := p.Run()
 	if rm, ok := finalModel.(ReplModel); ok {
 		return rm.upgradeRequested, rm.switchRequested, runErr
@@ -1501,7 +1508,7 @@ func RunStagingREPL(version string, proc *exec.Cmd, installPath string, verbose 
 			},
 		},
 	}, m.commands...)
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m)
 	finalModel, runErr := p.Run()
 	if rm, ok := finalModel.(ReplModel); ok {
 		return rm.cutoverRequested, runErr
