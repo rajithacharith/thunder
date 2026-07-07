@@ -257,6 +257,12 @@ const sidebars: SidebarsConfig = {
                   key: 'ai-agents-solution-patterns',
                 },
                 {
+                  type: 'doc',
+                  id: 'use-cases/ai-agents/identity-concepts',
+                  label: 'Identity Concepts',
+                  key: 'ai-agents-identity-concepts',
+                },
+                {
                   type: 'category',
                   label: 'Try It Out',
                   collapsible: true,
@@ -408,6 +414,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'guides/guides/users/manage-roles',
+              label: 'Manage Roles',
+            },
+            {
+              type: 'doc',
               id: 'guides/guides/users/user-types',
               label: 'User Types',
             },
@@ -428,6 +439,11 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/guides/agents/manage-agents',
               label: 'Manage Agents',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/agents/agent-authentication',
+              label: 'Agent Authentication',
             },
           ],
         },
