@@ -129,7 +129,7 @@
     "category": "INTERFACE",
     "type": "VIEW",
     "display": {
-      "label": "Email",
+      "label": "Email Input",
       "image": "assets/images/icons/email.svg",
       "showOnResourcePanel": true
     },

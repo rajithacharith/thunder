@@ -4779,12 +4779,19 @@ translations:
     forms.phone.description: Enter your mobile number to receive a verification code
     forms.phone.fields.phone.label: Mobile Number
     forms.phone.fields.phone.placeholder: Enter your mobile number
-    forms.phone.actions.submit.label: Send Code
+    forms.phone.actions.submit.label: Continue
     forms.otp.title: Verify Your Identity
     forms.otp.description: Enter the verification code sent to your phone
     forms.otp.fields.otp.label: Verification Code
     forms.otp.fields.otp.placeholder: Enter code
     forms.otp.actions.submit.label: Verify
+    forms.email.title: Sign In with Email
+    forms.email.description: Enter your email address to receive a verification code
+    forms.email.fields.email.label: Email
+    forms.email.fields.email.placeholder: Enter your email address
+    forms.email.actions.submit.label: Continue
+    forms.email_otp.title: Verify Your Email
+    forms.email_otp.description: Enter the verification code sent to your email
     forms.credentials.links.forgot_password.prefix: Forgot password?
     forms.credentials.links.forgot_password.label: Reset
     forms.credentials.links.sign_up.prefix: Don't have an account?
@@ -4878,6 +4885,7 @@ translations:
     forms.collect_user_info.fields.password.placeholder: Enter your password
     forms.collect_user_info.actions.submit.label: Sign Up
     forms.email.title: Sign Up
+    forms.email.description: Enter your email address to receive a verification code
     forms.email.fields.email.label: Email
     forms.email.fields.email.placeholder: Enter your email
     forms.email.actions.next.label: Next
@@ -4906,6 +4914,8 @@ translations:
     forms.otp.fields.otp.label: Verification Code
     forms.otp.fields.otp.placeholder: Enter code
     forms.otp.actions.submit.label: Verify
+    forms.email_otp.title: Verify Your Email
+    forms.email_otp.description: Enter the verification code sent to your email
     forms.magic_link.email_sent.title: Check Your Email
     forms.magic_link.email_sent.description: We sent you a verification link. Please check your inbox and click the link to continue.
   recovery:
