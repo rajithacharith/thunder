@@ -27,9 +27,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/charmbracelet/huh"
-	huhspinner "github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	huhspinner "charm.land/huh/v2/spinner"
+	"charm.land/lipgloss/v2"
 
 	"github.com/thunder-id/thunderid/tools/cli/internal/product"
 	"github.com/thunder-id/thunderid/tools/cli/internal/services/config"
@@ -318,8 +318,12 @@ func runSetupWithPort(version, installPath string, verbose bool, port int) error
 		fmt.Println()
 		var setupErr error
 		if err := huhspinner.New().
-			Style(lipgloss.NewStyle().Foreground(lipgloss.Color(product.ColorElectricBlue)).PaddingLeft(2)).
-			TitleStyle(lipgloss.NewStyle()).
+			WithTheme(huhspinner.ThemeFunc(func(bool) *huhspinner.Styles {
+				return &huhspinner.Styles{
+					Spinner: lipgloss.NewStyle().Foreground(lipgloss.Color(product.ColorElectricBlue)).PaddingLeft(2),
+					Title:   lipgloss.NewStyle(),
+				}
+			})).
 			Title("Setting up " + product.Name + " v" + version + "...").
 			Action(func() {
 				setupErr = setup.RunSetupOnPort(installPath, false, port)
