@@ -409,7 +409,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		user:        userService,
 		idp:         idpService,
 		notifSender: notifSenderMgtSvc,
-	}, applicationService, agentService, flowMgtService)
+	}, applicationService, agentService, flowMgtService, roleAssignmentService, groupService)
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)

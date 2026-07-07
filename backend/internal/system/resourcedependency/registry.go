@@ -116,10 +116,18 @@ type Provider interface {
 	GetResourceDependencies(ctx context.Context, resourceType, id string) ([]ResourceDependency, error)
 }
 
+// CascadeDeleter is an optional interface a Provider may implement to delete its cascade-behavior
+// dependents of a target resource when the target is deleted. Implementations must be idempotent
+// and return the number of dependents removed.
+type CascadeDeleter interface {
+	CascadeDeleteDependencies(ctx context.Context, resourceType, id string) (int, error)
+}
+
 // Registry fans out dependency lookups to all registered providers.
 type Registry interface {
 	RegisterProvider(p Provider)
 	GetDependencies(ctx context.Context, resourceType, id string) (*DependenciesResponse, error)
+	CascadeDelete(ctx context.Context, resourceType, id string) (int, error)
 }
 
 // registry is the default implementation of Registry.
@@ -189,4 +197,25 @@ func (r *registry) GetDependencies(
 		Summary:      summary,
 		Usages:       usages,
 	}, nil
+}
+
+// CascadeDelete asks every provider that implements CascadeDeleter to remove its cascade-behavior
+// dependents of (resourceType, id), returning the total number removed. It stops and returns the
+// error on the first provider failure, so the caller can abort the target deletion.
+func (r *registry) CascadeDelete(ctx context.Context, resourceType, id string) (int, error) {
+	total := 0
+	for _, p := range r.providers {
+		cascader, ok := p.(CascadeDeleter)
+		if !ok {
+			continue
+		}
+		deleted, err := cascader.CascadeDeleteDependencies(ctx, resourceType, id)
+		if err != nil {
+			r.logger.Error(ctx, "Failed to cascade-delete dependencies from provider",
+				log.String("resourceType", resourceType), log.String("id", id), log.Error(err))
+			return total, err
+		}
+		total += deleted
+	}
+	return total, nil
 }

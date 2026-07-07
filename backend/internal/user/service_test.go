@@ -2890,6 +2890,30 @@ func TestUserService_DeleteUser_RefusedWhenRegistryUnset(t *testing.T) {
 	storeMock.AssertNotCalled(t, "DeleteEntity", mock.Anything, mock.Anything)
 }
 
+func TestUserService_DeleteUser_AbortedWhenCascadeFails(t *testing.T) {
+	userID := svcTestUserID1
+	storeMock := newDeletableUserStore(t)
+
+	total := 0
+	registry := &stubUsageRegistry{
+		resp: &resourcedependency.DependenciesResponse{
+			TotalResults: &total, Usages: []resourcedependency.ResourceDependency{},
+		},
+		cascadeErr: errors.New("cascade delete failed"),
+	}
+
+	service := &userService{
+		entityService:      storeMock,
+		authzService:       newAllowAllAuthz(t),
+		dependencyRegistry: registry,
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.NotNil(t, err)
+	require.Equal(t, tidcommon.InternalServerError.Code, err.Code)
+	storeMock.AssertNotCalled(t, "DeleteEntity", mock.Anything, mock.Anything)
+}
+
 // TestUpdateUser_DeclarativeResource tests that UpdateUser returns ErrorCannotModifyDeclarativeResource
 // when the user is declarative.
 func TestUpdateUser_DeclarativeResource(t *testing.T) {
@@ -3581,8 +3605,9 @@ func TestUserDeclarativeYAML_OUHandleParsed(t *testing.T) {
 
 // stubUsageRegistry is a minimal resourcedependency.Registry for tests.
 type stubUsageRegistry struct {
-	resp *resourcedependency.DependenciesResponse
-	err  error
+	resp       *resourcedependency.DependenciesResponse
+	err        error
+	cascadeErr error
 }
 
 func (s *stubUsageRegistry) RegisterProvider(resourcedependency.Provider) {}
@@ -3590,6 +3615,10 @@ func (s *stubUsageRegistry) RegisterProvider(resourcedependency.Provider) {}
 func (s *stubUsageRegistry) GetDependencies(
 	_ context.Context, _, _ string) (*resourcedependency.DependenciesResponse, error) {
 	return s.resp, s.err
+}
+
+func (s *stubUsageRegistry) CascadeDelete(_ context.Context, _, _ string) (int, error) {
+	return 0, s.cascadeErr
 }
 
 func newUserForUsages(id string) *providers.Entity {

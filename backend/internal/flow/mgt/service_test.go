@@ -77,6 +77,10 @@ func (r *stubDependencyRegistry) GetDependencies(
 	return r.resp, r.err
 }
 
+func (r *stubDependencyRegistry) CascadeDelete(context.Context, string, string) (int, error) {
+	return 0, nil
+}
+
 func (s *FlowMgtServiceTestSuite) SetupTest() {
 	s.mockStore = newFlowStoreInterfaceMock(s.T())
 	s.mockInference = newFlowInferenceServiceInterfaceMock(s.T())

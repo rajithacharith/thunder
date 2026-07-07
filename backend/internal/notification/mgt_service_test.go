@@ -51,6 +51,10 @@ func (r *stubDependencyRegistry) GetDependencies(
 	return r.resp, r.err
 }
 
+func (r *stubDependencyRegistry) CascadeDelete(context.Context, string, string) (int, error) {
+	return 0, nil
+}
+
 // newNoBlockingDepsRegistry returns a registry reporting confirmed-empty dependencies, so that
 // deletion is permitted by the blocking guard.
 func newNoBlockingDepsRegistry() *stubDependencyRegistry {

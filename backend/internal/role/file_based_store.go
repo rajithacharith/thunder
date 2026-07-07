@@ -324,6 +324,13 @@ func (f *fileBasedStore) DeleteAssignmentsByRoleID(ctx context.Context, id strin
 	return errors.New("DeleteAssignmentsByRoleID is not supported in file-based store")
 }
 
+// DeleteAssignmentsByAssignee is a no-op for the file-based store: declarative roles hold no
+// mutable runtime assignments to cascade-delete, so there is nothing to remove.
+func (f *fileBasedStore) DeleteAssignmentsByAssignee(
+	_ context.Context, _, _ string) (int64, error) {
+	return 0, nil
+}
+
 // AddAssignments is not supported in file-based store.
 func (f *fileBasedStore) AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error {
 	return errors.New("AddAssignments is not supported in file-based store")
