@@ -116,6 +116,14 @@ var (
 		Query: `DELETE FROM "ROLE_ASSIGNMENT" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
+	// queryDeleteRoleAssignmentsByAssignee deletes all assignments for a given assignee across roles
+	// (used to cascade-delete assignments when the assignee principal is deleted).
+	queryDeleteRoleAssignmentsByAssignee = dbmodel.DBQuery{
+		ID: "RLQ-ROLE_MGT-25",
+		Query: `DELETE FROM "ROLE_ASSIGNMENT" ` +
+			`WHERE ASSIGNEE_TYPE = $1 AND ASSIGNEE_ID = $2 AND DEPLOYMENT_ID = $3`,
+	}
+
 	// queryCheckRoleNameExists checks if a role name already exists for a given organization unit.
 	queryCheckRoleNameExists = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-14",

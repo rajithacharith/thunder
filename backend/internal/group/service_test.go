@@ -34,6 +34,7 @@ import (
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
@@ -2897,4 +2898,52 @@ func TestCheckGroupAccess_AuthzError(t *testing.T) {
 	err := service.checkGroupAccess(context.Background(), security.ActionReadGroup, testOUID1, "grp-001")
 	require.NotNil(t, err)
 	require.Equal(t, tidcommon.InternalServerError.Code, err.Code)
+}
+
+// --- Cascade / dependency provider ---
+
+func (suite *GroupServiceTestSuite) TestGetResourceDependencies_ReturnsEmpty() {
+	service := &groupService{}
+	result, err := service.GetResourceDependencies(
+		context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+	suite.NoError(err)
+	suite.Empty(result)
+}
+
+func (suite *GroupServiceTestSuite) TestCascadeDeleteDependencies_User_DeletesMemberships() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	storeMock.On("DeleteMembershipsByMember", mock.Anything, string(memberTypeEntity), "user-1").
+		Return(int64(2), nil)
+	service := &groupService{groupStore: storeMock}
+
+	deleted, err := service.CascadeDeleteDependencies(
+		context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+
+	suite.NoError(err)
+	suite.Equal(2, deleted)
+}
+
+func (suite *GroupServiceTestSuite) TestCascadeDeleteDependencies_UnknownType_NoOp() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	service := &groupService{groupStore: storeMock}
+
+	deleted, err := service.CascadeDeleteDependencies(context.Background(), "theme", "theme-1")
+
+	suite.NoError(err)
+	suite.Equal(0, deleted)
+	storeMock.AssertNotCalled(suite.T(), "DeleteMembershipsByMember",
+		mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (suite *GroupServiceTestSuite) TestCascadeDeleteDependencies_StoreError() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	storeMock.On("DeleteMembershipsByMember", mock.Anything, string(memberTypeEntity), "user-1").
+		Return(int64(0), errors.New("db error"))
+	service := &groupService{groupStore: storeMock}
+
+	deleted, err := service.CascadeDeleteDependencies(
+		context.Background(), resourcedependency.ResourceTypeUser, "user-1")
+
+	suite.Error(err)
+	suite.Equal(0, deleted)
 }

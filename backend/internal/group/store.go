@@ -53,6 +53,7 @@ type groupStoreInterface interface {
 		ctx context.Context, oUID string, limit, offset int) ([]GroupBasicDAO, error)
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
+	DeleteMembershipsByMember(ctx context.Context, memberType, memberID string) (int64, error)
 	GetGroupsByIDs(ctx context.Context, groupIDs []string) ([]GroupBasicDAO, error)
 	IsGroupDeclarative(ctx context.Context, id string) (bool, error)
 	GetTransitiveGroupsForEntity(ctx context.Context, entityID string) ([]providers.EntityGroup, error)
@@ -504,6 +505,23 @@ func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, mem
 	}
 
 	return nil
+}
+
+// DeleteMembershipsByMember deletes all group memberships held by a given member principal across
+// groups, returning the number removed.
+func (s *groupStore) DeleteMembershipsByMember(
+	ctx context.Context, memberType, memberID string) (int64, error) {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	rowsAffected, err := dbClient.ExecuteContext(
+		ctx, QueryDeleteGroupMembershipsByMember, memberType, memberID, s.deploymentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete memberships for member: %w", err)
+	}
+	return rowsAffected, nil
 }
 
 // GetGroupsByIDs retrieves groups by a list of IDs.

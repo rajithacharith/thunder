@@ -2084,3 +2084,29 @@ func (suite *RoleStoreTestSuite) TestGetEntityRoleIDs_IgnoresMalformedRows() {
 	suite.NoError(err)
 	suite.Equal([]string{"role-a", "role-c"}, roleIDs)
 }
+
+func (suite *RoleStoreTestSuite) TestDeleteAssignmentsByAssignee() {
+	suite.Run("success returns rows affected", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteRoleAssignmentsByAssignee,
+			string(assigneeTypeEntity), "user-1", testDeploymentID).Return(int64(2), nil).Once()
+
+		deleted, err := suite.store.DeleteAssignmentsByAssignee(
+			context.Background(), string(assigneeTypeEntity), "user-1")
+
+		suite.NoError(err)
+		suite.Equal(int64(2), deleted)
+	})
+
+	suite.Run("db error is propagated", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteRoleAssignmentsByAssignee,
+			string(assigneeTypeEntity), "user-1", testDeploymentID).Return(int64(0), errors.New("db error")).Once()
+
+		deleted, err := suite.store.DeleteAssignmentsByAssignee(
+			context.Background(), string(assigneeTypeEntity), "user-1")
+
+		suite.Error(err)
+		suite.Equal(int64(0), deleted)
+	})
+}

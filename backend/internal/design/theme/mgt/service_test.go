@@ -606,6 +606,10 @@ func (s *stubUsageRegistry) GetDependencies(
 	return s.resp, s.err
 }
 
+func (s *stubUsageRegistry) CascadeDelete(_ context.Context, _, _ string) (int, error) {
+	return 0, nil
+}
+
 // Test GetThemeUsages - Empty ID
 func (suite *ThemeServiceTestSuite) TestGetThemeUsages_EmptyID() {
 	result, err := suite.service.GetThemeUsages(context.Background(), "", 10, 0)

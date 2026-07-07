@@ -780,6 +780,14 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *tidcommon
 		return svcErr
 	}
 
+	// Remove dependents that must be deleted with the user (e.g. role assignments). Run before the
+	// entity delete so a cleanup failure aborts the operation and leaves the user retriable. The
+	// registry is guaranteed non-nil here because ensureNoBlockingDependencies fails closed otherwise.
+	if _, err = us.dependencyRegistry.CascadeDelete(ctx, resourcedependency.ResourceTypeUser, userID); err != nil {
+		return logErrorAndReturnServerError(ctx, logger, "Failed to cascade-delete user dependencies", err,
+			log.MaskedString(log.LoggerKeyUserID, userID))
+	}
+
 	err = us.entityService.DeleteEntity(ctx, userID)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {

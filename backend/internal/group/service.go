@@ -34,6 +34,7 @@ import (
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
@@ -63,6 +64,9 @@ type GroupServiceInterface interface {
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *tidcommon.ServiceError)
 	AddMembersToGroups(ctx context.Context, members []Member,
 		groupIDs []string) *tidcommon.ServiceError
+	GetResourceDependencies(
+		ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error)
+	CascadeDeleteDependencies(ctx context.Context, resourceType, id string) (int, error)
 }
 
 // groupService is the default implementation of the GroupServiceInterface.
@@ -1336,4 +1340,30 @@ func (gs *groupService) validateAndProcessHandlePath(handlePath string) *tidcomm
 		}
 	}
 	return nil
+}
+
+// GetResourceDependencies implements resourcedependency.Provider. Group memberships are cleaned up
+// via cascade rather than surfaced as blocking usages, so no dependencies are reported here.
+func (gs *groupService) GetResourceDependencies(
+	_ context.Context, _, _ string) ([]resourcedependency.ResourceDependency, error) {
+	return []resourcedependency.ResourceDependency{}, nil
+}
+
+// CascadeDeleteDependencies implements resourcedependency.CascadeDeleter. It removes the group
+// memberships held by the given principal when that principal is deleted. Only user, app and agent
+// principals (stored as entity members) are handled; other resource types have no memberships.
+func (gs *groupService) CascadeDeleteDependencies(
+	ctx context.Context, resourceType, id string) (int, error) {
+	switch resourceType {
+	case resourcedependency.ResourceTypeUser,
+		resourcedependency.ResourceTypeApplication,
+		resourcedependency.ResourceTypeAgent:
+		deleted, err := gs.groupStore.DeleteMembershipsByMember(ctx, string(memberTypeEntity), id)
+		if err != nil {
+			return 0, err
+		}
+		return int(deleted), nil
+	default:
+		return 0, nil
+	}
 }
