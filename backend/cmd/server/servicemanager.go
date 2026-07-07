@@ -169,7 +169,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, serverConfigExporter)
 
-	// CORS origins now come from the merged server-config cors section.
+	// CORS origins come from the server-config cors section.
 	cors.InitializeDynamicMatcher(serverConfigService)
 
 	ouAuthzService, err := sysauthz.Initialize()
