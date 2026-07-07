@@ -60,7 +60,7 @@ const agentConfig = {
 };
 
 // Separate CIBA-only credentials for the upgrade scheduler.
-// Uses default-ciba-email-flow; kept separate from the main agent because
+// Uses wayfinder-ciba-email-flow; kept separate from the main agent because
 // auth_flow_handle is shared between authorization_code and CIBA — they need
 // different flows (interactive browser login vs backchannel email notification).
 const upgradeAgentConfig = {
