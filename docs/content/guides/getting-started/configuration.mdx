@@ -31,17 +31,20 @@ Controls the <ProductName /> server's network settings and identity.
 | `server.hostname` | `localhost` | The hostname or IP address the server binds to |
 | `server.port` | `8090` | Port the server listens on |
 | `server.http_only` | `false` | If `true`, disables HTTPS and uses HTTP only (not recommended for production) |
+| `server.public_url` | _(derived from server hostname, port and protocol)_ | The public URL clients use to reach the server, if it differs from the bind address. Derived when unset. |
 | `server.identifier` | `default-deployment` | Unique identifier for this deployment instance |
+
+When `server.public_url` is set, the `gate_client` settings below default to the corresponding hostname, port, and protocol from that URL. Most deployments only need to configure the server section.
 
 ## Gate Client Configuration
 
-Configures the connection to <ProductName /> Gate (the login UI).
+Configures the connection to <ProductName /> Gate (the login UI). Every setting is optional. By default, the `gate_client` settings are derived from `server.public_url`, so you only need to configure this section when Gate is hosted separately from the server.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `gate_client.hostname` | `localhost` | The hostname where <ProductName /> Gate is hosted |
-| `gate_client.port` | `8090` | Port where <ProductName /> Gate is accessible |
-| `gate_client.scheme` | `https` | Protocol scheme (`http` or `https`) |
+| `gate_client.hostname` | _(server's hostname)_ | The hostname where <ProductName /> Gate is hosted |
+| `gate_client.port` | _(server's port)_ | Port where <ProductName /> Gate is accessible |
+| `gate_client.scheme` | _(server's scheme)_ | Protocol scheme (`http` or `https`) |
 | `gate_client.path` | `/gate` | Base path for <ProductName /> Gate |
 
 ## TLS Configuration

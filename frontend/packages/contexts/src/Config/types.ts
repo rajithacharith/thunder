@@ -26,26 +26,28 @@ import {OxygenThemeType} from '@wso2/oxygen-ui/styles/index';
  */
 export interface ServerConfig {
   /**
-   * Server hostname or IP address
+   * Server hostname or IP address. Optional — when omitted (along with public_url),
+   * the server URL is derived from the URL the app is served from (window.location.origin).
    * @example "localhost", "api.example.com", "192.168.1.100"
    */
-  hostname: string;
+  hostname?: string;
 
   /**
-   * Server port number
+   * Server port number. Optional — see hostname.
    * @example 8090, 3000, 8080
    */
-  port: number;
+  port?: number;
 
   /**
    * Whether to use HTTP only (no HTTPS). When true, connections will use HTTP protocol.
    * When false, HTTPS will be used for secure connections.
    */
-  http_only: boolean;
+  http_only?: boolean;
 
   /**
    * Optional public URL for the server. If provided, this will be used instead of
-   * constructing the URL from hostname, port, and http_only.
+   * constructing the URL from hostname, port, and http_only, or falling back to the
+   * served origin. Set this only when the external URL differs from the accessed URL.
    * @example "https://example.com", "https://api.local:8080"
    */
   public_url?: string;
@@ -243,8 +245,11 @@ export interface ProductConfig {
   /** Client-specific configuration including authentication settings */
   client: ClientConfig;
 
-  /** Server connection configuration for API resource calls */
-  server: ServerConfig;
+  /**
+   * Server connection configuration for API resource calls. Optional — when omitted,
+   * the server URL defaults to the URL the app is served from (window.location.origin).
+   */
+  server?: ServerConfig;
 
   /** Optional trusted issuer configuration for external token validation */
   trusted_issuer?: TrustedIssuerConfig;
