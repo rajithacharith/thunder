@@ -191,14 +191,13 @@ const (
 	RuntimeKeyAllowedLoginOptions = "allowed_login_options"
 	// RuntimeKeyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
 	RuntimeKeyAllowRegistrationWithExistingUser = "allowRegistrationWithExistingUser"
-	// RuntimeKeyAuthReqID holds the auth request ID bound to the current flow execution, if applicable.
-	RuntimeKeyAuthReqID = "authReqId"
 	// RuntimeKeyBindingMessage holds the human-readable binding message displayed to the user
 	// on both the consumption device and the authentication device to correlate the CIBA request.
 	RuntimeKeyBindingMessage = "bindingMessage"
 	// RuntimeKeyEntityState holds the entity existence state set by the IdentifyingExecutor in check_state mode.
 	RuntimeKeyEntityState = "entityState"
-	// RuntimeKeyAuthorizationRequestID holds the identifier of the authorization request.
+	// RuntimeKeyAuthorizationRequestID holds the auth request identifier bound to the current flow
+	// execution (the OAuth authorize authId or the CIBA auth_req_id), if applicable.
 	RuntimeKeyAuthorizationRequestID = "authorizationRequestId"
 )
 
