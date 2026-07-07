@@ -43,7 +43,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
-	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/revocationmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
 )
@@ -60,13 +59,12 @@ const (
 
 type TokenExchangeGrantHandlerTestSuite struct {
 	suite.Suite
-	mockJWTService         *jwtmock.JWTServiceInterfaceMock
-	mockTokenBuilder       *tokenservicemock.TokenBuilderInterfaceMock
-	mockTokenValidator     *tokenservicemock.TokenValidatorInterfaceMock
-	mockResourceService    *resourcemock.ResourceServiceInterfaceMock
-	mockEnforcementService *revocationmock.EnforcementServiceInterfaceMock
-	handler                *tokenExchangeGrantHandler
-	oauthApp               *providers.OAuthClient
+	mockJWTService      *jwtmock.JWTServiceInterfaceMock
+	mockTokenBuilder    *tokenservicemock.TokenBuilderInterfaceMock
+	mockTokenValidator  *tokenservicemock.TokenValidatorInterfaceMock
+	mockResourceService *resourcemock.ResourceServiceInterfaceMock
+	handler             *tokenExchangeGrantHandler
+	oauthApp            *providers.OAuthClient
 }
 
 func TestTokenExchangeGrantHandlerSuite(t *testing.T) {
@@ -98,14 +96,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 		Return([]string{}, nil).Maybe()
 	suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
 		Return([]providers.ResourceServer{}, nil).Maybe()
-	suite.mockEnforcementService = revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
-	// Default: tokens are not revoked. Individual tests override this to exercise revocation.
-	suite.mockEnforcementService.On("EnsureNotRevoked", mock.Anything, mock.Anything).Return(nil).Maybe()
 	suite.handler = &tokenExchangeGrantHandler{
-		tokenBuilder:       suite.mockTokenBuilder,
-		tokenValidator:     suite.mockTokenValidator,
-		resourceService:    suite.mockResourceService,
-		enforcementService: suite.mockEnforcementService,
+		tokenBuilder:    suite.mockTokenBuilder,
+		tokenValidator:  suite.mockTokenValidator,
+		resourceService: suite.mockResourceService,
 	}
 
 	suite.oauthApp = &providers.OAuthClient{
@@ -231,7 +225,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) setupSuccessfulJWTMockWithScope
 // TestNewTokenExchangeGrantHandler tests the constructor
 func (suite *TokenExchangeGrantHandlerTestSuite) TestNewTokenExchangeGrantHandler() {
 	handler := newTokenExchangeGrantHandler(suite.mockTokenBuilder, suite.mockTokenValidator,
-		suite.mockResourceService, suite.mockEnforcementService)
+		suite.mockResourceService)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -485,23 +479,9 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RevokedSubjectT
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
 
 	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
-		Return(&tokenservice.SubjectTokenClaims{
-			Sub:    testUserID,
-			Iss:    "https://auth.example.com",
-			Scopes: []string{"read"},
-			JTI:    "subject-jti-revoked",
-		}, nil)
+		Return(nil, revocation.ErrTokenRevoked)
 
-	enforcementService := revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
-	enforcementService.On("EnsureNotRevoked", mock.Anything, "subject-jti-revoked").Return(revocation.ErrTokenRevoked)
-	handler := &tokenExchangeGrantHandler{
-		tokenBuilder:       suite.mockTokenBuilder,
-		tokenValidator:     suite.mockTokenValidator,
-		resourceService:    suite.mockResourceService,
-		enforcementService: enforcementService,
-	}
-
-	result, errResp := handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -531,27 +511,68 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RevokedActorTok
 			JTI: "subject-jti-ok",
 		}, nil)
 	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
-		Return(&tokenservice.SubjectTokenClaims{
-			Sub: "svc123", Iss: "https://auth.example.com",
-			JTI: "actor-jti-revoked",
-		}, nil)
+		Return(nil, revocation.ErrTokenRevoked)
 
-	enforcementService := revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
-	enforcementService.On("EnsureNotRevoked", mock.Anything, "subject-jti-ok").Return(nil)
-	enforcementService.On("EnsureNotRevoked", mock.Anything, "actor-jti-revoked").Return(revocation.ErrTokenRevoked)
-	handler := &tokenExchangeGrantHandler{
-		tokenBuilder:       suite.mockTokenBuilder,
-		tokenValidator:     suite.mockTokenValidator,
-		resourceService:    suite.mockResourceService,
-		enforcementService: enforcementService,
-	}
-
-	result, errResp := handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
 	assert.Contains(suite.T(), errResp.ErrorDescription, "actor_token")
+}
+
+// When the deny list cannot be consulted for the subject token, the exchange fails closed with
+// server_error rather than issuing a token whose revocation status is unknown.
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_SubjectTokenEnforcementUnavailableFailsClosed() {
+	now := time.Now().Unix()
+	subjectToken := suite.createTestJWT(map[string]interface{}{
+		"sub":   "user123",
+		"iss":   "https://auth.example.com",
+		"exp":   float64(now + 3600),
+		"nbf":   float64(now - 60),
+		"scope": "read",
+	})
+	tokenRequest := suite.createBasicTokenRequest(subjectToken)
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
+		Return(nil, revocation.ErrEnforcementUnavailable)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorServerError, errResp.Error)
+}
+
+// The actor token path also fails closed with server_error when the deny list is unavailable, even
+// though the subject token validates.
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ActorTokenEnforcementUnavailableFailsClosed() {
+	now := time.Now().Unix()
+	subjectToken := suite.createTestJWT(map[string]interface{}{
+		"sub": "user123", "iss": "https://auth.example.com",
+		"exp": float64(now + 3600), "nbf": float64(now - 60), "scope": "read",
+	})
+	actorToken := suite.createTestJWT(map[string]interface{}{
+		"sub": "svc123", "iss": "https://auth.example.com",
+		"exp": float64(now + 3600), "nbf": float64(now - 60),
+	})
+	tokenRequest := suite.createBasicTokenRequest(subjectToken)
+	tokenRequest.ActorToken = actorToken
+	tokenRequest.ActorTokenType = string(constants.TokenTypeIdentifierAccessToken)
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
+		Return(&tokenservice.SubjectTokenClaims{
+			Sub: testUserID, Iss: "https://auth.example.com", Scopes: []string{"read"},
+			JTI: "subject-jti-ok",
+		}, nil)
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
+		Return(nil, revocation.ErrEnforcementUnavailable)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorServerError, errResp.Error)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithScopeDownscoping() {
@@ -2225,10 +2246,9 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Resourc
 	rsvc.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
 		Return([]providers.ResourceServer{}, nil).Maybe()
 	h := &tokenExchangeGrantHandler{
-		tokenBuilder:       suite.mockTokenBuilder,
-		tokenValidator:     suite.mockTokenValidator,
-		resourceService:    rsvc,
-		enforcementService: suite.mockEnforcementService,
+		tokenBuilder:    suite.mockTokenBuilder,
+		tokenValidator:  suite.mockTokenValidator,
+		resourceService: rsvc,
 	}
 
 	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
@@ -2283,10 +2303,9 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_ScopeNo
 	rsvc.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
 		Return([]providers.ResourceServer{}, nil).Maybe()
 	h := &tokenExchangeGrantHandler{
-		tokenBuilder:       suite.mockTokenBuilder,
-		tokenValidator:     suite.mockTokenValidator,
-		resourceService:    rsvc,
-		enforcementService: suite.mockEnforcementService,
+		tokenBuilder:    suite.mockTokenBuilder,
+		tokenValidator:  suite.mockTokenValidator,
+		resourceService: rsvc,
 	}
 
 	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
@@ -2518,10 +2537,9 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Multipl
 	rsvc.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
 		Return([]providers.ResourceServer{}, nil).Maybe()
 	h := &tokenExchangeGrantHandler{
-		tokenBuilder:       suite.mockTokenBuilder,
-		tokenValidator:     suite.mockTokenValidator,
-		resourceService:    rsvc,
-		enforcementService: suite.mockEnforcementService,
+		tokenBuilder:    suite.mockTokenBuilder,
+		tokenValidator:  suite.mockTokenValidator,
+		resourceService: rsvc,
 	}
 
 	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).

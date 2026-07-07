@@ -24,7 +24,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/ciba"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -57,7 +56,6 @@ func newGrantHandlerProvider(
 	resourceService providers.ResourceServerProvider,
 	cibaService ciba.CIBAServiceInterface,
 	cfg oauthconfig.Config,
-	enforcementService revocation.EnforcementServiceInterface,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
 		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(
@@ -65,9 +63,9 @@ func newGrantHandlerProvider(
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
 			authzService, tokenBuilder, attrCacheService, resourceService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(
-			jwtService, tokenBuilder, tokenValidator, attrCacheService, resourceService, cfg, enforcementService),
+			jwtService, tokenBuilder, tokenValidator, attrCacheService, resourceService, cfg),
 		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(
-			tokenBuilder, tokenValidator, resourceService, enforcementService),
+			tokenBuilder, tokenValidator, resourceService),
 		cibaGrantHandler: newCIBAGrantHandler(cibaService, tokenBuilder, attrCacheService),
 	}
 }

@@ -20,6 +20,7 @@ package granthandlers
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 	"time"
@@ -42,13 +43,12 @@ import (
 
 // refreshTokenGrantHandler handles the refresh token grant type.
 type refreshTokenGrantHandler struct {
-	cfg                oauthconfig.Config
-	jwtService         jwt.JWTServiceInterface
-	tokenBuilder       tokenservice.TokenBuilderInterface
-	tokenValidator     tokenservice.TokenValidatorInterface
-	attrCacheService   attributecache.AttributeCacheServiceInterface
-	resourceService    providers.ResourceServerProvider
-	enforcementService revocation.EnforcementServiceInterface
+	cfg              oauthconfig.Config
+	jwtService       jwt.JWTServiceInterface
+	tokenBuilder     tokenservice.TokenBuilderInterface
+	tokenValidator   tokenservice.TokenValidatorInterface
+	attrCacheService attributecache.AttributeCacheServiceInterface
+	resourceService  providers.ResourceServerProvider
 }
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
@@ -59,16 +59,14 @@ func newRefreshTokenGrantHandler(
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	resourceService providers.ResourceServerProvider,
 	cfg oauthconfig.Config,
-	enforcementService revocation.EnforcementServiceInterface,
 ) RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
-		cfg:                cfg,
-		jwtService:         jwtService,
-		tokenBuilder:       tokenBuilder,
-		tokenValidator:     tokenValidator,
-		attrCacheService:   attrCacheService,
-		resourceService:    resourceService,
-		enforcementService: enforcementService,
+		cfg:              cfg,
+		jwtService:       jwtService,
+		tokenBuilder:     tokenBuilder,
+		tokenValidator:   tokenValidator,
+		attrCacheService: attrCacheService,
+		resourceService:  resourceService,
 	}
 }
 
@@ -108,10 +106,19 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RefreshTokenGrantHandler"))
 
 	// Validate refresh token using token validator
+	// ValidateRefreshToken verifies the token and enforces the RFC 7009 deny list. A revoked token is
+	// rejected as invalid_grant like any other invalid token; an unavailable deny list fails closed
+	// with a server_error.
 	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(
 		ctx, tokenRequest.RefreshToken, tokenRequest.ClientID)
 	if err != nil {
 		logger.Debug(ctx, "Failed to validate refresh token", log.Error(err))
+		if errors.Is(err, revocation.ErrEnforcementUnavailable) {
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Token revocation status could not be verified",
+			}
+		}
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
 			ErrorDescription: "Invalid refresh token",
@@ -119,16 +126,6 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	}
 
 	if errResp := dpop.VerifyProofBinding(ctx, refreshTokenClaims.DPoPJkt, "refresh token"); errResp != nil {
-		return nil, errResp
-	}
-
-	// Reject refresh tokens that have been revoked (RFC 7009 deny list). Fail closed when the
-	// operation DB cannot be consulted.
-	if errResp := enforceRevocation(ctx, h.enforcementService, refreshTokenClaims.JTI,
-		&model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Invalid refresh token",
-		}, logger); errResp != nil {
 		return nil, errResp
 	}
 

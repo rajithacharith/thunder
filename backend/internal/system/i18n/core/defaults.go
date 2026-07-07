@@ -1035,6 +1035,8 @@ var defaultMessages = map[string]string{
 	"error.userinfoservice.invalid_dpop_proof_description": "DPoP proof verification failed",
 	"error.userinfoservice.missing_sub_claim": "Invalid access token",
 	"error.userinfoservice.missing_sub_claim_description": "The access token is missing or has an invalid 'sub' claim",
+	"error.userinfoservice.revocation_unavailable": "Token revocation status could not be verified",
+	"error.userinfoservice.revocation_unavailable_description": "The token revocation status could not be verified",
 	"error.userservice.ambiguous_user": "Ambiguous user",
 	"error.userservice.ambiguous_user_description": "Multiple users match the provided filters",
 	"error.userservice.attribute_conflict": "Attribute conflict",

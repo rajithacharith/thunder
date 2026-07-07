@@ -20,6 +20,7 @@ package granthandlers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
@@ -33,10 +34,9 @@ import (
 
 // tokenExchangeGrantHandler handles the token exchange grant type.
 type tokenExchangeGrantHandler struct {
-	tokenBuilder       tokenservice.TokenBuilderInterface
-	tokenValidator     tokenservice.TokenValidatorInterface
-	resourceService    providers.ResourceServerProvider
-	enforcementService revocation.EnforcementServiceInterface
+	tokenBuilder    tokenservice.TokenBuilderInterface
+	tokenValidator  tokenservice.TokenValidatorInterface
+	resourceService providers.ResourceServerProvider
 }
 
 // newTokenExchangeGrantHandler creates a new instance of tokenExchangeGrantHandler.
@@ -44,13 +44,11 @@ func newTokenExchangeGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	resourceService providers.ResourceServerProvider,
-	enforcementService revocation.EnforcementServiceInterface,
 ) GrantHandlerInterface {
 	return &tokenExchangeGrantHandler{
-		tokenBuilder:       tokenBuilder,
-		tokenValidator:     tokenValidator,
-		resourceService:    resourceService,
-		enforcementService: enforcementService,
+		tokenBuilder:    tokenBuilder,
+		tokenValidator:  tokenValidator,
+		resourceService: resourceService,
 	}
 }
 
@@ -139,10 +137,18 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenExchangeGrantHandler"))
 
-	// Validate and extract subject token claims
+	// Validate and extract subject token claims. ValidateSubjectToken enforces the RFC 7009 deny list
+	// for self-issued tokens; a revoked token is rejected as invalid_request like any other invalid
+	// subject_token, while an unavailable deny list fails closed with server_error.
 	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.SubjectToken, oauthApp)
 	if err != nil {
 		logger.Debug(ctx, "Failed to validate subject token", log.Error(err))
+		if errors.Is(err, revocation.ErrEnforcementUnavailable) {
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Token revocation status could not be verified",
+			}
+		}
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Invalid subject_token",
@@ -155,32 +161,22 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 		return nil, errResp
 	}
 
-	// Reject a revoked subject token (RFC 7009 deny list). JTI is set only for self-issued tokens.
-	if errResp := enforceRevocation(ctx, h.enforcementService, subjectClaims.JTI,
-		&model.ErrorResponse{
-			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: "Invalid subject_token",
-		}, logger); errResp != nil {
-		return nil, errResp
-	}
-
 	// Validate and extract actor token claims if present
 	var actorClaims *tokenservice.SubjectTokenClaims
 	if tokenRequest.ActorToken != "" {
 		actorClaims, err = h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.ActorToken, oauthApp)
 		if err != nil {
 			logger.Debug(ctx, "Failed to validate actor token", log.Error(err))
+			if errors.Is(err, revocation.ErrEnforcementUnavailable) {
+				return nil, &model.ErrorResponse{
+					Error:            constants.ErrorServerError,
+					ErrorDescription: "Token revocation status could not be verified",
+				}
+			}
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorInvalidRequest,
 				ErrorDescription: "Invalid actor_token",
 			}
-		}
-		if errResp := enforceRevocation(ctx, h.enforcementService, actorClaims.JTI,
-			&model.ErrorResponse{
-				Error:            constants.ErrorInvalidRequest,
-				ErrorDescription: "Invalid actor_token",
-			}, logger); errResp != nil {
-			return nil, errResp
 		}
 	}
 

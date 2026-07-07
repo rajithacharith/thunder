@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -36,10 +36,12 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/idp"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/revocationmock"
 )
 
 const (
@@ -50,9 +52,10 @@ const (
 
 type TokenValidatorTestSuite struct {
 	suite.Suite
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
-	validator      *tokenValidator
-	oauthApp       *providers.OAuthClient
+	mockJWTService         *jwtmock.JWTServiceInterfaceMock
+	mockEnforcementService *revocationmock.EnforcementServiceInterfaceMock
+	validator              *tokenValidator
+	oauthApp               *providers.OAuthClient
 }
 
 func TestTokenValidatorTestSuite(t *testing.T) {
@@ -73,6 +76,9 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 	_ = config.InitializeServerRuntime("test", testConfig)
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockEnforcementService = revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
+	// Default: tokens are not revoked. Individual tests override this to exercise revocation.
+	suite.mockEnforcementService.On("EnsureNotRevoked", mock.Anything, mock.Anything).Return(nil).Maybe()
 	suite.validator = &tokenValidator{
 		cfg: oauthconfig.Config{
 			JWT: engineconfig.JWTConfig{
@@ -82,7 +88,8 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 				Leeway:         30,
 			},
 		},
-		jwtService: suite.mockJWTService,
+		jwtService:         suite.mockJWTService,
+		enforcementService: suite.mockEnforcementService,
 	}
 
 	suite.oauthApp = &providers.OAuthClient{
@@ -1868,6 +1875,193 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success_MinClaims(
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+// revocationEnforcementCase describes a deny-list enforcement outcome for table-driven tests.
+type revocationEnforcementCase struct {
+	name        string
+	jti         string
+	returnedErr error
+}
+
+// revocationEnforcementCases returns the revoked and enforcement-unavailable cases, using jtiPrefix
+// to keep jti values distinct per token type.
+func revocationEnforcementCases(jtiPrefix string) []revocationEnforcementCase {
+	return []revocationEnforcementCase{
+		{"revoked", jtiPrefix + "-jti-revoked", revocation.ErrTokenRevoked},
+		{"enforcement unavailable", jtiPrefix + "-jti-unknown", revocation.ErrEnforcementUnavailable},
+	}
+}
+
+// validatorWithEnforcement builds a tokenValidator whose enforcement service returns returnedErr for
+// the given jti, reusing the suite's JWT service.
+func (suite *TokenValidatorTestSuite) validatorWithEnforcement(
+	jti string, returnedErr error,
+) *tokenValidator {
+	enforcement := revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
+	enforcement.On("EnsureNotRevoked", mock.Anything, jti).Return(returnedErr)
+	return &tokenValidator{
+		cfg:                suite.validator.cfg,
+		jwtService:         suite.mockJWTService,
+		enforcementService: enforcement,
+	}
+}
+
+// A revoked access token surfaces revocation.ErrTokenRevoked from the validator, since enforcement
+// runs as the final step of validation.
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Revoked() {
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://example.com",
+		"aud":       "test-app",
+		"client_id": "test-client",
+		"jti":       "at-jti-revoked",
+	}
+	token := suite.createTestAccessToken(claims)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
+
+	enforcement := revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
+	enforcement.On("EnsureNotRevoked", mock.Anything, "at-jti-revoked").Return(revocation.ErrTokenRevoked)
+	validator := &tokenValidator{
+		cfg:                suite.validator.cfg,
+		jwtService:         suite.mockJWTService,
+		enforcementService: enforcement,
+	}
+
+	result, err := validator.ValidateAccessToken(context.Background(), token)
+
+	assert.Nil(suite.T(), result)
+	assert.ErrorIs(suite.T(), err, revocation.ErrTokenRevoked)
+}
+
+// When the deny list cannot be consulted, the validator surfaces revocation.ErrEnforcementUnavailable
+// (fail-closed) rather than returning claims.
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_EnforcementUnavailable() {
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://example.com",
+		"aud":       "test-app",
+		"client_id": "test-client",
+		"jti":       "at-jti-unknown",
+	}
+	token := suite.createTestAccessToken(claims)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
+
+	enforcement := revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
+	enforcement.On("EnsureNotRevoked", mock.Anything, "at-jti-unknown").
+		Return(revocation.ErrEnforcementUnavailable)
+	validator := &tokenValidator{
+		cfg:                suite.validator.cfg,
+		jwtService:         suite.mockJWTService,
+		enforcementService: enforcement,
+	}
+
+	result, err := validator.ValidateAccessToken(context.Background(), token)
+
+	assert.Nil(suite.T(), result)
+	assert.ErrorIs(suite.T(), err, revocation.ErrEnforcementUnavailable)
+}
+
+// Refresh token validation enforces the deny list as its final step: a revoked token surfaces
+// revocation.ErrTokenRevoked and an unavailable deny list fails closed with
+// revocation.ErrEnforcementUnavailable rather than returning claims.
+func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_RevocationEnforced() {
+	for _, tc := range revocationEnforcementCases("rt") {
+		suite.Run(tc.name, func() {
+			now := time.Now().Unix()
+			claims := map[string]interface{}{
+				"sub":              "test-client",
+				"iss":              "https://example.com",
+				"aud":              "test-client",
+				"exp":              float64(now + 3600),
+				"iat":              float64(now),
+				"scope":            "read write",
+				"access_token_sub": "user123",
+				"access_token_aud": testAppID,
+				"grant_type":       "authorization_code",
+				"jti":              tc.jti,
+			}
+			token := suite.createTestJWT(claims)
+			suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
+
+			validator := suite.validatorWithEnforcement(tc.jti, tc.returnedErr)
+			result, err := validator.ValidateRefreshToken(context.Background(), token, "test-client")
+
+			assert.Nil(suite.T(), result)
+			assert.ErrorIs(suite.T(), err, tc.returnedErr)
+		})
+	}
+}
+
+// Self-issued subject token validation enforces the deny list after the signature and claim checks,
+// surfacing revocation.ErrTokenRevoked for a revoked token and failing closed with
+// revocation.ErrEnforcementUnavailable when the deny list is unavailable.
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_SelfIssued_RevocationEnforced() {
+	for _, tc := range revocationEnforcementCases("st") {
+		suite.Run(tc.name, func() {
+			defaultAudience := suite.getDefaultAudience()
+			now := time.Now().Unix()
+			claims := map[string]interface{}{
+				"sub":   "user123",
+				"iss":   "https://example.com",
+				"aud":   defaultAudience,
+				"exp":   float64(now + 3600),
+				"nbf":   float64(now - 60),
+				"scope": "read write",
+				"jti":   tc.jti,
+			}
+			token := suite.createTestJWT(claims)
+			suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
+
+			validator := suite.validatorWithEnforcement(tc.jti, tc.returnedErr)
+			result, err := validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+			assert.Nil(suite.T(), result)
+			assert.ErrorIs(suite.T(), err, tc.returnedErr)
+		})
+	}
+}
+
+// ValidateToken (used by introspection) verifies the signature, enforces the deny list, and returns
+// the raw claims for a valid, non-revoked token.
+func (suite *TokenValidatorTestSuite) TestValidateToken_Success() {
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://example.com",
+		"jti": "vt-jti-active",
+	}
+	token := suite.createTestJWT(claims)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
+
+	result, err := suite.validator.ValidateToken(context.Background(), token)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "user123", result["sub"])
+	assert.Equal(suite.T(), "vt-jti-active", result["jti"])
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ValidateToken enforces the deny list after signature verification: a revoked token surfaces
+// revocation.ErrTokenRevoked (so introspection reports it inactive) and an unavailable deny list
+// fails closed with revocation.ErrEnforcementUnavailable.
+func (suite *TokenValidatorTestSuite) TestValidateToken_RevocationEnforced() {
+	for _, tc := range revocationEnforcementCases("vt") {
+		suite.Run(tc.name, func() {
+			claims := map[string]interface{}{
+				"sub": "user123",
+				"iss": "https://example.com",
+				"jti": tc.jti,
+			}
+			token := suite.createTestJWT(claims)
+			suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
+
+			validator := suite.validatorWithEnforcement(tc.jti, tc.returnedErr)
+			result, err := validator.ValidateToken(context.Background(), token)
+
+			assert.Nil(suite.T(), result)
+			assert.ErrorIs(suite.T(), err, tc.returnedErr)
+		})
+	}
+}
+
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_VerifyFails() {
 	token := "invalid.token.signature"
 
@@ -2054,10 +2248,11 @@ const (
 
 type ExternalIDPValidatorTestSuite struct {
 	suite.Suite
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
-	mockIDPService *idpmock.IDPServiceInterfaceMock
-	validator      *tokenValidator
-	oauthApp       *providers.OAuthClient
+	mockJWTService         *jwtmock.JWTServiceInterfaceMock
+	mockIDPService         *idpmock.IDPServiceInterfaceMock
+	mockEnforcementService *revocationmock.EnforcementServiceInterfaceMock
+	validator              *tokenValidator
+	oauthApp               *providers.OAuthClient
 }
 
 func TestExternalIDPValidatorTestSuite(t *testing.T) {
@@ -2078,6 +2273,8 @@ func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
+	suite.mockEnforcementService = revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
+	suite.mockEnforcementService.On("EnsureNotRevoked", mock.Anything, mock.Anything).Return(nil).Maybe()
 	suite.validator = &tokenValidator{
 		cfg: oauthconfig.Config{
 			JWT: engineconfig.JWTConfig{
@@ -2087,8 +2284,9 @@ func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
 				Leeway:         30,
 			},
 		},
-		jwtService: suite.mockJWTService,
-		idpService: suite.mockIDPService,
+		jwtService:         suite.mockJWTService,
+		idpService:         suite.mockIDPService,
+		enforcementService: suite.mockEnforcementService,
 	}
 	suite.oauthApp = &providers.OAuthClient{
 		ClientID: "test-client",

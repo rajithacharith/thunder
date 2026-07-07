@@ -71,9 +71,14 @@ func Initialize(
 		return syshttp.IsSSRFSafeURL(req.URL.String())
 	})
 	resolver := jwksresolver.Initialize(httpClient)
-	tokenBuilder, tokenValidator := tokenservice.Initialize(cfg, jwtService, jweService, resolver, idpService)
 	scopeValidator := scope.Initialize()
 	discoveryService := discovery.Initialize(mux, runtimeCrypto, cfg)
+	// The enforcement service (revocation read path) is built before the token service so it can be
+	// injected into the validator, which enforces the deny list as the final step of every validation.
+	enforcementService := revocation.Initialize(
+		mux, jwtService, actorProvider, authnProvider, discoveryService, observabilitySvc)
+	tokenBuilder, tokenValidator := tokenservice.Initialize(
+		cfg, jwtService, jweService, resolver, idpService, enforcementService)
 	parService := par.Initialize(mux, actorProvider, authnProvider, jwtService, discoveryService,
 		resourceService, dpopVerifier, cfg)
 	cibaService := ciba.Initialize(mux, jwtService, actorProvider, authnProvider, flowExecService,
@@ -83,15 +88,12 @@ func Initialize(
 	if err != nil {
 		return err
 	}
-	enforcementService := revocation.Initialize(
-		mux, jwtService, actorProvider, authnProvider, discoveryService, observabilitySvc)
 	grantHandlerProvider := granthandlers.Initialize(
 		jwtService, oauth2AuthzService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService, cfg,
-		enforcementService)
+		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService, cfg)
 	token.Initialize(mux, jwtService, actorProvider, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, dpopVerifier, cfg)
-	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService, enforcementService)
+	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService, tokenValidator)
 	userinfo.Initialize(mux, jwtService, jweService, resolver,
 		tokenValidator, actorProvider, attributeCacheSvc,
 		discoveryService, dpopVerifier, cfg)
