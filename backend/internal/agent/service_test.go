@@ -131,8 +131,23 @@ func (suite *AgentServiceTestSuite) setupService() (
 		entityService:        mockEntity,
 		inboundClientService: mockInbound,
 		ouService:            mockOU,
+		dependencyRegistry:   noopDepRegistry{},
 	}
 	return svc, mockEntity, mockInbound, mockOU
+}
+
+// noopDepRegistry is a no-op resourcedependency.Registry for tests that don't exercise cascade.
+type noopDepRegistry struct{ cascadeErr error }
+
+func (noopDepRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (noopDepRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return &resourcedependency.DependenciesResponse{}, nil
+}
+
+func (r noopDepRegistry) CascadeDelete(context.Context, string, string) (int, error) {
+	return 0, r.cascadeErr
 }
 
 // buildAgentEntityFixture returns an providers.Entity with system attributes for the given fields.
@@ -2534,4 +2549,19 @@ func (suite *AgentServiceTestSuite) TestValidateOUExists_StoreError_NonNotFound(
 	svcErr := svc.validateOUExists(context.Background(), testOUID)
 	suite.Require().NotNil(svcErr)
 	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *AgentServiceTestSuite) TestDeleteAgent_AbortedWhenCascadeFails() {
+	svc, mockEntity, mockInbound, _ := suite.setupService()
+	svc.SetDependencyRegistry(noopDepRegistry{cascadeErr: errors.New("cascade failed")})
+
+	agentEntity := buildAgentEntityFixture(testAgentName, "", "", "")
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, testAgentID).Return(agentEntity, nil)
+
+	svcErr := svc.DeleteAgent(context.Background(), testAgentID)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
+	mockInbound.AssertNotCalled(suite.T(), "DeleteInboundClient", mock.Anything, mock.Anything)
 }

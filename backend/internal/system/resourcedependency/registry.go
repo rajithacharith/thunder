@@ -67,6 +67,7 @@ const (
 	ResourceTypeUser               = "user"
 	ResourceTypeApplication        = "application"
 	ResourceTypeAgent              = "agent"
+	ResourceTypeGroup              = "group"
 	ResourceTypeIDP                = "idp"
 	ResourceTypeNotificationSender = "notificationSender"
 )
