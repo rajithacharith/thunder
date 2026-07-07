@@ -23,7 +23,6 @@ import (
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2authz "github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/ciba"
-	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -44,7 +43,6 @@ func Initialize(
 	resourceService providers.ResourceServerProvider,
 	cibaService ciba.CIBAServiceInterface,
 	cfg oauthconfig.Config,
-	enforcementService revocation.EnforcementServiceInterface,
 ) GrantHandlerProviderInterface {
 	return newGrantHandlerProvider(
 		jwtService,
@@ -58,6 +56,5 @@ func Initialize(
 		resourceService,
 		cibaService,
 		cfg,
-		enforcementService,
 	)
 }

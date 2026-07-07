@@ -26,26 +26,35 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/idp"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-// TokenValidatorInterface defines the interface for validating tokens.
+// TokenValidatorInterface defines the interface for validating tokens. Every method verifies the
+// token and then enforces the revocation deny list as a final step, so a caller cannot obtain claims
+// for a revoked token. A revoked token yields revocation.ErrTokenRevoked and an unavailable deny list
+// yields revocation.ErrEnforcementUnavailable (fail-closed); callers discriminate via errors.Is.
 type TokenValidatorInterface interface {
 	ValidateAccessToken(ctx context.Context, token string) (*AccessTokenClaims, error)
 	ValidateRefreshToken(ctx context.Context, token string, clientID string) (*RefreshTokenClaims, error)
 	ValidateSubjectToken(ctx context.Context, token string, oauthApp *providers.OAuthClient) (
 		*SubjectTokenClaims, error)
+	// ValidateToken verifies a self-issued token's signature and enforces revocation without pinning
+	// its type, returning the raw claims. Used by token introspection, which is token-type agnostic.
+	ValidateToken(ctx context.Context, token string) (map[string]interface{}, error)
 }
 
 // TokenValidator implements TokenValidatorInterface.
 type tokenValidator struct {
-	cfg        oauthconfig.Config
-	jwtService jwt.JWTServiceInterface
-	idpService providers.IDPProvider
+	cfg                oauthconfig.Config
+	jwtService         jwt.JWTServiceInterface
+	idpService         providers.IDPProvider
+	enforcementService revocation.EnforcementServiceInterface
 }
 
 // NewTokenValidator creates a new TokenValidator instance.
@@ -53,11 +62,13 @@ func newTokenValidator(
 	cfg oauthconfig.Config,
 	jwtService jwt.JWTServiceInterface,
 	idpService providers.IDPProvider,
+	enforcementService revocation.EnforcementServiceInterface,
 ) TokenValidatorInterface {
 	return &tokenValidator{
-		cfg:        cfg,
-		jwtService: jwtService,
-		idpService: idpService,
+		cfg:                cfg,
+		jwtService:         jwtService,
+		idpService:         idpService,
+		enforcementService: enforcementService,
 	}
 }
 
@@ -107,6 +118,11 @@ func (tv *tokenValidator) ValidateAccessToken(ctx context.Context, token string)
 
 	grantType, _ := extractStringClaim(claims, "grant_type")
 	scopes := extractScopesFromClaims(claims, false)
+
+	jti, _ := extractStringClaim(claims, constants.ClaimJTI)
+	if err := tv.enforcementService.EnsureNotRevoked(ctx, jti); err != nil {
+		return nil, err
+	}
 
 	return &AccessTokenClaims{
 		Sub:       sub,
@@ -169,6 +185,10 @@ func (tv *tokenValidator) ValidateRefreshToken(
 		dpopJkt = s
 	}
 
+	if err := tv.enforcementService.EnsureNotRevoked(ctx, jti); err != nil {
+		return nil, err
+	}
+
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
 		Sub:              sub,
@@ -206,7 +226,14 @@ func (tv *tokenValidator) ValidateSubjectToken(
 		if err := tv.verifyTokenSignatureByIssuer(ctx, token, iss); err != nil {
 			return nil, fmt.Errorf("invalid subject token signature: %w", err)
 		}
-		return tv.extractSubjectTokenClaims(token, iss, claims, oauthApp, nil)
+		selfClaims, err := tv.extractSubjectTokenClaims(token, iss, claims, oauthApp, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := tv.enforcementService.EnsureNotRevoked(ctx, selfClaims.JTI); err != nil {
+			return nil, err
+		}
+		return selfClaims, nil
 	}
 
 	// Not a server-issued token — try external IDP issuers.
@@ -232,6 +259,27 @@ func (tv *tokenValidator) ValidateSubjectToken(
 	}
 
 	return tv.extractSubjectTokenClaims(token, iss, claims, oauthApp, issuerInfo.AttributeMappings)
+}
+
+// ValidateToken verifies a self-issued token's signature (type-agnostic) and enforces the revocation
+// deny list, returning the raw claims. Token introspection uses this because it accepts both access
+// and refresh tokens and must not pin a token type.
+func (tv *tokenValidator) ValidateToken(ctx context.Context, token string) (map[string]interface{}, error) {
+	if err := tv.jwtService.VerifyJWT(ctx, token, "", ""); err != nil {
+		return nil, fmt.Errorf("token verification failed: %v", err.Error)
+	}
+
+	claims, err := jwt.DecodeJWTPayload(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode token payload: %w", err)
+	}
+
+	jti, _ := extractStringClaim(claims, constants.ClaimJTI)
+	if err := tv.enforcementService.EnsureNotRevoked(ctx, jti); err != nil {
+		return nil, err
+	}
+
+	return claims, nil
 }
 
 // tokenExchangeIssuerInfo holds the resolved properties needed to validate an external token.

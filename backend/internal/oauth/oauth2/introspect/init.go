@@ -24,7 +24,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/clientauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
-	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -37,9 +37,9 @@ func Initialize(
 	actorProvider providers.ActorProvider,
 	authnProvider providers.AuthnProviderManager,
 	discoveryService discovery.DiscoveryServiceInterface,
-	enforcementService revocation.EnforcementServiceInterface,
+	tokenValidator tokenservice.TokenValidatorInterface,
 ) TokenIntrospectionServiceInterface {
-	introspectionService := newTokenIntrospectionService(jwtService, enforcementService)
+	introspectionService := newTokenIntrospectionService(tokenValidator)
 	introspectHandler := newTokenIntrospectionHandler(introspectionService)
 	registerRoutes(mux, introspectHandler, actorProvider, authnProvider, jwtService, discoveryService)
 	return introspectionService
