@@ -1492,7 +1492,7 @@ inboundAuthConfig:
 # resource_type: agent
 # CIBA-only client used by the upgrade scheduler to initiate backchannel
 # authentication for users who have a pending upgrade request.
-# Uses default-ciba-email-flow so Thunder sends an email notification to the
+# Uses wayfinder-ciba-email-flow so ThunderID sends an email notification to the
 # user's registered address. Kept separate from wayfinder-concierge because
 # auth_flow_handle is shared between authorization_code and CIBA — they need
 # different flows (interactive vs backchannel notification).
