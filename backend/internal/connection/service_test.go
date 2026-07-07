@@ -28,6 +28,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
@@ -173,4 +174,33 @@ func (s *ServiceTestSuite) TestDeleteByTypeGetFails() {
 	svcErr := s.svc.deleteByType(context.Background(), providers.IDPTypeGoogle, "missing")
 	s.Require().NotNil(svcErr)
 	s.mockIDP.AssertNotCalled(s.T(), "DeleteIdentityProvider", mock.Anything, mock.Anything)
+}
+
+func (s *ServiceTestSuite) TestUsagesByTypeDelegates() {
+	total := 1
+	usages := &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Summary:      map[string]int{"flow": 1},
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: "flow", ID: "flow-1", DisplayName: "Login Flow", BehaviorOnDelete: "restrict"},
+		},
+	}
+	s.mockIDP.On("GetIdentityProvider", mock.Anything, "g-1").
+		Return(&providers.IDPDTO{ID: "g-1", Type: providers.IDPTypeGoogle}, (*tidcommon.ServiceError)(nil))
+	s.mockIDP.On("GetIDPUsages", mock.Anything, "g-1").Return(usages, (*tidcommon.ServiceError)(nil))
+
+	result, svcErr := s.svc.usagesByType(context.Background(), providers.IDPTypeGoogle, "g-1")
+	s.Nil(svcErr)
+	s.Equal(usages, result)
+}
+
+func (s *ServiceTestSuite) TestUsagesByTypeGetFails() {
+	s.mockIDP.On("GetIdentityProvider", mock.Anything, "missing").
+		Return((*providers.IDPDTO)(nil), &idp.ErrorIDPNotFound)
+
+	result, svcErr := s.svc.usagesByType(context.Background(), providers.IDPTypeGoogle, "missing")
+	s.Require().NotNil(svcErr)
+	s.Nil(result)
+	s.mockIDP.AssertNotCalled(s.T(), "GetIDPUsages", mock.Anything, mock.Anything)
 }

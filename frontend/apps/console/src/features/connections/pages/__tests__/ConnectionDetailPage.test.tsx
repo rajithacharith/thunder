@@ -67,6 +67,9 @@ vi.mock('../../api/useConnection', () => ({
 vi.mock('../../api/useConnectionInstances', () => ({default: () => ({data: [], isLoading: false})}));
 vi.mock('../../api/useUpdateConnection', () => ({default: () => ({mutateAsync: updateMock, isPending: false})}));
 vi.mock('../../api/useDeleteConnection', () => ({default: () => ({mutate: deleteMock, isPending: false})}));
+vi.mock('../../api/useGetConnectionUsages', () => ({
+  default: () => ({data: {totalResults: 0, count: 0, summary: {}, usages: []}, isLoading: false}),
+}));
 
 vi.mock('../../components/ConnectionForm', () => ({
   default: function StubConnectionForm({onFieldChange}: {onFieldChange: (name: string, value: string) => void}) {

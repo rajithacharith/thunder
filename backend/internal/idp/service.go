@@ -50,6 +50,7 @@ type IDPServiceInterface interface {
 		idp *providers.IDPDTO,
 	) (*providers.IDPDTO, *tidcommon.ServiceError)
 	DeleteIdentityProvider(ctx context.Context, idpID string) *tidcommon.ServiceError
+	GetIDPUsages(ctx context.Context, idpID string) (*resourcedependency.DependenciesResponse, *tidcommon.ServiceError)
 	SetDependencyRegistry(r resourcedependency.Registry)
 }
 
@@ -342,6 +343,44 @@ func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) 
 // provider services are initialized to avoid a cyclic import.
 func (is *idpService) SetDependencyRegistry(r resourcedependency.Registry) {
 	is.dependencyRegistry = r
+}
+
+// GetIDPUsages returns the resources that reference this identity provider, such as flows that use
+// it. It is informational — it drives the pre-delete confirmation dialog and does not gate deletion
+// on the server (deletion is gated separately by ensureNoBlockingDependencies).
+func (is *idpService) GetIDPUsages(
+	ctx context.Context, idpID string,
+) (*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+	if strings.TrimSpace(idpID) == "" {
+		return nil, &ErrorInvalidIDPID
+	}
+
+	if _, err := is.idpStore.GetIdentityProvider(ctx, idpID); err != nil {
+		if errors.Is(err, ErrIDPNotFound) {
+			return nil, &ErrorIDPNotFound
+		}
+		is.logger.Error(ctx, "Failed to retrieve identity provider", log.Error(err), log.String("idpID", idpID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	if is.dependencyRegistry == nil {
+		is.logger.Warn(ctx, "Dependency registry not set; returning unknown dependencies",
+			log.String("idpID", idpID))
+		return &resourcedependency.DependenciesResponse{
+			TotalResults: nil,
+			Count:        0,
+			Summary:      nil,
+			Usages:       []resourcedependency.ResourceDependency{},
+		}, nil
+	}
+
+	result, err := is.dependencyRegistry.GetDependencies(ctx, resourcedependency.ResourceTypeIDP, idpID)
+	if err != nil {
+		is.logger.Error(ctx, "Failed to get identity provider usages", log.Error(err), log.String("idpID", idpID))
+		return nil, &tidcommon.InternalServerError
+	}
+
+	return result, nil
 }
 
 // ensureNoBlockingDependencies refuses deletion when other resources depend on the identity provider

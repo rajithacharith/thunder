@@ -55,6 +55,27 @@ export interface ConnectionListResponse {
 }
 
 /**
+ * A single resource that references a connection (e.g. a flow that uses it).
+ */
+export interface ConnectionUsage {
+  resourceType: string;
+  id: string;
+  displayName: string;
+  behaviorOnDelete: 'fallback' | 'cascade' | 'restrict';
+}
+
+/**
+ * Response for the connection usages endpoint (GET /connections/{type}/{id}/usages).
+ * totalResults is null when usage data is unavailable; 0 means confirmed empty.
+ */
+export interface ConnectionUsagesResponse {
+  totalResults: number | null;
+  count: number;
+  summary: Record<string, number> | null;
+  usages: ConnectionUsage[];
+}
+
+/**
  * Lightweight configured instance (GET /connections/{type}).
  */
 export interface ConnectionInstanceSummary {

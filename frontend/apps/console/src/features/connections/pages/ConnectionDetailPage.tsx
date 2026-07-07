@@ -288,6 +288,8 @@ export default function ConnectionDetailPage(): JSX.Element | null {
 
           <ConnectionDeleteDialog
             open={deleteOpen}
+            connectionType={connectionType}
+            connectionId={resolvedId ?? ''}
             connectionName={data?.name ?? ''}
             isPending={deleteMutation.isPending}
             onConfirm={handleDelete}

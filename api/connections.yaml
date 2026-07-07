@@ -126,6 +126,32 @@ paths:
         "401": { $ref: '#/components/responses/Unauthorized' }
         "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
+  /connections/google/{id}/usages:
+    parameters:
+      - { $ref: '#/components/parameters/ConnectionID' }
+    get:
+      tags: [Connections]
+      summary: Get Google connection usages
+      description: |
+        Returns the resources that reference this connection, aggregated across all resource
+        types (for example, flows that use it). Informational only — it drives the pre-delete
+        confirmation dialog in the UI and does not gate deletion on the server.
+
+        Each usage entry includes a `behaviorOnDelete` field describing what happens to the
+        referencing resource if the connection is deleted:
+        - `fallback`: the reference is kept as-is.
+        - `cascade`: the resource is permanently deleted along with the connection.
+        - `restrict`: the resource blocks deletion of the connection.
+
+        When usage data is unavailable (e.g. the server has not fully initialised),
+        `totalResults` and `summary` are `null` rather than `0`/empty. Consumers must treat
+        `null` as "unknown" and `0` as "confirmed empty".
+      responses:
+        "200": { $ref: '#/components/responses/ConnectionUsages' }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "500": { $ref: '#/components/responses/InternalServerError' }
 
   /connections/github:
     get:
@@ -196,6 +222,32 @@ paths:
       summary: Delete a GitHub connection
       responses:
         "204": { description: Connection deleted }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "500": { $ref: '#/components/responses/InternalServerError' }
+  /connections/github/{id}/usages:
+    parameters:
+      - { $ref: '#/components/parameters/ConnectionID' }
+    get:
+      tags: [Connections]
+      summary: Get GitHub connection usages
+      description: |
+        Returns the resources that reference this connection, aggregated across all resource
+        types (for example, flows that use it). Informational only — it drives the pre-delete
+        confirmation dialog in the UI and does not gate deletion on the server.
+
+        Each usage entry includes a `behaviorOnDelete` field describing what happens to the
+        referencing resource if the connection is deleted:
+        - `fallback`: the reference is kept as-is.
+        - `cascade`: the resource is permanently deleted along with the connection.
+        - `restrict`: the resource blocks deletion of the connection.
+
+        When usage data is unavailable (e.g. the server has not fully initialised),
+        `totalResults` and `summary` are `null` rather than `0`/empty. Consumers must treat
+        `null` as "unknown" and `0` as "confirmed empty".
+      responses:
+        "200": { $ref: '#/components/responses/ConnectionUsages' }
         "404": { $ref: '#/components/responses/NotFound' }
         "401": { $ref: '#/components/responses/Unauthorized' }
         "403": { $ref: '#/components/responses/Forbidden' }
@@ -274,6 +326,32 @@ paths:
         "401": { $ref: '#/components/responses/Unauthorized' }
         "403": { $ref: '#/components/responses/Forbidden' }
         "500": { $ref: '#/components/responses/InternalServerError' }
+  /connections/oidc/{id}/usages:
+    parameters:
+      - { $ref: '#/components/parameters/ConnectionID' }
+    get:
+      tags: [Connections]
+      summary: Get OIDC connection usages
+      description: |
+        Returns the resources that reference this connection, aggregated across all resource
+        types (for example, flows that use it). Informational only — it drives the pre-delete
+        confirmation dialog in the UI and does not gate deletion on the server.
+
+        Each usage entry includes a `behaviorOnDelete` field describing what happens to the
+        referencing resource if the connection is deleted:
+        - `fallback`: the reference is kept as-is.
+        - `cascade`: the resource is permanently deleted along with the connection.
+        - `restrict`: the resource blocks deletion of the connection.
+
+        When usage data is unavailable (e.g. the server has not fully initialised),
+        `totalResults` and `summary` are `null` rather than `0`/empty. Consumers must treat
+        `null` as "unknown" and `0` as "confirmed empty".
+      responses:
+        "200": { $ref: '#/components/responses/ConnectionUsages' }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "500": { $ref: '#/components/responses/InternalServerError' }
 
 components:
   securitySchemes:
@@ -308,6 +386,21 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/ConnectionInstanceSummary'
+    ConnectionUsages:
+      description: Resources that reference this connection
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ConnectionUsagesResponse' }
+          example:
+            totalResults: 1
+            count: 1
+            summary:
+              flow: 1
+            usages:
+              - resourceType: flow
+                id: "f1b2c3d4-0000-0000-0000-000000000001"
+                displayName: "Login Flow"
+                behaviorOnDelete: restrict
     BadRequest:
       description: Bad request
       content:
@@ -367,6 +460,74 @@ components:
         id: { type: string, format: uuid }
         name: { type: string, example: "My Google" }
         description: { type: string }
+
+    ConnectionUsage:
+      type: object
+      description: A single resource that references the connection.
+      required:
+        - resourceType
+        - id
+        - displayName
+        - behaviorOnDelete
+      properties:
+        resourceType:
+          type: string
+          description: Type of the referencing resource.
+          enum: [flow]
+          example: flow
+        id:
+          type: string
+          format: uuid
+          description: Identifier of the referencing resource.
+          example: "f1b2c3d4-0000-0000-0000-000000000001"
+        displayName:
+          type: string
+          description: Human-readable name of the referencing resource.
+          example: "Login Flow"
+        behaviorOnDelete:
+          type: string
+          description: |
+            What happens to this resource when the connection is deleted.
+            - `fallback`: the reference is kept as-is.
+            - `cascade`: the resource is permanently deleted.
+            - `restrict`: the resource blocks deletion of the connection.
+          enum: [fallback, cascade, restrict]
+          example: restrict
+
+    ConnectionUsagesSummary:
+      type: object
+      nullable: true
+      description: |
+        Per-resource-type count of usages, keyed by resource type
+        (e.g. `flow`). Null when the counts could not be determined.
+      additionalProperties:
+        type: integer
+      example:
+        flow: 1
+
+    ConnectionUsagesResponse:
+      type: object
+      description: |
+        Resources that reference a connection, aggregated across all resource types.
+        Drives pre-delete confirmation dialogs; informational only.
+      properties:
+        totalResults:
+          type: integer
+          nullable: true
+          description: |
+            Total number of resources that reference the connection.
+            Null when usage data is unavailable; 0 means confirmed empty.
+          example: 1
+        count:
+          type: integer
+          description: Number of results returned.
+          example: 1
+        summary:
+          $ref: '#/components/schemas/ConnectionUsagesSummary'
+        usages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionUsage'
 
     GoogleConnectionUpdateRequest:
       type: object

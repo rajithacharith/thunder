@@ -731,6 +731,80 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_Success() {
 	s.mockStore.AssertExpectations(s.T())
 }
 
+// TestGetIDPUsages_ReturnsDependencies verifies usages are returned for an existing IDP.
+func (s *IDPServiceTestSuite) TestGetIDPUsages_ReturnsDependencies() {
+	total := 1
+	usages := &resourcedependency.DependenciesResponse{
+		TotalResults: &total,
+		Count:        1,
+		Usages: []resourcedependency.ResourceDependency{
+			{ResourceType: resourcedependency.ResourceTypeFlow, ID: "flow-1",
+				DisplayName: "Google Login", BehaviorOnDelete: resourcedependency.BehaviorRestrict},
+		},
+	}
+	s.idpService.dependencyRegistry = &stubDependencyRegistry{resp: usages}
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").
+		Return(&providers.IDPDTO{ID: "idp-123"}, nil)
+
+	result, err := s.idpService.GetIDPUsages(context.Background(), "idp-123")
+
+	s.Nil(err)
+	s.Equal(usages, result)
+	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestGetIDPUsages_EmptyID validates the empty-ID guard.
+func (s *IDPServiceTestSuite) TestGetIDPUsages_EmptyID() {
+	result, err := s.idpService.GetIDPUsages(context.Background(), "")
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(ErrorInvalidIDPID.Code, err.Code)
+}
+
+// TestGetIDPUsages_NotFound verifies a not-found error when the IDP does not exist.
+func (s *IDPServiceTestSuite) TestGetIDPUsages_NotFound() {
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "missing").
+		Return((*providers.IDPDTO)(nil), ErrIDPNotFound)
+
+	result, err := s.idpService.GetIDPUsages(context.Background(), "missing")
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(ErrorIDPNotFound.Code, err.Code)
+	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestGetIDPUsages_GetStoreError verifies a store error while retrieving the IDP maps to an
+// internal server error.
+func (s *IDPServiceTestSuite) TestGetIDPUsages_GetStoreError() {
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").
+		Return((*providers.IDPDTO)(nil), errors.New("database error"))
+
+	result, err := s.idpService.GetIDPUsages(context.Background(), "idp-123")
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
+	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestGetIDPUsages_RegistryUnset returns unknown dependencies rather than failing when the
+// registry was never wired in (informational endpoint, unlike deletion which fails closed).
+func (s *IDPServiceTestSuite) TestGetIDPUsages_RegistryUnset() {
+	s.idpService.dependencyRegistry = nil
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").
+		Return(&providers.IDPDTO{ID: "idp-123"}, nil)
+
+	result, err := s.idpService.GetIDPUsages(context.Background(), "idp-123")
+
+	s.Nil(err)
+	s.Require().NotNil(result)
+	s.Nil(result.TotalResults)
+	s.Empty(result.Usages)
+	s.mockStore.AssertExpectations(s.T())
+}
+
 // TestDeleteIdentityProvider_EmptyID tests empty ID validation
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_EmptyID() {
 	err := s.idpService.DeleteIdentityProvider(context.Background(), "")
