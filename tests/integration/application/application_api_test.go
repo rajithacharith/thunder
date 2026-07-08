@@ -4006,7 +4006,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidThemeAndLayou
 }
 
 // TestThemeAndLayoutCannotDeleteWhenAssociatedWithApplication tests that theme/layout cannot be deleted when associated with an application
-func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedWithApplication() {
+func (ts *ApplicationAPITestSuite) TestThemeAndLayoutDeletableWhenAssociatedWithApplication() {
 	// Create a theme configuration
 	themePreferences := []byte(`{
 		"activeColorScheme": "dark",
@@ -4026,18 +4026,23 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 	ts.Require().NoError(err, "Failed to create theme for test")
 	defer deleteThemeForTest(themeID)
 
-	// Create application with theme ID
+	layoutID, err := createLayoutForTest([]byte(`{"structure": "grid"}`), "Layout for delete test")
+	ts.Require().NoError(err, "Failed to create layout for test")
+	defer deleteLayoutForTest(layoutID)
+
+	// Create application referencing the theme and layout
 	app := Application{
 		OUID:        testOUID,
-		Name:        "App Preventing Theme Delete",
-		Description: "Application that prevents theme deletion",
+		Name:        "App With Theme And Layout",
+		Description: "Application that references a theme and a layout",
 		ThemeID:     themeID,
+		LayoutID:    layoutID,
 		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://prevent-delete.example.com/callback"},
+					RedirectURIs:            []string{"https://theme-layout.example.com/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
@@ -4050,36 +4055,43 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Try to delete the theme - should fail
-	req, err := http.NewRequest("DELETE", testServerURL+"/design/themes/"+themeID, nil)
-	ts.Require().NoError(err)
-
 	client := testutils.GetHTTPClient()
 
-	resp, err := client.Do(req)
+	// Deleting the theme while associated with an application succeeds; the application falls back
+	// to the default theme at read time.
+	themeReq, err := http.NewRequest("DELETE", testServerURL+"/design/themes/"+themeID, nil)
 	ts.Require().NoError(err)
-	defer resp.Body.Close()
-
-	ts.Assert().Equal(http.StatusConflict, resp.StatusCode)
-
-	bodyBytes, err := io.ReadAll(resp.Body)
+	themeResp, err := client.Do(themeReq)
 	ts.Require().NoError(err)
+	themeResp.Body.Close()
+	ts.Assert().Equal(http.StatusNoContent, themeResp.StatusCode)
 
-	var errResp map[string]interface{}
-	err = json.Unmarshal(bodyBytes, &errResp)
+	// Deleting the layout while associated with an application succeeds similarly.
+	layoutReq, err := http.NewRequest("DELETE", testServerURL+"/design/layouts/"+layoutID, nil)
 	ts.Require().NoError(err)
-	ts.Assert().Equal("THM-1004", errResp["code"])
-
-	// Delete the application first
-	err = deleteApplication(appID)
+	layoutResp, err := client.Do(layoutReq)
 	ts.Require().NoError(err)
+	layoutResp.Body.Close()
+	ts.Assert().Equal(http.StatusNoContent, layoutResp.StatusCode)
 
-	// Now the theme should be deletable
-	resp, err = client.Do(req)
+	// The theme and layout are gone.
+	themeGetReq, err := http.NewRequest("GET", testServerURL+"/design/themes/"+themeID, nil)
 	ts.Require().NoError(err)
-	defer resp.Body.Close()
+	themeGetResp, err := client.Do(themeGetReq)
+	ts.Require().NoError(err)
+	themeGetResp.Body.Close()
+	ts.Assert().Equal(http.StatusNotFound, themeGetResp.StatusCode)
 
-	ts.Assert().Equal(http.StatusNoContent, resp.StatusCode)
+	layoutGetReq, err := http.NewRequest("GET", testServerURL+"/design/layouts/"+layoutID, nil)
+	ts.Require().NoError(err)
+	layoutGetResp, err := client.Do(layoutGetReq)
+	ts.Require().NoError(err)
+	layoutGetResp.Body.Close()
+	ts.Assert().Equal(http.StatusNotFound, layoutGetResp.StatusCode)
+
+	// The application remains retrievable after its theme and layout are removed.
+	_, err = getApplicationByID(appID)
+	ts.Require().NoError(err)
 }
 
 // TestApplicationWithAllowedUserTypes tests creating an application with valid allowed_user_types
