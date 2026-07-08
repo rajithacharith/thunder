@@ -136,27 +136,6 @@ func (s *ModelTestSuite) TestInput_OneTimeUse_OmittedWhenFalse() {
 	s.NotContains(jsonStr, "oneTimeUse", "OneTimeUse must be omitted from JSON when false")
 }
 
-func (s *ModelTestSuite) TestInput_Consumed_ExcludedFromJSON() {
-	input := providers.Input{
-		Identifier: "challenge",
-		Type:       providers.InputTypeText,
-		Required:   true,
-		OneTimeUse: true,
-		Consumed:   true,
-	}
-
-	data, err := json.Marshal(input)
-	s.Require().NoError(err)
-
-	jsonStr := string(data)
-	s.NotContains(jsonStr, "Consumed", "Consumed field name must not appear in JSON")
-	s.NotContains(jsonStr, "consumed", "consumed key must not appear in JSON")
-
-	var decoded providers.Input
-	s.Require().NoError(json.Unmarshal(data, &decoded))
-	s.False(decoded.Consumed, "Consumed must remain false after unmarshalling")
-}
-
 func (s *ModelTestSuite) TestExecutionAttempt_GetDuration() {
 	tests := []struct {
 		name      string

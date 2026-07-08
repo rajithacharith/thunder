@@ -50,6 +50,9 @@ type frame struct {
 }
 
 // EngineContext holds the overall context used by the flow engine during execution.
+//
+// TODO: fields on EngineContext are currently exposed directly. Convert to unexported
+// fields accessed via getters and setters so that mutation can be encapsulated.
 type EngineContext struct {
 	Context context.Context
 
@@ -77,7 +80,9 @@ type EngineContext struct {
 	ExecutionHistory  map[string]*providers.NodeExecutionRecord
 
 	InterceptorSharedData map[string]string
-
+	// consumedInputs accumulates identifiers reported as consumed by executors and
+	// interceptors within the current request
+	consumedInputs []string
 	// frameStack holds saved call frames. Top is the most recent caller.
 	frameStack []*frame
 	// sharedRuntimeData is a cross-frame key-value store available to executors that opt in.
@@ -157,6 +162,9 @@ func (e *EngineContext) getSharedRuntimeData(key string) (string, bool) {
 // InterceptorRunnerContext is a self-contained, request-scoped context built by the engine
 // for each RunInterceptors call. It carries everything the interceptor service needs without
 // requiring access to the engine context itself.
+//
+// TODO: fields on EngineContext are currently exposed directly. Convert to unexported
+// fields accessed via getters and setters so that mutation can be encapsulated.
 type InterceptorRunnerContext struct {
 	Ctx                  context.Context
 	ExecutionID          string
@@ -174,6 +182,27 @@ type InterceptorRunnerContext struct {
 	CurrentNodeInputs    []providers.Input
 	ResolvedInterceptors []core.InterceptorUnitInterface
 	SharedData           map[string]string
+	// consumedInputs accumulates identifiers reported as consumed by interceptors
+	// during this RunInterceptors call
+	consumedInputs []string
+}
+
+// AppendConsumedInputs appends the given keys to the accumulator of inputs consumed during
+// this RunInterceptors call.
+func (c *InterceptorRunnerContext) AppendConsumedInputs(keys []string) {
+	if len(keys) == 0 {
+		return
+	}
+	if c.consumedInputs == nil {
+		c.consumedInputs = make([]string, 0, len(keys))
+	}
+	c.consumedInputs = append(c.consumedInputs, keys...)
+}
+
+// GetConsumedInputs returns the keys reported via ConsumeInput by interceptors during this
+// RunInterceptors call.
+func (c *InterceptorRunnerContext) GetConsumedInputs() []string {
+	return c.consumedInputs
 }
 
 // FlowStep represents the outcome of a individual flow step

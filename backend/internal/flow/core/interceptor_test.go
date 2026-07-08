@@ -141,3 +141,53 @@ func (s *InterceptorTestSuite) TestGetInputs_ReturnsPopulatedInputs() {
 func (s *InterceptorTestSuite) TestInterceptor_ImplementsInterface() {
 	var _ InterceptorInterface = (*interceptor)(nil)
 }
+
+// InterceptorContext consumed inputs
+
+func (s *InterceptorTestSuite) TestInterceptorContext_ConsumeInput_RecordsAndReturnsValue() {
+	ic := &InterceptorContext{UserInputs: map[string]string{"captcha": "abc"}}
+
+	v, ok := ic.ConsumeInput("captcha")
+
+	s.True(ok)
+	s.Equal("abc", v)
+	s.Equal([]string{"captcha"}, ic.GetConsumedInputs())
+}
+
+func (s *InterceptorTestSuite) TestInterceptorContext_ConsumeInput_MissingKeyDoesNotRecord() {
+	ic := &InterceptorContext{UserInputs: map[string]string{"other": "x"}}
+
+	v, ok := ic.ConsumeInput("captcha")
+
+	s.False(ok)
+	s.Equal("", v)
+	s.Empty(ic.GetConsumedInputs())
+}
+
+func (s *InterceptorTestSuite) TestInterceptorContext_AppendConsumedInputs_AppendsWithoutReading() {
+	ic := &InterceptorContext{UserInputs: map[string]string{"a": "1"}}
+
+	ic.AppendConsumedInputs([]string{"a", "b"})
+
+	s.Equal([]string{"a", "b"}, ic.GetConsumedInputs())
+	s.Equal("1", ic.UserInputs["a"], "AppendConsumedInputs must not mutate UserInputs")
+}
+
+func (s *InterceptorTestSuite) TestInterceptorContext_AppendConsumedInputs_EmptyIsNoop() {
+	ic := &InterceptorContext{}
+
+	ic.AppendConsumedInputs(nil)
+	ic.AppendConsumedInputs([]string{})
+
+	s.Empty(ic.GetConsumedInputs())
+}
+
+func (s *InterceptorTestSuite) TestInterceptorContext_ConsumeInput_AccumulatesAcrossCalls() {
+	ic := &InterceptorContext{UserInputs: map[string]string{"a": "1", "b": "2"}}
+
+	ic.ConsumeInput("a")
+	ic.AppendConsumedInputs([]string{"c"})
+	ic.ConsumeInput("b")
+
+	s.Equal([]string{"a", "c", "b"}, ic.GetConsumedInputs())
+}

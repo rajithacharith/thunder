@@ -901,389 +901,214 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_UserOnboardingFlowRetainsPass
 	s.Equal("secret123", ctx.UserInputs["password"])
 }
 
-// Tests for clearConsumedOneTimeUseInputs
+// Tests for one-time-use cleanup
 
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_RemovesConsumedOneTimeUseInput() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-			"username":  "testuser",
-		},
-	}
-
-	inputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-		{Identifier: "username", Type: "TEXT_INPUT"},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
-
-	_, exists := ctx.UserInputs["challenge"]
-	s.False(exists)
-	s.Equal("testuser", ctx.UserInputs["username"])
-}
-
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_PreservesOneTimeUseNotConsumed() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
-	}
-
-	inputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: false},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
-
-	s.Equal("abc123", ctx.UserInputs["challenge"])
-}
-
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_PreservesNonOneTimeUseInput() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"username": "testuser",
-		},
-	}
-
-	inputs := []providers.Input{
-		{Identifier: "username", Type: "TEXT_INPUT", Consumed: true},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
-
-	s.Equal("testuser", ctx.UserInputs["username"])
-}
-
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_EmptyInputs() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"username": "testuser",
-		},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, nil)
-
-	s.Equal("testuser", ctx.UserInputs["username"])
-}
-
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_InputNotInUserInputs() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"username": "testuser",
-		},
-	}
-
-	inputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
-
-	s.Equal("testuser", ctx.UserInputs["username"])
-	s.Len(ctx.UserInputs, 1)
-}
-
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_ResetsConsumedFlag() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
-	}
-
-	inputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
-
-	s.False(inputs[0].Consumed)
-}
-
-// Tests for clearOneTimeUseInputs
-
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_FallsBackToExecutorDefaults() {
+func (s *EngineTestSuite) TestClearNodePackageOneTimeUseInputs_ClearsSignaledNodeInput() {
 	t := s.T()
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetInputs").Return([]providers.Input{
+		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
+		{Identifier: "username", Type: "TEXT_INPUT"},
+	})
+
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-			"username":  "testuser",
-		},
+		UserInputs:     map[string]string{"challenge": "abc123", "username": "testuser"},
+		consumedInputs: []string{"challenge"},
 	}
+
+	fe.clearNodePackageOneTimeUseInputs(ctx, mockNode)
+
+	_, challengeExists := ctx.UserInputs["challenge"]
+	s.False(challengeExists, "signaled OneTimeUse node input should be removed")
+	s.Equal("testuser", ctx.UserInputs["username"], "non-OneTimeUse input should be preserved")
+	s.Empty(ctx.consumedInputs, "pending list should be drained")
+}
+
+func (s *EngineTestSuite) TestClearNodePackageOneTimeUseInputs_FallsBackToExecutorDefaults() {
+	t := s.T()
 
 	mockExecutor := coremock.NewExecutorInterfaceMock(t)
 	mockExecutor.On("GetDefaultInputs").Return([]providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-		{Identifier: "username", Type: "TEXT_INPUT"},
+		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
 	})
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetInputs").Return([]providers.Input(nil))
 	mockNode.On("GetExecutor").Return(mockExecutor)
 
-	fe.clearOneTimeUseInputs(ctx, mockNode)
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		UserInputs:     map[string]string{"challenge": "abc123"},
+		consumedInputs: []string{"challenge"},
+	}
+
+	fe.clearNodePackageOneTimeUseInputs(ctx, mockNode)
 
 	_, exists := ctx.UserInputs["challenge"]
 	s.False(exists)
+}
+
+func (s *EngineTestSuite) TestClearNodePackageOneTimeUseInputs_IgnoresNonOneTimeUseSignals() {
+	t := s.T()
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetInputs").Return([]providers.Input{
+		{Identifier: "username", Type: "TEXT_INPUT"},
+	})
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		UserInputs:     map[string]string{"username": "testuser"},
+		consumedInputs: []string{"username"},
+	}
+
+	fe.clearNodePackageOneTimeUseInputs(ctx, mockNode)
+
+	s.Equal("testuser", ctx.UserInputs["username"],
+		"identifier not declared as OneTimeUse should not be cleared even if signaled")
+}
+
+func (s *EngineTestSuite) TestClearNodePackageOneTimeUseInputs_NoPendingIsNoop() {
+	t := s.T()
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		UserInputs: map[string]string{"challenge": "abc123"},
+	}
+
+	fe.clearNodePackageOneTimeUseInputs(ctx, mockNode)
+
+	s.Equal("abc123", ctx.UserInputs["challenge"])
+}
+
+func (s *EngineTestSuite) TestClearNodePackageOneTimeUseInputs_ClearsInterceptorDeclaredInput() {
+	t := s.T()
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetInputs").Return([]providers.Input{{Identifier: "username", Type: "TEXT_INPUT"}})
+	mockNode.On("GetID").Return("node-1")
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil))
+
+	interceptorMock := coremock.NewInterceptorInterfaceMock(t)
+	interceptorMock.On("GetInputs").Return([]providers.Input{
+		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
+	})
+
+	unit := newTestInterceptorUnitMock(t, "captcha", providers.InterceptorModePreNode,
+		providers.InterceptorScopeAll, nil)
+	unit.SetInterceptor(interceptorMock)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetInterceptors", providers.InterceptorModePreNode).
+		Return([]core.InterceptorUnitInterface{unit})
+	mockGraph.On("GetInterceptors", providers.InterceptorModePostNode).
+		Return([]core.InterceptorUnitInterface{})
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		Graph:          mockGraph,
+		UserInputs:     map[string]string{"challenge": "abc123", "username": "testuser"},
+		consumedInputs: []string{"challenge"},
+	}
+
+	fe.clearNodePackageOneTimeUseInputs(ctx, mockNode)
+
+	_, challengeExists := ctx.UserInputs["challenge"]
+	s.False(challengeExists,
+		"OneTimeUse input declared by a scoped interceptor should be cleared when signaled")
 	s.Equal("testuser", ctx.UserInputs["username"])
 }
 
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_UsesNodeInputsWhenAvailable() {
+func (s *EngineTestSuite) TestClearRequestPackageOneTimeUseInputs_ClearsSignaledInput() {
 	t := s.T()
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
-	}
 
-	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	mockNode.On("GetInputs").Return([]providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
+	interceptorMock := coremock.NewInterceptorInterfaceMock(t)
+	interceptorMock.On("GetInputs").Return([]providers.Input{
+		{Identifier: "captchaToken", Type: "TEXT_INPUT", OneTimeUse: true},
 	})
 
-	fe.clearOneTimeUseInputs(ctx, mockNode)
+	unit := newTestInterceptorUnitMock(t, "captcha", providers.InterceptorModePreRequest,
+		providers.InterceptorScopeAll, nil)
+	unit.SetInterceptor(interceptorMock)
 
-	_, exists := ctx.UserInputs["challenge"]
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetInterceptors", providers.InterceptorModePreRequest).
+		Return([]core.InterceptorUnitInterface{unit})
+	mockGraph.On("GetInterceptors", providers.InterceptorModePostRequest).
+		Return([]core.InterceptorUnitInterface{})
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		Graph:          mockGraph,
+		UserInputs:     map[string]string{"captchaToken": "abc123"},
+		consumedInputs: []string{"captchaToken"},
+	}
+
+	fe.clearRequestPackageOneTimeUseInputs(ctx)
+
+	_, exists := ctx.UserInputs["captchaToken"]
 	s.False(exists)
+	s.Empty(ctx.consumedInputs, "pending request list should be drained")
 }
 
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_SkipsNonExecutorBackedNode() {
+func (s *EngineTestSuite) TestClearRequestPackageOneTimeUseInputs_DrainsUnmatchedEntries() {
 	t := s.T()
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetInterceptors", providers.InterceptorModePreRequest).
+		Return([]core.InterceptorUnitInterface{})
+	mockGraph.On("GetInterceptors", providers.InterceptorModePostRequest).
+		Return([]core.InterceptorUnitInterface{})
+
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
+		Graph:          mockGraph,
+		UserInputs:     map[string]string{"leftover": "value"},
+		consumedInputs: []string{"leftover"},
 	}
 
-	mockNode := coremock.NewNodeInterfaceMock(t)
+	fe.clearRequestPackageOneTimeUseInputs(ctx)
 
-	fe.clearOneTimeUseInputs(ctx, mockNode)
-
-	s.Equal("abc123", ctx.UserInputs["challenge"])
+	s.Equal("value", ctx.UserInputs["leftover"],
+		"unmatched identifiers should not be deleted from UserInputs")
+	s.Empty(ctx.consumedInputs, "consumed list should be drained after request package cleanup")
 }
 
-func (s *EngineTestSuite) TestClearConsumedOneTimeUseInputs_MultipleInputsMixedState() {
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge":    "abc123",
-			"otp":          "999999",
-			"username":     "testuser",
-			"confirmation": "yes",
-		},
-	}
-
-	inputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-		{Identifier: "otp", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: false},
-		{Identifier: "username", Type: "TEXT_INPUT", OneTimeUse: false, Consumed: false},
-		{Identifier: "confirmation", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-	}
-
-	fe.clearConsumedOneTimeUseInputs(ctx, inputs)
-
-	_, challengeExists := ctx.UserInputs["challenge"]
-	s.False(challengeExists, "challenge should be removed (OneTimeUse && Consumed)")
-	s.Equal("999999", ctx.UserInputs["otp"], "otp should be preserved (OneTimeUse but not Consumed)")
-	s.Equal("testuser", ctx.UserInputs["username"], "username should be preserved (not OneTimeUse)")
-	_, confirmationExists := ctx.UserInputs["confirmation"]
-	s.False(confirmationExists, "confirmation should be removed (OneTimeUse && Consumed)")
-	s.Len(ctx.UserInputs, 2)
-}
-
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_ExecutorWithNilDefaults() {
+func (s *EngineTestSuite) TestClearNodePackageOneTimeUseInputs_PreservesUnmatchedForRequestScope() {
 	t := s.T()
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
-	}
-
-	mockExecutor := coremock.NewExecutorInterfaceMock(t)
-	mockExecutor.On("GetDefaultInputs").Return([]providers.Input(nil))
-
-	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	mockNode.On("GetInputs").Return([]providers.Input(nil))
-	mockNode.On("GetExecutor").Return(mockExecutor)
-
-	fe.clearOneTimeUseInputs(ctx, mockNode)
-
-	s.Equal("abc123", ctx.UserInputs["challenge"])
-}
-
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_NilExecutor() {
-	t := s.T()
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
-	}
-
-	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	mockNode.On("GetInputs").Return([]providers.Input(nil))
-	mockNode.On("GetExecutor").Return(nil)
-
-	fe.clearOneTimeUseInputs(ctx, mockNode)
-
-	s.Equal("abc123", ctx.UserInputs["challenge"])
-}
-
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_NodeInputsTakePrecedenceOverExecutorDefaults() {
-	t := s.T()
-	fe := &flowEngine{}
-	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-			"otp":       "999999",
-		},
-	}
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetInputs").Return([]providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
+		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
 	})
+	mockNode.On("GetID").Return("node-1")
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil))
 
-	fe.clearOneTimeUseInputs(ctx, mockNode)
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetInterceptors", providers.InterceptorModePreNode).
+		Return([]core.InterceptorUnitInterface{})
+	mockGraph.On("GetInterceptors", providers.InterceptorModePostNode).
+		Return([]core.InterceptorUnitInterface{})
 
-	_, challengeExists := ctx.UserInputs["challenge"]
-	s.False(challengeExists, "challenge should be removed via node inputs")
-	s.Equal("999999", ctx.UserInputs["otp"], "otp should be preserved (not in node inputs)")
-}
-
-func (s *EngineTestSuite) TestClearOneTimeUseInputs_ResetsConsumedFlagViaNodePath() {
-	t := s.T()
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		UserInputs: map[string]string{
-			"challenge": "abc123",
-		},
+		Graph:          mockGraph,
+		UserInputs:     map[string]string{"challenge": "abc123", "captchaToken": "xyz"},
+		consumedInputs: []string{"challenge", "captchaToken"},
 	}
 
-	nodeInputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true, Consumed: true},
-	}
-	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	mockNode.On("GetInputs").Return(nodeInputs)
+	fe.clearNodePackageOneTimeUseInputs(ctx, mockNode)
 
-	fe.clearOneTimeUseInputs(ctx, mockNode)
-
-	s.False(nodeInputs[0].Consumed, "Consumed flag should be reset after clearing")
-}
-
-func (s *EngineTestSuite) TestRunInterceptors_ClearsConsumedOneTimeUseInputsAfterInterceptors() {
-	t := s.T()
-	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
-
-	mockGraph := coremock.NewGraphInterfaceMock(t)
-	mockGraph.On("HasSegments").Return(false)
-
-	nodeInputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
-		{Identifier: "username", Type: "TEXT_INPUT"},
-	}
-
-	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	mockNode.On("GetID").Return("node-1").Maybe()
-	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
-	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
-	mockNode.On("GetInputs").Return(nodeInputs)
-
-	fe := &flowEngine{
-		interceptorRunner: mockInterceptorSvc,
-		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
-	})
-
-	ctx := &EngineContext{
-		ExecutionID:           "exec-otu-001",
-		CurrentNode:           mockNode,
-		Graph:                 mockGraph,
-		UserInputs:            map[string]string{"challenge": "abc123", "username": "testuser"},
-		InterceptorSharedData: map[string]string{},
-	}
-
-	// Simulate the interceptor marking the challenge input as consumed on the shared slice.
-	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreNode,
-		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
-		Run(func(args mock.Arguments) {
-			execCtx := args.Get(1).(*InterceptorRunnerContext)
-			for i := range execCtx.CurrentNodeInputs {
-				if execCtx.CurrentNodeInputs[i].Identifier == "challenge" {
-					execCtx.CurrentNodeInputs[i].Consumed = true
-				}
-			}
-		}).
-		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
-
-	continueExec, err := fe.runInterceptors(providers.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
-
-	s.True(continueExec)
-	s.Nil(err)
 	_, challengeExists := ctx.UserInputs["challenge"]
-	s.False(challengeExists, "OneTimeUse input marked as consumed should be cleared from UserInputs")
-	s.Equal("testuser", ctx.UserInputs["username"], "Non-OneTimeUse input should be preserved")
-}
-
-func (s *EngineTestSuite) TestRunInterceptors_PreservesOneTimeUseInputsWhenNotConsumed() {
-	t := s.T()
-	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
-
-	mockGraph := coremock.NewGraphInterfaceMock(t)
-	mockGraph.On("HasSegments").Return(false)
-
-	nodeInputs := []providers.Input{
-		{Identifier: "challenge", Type: "TEXT_INPUT", OneTimeUse: true},
-	}
-
-	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	mockNode.On("GetID").Return("node-1").Maybe()
-	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
-	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
-	mockNode.On("GetInputs").Return(nodeInputs)
-
-	fe := &flowEngine{
-		interceptorRunner: mockInterceptorSvc,
-		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
-	})
-
-	ctx := &EngineContext{
-		ExecutionID:           "exec-otu-002",
-		CurrentNode:           mockNode,
-		Graph:                 mockGraph,
-		UserInputs:            map[string]string{"challenge": "abc123"},
-		InterceptorSharedData: map[string]string{},
-	}
-
-	// Interceptor does NOT mark any input as consumed.
-	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreNode,
-		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
-		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
-
-	continueExec, err := fe.runInterceptors(providers.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
-
-	s.True(continueExec)
-	s.Nil(err)
-	s.Equal("abc123", ctx.UserInputs["challenge"], "OneTimeUse input should be preserved when not consumed")
+	s.False(challengeExists, "node-scope OneTimeUse identifier should be cleared")
+	s.Equal("xyz", ctx.UserInputs["captchaToken"],
+		"identifier not declared for this node should be preserved for the request-scope cleanup")
+	s.Equal([]string{"captchaToken"}, ctx.consumedInputs,
+		"unmatched identifiers stay in the list for later scopes")
 }
 
 // Tests for display-only prompt node handling
@@ -2652,6 +2477,169 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_DefaultStatus()
 }
 
 // --- Execute (flowEngine) ---
+
+// executeNodePackage coverage
+
+// setupNodePackageMockObs returns an observability mock that reports disabled so publish
+// helpers short-circuit; the engine still calls IsEnabled.
+func setupNodePackageMockObs(t *testing.T) *observabilitymock.ObservabilityServiceInterfaceMock {
+	m := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	m.EXPECT().IsEnabled().Return(false).Maybe()
+	return m
+}
+
+func (s *EngineTestSuite) TestExecuteNodePackage_SkipsNodeWhenShouldExecuteFalse() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("n1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeStart).Maybe()
+	mockNode.On("ShouldExecute", mock.Anything).Return(false)
+	mockNode.On("GetCondition").Return(&core.NodeCondition{OnSkip: ""}).Maybe()
+
+	fe := &flowEngine{
+		logger:           log.GetLogger(),
+		observabilitySvc: setupNodePackageMockObs(t),
+	}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-skip",
+		CurrentNode:      mockNode,
+		UserInputs:       map[string]string{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
+	}
+
+	nextNode, exit, err := fe.executeNodePackage(ctx, mockNode, &FlowStep{}, 0)
+
+	s.Nil(nextNode)
+	s.False(exit)
+	s.NotNil(err, "missing OnSkip target should surface an internal server error")
+}
+
+func (s *EngineTestSuite) TestExecuteNodePackage_CompletesAndReturnsNilNextNode() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("n1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeStart).Maybe()
+	mockNode.On("ShouldExecute", mock.Anything).Return(true)
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("Execute", mock.Anything).Return(&common.NodeResponse{
+		Status: common.NodeStatusComplete,
+	}, nil)
+
+	fe := &flowEngine{
+		logger:           log.GetLogger(),
+		observabilitySvc: setupNodePackageMockObs(t),
+	}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-happy",
+		CurrentNode:      mockNode,
+		UserInputs:       map[string]string{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
+	}
+
+	nextNode, exit, err := fe.executeNodePackage(ctx, mockNode, &FlowStep{}, 0)
+
+	s.Nil(err)
+	s.False(exit)
+	s.Nil(nextNode, "empty NextNodeID resolves to nil")
+}
+
+func (s *EngineTestSuite) TestExecuteNodePackage_NodeExecuteErrorPropagates() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("n1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeStart).Maybe()
+	mockNode.On("ShouldExecute", mock.Anything).Return(true)
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	execErr := &tidcommon.ServiceError{Code: "boom"}
+	mockNode.On("Execute", mock.Anything).Return((*common.NodeResponse)(nil), execErr)
+
+	fe := &flowEngine{
+		logger:           log.GetLogger(),
+		observabilitySvc: setupNodePackageMockObs(t),
+	}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-err",
+		CurrentNode:      mockNode,
+		UserInputs:       map[string]string{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
+	}
+
+	nextNode, exit, err := fe.executeNodePackage(ctx, mockNode, &FlowStep{}, 0)
+
+	s.Nil(nextNode)
+	s.False(exit)
+	s.Same(execErr, err)
+}
+
+func (s *EngineTestSuite) TestExecuteNodePackage_IncompleteExitClearsNodeScopeBeforeRequestScope() {
+	t := s.T()
+
+	// Interceptor declares "captcha" as OneTimeUse and the node signals it consumed on Execute.
+	interceptorMock := coremock.NewInterceptorInterfaceMock(t)
+	interceptorMock.On("GetInputs").Return([]providers.Input{
+		{Identifier: "captcha", Type: "TEXT_INPUT", OneTimeUse: true},
+	}).Maybe()
+
+	unit := newTestInterceptorUnitMock(t, "captcha-intr", providers.InterceptorModePreNode,
+		providers.InterceptorScopeAll, nil)
+	unit.SetInterceptor(interceptorMock)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false).Maybe()
+	mockGraph.On("GetInterceptors", providers.InterceptorModePreNode).
+		Return([]core.InterceptorUnitInterface{unit}).Maybe()
+	mockGraph.On("GetInterceptors", providers.InterceptorModePostNode).
+		Return([]core.InterceptorUnitInterface{}).Maybe()
+	mockGraph.On("GetInterceptors", providers.InterceptorModePostRequest).
+		Return([]core.InterceptorUnitInterface{}).Maybe()
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("n1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeStart).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("ShouldExecute", mock.Anything).Return(true)
+	mockNode.On("Execute", mock.Anything).Run(func(args mock.Arguments) {
+		nodeCtx := args.Get(0).(*providers.NodeContext)
+		nodeCtx.AppendConsumedInputs([]string{"captcha"})
+	}).Return(&common.NodeResponse{
+		Status: common.NodeStatusIncomplete,
+		Type:   common.NodeResponseTypeView,
+		Inputs: []providers.Input{{Identifier: "email", Required: true}},
+	}, nil)
+
+	mockRunner := NewInterceptorRunnerInterfaceMock(t)
+	mockRunner.On("runInterceptors", mock.Anything, mock.Anything).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	fe := &flowEngine{
+		logger:            log.GetLogger(),
+		observabilitySvc:  setupNodePackageMockObs(t),
+		interceptorRunner: mockRunner,
+	}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-incomplete",
+		Graph:            mockGraph,
+		CurrentNode:      mockNode,
+		UserInputs:       map[string]string{"captcha": "abc", "email": "e@x"},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
+	}
+
+	nextNode, exit, err := fe.executeNodePackage(ctx, mockNode, &FlowStep{}, 0)
+
+	s.Nil(err)
+	s.True(exit, "incomplete node response must signal flow exit")
+	s.Nil(nextNode)
+	_, captchaStillHere := ctx.UserInputs["captcha"]
+	s.False(captchaStillHere,
+		"node-scope OneTimeUse input must be cleared before request-scope cleanup wipes the list")
+	s.Equal("e@x", ctx.UserInputs["email"], "non-OneTimeUse input should remain")
+	s.Empty(ctx.consumedInputs, "consumed list should be fully drained at this exit path")
+}
 
 func (s *EngineTestSuite) TestFlowEngineExecute_NilGraph() {
 	t := s.T()
