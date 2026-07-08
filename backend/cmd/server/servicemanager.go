@@ -409,6 +409,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		user:        userService,
 		idp:         idpService,
 		notifSender: notifSenderMgtSvc,
+		application: applicationService,
+		agent:       agentService,
+		group:       groupService,
 	}, applicationService, agentService, flowMgtService, roleAssignmentService, groupService)
 
 	// Initialize design resolve service for theme and layout resolution
@@ -480,6 +483,9 @@ type dependencyConsumers struct {
 	user        user.UserServiceInterface
 	idp         idp.IDPServiceInterface
 	notifSender notification.NotificationSenderMgtSvcInterface
+	application application.ApplicationServiceInterface
+	agent       agent.AgentServiceInterface
+	group       group.GroupServiceInterface
 }
 
 // registerDependencyRegistry builds the dependency registry from the given providers and wires it
@@ -491,6 +497,9 @@ func registerDependencyRegistry(consumers dependencyConsumers, providers ...reso
 	consumers.user.SetDependencyRegistry(registry)
 	consumers.idp.SetDependencyRegistry(registry)
 	consumers.notifSender.SetDependencyRegistry(registry)
+	consumers.application.SetDependencyRegistry(registry)
+	consumers.agent.SetDependencyRegistry(registry)
+	consumers.group.SetDependencyRegistry(registry)
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

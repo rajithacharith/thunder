@@ -115,6 +115,8 @@ func (s *InlineStubAgentService) GetResourceDependencies(
 	return nil, nil
 }
 
+func (s *InlineStubAgentService) SetDependencyRegistry(resourcedependency.Registry) {}
+
 func TestHandleAgentPostRequest_Success(t *testing.T) {
 	stubService := &InlineStubAgentService{
 		OnCreateAgent: func(

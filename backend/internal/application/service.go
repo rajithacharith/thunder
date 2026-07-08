@@ -60,6 +60,7 @@ type ApplicationServiceInterface interface {
 	DeleteApplication(ctx context.Context, appID string) *tidcommon.ServiceError
 	GetResourceDependencies(
 		ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error)
+	SetDependencyRegistry(r resourcedependency.Registry)
 }
 
 // ApplicationService is the default implementation of the ApplicationServiceInterface.
@@ -69,6 +70,7 @@ type applicationService struct {
 	entityProvider       entityprovider.EntityProviderInterface
 	ouService            oupkg.OrganizationUnitServiceInterface
 	i18nService          i18nmgt.I18nServiceInterface
+	dependencyRegistry   resourcedependency.Registry
 }
 
 // newApplicationService creates a new instance of ApplicationService.
@@ -565,6 +567,12 @@ func appRequiresClientSecret(cfg *providers.OAuthConfigWithSecret) bool {
 }
 
 // DeleteApplication delete the application for given app id.
+// SetDependencyRegistry injects the dependency registry. Called by servicemanager after the
+// provider services are initialized to avoid a cyclic import.
+func (as *applicationService) SetDependencyRegistry(r resourcedependency.Registry) {
+	as.dependencyRegistry = r
+}
+
 func (as *applicationService) DeleteApplication(ctx context.Context, appID string) *tidcommon.ServiceError {
 	if appID == "" {
 		return &ErrorInvalidApplicationID
@@ -580,11 +588,25 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 		return &ErrorApplicationNotFound
 	}
 
-	// Delete config.
-	if appErr := as.inboundClientService.DeleteInboundClient(ctx, appID); appErr != nil {
-		if errors.Is(appErr, inboundclient.ErrInboundClientNotFound) {
-			return nil
-		}
+	// Remove dependents that must be deleted with the application (e.g. its role assignments and
+	// group memberships). Run before the deletes so a cleanup failure aborts and leaves the
+	// application retriable. Fails closed when the registry is unavailable.
+	if as.dependencyRegistry == nil {
+		as.logger.Error(ctx, "Dependency registry not set; refusing to delete application",
+			log.String("appID", appID))
+		return &tidcommon.InternalServerError
+	}
+	if _, err := as.dependencyRegistry.CascadeDelete(
+		ctx, resourcedependency.ResourceTypeApplication, appID); err != nil {
+		as.logger.Error(ctx, "Failed to cascade-delete application dependencies",
+			log.String("appID", appID), log.Error(err))
+		return &tidcommon.InternalServerError
+	}
+
+	// Delete config. A missing inbound client is non-fatal (e.g. on a retry after a partial
+	// delete) so the remaining delete steps still run.
+	if appErr := as.inboundClientService.DeleteInboundClient(ctx, appID); appErr != nil &&
+		!errors.Is(appErr, inboundclient.ErrInboundClientNotFound) {
 		if svcErr := as.translateInboundClientError(ctx, appErr); svcErr != nil {
 			return svcErr
 		}

@@ -59,6 +59,7 @@ type AgentServiceInterface interface {
 		clientID, clientSecret string, client inboundmodel.InboundClient, svcErr *tidcommon.ServiceError)
 	GetResourceDependencies(
 		ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error)
+	SetDependencyRegistry(r resourcedependency.Registry)
 }
 
 type agentService struct {
@@ -66,6 +67,7 @@ type agentService struct {
 	entityService        entity.EntityServiceInterface
 	inboundClientService inboundclient.InboundClientServiceInterface
 	ouService            oupkg.OrganizationUnitServiceInterface
+	dependencyRegistry   resourcedependency.Registry
 }
 
 func newAgentService(
@@ -350,6 +352,12 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 }
 
 // DeleteAgent removes the agent and its associated inbound client.
+// SetDependencyRegistry injects the dependency registry. Called by servicemanager after the
+// provider services are initialized to avoid a cyclic import.
+func (s *agentService) SetDependencyRegistry(r resourcedependency.Registry) {
+	s.dependencyRegistry = r
+}
+
 func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *tidcommon.ServiceError {
 	if agentID == "" {
 		return &ErrorMissingAgentID
@@ -369,6 +377,20 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *tidcomm
 	}
 	if existing.IsReadOnly {
 		return &ErrorCannotModifyDeclarativeResource
+	}
+
+	// Remove dependents that must be deleted with the agent (e.g. its role assignments and group
+	// memberships). Run before the deletes so a cleanup failure aborts and leaves the agent
+	// retriable. Fails closed when the registry is unavailable.
+	if s.dependencyRegistry == nil {
+		s.logger.Error(ctx, "Dependency registry not set; refusing to delete agent",
+			log.String("agentID", agentID))
+		return &tidcommon.InternalServerError
+	}
+	if _, err := s.dependencyRegistry.CascadeDelete(ctx, resourcedependency.ResourceTypeAgent, agentID); err != nil {
+		s.logger.Error(ctx, "Failed to cascade-delete agent dependencies",
+			log.String("agentID", agentID), log.Error(err))
+		return &tidcommon.InternalServerError
 	}
 
 	if err := s.inboundClientService.DeleteInboundClient(ctx, agentID); err != nil &&

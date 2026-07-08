@@ -1012,6 +1012,46 @@ func (_c *GroupServiceInterfaceMock_RemoveGroupMembers_Call) RunAndReturn(run fu
 	return _c
 }
 
+// SetDependencyRegistry provides a mock function for the type GroupServiceInterfaceMock
+func (_mock *GroupServiceInterfaceMock) SetDependencyRegistry(r resourcedependency.Registry) {
+	_mock.Called(r)
+	return
+}
+
+// GroupServiceInterfaceMock_SetDependencyRegistry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetDependencyRegistry'
+type GroupServiceInterfaceMock_SetDependencyRegistry_Call struct {
+	*mock.Call
+}
+
+// SetDependencyRegistry is a helper method to define mock.On call
+//   - r resourcedependency.Registry
+func (_e *GroupServiceInterfaceMock_Expecter) SetDependencyRegistry(r interface{}) *GroupServiceInterfaceMock_SetDependencyRegistry_Call {
+	return &GroupServiceInterfaceMock_SetDependencyRegistry_Call{Call: _e.mock.On("SetDependencyRegistry", r)}
+}
+
+func (_c *GroupServiceInterfaceMock_SetDependencyRegistry_Call) Run(run func(r resourcedependency.Registry)) *GroupServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 resourcedependency.Registry
+		if args[0] != nil {
+			arg0 = args[0].(resourcedependency.Registry)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_SetDependencyRegistry_Call) Return() *GroupServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_SetDependencyRegistry_Call) RunAndReturn(run func(r resourcedependency.Registry)) *GroupServiceInterfaceMock_SetDependencyRegistry_Call {
+	_c.Run(run)
+	return _c
+}
+
 // UpdateGroup provides a mock function for the type GroupServiceInterfaceMock
 func (_mock *GroupServiceInterfaceMock) UpdateGroup(ctx context.Context, groupID string, request group.UpdateGroupRequest) (*group.Group, *common.ServiceError) {
 	ret := _mock.Called(ctx, groupID, request)

@@ -780,3 +780,14 @@ func (suite *RoleAssignmentServiceTestSuite) TestCascadeDeleteDependencies_Store
 	suite.Error(err)
 	suite.Equal(0, deleted)
 }
+
+func (suite *RoleAssignmentServiceTestSuite) TestCascadeDeleteDependencies_Group_DeletesAssignments() {
+	suite.mockStore.On("DeleteAssignmentsByAssignee", mock.Anything, string(AssigneeTypeGroup), "group-1").
+		Return(int64(1), nil)
+
+	deleted, err := suite.service.CascadeDeleteDependencies(
+		context.Background(), resourcedependency.ResourceTypeGroup, "group-1")
+
+	suite.NoError(err)
+	suite.Equal(1, deleted)
+}

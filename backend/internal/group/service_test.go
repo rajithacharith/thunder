@@ -1498,9 +1498,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 				authzSvc = newAllowAllAuthz(suite.T())
 			}
 			service := &groupService{
-				authzService:  authzSvc,
-				groupStore:    storeMock,
-				transactioner: &stubTransactioner{},
+				authzService:       authzSvc,
+				groupStore:         storeMock,
+				transactioner:      &stubTransactioner{},
+				dependencyRegistry: noopDepRegistry{},
 			}
 
 			err := service.DeleteGroup(context.Background(), tc.id)
@@ -2946,4 +2947,49 @@ func (suite *GroupServiceTestSuite) TestCascadeDeleteDependencies_StoreError() {
 
 	suite.Error(err)
 	suite.Equal(0, deleted)
+}
+
+// noopDepRegistry is a no-op resourcedependency.Registry for tests that don't exercise cascade.
+type noopDepRegistry struct{ cascadeErr error }
+
+func (noopDepRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (noopDepRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return &resourcedependency.DependenciesResponse{}, nil
+}
+
+func (r noopDepRegistry) CascadeDelete(context.Context, string, string) (int, error) {
+	return 0, r.cascadeErr
+}
+
+func (suite *GroupServiceTestSuite) TestCascadeDeleteDependencies_Group_DeletesMemberships() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	storeMock.On("DeleteMembershipsByMember", mock.Anything, string(MemberTypeGroup), "group-1").
+		Return(int64(1), nil)
+	service := &groupService{groupStore: storeMock}
+
+	deleted, err := service.CascadeDeleteDependencies(
+		context.Background(), resourcedependency.ResourceTypeGroup, "group-1")
+
+	suite.NoError(err)
+	suite.Equal(1, deleted)
+}
+
+func (suite *GroupServiceTestSuite) TestDeleteGroup_AbortedWhenCascadeFails() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	storeMock.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
+	storeMock.On("GetGroup", mock.Anything, "grp-001").
+		Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
+	service := &groupService{
+		authzService:       newAllowAllAuthz(suite.T()),
+		groupStore:         storeMock,
+		transactioner:      &stubTransactioner{},
+		dependencyRegistry: noopDepRegistry{cascadeErr: errors.New("cascade failed")},
+	}
+
+	err := service.DeleteGroup(context.Background(), "grp-001")
+
+	suite.Require().NotNil(err)
+	storeMock.AssertNotCalled(suite.T(), "DeleteGroup", mock.Anything, mock.Anything)
 }

@@ -612,16 +612,21 @@ func (as *roleAssignmentService) GetResourceDependencies(
 // principals (stored as entity assignees) are handled; other resource types have no assignments.
 func (as *roleAssignmentService) CascadeDeleteDependencies(
 	ctx context.Context, resourceType, id string) (int, error) {
+	var assigneeType AssigneeType
 	switch resourceType {
 	case resourcedependency.ResourceTypeUser,
 		resourcedependency.ResourceTypeApplication,
 		resourcedependency.ResourceTypeAgent:
-		deleted, err := as.roleStore.DeleteAssignmentsByAssignee(ctx, string(assigneeTypeEntity), id)
-		if err != nil {
-			return 0, err
-		}
-		return int(deleted), nil
+		assigneeType = assigneeTypeEntity
+	case resourcedependency.ResourceTypeGroup:
+		assigneeType = AssigneeTypeGroup
 	default:
 		return 0, nil
 	}
+
+	deleted, err := as.roleStore.DeleteAssignmentsByAssignee(ctx, string(assigneeType), id)
+	if err != nil {
+		return 0, err
+	}
+	return int(deleted), nil
 }
