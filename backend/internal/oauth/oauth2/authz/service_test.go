@@ -165,6 +165,7 @@ func (suite *AuthorizeServiceTestSuite) testApp() *providers.OAuthClient {
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []providers.GrantType{providers.GrantTypeAuthorizationCode},
 		PKCERequired: false,
+		Scopes:       []string{"openid", "profile", "email"},
 	}
 }
 
@@ -335,6 +336,39 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Su
 	assert.Equal(suite.T(), testAuthID, result.QueryParams[oauth2const.AuthID])
 	assert.Equal(suite.T(), "test-app-id", result.QueryParams[oauth2const.AppID])
 	assert.Equal(suite.T(), "test-flow-id", result.QueryParams[oauth2const.ExecutionID])
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_FiltersOIDCScopesByAppScopes() {
+	app := suite.testApp()
+	app.Scopes = []string{"profile"}
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, mock.Anything, app).
+		Return(false, "", "")
+	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
+
+	var captured authRequestContext
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).
+		Run(func(_ context.Context, value authRequestContext) {
+			captured = value
+		}).Return(testAuthID, nil)
+
+	msg := &OAuthMessage{
+		RequestType: oauth2const.TypeInitialAuthorizationRequest,
+		RequestQueryParams: map[string]string{
+			"client_id":     "test-client-id",
+			"redirect_uri":  "https://client.example.com/callback",
+			"response_type": "code",
+			"scope":         "openid email profile",
+			"state":         "test-state",
+		},
+	}
+
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{"profile"}, captured.OAuthParameters.StandardScopes)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InsecureRedirectURI() {
