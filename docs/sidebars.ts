@@ -861,6 +861,34 @@ const sidebars: SidebarsConfig = {
           id: 'guides/key-concepts/tokens',
           label: 'Tokens',
         },
+        {
+          type: 'category',
+          label: 'Import and Export',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/declarative-configurations/what-is-import-and-export',
+              label: 'What Is Import and Export?',
+            },
+            {
+              type: 'doc',
+              id: 'guides/declarative-configurations/import-resources',
+              label: 'Import Resources',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/resource-export',
+              label: 'Export Resources',
+            },
+            {
+              type: 'doc',
+              id: 'guides/declarative-configurations/templates',
+              label: 'Template Resources',
+            },
+          ],
+        },
       ],
     },
 
