@@ -1980,3 +1980,35 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetTransitiveGroupsForEntity() 
 		})
 	}
 }
+
+func (suite *GroupStoreTestSuite) TestDeleteMembershipsByMember() {
+	suite.Run("success returns rows affected", func() {
+		providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
+		dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
+		providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+		dbClientMock.On("ExecuteContext", mock.Anything, QueryDeleteGroupMembershipsByMember,
+			string(memberTypeEntity), "user-1", testDeploymentID).Return(int64(2), nil).Once()
+
+		store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
+		deleted, err := store.DeleteMembershipsByMember(
+			context.Background(), string(memberTypeEntity), "user-1")
+
+		require.NoError(suite.T(), err)
+		require.Equal(suite.T(), int64(2), deleted)
+	})
+
+	suite.Run("db error is propagated", func() {
+		providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
+		dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
+		providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+		dbClientMock.On("ExecuteContext", mock.Anything, QueryDeleteGroupMembershipsByMember,
+			string(memberTypeEntity), "user-1", testDeploymentID).Return(int64(0), errors.New("db error")).Once()
+
+		store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
+		deleted, err := store.DeleteMembershipsByMember(
+			context.Background(), string(memberTypeEntity), "user-1")
+
+		require.Error(suite.T(), err)
+		require.Equal(suite.T(), int64(0), deleted)
+	})
+}

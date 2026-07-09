@@ -314,6 +314,78 @@ func (_c *roleStoreInterfaceMock_CreateRole_Call) RunAndReturn(run func(ctx cont
 	return _c
 }
 
+// DeleteAssignmentsByAssignee provides a mock function for the type roleStoreInterfaceMock
+func (_mock *roleStoreInterfaceMock) DeleteAssignmentsByAssignee(ctx context.Context, assigneeType string, assigneeID string) (int64, error) {
+	ret := _mock.Called(ctx, assigneeType, assigneeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteAssignmentsByAssignee")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (int64, error)); ok {
+		return returnFunc(ctx, assigneeType, assigneeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) int64); ok {
+		r0 = returnFunc(ctx, assigneeType, assigneeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, assigneeType, assigneeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAssignmentsByAssignee'
+type roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call struct {
+	*mock.Call
+}
+
+// DeleteAssignmentsByAssignee is a helper method to define mock.On call
+//   - ctx context.Context
+//   - assigneeType string
+//   - assigneeID string
+func (_e *roleStoreInterfaceMock_Expecter) DeleteAssignmentsByAssignee(ctx interface{}, assigneeType interface{}, assigneeID interface{}) *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call {
+	return &roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call{Call: _e.mock.On("DeleteAssignmentsByAssignee", ctx, assigneeType, assigneeID)}
+}
+
+func (_c *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call) Run(run func(ctx context.Context, assigneeType string, assigneeID string)) *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call) Return(n int64, err error) *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call) RunAndReturn(run func(ctx context.Context, assigneeType string, assigneeID string) (int64, error)) *roleStoreInterfaceMock_DeleteAssignmentsByAssignee_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteAssignmentsByRoleID provides a mock function for the type roleStoreInterfaceMock
 func (_mock *roleStoreInterfaceMock) DeleteAssignmentsByRoleID(ctx context.Context, id string) error {
 	ret := _mock.Called(ctx, id)

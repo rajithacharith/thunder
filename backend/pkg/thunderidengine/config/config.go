@@ -53,10 +53,28 @@ type TrustedIssuerConfig struct {
 // rather than nested under any particular consumer. Value is in seconds; zero disables
 // the cache; negative values are rejected at load time.
 type SecurityConfig struct {
-	JWKSCacheTTL           int                 `yaml:"jwks_cache_ttl"           json:"jwks_cache_ttl"`
-	TrustedIssuer          TrustedIssuerConfig `yaml:"trusted_issuer"           json:"trusted_issuer"`
-	SystemPermissionPrefix string              `yaml:"system_permission_prefix" json:"system_permission_prefix"`
+	JWKSCacheTTL           int                   `yaml:"jwks_cache_ttl"           json:"jwks_cache_ttl"`
+	TrustedIssuer          TrustedIssuerConfig   `yaml:"trusted_issuer"           json:"trusted_issuer"`
+	SystemPermissionPrefix string                `yaml:"system_permission_prefix" json:"system_permission_prefix"`
+	TokenRevocation        TokenRevocationConfig `yaml:"token_revocation"         json:"token_revocation"`
 }
+
+// TokenRevocationConfig configures the Resource Server's token-revocation enforcement: an in-memory
+// cache of revoked tokens synced from a source on a fixed interval. When disabled, protected
+// endpoints do not check revocation.
+//
+// Source selects where the deny list is synced from. Only "db" (the operation database) is supported
+// today; future values may include an endpoint or event stream. SyncIntervalSeconds bounds how stale
+// the cache may be; a non-positive value falls back to the built-in default.
+type TokenRevocationConfig struct {
+	Enabled             bool   `yaml:"enabled"               json:"enabled"`
+	Source              string `yaml:"source"                json:"source"`
+	SyncIntervalSeconds int    `yaml:"sync_interval_seconds" json:"sync_interval_seconds"`
+}
+
+// tokenRevocationSourceDB is the operation-database sync source, the only supported
+// token_revocation.source value today.
+const tokenRevocationSourceDB = "db"
 
 // KeyConfig holds the key configuration details.
 type KeyConfig struct {

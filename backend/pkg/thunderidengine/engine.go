@@ -36,6 +36,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/oauth"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
+	"github.com/thunder-id/thunderid/internal/runtimestore"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/jose"
 	joseconfig "github.com/thunder-id/thunderid/internal/system/jose/config"
@@ -95,9 +96,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 
 	// Initialize flow core services.
 	flowConfig := flowconfig.Config{
-		Flow:          engineCtx.flowConfig,
-		DeploymentID:  engineCtx.serverConfig.Identifier,
-		RuntimeDBType: engineCtx.runtimeDBType,
+		Flow: engineCtx.flowConfig,
 	}
 	flowFactory, graphCache := core.Initialize(engineCtx.cacheManager)
 	engineCtx.flowFactory = flowFactory
@@ -131,9 +130,14 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	engineCtx.graphBuilder = graphbuilder.Initialize(engineCtx.flowFactory, engineCtx.execRegistry,
 		engineCtx.interceptorRegistry, graphCache)
 
+	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(engineCtx.runtimeDBType,
+		engineCtx.serverConfig.Identifier)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
+	}
 	flowExecService, err := flowexec.Initialize(mux, engineCtx.flowProvider, engineCtx.actorProvider,
 		engineCtx.execRegistry, engineCtx.interceptorRegistry, engineCtx.observabilitySvc,
-		engineCtx.runtimeCryptoSvc, engineCtx.graphBuilder, flowConfig)
+		engineCtx.runtimeCryptoSvc, engineCtx.graphBuilder, runtimeStoreProvider, transactioner, flowConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}

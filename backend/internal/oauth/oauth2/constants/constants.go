@@ -245,15 +245,17 @@ const (
 
 // Custom JWT claim names.
 const (
-	ClaimUserType           string = "userType"
-	ClaimOUID               string = "ouId"
-	ClaimOUName             string = "ouName"
-	ClaimOUHandle           string = "ouHandle"
-	ClaimClaimsRequest      string = "claims_req"
-	ClaimClaimsLocales      string = "claims_locales"
-	ClaimCompletedAuthClass string = "completed_auth_class"
-	ClaimDPoPJkt            string = "dpop_jkt"
-	ClaimCIBAAuthReqID      string = "ciba_auth_req_id"
+	ClaimUserType               string = "userType"
+	ClaimOUID                   string = "ouId"
+	ClaimOUName                 string = "ouName"
+	ClaimOUHandle               string = "ouHandle"
+	ClaimClaimsRequest          string = "claims_req"
+	ClaimClaimsLocales          string = "claims_locales"
+	ClaimCompletedAuthClass     string = "completed_auth_class"
+	ClaimDPoPJkt                string = "dpop_jkt"
+	ClaimAuthorizedPermissions  string = "authorized_permissions"
+	ClaimAuthorizationRequestID string = "authorization_request_id"
+	ClaimClientID               string = "client_id"
 )
 
 // OIDC subject types.

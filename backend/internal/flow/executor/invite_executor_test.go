@@ -325,7 +325,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_IncludesAuthReqID
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
-			common.RuntimeKeyAuthReqID: "ciba-req-123",
+			common.RuntimeKeyAuthorizationRequestID: "ciba-req-123",
 		},
 	}
 

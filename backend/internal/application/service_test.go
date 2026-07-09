@@ -165,8 +165,39 @@ func (suite *ServiceTestSuite) setupTestService() (
 		inboundClientService: mockStore,
 		entityProvider:       mockEntityProvider,
 		ouService:            mockOUService,
+		dependencyRegistry:   noopDepRegistry{},
 	}
 	return service, mockStore
+}
+
+// noopDepRegistry is a no-op resourcedependency.Registry for tests that don't exercise cascade.
+type noopDepRegistry struct{ cascadeErr error }
+
+func (noopDepRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (noopDepRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return &resourcedependency.DependenciesResponse{}, nil
+}
+
+func (r noopDepRegistry) CascadeDelete(context.Context, string, string) (int, error) {
+	return 0, r.cascadeErr
+}
+
+// recordingDepRegistry is a resourcedependency.Registry that records CascadeDelete invocations so
+// tests can assert dependents were removed. cascadeCalls is incremented on each CascadeDelete.
+type recordingDepRegistry struct{ cascadeCalls *int }
+
+func (recordingDepRegistry) RegisterProvider(resourcedependency.Provider) {}
+
+func (recordingDepRegistry) GetDependencies(
+	context.Context, string, string) (*resourcedependency.DependenciesResponse, error) {
+	return &resourcedependency.DependenciesResponse{}, nil
+}
+
+func (r recordingDepRegistry) CascadeDelete(context.Context, string, string) (int, error) {
+	*r.cascadeCalls++
+	return 1, nil
 }
 
 // resetIdentifyEntity removes broad IdentifyEntity expectations from the entity provider mock
@@ -2764,8 +2795,10 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 					Token: &providers.OAuthTokenConfig{
 						AccessToken: &providers.AccessTokenConfig{
-							ValidityPeriod: 7200,
-							UserAttributes: []string{"email", "name"},
+							UserConfig: &providers.AccessTokenSubConfig{
+								ValidityPeriod: 7200,
+								Attributes:     []string{"email", "name"},
+							},
 						},
 						IDToken: &providers.IDTokenConfig{
 							ValidityPeriod: 3600,
@@ -2790,7 +2823,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 	assert.Nil(suite.T(), svcErr)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
 	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig.Token)
-	assert.Equal(suite.T(), int64(7200), result.InboundAuthConfig[0].OAuthConfig.Token.AccessToken.ValidityPeriod)
+	assert.Equal(suite.T(), int64(7200),
+		result.InboundAuthConfig[0].OAuthConfig.Token.AccessToken.UserConfig.ValidityPeriod)
 	assert.Equal(suite.T(), int64(3600), result.InboundAuthConfig[0].OAuthConfig.Token.IDToken.ValidityPeriod)
 	mockStore.AssertExpectations(suite.T())
 }
@@ -3944,4 +3978,37 @@ func (suite *ServiceTestSuite) TestCleanupStaleI18nKeys_DeleteError() {
 	svcErr := service.cleanupStaleI18nKeys(context.Background(), testServiceAppID, existing, updated)
 
 	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestDeleteApplication_AbortedWhenCascadeFails() {
+	service, mockStore := suite.setupTestService()
+	service.SetDependencyRegistry(noopDepRegistry{cascadeErr: errors.New("cascade failed")})
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
+	mockStore.AssertNotCalled(suite.T(), "DeleteInboundClient", mock.Anything, mock.Anything)
+}
+
+// TestDeleteApplication_EntityDeleteFailsAfterCascade verifies that when dependency cleanup
+// succeeds but the later entity delete fails, the service surfaces an error while the dependents
+// have already been removed (partial-state, retriable).
+func (suite *ServiceTestSuite) TestDeleteApplication_EntityDeleteFailsAfterCascade() {
+	service, mockStore := suite.setupTestService()
+	cascadeCalls := 0
+	service.SetDependencyRegistry(recordingDepRegistry{cascadeCalls: &cascadeCalls})
+
+	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).Return(nil)
+	ep := resetEntityProviderMethod(service, "DeleteEntity")
+	ep.On("DeleteEntity", mock.Anything).Return(
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeSystemError, "delete failed", ""))
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
+	// Dependents were removed even though the application delete did not complete.
+	assert.Equal(suite.T(), 1, cascadeCalls)
+	ep.AssertCalled(suite.T(), "DeleteEntity", mock.Anything)
 }

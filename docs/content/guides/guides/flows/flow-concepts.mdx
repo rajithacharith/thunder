@@ -13,7 +13,7 @@ This page explains the core building blocks of the Flow Builder in the <ProductN
 
 ## Node Types
 
-Every flow graph on the canvas contains four types of nodes.
+Every flow graph on the canvas contains five types of nodes.
 
 <FlowNodeTypesRoadmap />
 
@@ -38,6 +38,19 @@ After a TASK EXECUTION node runs, it takes one of three paths:
 - The **incomplete path** forwards to a PROMPT node when the executor needs additional user input before it can complete. For example, if a user's profile is missing required attributes, the executor returns an incomplete status and the flow routes the user back to a prompt screen to collect the missing data.
 
 For advanced configuration options and detailed reference, see [Task Execution Node](../advanced-configurations#task-execution-node).
+
+### CALL
+
+A **CALL** node invokes another flow as a sub-flow, then resumes the current flow when the callee completes. Use it to compose flows, for example, offering a "Sign up" link from a sign-in screen that runs the registration flow inline and returns the caller once registration finishes.
+
+A CALL node takes one of two paths after the callee flow finishes:
+
+- The **success path** advances when the callee completes successfully (reaches an END node).
+- The **failure path** (optional) forwards to a handler node when the callee terminates with an error. If no failure path is wired, the caller flow terminates with the callee's error.
+
+Nested CALLs are supported up to a fixed depth. If the chain exceeds the limit, the flow terminates with a call-depth-exceeded error.
+
+For advanced configuration options and detailed reference, see [Call Node](../advanced-configurations#call-node).
 
 ### END
 
@@ -104,6 +117,8 @@ Click the <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox
 | TASK EXECUTION (incomplete) → PROMPT | Yes | Routes back to collect more input; target must be a PROMPT node. Only executors that can request additional input expose this path (e.g. Attribute Collector, Provisioning, OU Creation) |
 | TASK EXECUTION (success) → END | Yes | Completes the flow |
 | START → TASK EXECUTION | Yes | For background executors that require no initial user input |
+| CALL (success) → any node | Yes | Continues the caller flow after the referenced flow completes successfully |
+| CALL (failure) → any node | Yes | Handles a callee failure; optional. When unwired, a callee failure terminates the caller |
 | END → anything | No | END has no outputs |
 
 :::note

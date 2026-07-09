@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -104,4 +105,14 @@ func (s *service) deleteByType(ctx context.Context, idpType providers.IDPType, i
 		return svcErr
 	}
 	return s.idpService.DeleteIdentityProvider(ctx, id)
+}
+
+// usagesByType verifies the instance is of the expected type, then returns the resources that
+// reference it. Drives the pre-delete confirmation dialog.
+func (s *service) usagesByType(ctx context.Context, idpType providers.IDPType, id string) (
+	*resourcedependency.DependenciesResponse, *tidcommon.ServiceError) {
+	if _, svcErr := s.getByType(ctx, idpType, id); svcErr != nil {
+		return nil, svcErr
+	}
+	return s.idpService.GetIDPUsages(ctx, id)
 }

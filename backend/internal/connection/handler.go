@@ -187,6 +187,25 @@ func (h *handler) deleteInstance(idpType providers.IDPType) http.HandlerFunc {
 	}
 }
 
+// usagesInstance returns a handler that lists the resources referencing an instance of a
+// connection type. Drives the pre-delete confirmation dialog.
+func (h *handler) usagesInstance(idpType providers.IDPType) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		id := r.PathValue("id")
+		if strings.TrimSpace(id) == "" {
+			writeServiceError(ctx, w, &idp.ErrorInvalidIDPID)
+			return
+		}
+		usages, svcErr := h.svc.usagesByType(ctx, idpType, id)
+		if svcErr != nil {
+			writeServiceError(ctx, w, svcErr)
+			return
+		}
+		sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, usages)
+	}
+}
+
 // handleListConnections handles GET /connections, returning the available connection types
 // with their configured status and instance count.
 func (h *handler) handleListConnections(w http.ResponseWriter, r *http.Request) {

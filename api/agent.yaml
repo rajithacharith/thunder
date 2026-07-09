@@ -231,8 +231,9 @@ paths:
                           value: "https://calendar-agent.example.com/.well-known/jwks"
                         token:
                           accessToken:
-                            validityPeriod: 3600
-                            userAttributes: ["email", "username"]
+                            userConfig:
+                              validityPeriod: 3600
+                              attributes: ["email", "username"]
                           idToken:
                             validityPeriod: 1800
                             userAttributes: ["email", "name"]
@@ -298,8 +299,9 @@ paths:
                         value: "https://calendar-agent.example.com/.well-known/jwks"
                       token:
                         accessToken:
-                          validityPeriod: 3600
-                          userAttributes: ["email", "username"]
+                          userConfig:
+                            validityPeriod: 3600
+                            attributes: ["email", "username"]
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "name"]
@@ -702,8 +704,9 @@ paths:
                         value: "https://calendar-agent.example.com/.well-known/jwks"
                       token:
                         accessToken:
-                          validityPeriod: 3600
-                          userAttributes: ["email", "username"]
+                          userConfig:
+                            validityPeriod: 3600
+                            attributes: ["email", "username"]
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "name"]
@@ -814,8 +817,9 @@ paths:
                           value: "https://calendar-agent.example.com/.well-known/jwks"
                         token:
                           accessToken:
-                            validityPeriod: 3600
-                            userAttributes: ["email", "username"]
+                            userConfig:
+                              validityPeriod: 3600
+                              attributes: ["email", "username"]
                           idToken:
                             validityPeriod: 1800
                             userAttributes: ["email", "name"]
@@ -882,8 +886,9 @@ paths:
                         value: "https://calendar-agent.example.com/.well-known/jwks"
                       token:
                         accessToken:
-                          validityPeriod: 3600
-                          userAttributes: ["email", "username"]
+                          userConfig:
+                            validityPeriod: 3600
+                            attributes: ["email", "username"]
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "name"]
@@ -1199,7 +1204,9 @@ paths:
       summary: Delete an agent by id
       description: |
         Deletes the agent, its inbound auth profile, and its OAuth client profile. Group
-        memberships and role assignments are automatically removed by cascade.
+        memberships and role assignments are automatically removed by cascade. The delete is
+        fail-closed and retriable: if dependency cleanup fails, the agent is left intact and the
+        operation can be retried.
       parameters:
         - in: path
           name: id
@@ -2261,16 +2268,31 @@ components:
 
     AccessTokenConfig:
       type: object
+      description: Access token configuration, split by token subject.
+      properties:
+        userConfig:
+          allOf:
+            - $ref: '#/components/schemas/AccessTokenSubConfig'
+          description: Configuration applied when the access token's subject is an end user.
+        clientConfig:
+          allOf:
+            - $ref: '#/components/schemas/AccessTokenSubConfig'
+          description: >
+            Configuration applied when the access token's subject is the agent itself, issued
+            only via the client_credentials grant.
+
+    AccessTokenSubConfig:
+      type: object
       properties:
         validityPeriod:
           type: integer
           description: Access token validity period in seconds.
           example: 3600
-        userAttributes:
+        attributes:
           type: array
           items:
             type: string
-          description: User attributes to embed in the access token payload.
+          description: Attributes to embed in the access token payload.
           example: ["email", "username"]
 
     IDTokenConfig:

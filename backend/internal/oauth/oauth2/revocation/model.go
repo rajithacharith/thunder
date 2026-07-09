@@ -20,6 +20,17 @@ package revocation
 
 import "time"
 
+// RevokeOutcome is the protocol-level result of a revocation request, mapped to HTTP by the handler.
+type RevokeOutcome int
+
+const (
+	// RevokeOutcomeRevoked indicates success — the token was revoked, or it was invalid/expired/unknown
+	// and treated as a no-op success per RFC 7009 §2.2. Maps to HTTP 200.
+	RevokeOutcomeRevoked RevokeOutcome = iota
+	// RevokeOutcomeNotOwned indicates the token was issued to a different client. Maps to 400 invalid_grant.
+	RevokeOutcomeNotOwned
+)
+
 // RevocationReason enumerates why a single token was revoked.
 type RevocationReason string
 

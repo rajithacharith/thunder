@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {TokenConfig} from './token';
+import type {AccessTokenConfig, TokenConfig} from './token';
 
 /**
  * OAuth2 Grant Type
@@ -236,8 +236,10 @@ export interface RefreshTokenConfig {
  * ```typescript
  * const tokenSettings: OAuth2Token = {
  *   accessToken: {
- *     validityPeriod: 3600,
- *     userAttributes: ['email', 'username']
+ *     userConfig: {
+ *       validityPeriod: 3600,
+ *       attributes: ['email', 'username']
+ *     }
  *   },
  *   idToken: {
  *     validityPeriod: 3600,
@@ -256,9 +258,9 @@ export interface RefreshTokenConfig {
 export interface OAuth2Token {
   /**
    * Access token configuration
-   * Defines the validity period and included user attributes for access tokens
+   * Split by token subject: userConfig (end-user grants) and clientConfig (client_credentials).
    */
-  accessToken: TokenConfig;
+  accessToken: AccessTokenConfig;
 
   /**
    * ID token configuration

@@ -50,6 +50,7 @@ type roleStoreInterface interface {
 	UpdateRole(ctx context.Context, id string, role RoleUpdateDetail) error
 	DeleteRole(ctx context.Context, id string) error
 	DeleteAssignmentsByRoleID(ctx context.Context, id string) error
+	DeleteAssignmentsByAssignee(ctx context.Context, assigneeType, assigneeID string) (int64, error)
 	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
 	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
 	CheckRoleNameExists(ctx context.Context, ouID, name string) (bool, error)
@@ -400,6 +401,23 @@ func (s *roleStore) DeleteAssignmentsByRoleID(ctx context.Context, id string) er
 		return fmt.Errorf("failed to delete assignments for role: %w", err)
 	}
 	return nil
+}
+
+// DeleteAssignmentsByAssignee deletes all role assignments for a given assignee principal across
+// roles, returning the number removed.
+func (s *roleStore) DeleteAssignmentsByAssignee(
+	ctx context.Context, assigneeType, assigneeID string) (int64, error) {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return 0, err
+	}
+
+	rowsAffected, err := dbClient.ExecuteContext(
+		ctx, queryDeleteRoleAssignmentsByAssignee, assigneeType, assigneeID, s.deploymentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete assignments for assignee: %w", err)
+	}
+	return rowsAffected, nil
 }
 
 // AddAssignments adds assignments to a role.

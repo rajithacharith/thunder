@@ -11,6 +11,11 @@
         "jwks_url": "",
         "audience": "",
         "required_claims": []
+      },
+      "token_revocation": {
+        "enabled": true,
+        "source": "db",
+        "sync_interval_seconds": 60
       }
     }
   },
@@ -162,6 +167,33 @@
   },
   "server_config": {
     "store": "composite"
+  },
+  "log": {
+    "level": "info",
+    "output": {
+      "console": {
+        "enabled": true
+      },
+      "file": {
+        "enabled": false,
+        "path": "logs",
+        "file_name": "thunderid.log",
+        "format": "text",
+        "rotation": {
+          "size": {
+            "enabled": false,
+            "max_size_mb": 10
+          },
+          "time": {
+            "enabled": true,
+            "interval_days": 1
+          },
+          "max_backups": 20,
+          "max_age_days": 0,
+          "compress": false
+        }
+      }
+    }
   },
   "observability": {
     "enabled": false,

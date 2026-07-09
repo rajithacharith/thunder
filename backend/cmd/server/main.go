@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -42,6 +42,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
+	"github.com/thunder-id/thunderid/internal/system/revocationcache"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
 
@@ -74,6 +75,12 @@ func main() {
 		}
 	}
 
+	// Apply the configured log output (console and/or rotating file), now that the
+	// server home is known and the file path can be resolved.
+	if err := logger.Configure(cfg.Log.BuildOutputOptions(serverHome)); err != nil {
+		logger.Fatal(ctx, "Failed to configure log output", log.Error(err))
+	}
+
 	// Initialize the cache manager.
 	cacheManager := cache.Initialize(cfg.Cache, cfg.Server.Identifier)
 
@@ -100,6 +107,12 @@ func main() {
 		return
 	}
 
+	// Initialize the Resource Server token-revocation cache. The initial deny-list snapshot is loaded
+	// synchronously so enforcement is live before the first request; if that load fails the server
+	// still starts and the syncer repopulates the cache on its next tick.
+	revocationEnforcer, revocationSyncer := initRevocationCache(ctx, logger, cfg)
+	revocationSyncer.Start(ctx)
+
 	// Register static file handlers for frontend applications.
 	registerStaticFileHandlers(ctx, logger, mux, serverHome)
 
@@ -108,7 +121,7 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	// Create the HTTP server.
-	server := createHTTPServer(ctx, logger, cfg, mux, jwtService)
+	server := createHTTPServer(ctx, logger, cfg, mux, jwtService, revocationEnforcer)
 	var ln net.Listener
 	if cfg.Server.HTTPOnly {
 		logger.Info(ctx, "TLS is not enabled, starting server without TLS")
@@ -135,7 +148,24 @@ func main() {
 	// Wait for shutdown signal
 	<-sigChan
 	logger.Info(ctx, "Shutting down server...")
-	gracefulShutdown(ctx, logger, server, cacheManager)
+	gracefulShutdown(ctx, logger, server, cacheManager, revocationSyncer)
+}
+
+// initRevocationCache builds the Resource Server token-revocation enforcer and its background syncer
+// from the server security configuration. An unsupported source configuration fails startup; a
+// failed initial deny-list load does not — the server starts and the syncer populates the cache later.
+func initRevocationCache(ctx context.Context, logger *log.Logger,
+	cfg *config.Config) (revocationcache.EnforcerInterface, revocationcache.Syncer) {
+	rc := cfg.Server.SecurityConfig.TokenRevocation
+	enforcer, syncer, err := revocationcache.Initialize(revocationcache.Config{
+		Enabled:      rc.Enabled,
+		Source:       rc.Source,
+		SyncInterval: time.Duration(rc.SyncIntervalSeconds) * time.Second,
+	})
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize token revocation cache", log.Error(err))
+	}
+	return enforcer, syncer
 }
 
 // getThunderHome retrieves and return the home directory.
@@ -194,8 +224,8 @@ func loadCertConfig(ctx context.Context, logger *log.Logger, runtimeSvc kmprovid
 
 // createHTTPServer creates and configures an HTTP server with common settings.
 func createHTTPServer(ctx context.Context, logger *log.Logger, cfg *config.Config, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface) *http.Server {
-	securityMiddleware := createSecurityMiddleware(ctx, logger, mux, jwtService)
+	jwtService jwt.JWTServiceInterface, revocationEnforcer revocationcache.EnforcerInterface) *http.Server {
+	securityMiddleware := createSecurityMiddleware(ctx, logger, mux, jwtService, revocationEnforcer)
 
 	// Build the middleware chain with proper execution order.
 	// Request flow: CorrelationID (outermost) -> AccessLog -> Security -> Route Handler (innermost)
@@ -212,6 +242,7 @@ func createHTTPServer(ctx context.Context, logger *log.Logger, cfg *config.Confi
 		ReadHeaderTimeout: 10 * time.Second, // Mitigate Slowloris attacks
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,
+		ErrorLog:          log.NewServerErrorLog(logger),
 	}
 
 	return server
@@ -237,8 +268,8 @@ func createTLSListener(ctx context.Context, logger *log.Logger, server *http.Ser
 }
 
 func createSecurityMiddleware(ctx context.Context, logger *log.Logger, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface) http.Handler {
-	middlewareFunc, err := security.Initialize(jwtService)
+	jwtService jwt.JWTServiceInterface, revocationEnforcer revocationcache.EnforcerInterface) http.Handler {
+	middlewareFunc, err := security.Initialize(jwtService, revocationEnforcer)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize security middleware", log.Error(err))
 	}
@@ -251,6 +282,7 @@ func gracefulShutdown(
 	logger *log.Logger,
 	server *http.Server,
 	cacheManager cache.CacheManagerInterface,
+	revocationSyncer revocationcache.Syncer,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 	defer cancel()
@@ -261,6 +293,9 @@ func gracefulShutdown(
 	} else {
 		logger.Debug(ctx, "HTTP server shutdown completed")
 	}
+
+	// Stop the token-revocation cache syncer.
+	revocationSyncer.Stop()
 
 	// Shutdown services
 	unregisterServices()
@@ -276,6 +311,11 @@ func gracefulShutdown(
 	if cacheManager != nil {
 		cacheManager.Close()
 		logger.Debug(ctx, "Cache manager closed successfully")
+	}
+
+	// Close the log file writer before the final shutdown log line.
+	if err := logger.Close(); err != nil {
+		logger.Error(ctx, "Error closing log file", log.Error(err))
 	}
 
 	logger.Info(ctx, "Server shutdown completed")

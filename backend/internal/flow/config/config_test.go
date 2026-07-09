@@ -47,12 +47,6 @@ func (s *FlowConfigTestSuite) TearDownTest() {
 func (s *FlowConfigTestSuite) TestFromServerRuntime() {
 	cfg := &config.Config{
 		Flow: engineconfig.FlowConfig{UserOnboardingFlowHandle: "onboarding-handle"},
-		Server: engineconfig.ServerConfig{
-			Identifier: "dep-1",
-		},
-		Database: config.DatabaseConfig{
-			Runtime: config.DataSource{Type: "postgres"},
-		},
 	}
 	err := config.InitializeServerRuntime("/tmp/test-flow-config", cfg)
 	s.Require().NoError(err)
@@ -60,6 +54,4 @@ func (s *FlowConfigTestSuite) TestFromServerRuntime() {
 	result := FromServerRuntime()
 
 	s.Equal("onboarding-handle", result.Flow.UserOnboardingFlowHandle)
-	s.Equal("dep-1", result.DeploymentID)
-	s.Equal("postgres", result.RuntimeDBType)
 }

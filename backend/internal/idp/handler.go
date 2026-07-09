@@ -251,7 +251,8 @@ func getClientErrorStatusCode(errorCode string) int {
 	switch errorCode {
 	case ErrorIDPNotFound.Code:
 		return http.StatusNotFound
-	case ErrorIDPAlreadyExists.Code:
+	case ErrorIDPAlreadyExists.Code,
+		ErrorIDPHasBlockingDependencies.Code:
 		return http.StatusConflict
 	default:
 		return http.StatusBadRequest

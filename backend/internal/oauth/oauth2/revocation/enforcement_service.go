@@ -20,20 +20,12 @@ package revocation
 
 import (
 	"context"
-	"errors"
 
 	syscontext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
-
-// ErrTokenRevoked indicates the presented token's JTI is on the deny list.
-var ErrTokenRevoked = errors.New("token has been revoked")
-
-// ErrEnforcementUnavailable indicates the deny list could not be consulted (operation DB
-// unavailable or the circuit is open). Under the fail-closed policy callers MUST reject the token.
-var ErrEnforcementUnavailable = errors.New("token revocation enforcement is unavailable")
 
 // EnforcementServiceInterface enforces the single-token deny list on the AS hot path (introspection, refresh
 // grant, token exchange) under a fail-closed policy: when the deny list cannot be consulted, tokens
@@ -108,7 +100,7 @@ func (c *enforcementService) publishOperationDBUnavailableEvent(ctx context.Cont
 		event.ComponentAuthHandler,
 	).
 		WithStatus(providers.StatusFailure).
-		WithData("error", cause.Error())
+		WithData(event.DataKey.Error, cause.Error())
 
 	c.observabilitySvc.PublishEvent(ctx, evt)
 }

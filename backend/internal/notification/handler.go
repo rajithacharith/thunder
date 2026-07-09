@@ -223,7 +223,11 @@ func (h *messageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseW
 		return
 	}
 
-	otpDTO := common.SendOTPDTO(*request)
+	otpDTO := common.SendOTPDTO{
+		Recipient: request.Recipient,
+		SenderID:  request.SenderID,
+		Channel:   request.Channel,
+	}
 	resultDTO, svcErr := h.otpService.SendOTP(ctx, otpDTO)
 	if svcErr != nil {
 		h.handleError(ctx, w, svcErr, "")
@@ -282,7 +286,8 @@ func (h *messageNotificationSenderHandler) handleError(ctx context.Context, w ht
 		switch svcErr.Code {
 		case ErrorSenderNotFound.Code:
 			statusCode = http.StatusNotFound
-		case ErrorDuplicateSenderName.Code:
+		case ErrorDuplicateSenderName.Code,
+			ErrorSenderHasBlockingDependencies.Code:
 			statusCode = http.StatusConflict
 		default:
 			statusCode = http.StatusBadRequest

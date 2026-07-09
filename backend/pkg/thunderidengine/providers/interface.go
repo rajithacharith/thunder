@@ -183,3 +183,21 @@ type AuthorizationProvider interface {
 		request AccessEvaluationsRequest,
 	) (*AccessEvaluationsResponse, *common.ServiceError)
 }
+
+// RuntimeStoreProvider defines the interface for runtime store operations.
+type RuntimeStoreProvider interface {
+	// Put stores a value in the runtime store with the specified key and TTL (time-to-live) in seconds.
+	Put(ctx context.Context, namespace RuntimeStoreNamespace, key string, value []byte, ttlSeconds int64) error
+
+	// Get retrieves a value from the runtime store by its key.
+	Get(ctx context.Context, namespace RuntimeStoreNamespace, key string) ([]byte, error)
+
+	// Update updates the value associated with a key in the runtime store.
+	Update(ctx context.Context, namespace RuntimeStoreNamespace, key string, value []byte) error
+
+	// Delete removes a value from the runtime store by its key.
+	Delete(ctx context.Context, namespace RuntimeStoreNamespace, key string) error
+
+	// Take retrieves and removes a value from the runtime store by its key.
+	Take(ctx context.Context, namespace RuntimeStoreNamespace, key string) ([]byte, error)
+}

@@ -32,7 +32,6 @@ import (
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/cibamock"
-	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/revocationmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
@@ -52,7 +51,6 @@ type GrantHandlerProviderTestSuite struct {
 	mockEntityProvider   *actorprovidermock.ActorProviderMock
 	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
 	mockCIBAService      *cibamock.CIBAServiceInterfaceMock
-	mockRevocationCheck  *revocationmock.EnforcementServiceInterfaceMock
 }
 
 func TestGrantHandlerProviderSuite(t *testing.T) {
@@ -70,7 +68,6 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockEntityProvider = actorprovidermock.NewActorProviderMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.mockCIBAService = cibamock.NewCIBAServiceInterfaceMock(suite.T())
-	suite.mockRevocationCheck = revocationmock.NewEnforcementServiceInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
 		suite.mockJWTService,
 		suite.authzService,
@@ -83,7 +80,6 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 		suite.mockResourceService,
 		suite.mockCIBAService,
 		testhelpers.OAuthConfig(),
-		suite.mockRevocationCheck,
 	)
 }
 
@@ -100,7 +96,6 @@ func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 		suite.mockResourceService,
 		suite.mockCIBAService,
 		testhelpers.OAuthConfig(),
-		suite.mockRevocationCheck,
 	)
 	assert.NotNil(suite.T(), provider)
 	assert.Implements(suite.T(), (*GrantHandlerProviderInterface)(nil), provider)

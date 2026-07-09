@@ -367,6 +367,12 @@ func (c *compositeRoleStore) DeleteAssignmentsByRoleID(ctx context.Context, id s
 	return c.dbStore.DeleteAssignmentsByRoleID(ctx, id)
 }
 
+// DeleteAssignmentsByAssignee deletes assignments for the assignee from the database store only.
+func (c *compositeRoleStore) DeleteAssignmentsByAssignee(
+	ctx context.Context, assigneeType, assigneeID string) (int64, error) {
+	return c.dbStore.DeleteAssignmentsByAssignee(ctx, assigneeType, assigneeID)
+}
+
 // AddAssignments adds assignments to a role in the database store only.
 func (c *compositeRoleStore) AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error {
 	return c.dbStore.AddAssignments(ctx, id, assignments)

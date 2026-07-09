@@ -60,7 +60,7 @@ Controls HTTPS/TLS settings for secure communication.
 
 ## Logging Configuration
 
-Controls the verbosity of server logs.
+Controls the verbosity and destination of server logs.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -72,6 +72,56 @@ log:
 ```
 
 If `log.level` is omitted, <ProductName /> defaults to `info`. An unrecognized value causes the server to exit at startup.
+
+### Log Output
+
+By default <ProductName /> writes logs to the console (stdout) only. You can additionally, or instead, write them to a file. Console and file are independent outputs: enable either, both, or neither (with neither enabled, <ProductName /> falls back to the console so logs are never silently lost).
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `log.output.console.enabled` | `true` | Write logs to stdout |
+| `log.output.file.enabled` | `false` | Write logs to a file |
+| `log.output.file.path` | `logs` | Directory for the log file. A relative path resolves under the <ProductName /> home directory; an absolute path is used as-is |
+| `log.output.file.file_name` | `thunderid.log` | Name of the active log file |
+| `log.output.file.format` | `text` | Log line format: `text` or `json` |
+| `log.output.file.rotation.size.enabled` | `false` | Roll the file over once it reaches `max_size_mb` |
+| `log.output.file.rotation.size.max_size_mb` | `10` | Size (in MB, fractional values allowed, e.g. `0.5`) at which the file is rotated |
+| `log.output.file.rotation.time.enabled` | `false` | Roll the file over on a time schedule |
+| `log.output.file.rotation.time.interval_days` | `1` | Roll the file over every N days at local midnight |
+| `log.output.file.rotation.max_backups` | `0` | Maximum number of rotated files to keep (`0` keeps all) |
+| `log.output.file.rotation.max_age_days` | `0` | Delete rotated files older than this many days (`0` disables age-based deletion) |
+| `log.output.file.rotation.compress` | `false` | Gzip-compress rotated files |
+
+```yaml
+log:
+  level: "info"
+  output:
+    console:
+      enabled: true
+    file:
+      enabled: true
+      path: "logs"
+      file_name: "thunderid.log"
+      format: "text"
+      rotation:
+        size:
+          enabled: true
+          max_size_mb: 10
+        time:
+          enabled: false
+          interval_days: 1
+        max_backups: 20
+        max_age_days: 0
+        compress: false
+```
+
+With the configuration above, logs are written to `<THUNDER_HOME>/logs/thunderid.log`. When the active file reaches the configured size limit, it is renamed with a timestamp suffix (for example `thunderid.log.2026-07-06-14-30-00`) and a fresh file is started. Older rotated files are then pruned by the configured backup count and age limit.
+
+Size and time triggers are independent and can run together: with both enabled, the file rolls whenever it exceeds the size limit **or** reaches the next time interval, whichever comes first. Time-based rotation rolls at local midnight and skips days with no log output (so idle days do not create empty files).
+
+:::note
+This is the <ProductName /> **application log** (the `INFO`/`WARN`/`ERROR` lines the server emits). It is separate from the observability event file sink described in the [Observability](../../deployment-patterns/observability) guide, which records structured domain events such as token issuance and flow execution.
+:::
 
 ## Database Configuration
 

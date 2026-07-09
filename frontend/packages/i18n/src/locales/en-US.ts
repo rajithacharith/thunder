@@ -768,6 +768,11 @@ const translations = {
     propertyNamePlaceholder: 'e.g., email, age, address',
     propertyType: 'Type',
     addProperty: 'Add Property',
+    'attributes.libraryTitle': 'Available Properties',
+    'attributes.searchPlaceholder': 'Search properties',
+    'attributes.allAdded': 'All available properties have been added.',
+    'attributes.noResults': 'No properties match your search.',
+    newAttribute: 'New property',
     credential: 'Credential',
     unique: 'Unique',
     removeProperty: 'Remove property',
@@ -855,6 +860,8 @@ const translations = {
     'removeCredentialDialog.title': 'Remove Credential Flag',
     'removeCredentialDialog.description':
       'Removing the credential flag will cause this field to no longer be hashed or protected. Existing hashed values may become inaccessible. Are you sure you want to proceed?',
+    'removeCredentialDialog.descriptionNew':
+      'Removing the credential flag will cause this field to no longer be hashed or protected. Are you sure you want to proceed?',
     'removeCredentialDialog.confirm': 'Remove Credential',
   },
 
@@ -1628,6 +1635,9 @@ const translations = {
     // Delete dialog
     'delete.title': 'Delete connection',
     'delete.message': 'Are you sure you want to delete “{{name}}”? This action cannot be undone.',
+    'delete.usages.loading': 'Checking affected resources…',
+    'delete.usages.more': '+{{count}} more',
+    'delete.blocking.title': 'This connection cannot be deleted until the following resources are updated or removed:',
 
     // Toasts
     'create.success': 'Connection created successfully.',
@@ -2751,6 +2761,12 @@ const translations = {
     'core.executions.names.ouCreation': 'OU Creation',
     'core.executions.names.userTypeResolver': 'User Type Resolver',
 
+    // OTP executor
+    'core.executions.otp.description': 'Configure the OTP executor settings.',
+    'core.executions.otp.maxAttempts.label': 'Maximum Attempts',
+    'core.executions.otp.maxAttempts.placeholder': 'e.g., 3',
+    'core.executions.otp.maxAttempts.hint': 'The maximum number of OTP verification attempts before the flow fails.',
+
     // SMS OTP executor modes
     'core.executions.smsOtp.mode.send': 'Send OTP',
     'core.executions.smsOtp.mode.verify': 'Verify OTP',
@@ -3066,6 +3082,11 @@ const translations = {
     'core.elements.text.align.options.right': 'Right',
     'core.elements.text.align.options.justify': 'Justify',
     'core.elements.text.align.options.inherit': 'Inherit',
+
+    // Elements - classes property field
+    'core.elements.classesPropertyField.label': 'CSS Classes',
+    'core.elements.classesPropertyField.placeholder': 'e.g. btn-primary',
+    'core.elements.classesPropertyField.addClass': 'Add class',
 
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
@@ -3690,7 +3711,7 @@ const translations = {
     'create.type.mcp.title': 'MCP',
     'create.type.mcp.description': 'Model Context Protocol servers.',
     'create.type.custom.title': 'Custom',
-    'create.type.custom.description': 'Any other protected resource — database, file store, or service.',
+    'create.type.custom.description': 'Any other protected resource - database, file store, or service.',
     'create.form.name.label': 'Name',
     'create.form.name.placeholder': 'Enter resource server name',
     'create.form.name.required': 'Name is required.',
@@ -3744,13 +3765,17 @@ const translations = {
     'common.back': 'Back',
     'common.next': 'Next',
     'create.name.title': 'Name your resource server',
+    'create.name.titleMcp': 'Name your MCP server',
     'create.name.nameLabel': 'Resource Server Name',
+    'create.name.nameLabelMcp': 'MCP Server Name',
     'create.name.namePlaceholder': 'e.g. Payments API',
     'create.name.suggestions': 'Need inspiration? Pick one:',
     'create.name.handleLabel': 'Handle (Optional)',
     'create.name.handlePlaceholder': 'e.g. payments-api',
     'create.name.handleHint':
       'The handle prefixes every permission in this resource server. It cannot be changed after creation.',
+    'create.name.handleHintMcp':
+      'The handle prefixes every permission in this MCP server. It cannot be changed after creation.',
     'create.separator.title': 'Choose your permission delimiter',
     'create.separator.subtitle':
       'The delimiter character joins parts of a permission string. This cannot be changed after creation.',
@@ -3764,8 +3789,10 @@ const translations = {
     'create.separator.hyphen': 'Hyphen ( - )',
     'create.separator.underscore': 'Underscore ( _ )',
     'create.success': 'Resource server created successfully.',
+    'create.successMcp': 'MCP server created successfully.',
     'create.creating': 'Creating…',
     'create.submit': 'Create resource server',
+    'create.submitMcp': 'Create MCP server',
     'edit.tab.resources': 'Resources',
     'edit.tab.advanced': 'Advanced Settings',
     'edit.back': 'Back to resource servers',
@@ -3778,14 +3805,21 @@ const translations = {
     'edit.unsavedChanges': 'You have unsaved changes.',
     'edit.advanced.identifier.title': 'Configurations',
     'edit.advanced.identifier.description': 'Configuration settings for this resource server.',
+    'edit.advanced.identifier.descriptionMcp': 'Configuration settings for this MCP server.',
     'edit.advanced.identifier.label': 'Identifier (Audience)',
     'edit.advanced.identifier.hint':
-      'A unique value that identifies this resource server. When set as an URI,enables RFC 8707 resource indicator support in OAuth2 authorization requests.',
+      'A unique value that identifies this resource server. When set as an URI, enables RFC 8707 resource indicator support in OAuth2 authorization requests.',
+    'edit.advanced.identifier.hintMcp':
+      'A unique value that identifies this MCP server. When set as an URI, enables RFC 8707 resource indicator support in OAuth2 authorization requests.',
+    'edit.advanced.identifier.placeholder': 'https://api.example.com',
+    'edit.advanced.identifier.placeholderMcp': 'https://mcp.example.com',
     'edit.advanced.identifier.saved': 'Identifier saved.',
     'edit.advanced.identifier.saveError': 'Failed to save identifier.',
     'edit.dangerZone.title': 'Danger Zone',
     'edit.dangerZone.description': 'Irreversible actions for this resource server.',
+    'edit.dangerZone.descriptionMcp': 'Irreversible actions for this MCP server.',
     'edit.dangerZone.deleteServer': 'Delete resource server',
+    'edit.dangerZone.deleteServerMcp': 'Delete MCP server',
     'tree.title': 'Resource Hierarchy',
     'tree.add': 'Add',
     'tree.addResource': 'Add resource',

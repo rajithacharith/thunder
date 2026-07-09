@@ -9,6 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/notification/common"
+	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	common0 "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
@@ -369,6 +370,46 @@ func (_c *NotificationSenderMgtSvcInterfaceMock_ListSenders_Call) Return(notific
 
 func (_c *NotificationSenderMgtSvcInterfaceMock_ListSenders_Call) RunAndReturn(run func(ctx context.Context) ([]common.NotificationSenderDTO, *common0.ServiceError)) *NotificationSenderMgtSvcInterfaceMock_ListSenders_Call {
 	_c.Call.Return(run)
+	return _c
+}
+
+// SetDependencyRegistry provides a mock function for the type NotificationSenderMgtSvcInterfaceMock
+func (_mock *NotificationSenderMgtSvcInterfaceMock) SetDependencyRegistry(r resourcedependency.Registry) {
+	_mock.Called(r)
+	return
+}
+
+// NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetDependencyRegistry'
+type NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call struct {
+	*mock.Call
+}
+
+// SetDependencyRegistry is a helper method to define mock.On call
+//   - r resourcedependency.Registry
+func (_e *NotificationSenderMgtSvcInterfaceMock_Expecter) SetDependencyRegistry(r interface{}) *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call {
+	return &NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call{Call: _e.mock.On("SetDependencyRegistry", r)}
+}
+
+func (_c *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call) Run(run func(r resourcedependency.Registry)) *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 resourcedependency.Registry
+		if args[0] != nil {
+			arg0 = args[0].(resourcedependency.Registry)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call) Return() *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call) RunAndReturn(run func(r resourcedependency.Registry)) *NotificationSenderMgtSvcInterfaceMock_SetDependencyRegistry_Call {
+	_c.Run(run)
 	return _c
 }
 

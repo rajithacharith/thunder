@@ -25,7 +25,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
-	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
@@ -33,7 +32,6 @@ import (
 )
 
 // Initialize creates and configures the flow execution service components.
-// The observabilitySvc parameter is optional (can be nil) - if nil, observability events won't be published.
 func Initialize(
 	mux *http.ServeMux,
 	flowProvider providers.FlowProvider,
@@ -43,23 +41,11 @@ func Initialize(
 	observabilitySvc providers.ObservabilityProvider,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
+	storeProvider providers.RuntimeStoreProvider,
+	transactioner transaction.Transactioner,
 	cfg flowconfig.Config,
 ) (FlowExecServiceInterface, error) {
-	var flowStore flowStoreInterface
-	var transactioner transaction.Transactioner
-
-	if cfg.RuntimeDBType == dbprovider.DataSourceTypeRedis {
-		flowStore = newRedisFlowStore(dbprovider.GetRedisProvider(), cfg.DeploymentID)
-		transactioner = transaction.NewNoOpTransactioner()
-	} else {
-		dbProvider := dbprovider.GetDBProvider()
-		var err error
-		transactioner, err = dbProvider.GetRuntimeDBTransactioner()
-		if err != nil {
-			return nil, err
-		}
-		flowStore = newFlowStore(dbProvider, cfg.DeploymentID)
-	}
+	flowStore := newFlowStore(storeProvider)
 	interceptorRunner := newInterceptorRunner(interceptorRegistry)
 	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc,
 		flowProvider, graphBuilder)

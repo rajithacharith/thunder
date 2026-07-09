@@ -1327,7 +1327,8 @@ function Ensure-Certificates {
                     & openssl req -x509 -nodes -days 365 -newkey rsa:2048 `
                         -keyout $local_key_file `
                         -out $local_cert_file `
-                        -subj "/O=WSO2/OU=$PRODUCT_NAME/CN=localhost" 2>$null
+                        -subj "/O=WSO2/OU=$PRODUCT_NAME/CN=localhost" `
+                        -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>$null
                 }
                 if ($LASTEXITCODE -ne 0) {
                     throw "Error generating certificates: OpenSSL failed with exit code $LASTEXITCODE"
