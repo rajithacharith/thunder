@@ -3083,6 +3083,11 @@ const translations = {
     'core.elements.text.align.options.justify': 'Justify',
     'core.elements.text.align.options.inherit': 'Inherit',
 
+    // Elements - classes property field
+    'core.elements.classesPropertyField.label': 'CSS Classes',
+    'core.elements.classesPropertyField.placeholder': 'e.g. btn-primary',
+    'core.elements.classesPropertyField.addClass': 'Add class',
+
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
     'core.elements.textPropertyField.tooltip.configureTranslation': 'Configure translation',
