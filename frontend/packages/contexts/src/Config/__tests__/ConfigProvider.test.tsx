@@ -59,6 +59,7 @@ function ConfigConsumer() {
       <span data-testid="trusted-issuer-scopes">{JSON.stringify(ctx.getTrustedIssuerScopes())}</span>
       <span data-testid="client-id">{ctx.getClientId()}</span>
       <span data-testid="scopes">{JSON.stringify(ctx.getScopes())}</span>
+      <span data-testid="resource-identifier">{ctx.getResourceIdentifier()}</span>
       <span data-testid="server-hostname">{ctx.getServerHostname()}</span>
       <span data-testid="server-port">{ctx.getServerPort()}</span>
       <span data-testid="is-http-only">{String(ctx.isHttpOnly())}</span>
@@ -238,6 +239,29 @@ describe('ConfigProvider', () => {
     it('returns empty array when neither trusted_issuer nor client scopes are set', () => {
       renderWithConfig(buildConfig(), ConfigConsumer);
       expect(getTestId('trusted-issuer-scopes')).toBe(JSON.stringify([]));
+    });
+  });
+
+  // --- getResourceIdentifier ---
+
+  describe('getResourceIdentifier', () => {
+    it('returns the configured resource identifier', () => {
+      renderWithConfig(
+        buildConfig({
+          client: {
+            base: '/console',
+            client_id: 'CONSOLE',
+            resource_identifier: 'https://localhost:8090/mcp',
+          },
+        }),
+        ConfigConsumer,
+      );
+      expect(getTestId('resource-identifier')).toBe('https://localhost:8090/mcp');
+    });
+
+    it('returns empty when not configured', () => {
+      renderWithConfig(buildConfig(), ConfigConsumer);
+      expect(getTestId('resource-identifier')).toBe('');
     });
   });
 });

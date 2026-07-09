@@ -84,6 +84,13 @@ export interface ClientConfig {
   scopes?: string[];
 
   /**
+   * Identifier of the resource server this client's tokens should target, sent as the
+   * RFC 8707 `resource` parameter so the tokens are bound to that resource server.
+   * @example "https://localhost:8090/mcp"
+   */
+  resource_identifier?: string;
+
+  /**
    * Server hostname or IP address
    * @example "localhost", "api.example.com", "192.168.1.100"
    */

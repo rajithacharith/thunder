@@ -99,6 +99,7 @@ export default function ConfigProvider({children}: ConfigProviderProps) {
       isHttpOnly: () => config.server.http_only,
       getClientId: () => config.client.client_id,
       getScopes: () => config.client.scopes ?? [],
+      getResourceIdentifier: () => config.client.resource_identifier,
       getClientUrl: () => {
         const {hostname, port, http_only: httpOnly, base} = config.client;
 
