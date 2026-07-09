@@ -872,6 +872,10 @@ type ExecutorResponse struct {
 	Assertion      string                 `json:"assertion,omitempty"`
 	Error          *common.ServiceError   `json:"error,omitempty"`
 	AuthUser       AuthUser               `json:"-"`
+	// EngineData carries executor output the flow engine consumes internally (for example, a
+	// transport signal such as a minted session handle). Unlike AdditionalData, it is never
+	// serialized to the client.
+	EngineData map[string]string `json:"-"`
 }
 
 // ExecutionPolicy defines behavioral policies for node execution.

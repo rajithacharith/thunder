@@ -62,6 +62,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
+	flowsession "github.com/thunder-id/thunderid/internal/flow/session"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
@@ -317,7 +318,25 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	attributeCacheService := attributecache.Initialize(runtimeStoreProvider)
 
 	emailClient := initEmailClient(ctx, logger)
+
+	// Initialize server-wide configuration after its handler dependencies.
+	serverConfigHandlers := map[serverconfig.ConfigName]serverconfig.ServerConfigHandlerInterface{
+		serverconfig.ConfigNameCORS:                  cors.OriginHandler{},
+		serverconfig.ConfigNameDefaultResourceServer: resource.NewDefaultResourceServerConfigHandler(resourceService),
+		serverconfig.ConfigNameSession:               flowsession.ConfigHandler{},
+	}
+	serverConfigService, serverConfigExporter, err := serverconfig.Initialize(mux, cacheManager, serverConfigHandlers)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize server config service", log.Error(err))
+	}
+	exporters = append(exporters, serverConfigExporter)
+
+	// CORS origins come from the server-config cors section.
+	cors.InitializeDynamicMatcher(serverConfigService)
+
 	flowConfig := flowconfig.FromServerRuntime()
+	sessionService, sessionCfg := initSessionService(ctx, serverConfigService, runtime.Config.Server.Identifier, logger)
+	flowConfig.Session = sessionCfg
 	flowFactory, execRegistry, interceptorRegistry, graphBuilder := initializeFlowCoreAndExecutor(ctx, logger,
 		cacheManager, executor.ExecutorDependencies{
 			OUService:             ouService,
@@ -344,6 +363,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			GithubSvc:             githubAuthnService,
 			GoogleSvc:             googleAuthnService,
 			OpenID4VPVerifierSvc:  openid4vpSvc,
+			SessionService:        sessionService,
 		},
 		interceptor.InterceptorDependencies{},
 		flowConfig,
@@ -422,20 +442,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	// Initialize flow metadata service
 	_ = flowmeta.Initialize(mux, actorProvider, ouService, designResolveService, i18nService)
 
-	// Initialize server-wide configuration after its handler dependencies.
-	serverConfigHandlers := map[serverconfig.ConfigName]serverconfig.ServerConfigHandlerInterface{
-		serverconfig.ConfigNameCORS:                  cors.OriginHandler{},
-		serverconfig.ConfigNameDefaultResourceServer: resource.NewDefaultResourceServerConfigHandler(resourceService),
-	}
-	serverConfigService, serverConfigExporter, err := serverconfig.Initialize(mux, cacheManager, serverConfigHandlers)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize server config service", log.Error(err))
-	}
-	exporters = append(exporters, serverConfigExporter)
-
-	// CORS origins come from the server-config cors section.
-	cors.InitializeDynamicMatcher(serverConfigService)
-
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
 
@@ -461,10 +467,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		serverConfigService,
 	)
 
-	flowCfg := flowconfig.FromServerRuntime()
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
 		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, graphBuilder,
-		runtimeStoreProvider, transactioner, flowCfg)
+		runtimeStoreProvider, transactioner, flowConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}
@@ -526,6 +531,34 @@ func registerDependencyRegistry(consumers dependencyConsumers, providers ...reso
 // unregisterServices unregisters all services that require cleanup during shutdown.
 func unregisterServices() {
 	observabilitySvc.Shutdown()
+}
+
+// initSessionService reads the effective SSO session configuration from the server-config section and
+// builds the session service, returning both so the caller can thread the config into flowexec too.
+func initSessionService(ctx context.Context, svc serverconfig.ServerConfigService, deploymentID string,
+	logger *log.Logger) (flowsession.Service, flowsession.Config) {
+	cfg := readSessionConfig(ctx, svc, logger)
+	sessionService, err := flowsession.Initialize(dbprovider.GetDBProvider(), deploymentID,
+		flowsession.NewTimeouts(cfg.IdleTimeoutSeconds, cfg.AbsoluteTimeoutSeconds))
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize SSO session service", log.Error(err))
+	}
+	return sessionService, cfg
+}
+
+// readSessionConfig reads the effective SSO session lifetime configuration from the server-config
+// "session" section. An unset section resolves to the zero Config, which NewTimeouts turns into the
+// built-in defaults; a read error is non-fatal for the same reason, so it logs and falls back.
+func readSessionConfig(ctx context.Context, svc serverconfig.ServerConfigService,
+	logger *log.Logger) flowsession.Config {
+	merged, svcErr := svc.GetMergedConfig(ctx, string(serverconfig.ConfigNameSession))
+	if svcErr != nil {
+		logger.Warn(ctx, "Failed to read session server config; using default timeouts",
+			log.String("code", svcErr.Code))
+		return flowsession.Config{}
+	}
+	cfg, _ := merged.(flowsession.Config)
+	return cfg
 }
 
 // initEmailClient initializes the email client, returning nil if not configured.
