@@ -77,6 +77,15 @@ const oauthFields = (namePlaceholder: string, clientIdPlaceholder: string): Conn
   },
 ];
 
+const TRUSTED_TOKEN_AUDIENCE_FIELD: ConnectionFieldDef = {
+  name: 'trustedTokenAudience',
+  labelKey: 'connections:form.fields.trustedTokenAudience.label',
+  hintKey: 'connections:form.fields.trustedTokenAudience.hint',
+  kind: 'text',
+  optional: true,
+  placeholder: 'my-external-client-id',
+};
+
 /**
  * Ordered field definitions per connection type, driving the shared {@link ConnectionForm}
  * and its dynamically-built validation schema.
@@ -155,5 +164,6 @@ export const CONNECTION_FORM_FIELDS: Record<ConnectionType, ConnectionFieldDef[]
       kind: 'scopes',
       placeholder: 'openid email profile',
     },
+    TRUSTED_TOKEN_AUDIENCE_FIELD,
   ],
 };

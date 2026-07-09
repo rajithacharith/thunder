@@ -143,6 +143,7 @@ export interface OIDCConnectionRequest extends OAuthConnectionRequest {
   logoutEndpoint?: string;
   issuer?: string;
   tokenExchangeEnabled?: boolean;
+  trustedTokenAudience?: string;
 }
 
 export type ConnectionRequest = OAuthConnectionRequest | OIDCConnectionRequest;

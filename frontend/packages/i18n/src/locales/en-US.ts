@@ -1602,6 +1602,8 @@ const translations = {
     'form.fields.issuer.label': 'Issuer',
     'form.fields.issuer.hint': 'Issuer identifier expected in tokens from this provider.',
     'form.fields.tokenExchangeEnabled.label': 'Enable token exchange',
+    'form.fields.trustedTokenAudience.label': 'Trusted token audience',
+    'form.fields.trustedTokenAudience.hint': 'Accepted audience value for external tokens during token exchange.',
     'form.optional': 'Optional',
     'form.secret.update': 'Update',
     'form.secret.keepHelp': 'Leave unchanged to keep the stored secret.',
