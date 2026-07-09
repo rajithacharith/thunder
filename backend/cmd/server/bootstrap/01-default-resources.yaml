@@ -943,7 +943,7 @@ nodes:
   type: TASK_EXECUTION
   properties:
     requiredScopes:
-    - system
+    - system:user
   executor:
     name: PermissionValidator
   onSuccess: user_type_resolver
