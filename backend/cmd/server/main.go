@@ -30,6 +30,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -341,8 +342,16 @@ func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) 
 			}
 		}
 
-		// Get the file path
+		// Assert the resolved path stays within `directory` before touching the filesystem.
 		filePath := path.Join(directory, r.URL.Path)
+		cleanDir := filepath.Clean(directory)
+		if filePath != cleanDir && !strings.HasPrefix(filePath, cleanDir+string(os.PathSeparator)) {
+			logger.Warn(r.Context(), "Rejected request with out-of-bounds path",
+				log.String("requested_path", r.URL.Path),
+				log.String("route_prefix", routePrefix))
+			http.NotFound(w, r)
+			return
+		}
 
 		// Check if the requested file is index.html
 		isIndexHTML := r.URL.Path == "/index.html" || path.Base(filePath) == "index.html"

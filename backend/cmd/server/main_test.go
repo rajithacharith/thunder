@@ -278,6 +278,19 @@ func TestCreateStaticFileHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Equal(t, string(indexContent), rr.Body.String())
 	})
+
+	t.Run("rejects path escaping the served directory", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/app/placeholder", nil)
+		// Set an out-of-bounds path directly to exercise the containment check,
+		// bypassing the ServeMux normalization that would run in production.
+		req.URL.Path = "/app/../../../../etc/passwd"
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		assert.NotContains(t, rr.Body.String(), "root:")
+	})
 }
 
 func TestCreateStaticFileHandler_CacheHeaders(t *testing.T) {
