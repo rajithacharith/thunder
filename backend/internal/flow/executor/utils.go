@@ -40,6 +40,7 @@ func getAuthnServiceName(executorName string) string {
 		ExecutorNameOIDCAuth:        authncm.AuthenticatorOIDC,
 		ExecutorNameGitHubAuth:      authncm.AuthenticatorGithub,
 		ExecutorNameGoogleAuth:      authncm.AuthenticatorGoogle,
+		ExecutorNameMagicLink:       authncm.AuthenticatorMagicLink,
 	}
 	return executorToAuthnServiceMap[executorName]
 }
