@@ -406,6 +406,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	// identity provider or notification sender.
 	registerDependencyRegistry(dependencyConsumers{
 		theme:       themeMgtService,
+		layout:      layoutMgtService,
 		flow:        flowMgtService,
 		user:        userService,
 		idp:         idpService,
@@ -413,7 +414,10 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		application: applicationService,
 		agent:       agentService,
 		group:       groupService,
-	}, applicationService, agentService, flowMgtService, roleAssignmentService, groupService)
+		ou:          ouService,
+		resource:    resourceService,
+	}, applicationService, agentService, flowMgtService, roleAssignmentService, groupService,
+		ouService, ouUserResolver, ouGroupResolver, resourceService)
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
@@ -486,6 +490,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 // own resources.
 type dependencyConsumers struct {
 	theme       thememgt.ThemeMgtServiceInterface
+	layout      layoutmgt.LayoutMgtServiceInterface
 	flow        flowmgt.FlowMgtServiceInterface
 	user        user.UserServiceInterface
 	idp         idp.IDPServiceInterface
@@ -493,6 +498,8 @@ type dependencyConsumers struct {
 	application application.ApplicationServiceInterface
 	agent       agent.AgentServiceInterface
 	group       group.GroupServiceInterface
+	ou          ou.ConfigurableOUService
+	resource    resource.ResourceServiceInterface
 }
 
 // registerDependencyRegistry builds the dependency registry from the given providers and wires it
@@ -500,6 +507,7 @@ type dependencyConsumers struct {
 func registerDependencyRegistry(consumers dependencyConsumers, providers ...resourcedependency.Provider) {
 	registry := resourcedependency.Initialize(providers...)
 	consumers.theme.SetDependencyRegistry(registry)
+	consumers.layout.SetDependencyRegistry(registry)
 	consumers.flow.SetDependencyRegistry(registry)
 	consumers.user.SetDependencyRegistry(registry)
 	consumers.idp.SetDependencyRegistry(registry)
@@ -507,6 +515,8 @@ func registerDependencyRegistry(consumers dependencyConsumers, providers ...reso
 	consumers.application.SetDependencyRegistry(registry)
 	consumers.agent.SetDependencyRegistry(registry)
 	consumers.group.SetDependencyRegistry(registry)
+	consumers.ou.SetDependencyRegistry(registry)
+	consumers.resource.SetDependencyRegistry(registry)
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.
