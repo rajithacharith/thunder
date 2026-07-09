@@ -162,8 +162,9 @@ type AuthClassConfig struct {
 
 // RefreshTokenConfig holds the refresh token configuration details.
 type RefreshTokenConfig struct {
-	RenewOnGrant   bool  `yaml:"renew_on_grant"  json:"renew_on_grant"`
-	ValidityPeriod int64 `yaml:"validity_period" json:"validity_period"`
+	RenewOnGrant          bool  `yaml:"renew_on_grant"           json:"renew_on_grant"`
+	RevokePreviousOnRenew bool  `yaml:"revoke_previous_on_renew" json:"revoke_previous_on_renew"`
+	ValidityPeriod        int64 `yaml:"validity_period"          json:"validity_period"`
 }
 
 // AuthorizationCodeConfig holds the authorization code configuration details.

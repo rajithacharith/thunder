@@ -157,6 +157,7 @@ func (tv *tokenValidator) ValidateRefreshToken(
 	audiences := extractStringSliceClaim(claims, "access_token_aud")
 	grantType, _ := extractStringClaim(claims, "grant_type")
 	iat, _ := extractInt64Claim(claims, "iat")
+	exp, _ := extractInt64Claim(claims, "exp")
 	scopes := extractScopesFromClaims(claims, false)
 	attributeCacheID, _ := extractStringClaim(claims, "aci")
 	actorSub, _ := extractStringClaim(claims, "act_sub")
@@ -202,6 +203,7 @@ func (tv *tokenValidator) ValidateRefreshToken(
 		DPoPJkt:          dpopJkt,
 		ActorSub:         actorSub,
 		JTI:              jti,
+		Exp:              exp,
 	}, nil
 }
 
