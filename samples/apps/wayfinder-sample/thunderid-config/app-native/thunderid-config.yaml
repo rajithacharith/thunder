@@ -1031,12 +1031,13 @@ inboundAuthConfig:
       publicClient: true
       token:
         accessToken:
-          validityPeriod: 3600
-          userAttributes:
-            - given_name
-            - family_name
-            - email
-            - groups
+          userConfig:
+            validityPeriod: 3600
+            attributes:
+              - given_name
+              - family_name
+              - email
+              - groups
         idToken:
           validityPeriod: 3600
           userAttributes:
@@ -1624,9 +1625,10 @@ inboundAuthConfig:
       publicClient: false
       token:
         accessToken:
-          validityPeriod: 3600
-          userAttributes:
-            - email
+          userConfig:
+            validityPeriod: 3600
+            attributes:
+              - email
 
 ---
 # resource_type: agent
@@ -1657,12 +1659,13 @@ inboundAuthConfig:
       publicClient: false
       token:
         accessToken:
-          validityPeriod: 3600
-          userAttributes:
-            - given_name
-            - family_name
-            - email
-            - username
+          userConfig:
+            validityPeriod: 3600
+            attributes:
+              - given_name
+              - family_name
+              - email
+              - username
 
 ---
 # resource_type: application
@@ -1721,7 +1724,8 @@ inboundAuthConfig:
       publicClient: true
       token:
         accessToken:
-          validityPeriod: 3600
+          userConfig:
+            validityPeriod: 3600
 
 ---
 # resource_type: role

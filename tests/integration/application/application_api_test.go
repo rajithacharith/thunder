@@ -1499,8 +1499,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 					Scopes:                  []string{"openid", "profile"},
 					Token: &OAuthTokenConfig{
 						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 3600,
-							UserAttributes: []string{"email", "username"},
+							UserConfig: &AccessTokenSubConfig{
+								ValidityPeriod: 3600,
+								Attributes:     []string{"email", "username"},
+							},
 						},
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
@@ -1526,7 +1528,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
-	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
+	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.ValidityPeriod)
 }
 
 // TestApplicationWithIDTokenScopeClaims tests ID token scope claims configuration.
@@ -1595,7 +1597,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 					Scopes:                  []string{"openid"},
 					Token: &OAuthTokenConfig{
 						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 1800,
+							UserConfig: &AccessTokenSubConfig{
+								ValidityPeriod: 1800,
+							},
 						},
 					},
 				},
@@ -1610,8 +1614,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 	// Update with more complex token config
 	app.InboundAuthConfig[0].OAuthAppConfig.Token = &OAuthTokenConfig{
 		AccessToken: &AccessTokenConfig{
-			ValidityPeriod: 7200,
-			UserAttributes: []string{"email", "username", "role"},
+			UserConfig: &AccessTokenSubConfig{
+				ValidityPeriod: 7200,
+				Attributes:     []string{"email", "username", "role"},
+			},
 		},
 		IDToken: &IDTokenConfig{
 			ValidityPeriod: 3600,
@@ -1636,7 +1642,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 	// Verify the updated config
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().Equal(int64(7200), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
+	ts.Assert().Equal(int64(7200), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.ValidityPeriod)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 }
 
@@ -1834,8 +1840,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 					Scopes:                  []string{"api.read", "api.write"},
 					Token: &OAuthTokenConfig{
 						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 7200,
-							UserAttributes: []string{"email", "username", "role", "department"},
+							UserConfig: &AccessTokenSubConfig{
+								ValidityPeriod: 7200,
+								Attributes:     []string{"email", "username", "role", "department"},
+							},
 						},
 						// No IDToken
 					},
@@ -1853,8 +1861,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
-	ts.Assert().Equal(int64(7200), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserAttributes, 4)
+	ts.Assert().Equal(int64(7200), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.ValidityPeriod)
+	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.Attributes, 4)
 }
 
 // TestApplicationWithOnlyIDToken tests creating application with only IDToken config.
@@ -1922,8 +1930,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &OAuthTokenConfig{
 						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 5400,
-							UserAttributes: []string{"email", "username"},
+							UserConfig: &AccessTokenSubConfig{
+								ValidityPeriod: 5400,
+								Attributes:     []string{"email", "username"},
+							},
 						},
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
@@ -1949,7 +1959,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
-	ts.Assert().Equal(int64(5400), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
+	ts.Assert().Equal(int64(5400), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.ValidityPeriod)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
 }
 
@@ -2408,8 +2418,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &OAuthTokenConfig{
 						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 3600,
-							UserAttributes: []string{"sub", "email"},
+							UserConfig: &AccessTokenSubConfig{
+								ValidityPeriod: 3600,
+								Attributes:     []string{"sub", "email"},
+							},
 						},
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
@@ -2462,8 +2474,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 
 	// Verify access token config
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
-	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
-	ts.Assert().Equal([]string{"sub", "email"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserAttributes)
+	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.ValidityPeriod)
+	ts.Assert().Equal([]string{"sub", "email"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.UserConfig.Attributes)
 
 	// Verify ID token config
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
