@@ -316,6 +316,7 @@ type InputDefinition struct {
 	Type       string                     `json:"type"                 yaml:"type"                 jsonschema:"Input type (e.g., 'text', 'password', 'email')."`
 	Identifier string                     `json:"identifier"           yaml:"identifier"           jsonschema:"Field identifier or name."`
 	Required   bool                       `json:"required"             yaml:"required"             jsonschema:"Whether this input is mandatory."`
+	OneTimeUse bool                       `json:"oneTimeUse,omitempty" yaml:"oneTimeUse,omitempty" jsonschema:"When true, the input is removed from the flow context after being consumed."`
 	Validation []ValidationRuleDefinition `json:"validation,omitempty" yaml:"validation,omitempty" jsonschema:"Server-enforced validation rules applied to the submitted value."`
 }
 
@@ -868,6 +869,8 @@ type Input struct {
 	Options     []string         `json:"options,omitempty"`
 	DisplayName string           `json:"-"`
 	Validation  []ValidationRule `json:"validation,omitempty"`
+	// OneTimeUse indicates that the input can only be consumed once
+	OneTimeUse bool `json:"oneTimeUse,omitempty"`
 }
 
 // IsSensitive checks whether this input's type is considered sensitive.
@@ -949,6 +952,9 @@ type InboundAuthConfigWithSecret struct {
 }
 
 // NodeContext holds the context for a specific node in the flow execution.
+//
+// TODO: fields on NodeContext are currently exposed directly. Convert to unexported
+// fields accessed via getters and setters so that mutation can be encapsulated.
 type NodeContext struct {
 	Context context.Context
 
@@ -965,10 +971,40 @@ type NodeContext struct {
 	UserInputs     map[string]string
 	RuntimeData    map[string]string
 	ForwardedData  map[string]interface{}
-
+	// consumedInputs accumulates identifiers of inputs the node has used up
+	consumedInputs   []string
 	Application      Application
 	AuthUser         AuthUser
 	ExecutionHistory map[string]*NodeExecutionRecord
+}
+
+// ConsumeInput returns the value for key from UserInputs and records key on the consumed
+// inputs list. Nodes/ executors should prefer this over direct UserInputs access so the engine
+// has a full audit trail of what was used.
+func (nc *NodeContext) ConsumeInput(key string) (string, bool) {
+	v, ok := nc.UserInputs[key]
+	if ok {
+		nc.consumedInputs = append(nc.consumedInputs, key)
+	}
+	return v, ok
+}
+
+// AppendConsumedInputs records the given keys on the consumed inputs list without
+// reading from UserInputs.
+func (nc *NodeContext) AppendConsumedInputs(keys []string) {
+	if len(keys) == 0 {
+		return
+	}
+	if nc.consumedInputs == nil {
+		nc.consumedInputs = make([]string, 0, len(keys))
+	}
+	nc.consumedInputs = append(nc.consumedInputs, keys...)
+}
+
+// GetConsumedInputs returns the list of input keys that have been consumed by the node
+// during this call.
+func (nc *NodeContext) GetConsumedInputs() []string {
+	return nc.consumedInputs
 }
 
 // NodeExecutionRecord represents a record of a node execution in the flow.
