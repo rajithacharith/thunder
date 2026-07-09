@@ -160,19 +160,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	// Add to exporters list (must be done after initializing list)
 	exporters = append(exporters, i18nExporter)
 
-	// Initialize the server-wide configuration service with the CORS section handler.
-	serverConfigHandlers := map[serverconfig.ConfigName]serverconfig.ServerConfigHandlerInterface{
-		serverconfig.ConfigNameCORS: cors.OriginHandler{},
-	}
-	serverConfigService, serverConfigExporter, err := serverconfig.Initialize(mux, cacheManager, serverConfigHandlers)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize server config service", log.Error(err))
-	}
-	exporters = append(exporters, serverConfigExporter)
-
-	// CORS origins come from the server-config cors section.
-	cors.InitializeDynamicMatcher(serverConfigService)
-
 	ouAuthzService, err := sysauthz.Initialize()
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize system authorization service", log.Error(err))
@@ -422,6 +409,20 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize flow metadata service
 	_ = flowmeta.Initialize(mux, actorProvider, ouService, designResolveService, i18nService)
+
+	// Initialize server-wide configuration after its handler dependencies.
+	serverConfigHandlers := map[serverconfig.ConfigName]serverconfig.ServerConfigHandlerInterface{
+		serverconfig.ConfigNameCORS:                  cors.OriginHandler{},
+		serverconfig.ConfigNameDefaultResourceServer: resource.NewDefaultResourceServerConfigHandler(resourceService),
+	}
+	serverConfigService, serverConfigExporter, err := serverconfig.Initialize(mux, cacheManager, serverConfigHandlers)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize server config service", log.Error(err))
+	}
+	exporters = append(exporters, serverConfigExporter)
+
+	// CORS origins come from the server-config cors section.
+	cors.InitializeDynamicMatcher(serverConfigService)
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
