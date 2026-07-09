@@ -50,23 +50,6 @@ CREATE INDEX idx_ciba_auth_request_expiry_time ON "CIBA_AUTH_REQUEST" (EXPIRY_TI
 -- Index for expiry time on AUTHORIZATION_CODE (supports cleanup and expiry checks)
 CREATE INDEX idx_authz_code_expiry_time ON "AUTHORIZATION_CODE" (EXPIRY_TIME);
 
--- Table to store flow context
-CREATE TABLE "FLOW_CONTEXT" (
-    FLOW_ID VARCHAR(36) NOT NULL,
-    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    CONTEXT TEXT,
-    EXPIRY_TIME DATETIME NOT NULL,
-    CREATED_AT TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UPDATED_AT TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (FLOW_ID, DEPLOYMENT_ID)
-);
-
--- Index for deployment isolation on FLOW_CONTEXT
-CREATE INDEX idx_flow_context_deployment_id ON "FLOW_CONTEXT" (DEPLOYMENT_ID);
-
--- Index for expiry time on FLOW_CONTEXT
-CREATE INDEX idx_flow_context_expiry_time ON "FLOW_CONTEXT" (EXPIRY_TIME);
-
 -- Table to store WebAuthn session data
 CREATE TABLE "WEBAUTHN_SESSION" (
     SESSION_KEY VARCHAR(255) NOT NULL,
@@ -151,3 +134,18 @@ CREATE TABLE "OPENID4VCI_CREDENTIAL_OFFER" (
 
 -- Index for expiry time on OPENID4VCI_CREDENTIAL_OFFER (supports cleanup and expiry checks)
 CREATE INDEX idx_openid4vci_offer_expiry_time ON "OPENID4VCI_CREDENTIAL_OFFER" (EXPIRY_TIME);
+
+-- Table to store generic runtime key-value entries, isolated by NAMESPACE.
+CREATE TABLE "RUNTIME_STORE" (
+    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+    NAMESPACE     VARCHAR(64)  NOT NULL,
+    KEY           VARCHAR(512) NOT NULL,
+    VALUE         TEXT         NOT NULL,
+    EXPIRY_TIME   DATETIME,
+    CREATED_AT    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (DEPLOYMENT_ID, NAMESPACE, KEY)
+);
+
+-- Index for expiry time on RUNTIME_STORE (supports cleanup and expiry checks)
+CREATE INDEX idx_runtime_store_expiry_time ON "RUNTIME_STORE" (EXPIRY_TIME);

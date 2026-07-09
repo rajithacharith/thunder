@@ -19,9 +19,12 @@
 // Package redisstore provides a Redis-backed runtime store implementation.
 package redisstore
 
-import "github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+import (
+	"github.com/thunder-id/thunderid/internal/system/transaction"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+)
 
 // Initialize creates and returns a new RedisStore instance for the given deployment.
-func Initialize(deploymentID string) providers.RuntimeStoreProvider {
-	return newRedisStore(deploymentID)
+func Initialize(deploymentID string) (providers.RuntimeStoreProvider, transaction.Transactioner, error) {
+	return newRedisStore(deploymentID), transaction.NewNoOpTransactioner(), nil
 }
