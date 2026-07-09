@@ -226,3 +226,5 @@ refresh_skew
 Lissi
 [Dd]isclosable
 [Cc]allee
+kgateway
+Hostnames
