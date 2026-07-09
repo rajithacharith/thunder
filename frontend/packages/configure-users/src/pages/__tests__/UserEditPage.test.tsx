@@ -431,7 +431,7 @@ describe('UserEditPage', () => {
     it('renders Edit and Delete buttons in view mode', () => {
       render(<UserEditPage />);
 
-      expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
       expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
     });
 
@@ -470,7 +470,7 @@ describe('UserEditPage', () => {
       const user = userEvent.setup();
       render(<UserEditPage />);
 
-      const editButton = screen.getByRole('button', {name: /edit/i});
+      const editButton = screen.getByRole('button', {name: /^edit$/i});
       await user.click(editButton);
 
       await waitFor(() => {
@@ -494,7 +494,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       // Should not call mutateAsync when ouId or type is empty
@@ -521,7 +521,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
@@ -539,7 +539,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
@@ -551,7 +551,7 @@ describe('UserEditPage', () => {
       const user = userEvent.setup();
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
@@ -591,7 +591,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
@@ -635,7 +635,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
@@ -671,7 +671,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       await waitFor(() => {
         // A field named "password" without credential: true should still appear
@@ -705,7 +705,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      expect(screen.queryByRole('button', {name: /edit/i})).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /^edit$/i})).not.toBeInTheDocument();
     });
 
     it('shows edit button when schema has at least one non-credential field', () => {
@@ -733,14 +733,14 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
     });
 
     it('populates form fields with current user data', async () => {
       const user = userEvent.setup();
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText(/Enter username/i)).toHaveValue('john_doe');
@@ -754,7 +754,7 @@ describe('UserEditPage', () => {
       const user = userEvent.setup();
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       const emailInput = await screen.findByPlaceholderText(/Enter email/i);
       await user.clear(emailInput);
@@ -773,7 +773,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       const emailInput = await screen.findByPlaceholderText(/Enter email/i);
       await user.clear(emailInput);
@@ -817,7 +817,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
@@ -840,7 +840,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
@@ -856,11 +856,11 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /^save$/i})).not.toBeInTheDocument();
       });
     });
@@ -877,7 +877,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
@@ -889,7 +889,7 @@ describe('UserEditPage', () => {
       const user = userEvent.setup();
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       const emailInput = await screen.findByPlaceholderText(/Enter email/i);
       await user.clear(emailInput);
@@ -899,7 +899,7 @@ describe('UserEditPage', () => {
       await user.click(cancelButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
         expect(mockResetUpdateError).toHaveBeenCalled();
       });
     });
@@ -914,7 +914,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
       const saveButton = screen.getByRole('button', {name: /^save$/i});
       await user.click(saveButton);
@@ -937,7 +937,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /^edit$/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
@@ -1241,7 +1241,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      expect(screen.queryByRole('button', {name: /edit/i})).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /^edit$/i})).not.toBeInTheDocument();
     });
   });
 });
