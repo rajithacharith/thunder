@@ -256,6 +256,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 	}
 
 	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope, app.ScopeClaims)
+	oidcScopes = oauth2utils.FilterOIDCScopesByAllowedScopes(oidcScopes, app.Scopes)
 
 	// Resolve resource identifiers to Resource Servers and downscope non-OIDC scopes against
 	// the union of permissions defined on those Resource Servers. Unknown identifiers cause
