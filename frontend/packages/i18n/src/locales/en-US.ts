@@ -768,6 +768,11 @@ const translations = {
     propertyNamePlaceholder: 'e.g., email, age, address',
     propertyType: 'Type',
     addProperty: 'Add Property',
+    'attributes.libraryTitle': 'Available Properties',
+    'attributes.searchPlaceholder': 'Search properties',
+    'attributes.allAdded': 'All available properties have been added.',
+    'attributes.noResults': 'No properties match your search.',
+    newAttribute: 'New property',
     credential: 'Credential',
     unique: 'Unique',
     removeProperty: 'Remove property',
@@ -855,6 +860,8 @@ const translations = {
     'removeCredentialDialog.title': 'Remove Credential Flag',
     'removeCredentialDialog.description':
       'Removing the credential flag will cause this field to no longer be hashed or protected. Existing hashed values may become inaccessible. Are you sure you want to proceed?',
+    'removeCredentialDialog.descriptionNew':
+      'Removing the credential flag will cause this field to no longer be hashed or protected. Are you sure you want to proceed?',
     'removeCredentialDialog.confirm': 'Remove Credential',
   },
 
