@@ -12233,7 +12233,7 @@
             "name": "IdentifyingExecutor",
             "mode": "identify"
           },
-          "onSuccess": "send_otp",
+          "onSuccess": "generate_otp",
           "onFailure": "otp_sent_status",
           "layout": {
             "size": {
