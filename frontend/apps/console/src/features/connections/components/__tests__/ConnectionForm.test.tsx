@@ -26,6 +26,14 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('@thunderid/contexts', () => ({useToast: () => ({showToast: vi.fn()})}));
 
+function getConnectionField(id: string): HTMLElement {
+  const field = document.getElementById(`connection-field-${id}`);
+  if (!field) {
+    throw new Error(`Expected connection field ${id} to exist`);
+  }
+  return field;
+}
+
 describe('ConnectionForm', () => {
   const baseProps = {
     type: 'google' as const,
@@ -51,7 +59,7 @@ describe('ConnectionForm', () => {
     expect(screen.getByText('connections:form.fields.clientSecret.hint')).toBeInTheDocument();
     expect(screen.getByText('connections:form.fields.scopes.hint')).toBeInTheDocument();
 
-    fireEvent.blur(screen.getByPlaceholderText('1234567890-abc.apps.googleusercontent.com'));
+    fireEvent.blur(getConnectionField('clientId'));
 
     expect(screen.getByText('connections:validation.required')).toBeInTheDocument();
     expect(screen.queryByText('connections:form.fields.clientId.hint')).not.toBeInTheDocument();
@@ -61,7 +69,7 @@ describe('ConnectionForm', () => {
     const onFieldChange = vi.fn();
     render(<ConnectionForm {...baseProps} onFieldChange={onFieldChange} />);
 
-    fireEvent.change(screen.getByPlaceholderText('1234567890-abc.apps.googleusercontent.com'), {
+    fireEvent.change(getConnectionField('clientId'), {
       target: {value: 'my-client-id'},
     });
 

@@ -78,6 +78,20 @@ describe('formValuesToRequest', () => {
     expect(payload.scopes).toEqual(['openid', 'email']);
   });
 
+  it('includes trusted token audience when configured', () => {
+    const payload = formValuesToRequest(
+      {
+        ...base,
+        authorizationEndpoint: 'https://i/a',
+        tokenEndpoint: 'https://i/t',
+        trustedTokenAudience: 'my-external-client-id',
+      },
+      OIDC_FIELDS,
+      {mode: 'create'},
+    ) as unknown as Record<string, unknown>;
+    expect(payload.trustedTokenAudience).toBe('my-external-client-id');
+  });
+
   it('omits the secret on edit when not replacing (keep stored value)', () => {
     const payload = formValuesToRequest(base, GOOGLE_FIELDS, {
       mode: 'edit',
@@ -123,6 +137,7 @@ describe('formValuesToRequest', () => {
         userInfoEndpoint: '',
         jwksEndpoint: '',
         scopes: '',
+        trustedTokenAudience: '',
       },
       OIDC_FIELDS,
       {mode: 'create'},
