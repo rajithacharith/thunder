@@ -20,7 +20,9 @@ package graphbuilder
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -30,7 +32,9 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
+	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
@@ -1955,4 +1959,50 @@ func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_InvalidRegexFailsBuild(
 	s.Contains(err.Error(), "prompt-1")
 	s.Contains(err.Error(), "password")
 	s.Contains(err.Error(), "invalid validation regex")
+}
+
+// TestSSOFlowDefinitionBuilds validates that the SSO sample flow parses, references only
+// registered executors, and builds into a graph with all expected nodes. It exercises the
+// real executor registry so a typo'd executor name or dangling node reference fails here.
+func (s *GraphBuilderTestSuite) TestSSOFlowDefinitionBuilds() {
+	raw, err := os.ReadFile("testdata/sso_flow.json")
+	s.Require().NoError(err)
+
+	var def providers.CompleteFlowDefinition
+	s.Require().NoError(json.Unmarshal(raw, &def))
+	def.ID = "auth-sso-flow-test"
+
+	flowFactory, graphCache := core.Initialize(
+		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"))
+	// Register only the executors this flow uses; their constructors tolerate nil services,
+	// whereas some others dereference dependencies at construction time.
+	registry, err := executor.Initialize(
+		executor.ExecutorDependencies{FlowFactory: flowFactory},
+		engineconfig.FlowConfig{Executors: []string{
+			executor.ExecutorNameSSOCheck,
+			executor.ExecutorNameSession,
+			executor.ExecutorNameCredentialsAuth,
+			executor.ExecutorNameAuthorization,
+			executor.ExecutorNameAuthAssert,
+		}})
+	s.Require().NoError(err)
+
+	interceptorRegistry, err := interceptor.Initialize(
+		interceptor.InterceptorDependencies{FlowFactory: flowFactory},
+		engineconfig.FlowConfig{})
+	s.Require().NoError(err)
+
+	builder := Initialize(flowFactory, registry, interceptorRegistry, graphCache)
+	graph, svcErr := builder.GetGraph(context.Background(), &def)
+
+	s.Require().Nil(svcErr)
+	s.Require().NotNil(graph)
+
+	for _, nodeID := range []string{
+		"start", "sso_check", "prompt_credentials", "basic_auth",
+		"session", "authorization_check", "auth_assert", "end",
+	} {
+		_, ok := graph.GetNode(nodeID)
+		s.Require().True(ok, "expected node %q in built graph", nodeID)
+	}
 }
