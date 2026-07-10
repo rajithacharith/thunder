@@ -315,7 +315,9 @@ func (tv *tokenValidator) resolveExternalIssuer(ctx context.Context, issuer stri
 		Issuer:               issuer,
 		JWKSURL:              jwksURL,
 		TrustedTokenAudience: idp.GetPropertyValue(idpDTO.Properties, idp.PropTrustedTokenAudience),
-		AttributeMappings:    idp.GetAttributeMappings(&idpDTO),
+		// Claims are not available at issuer-resolution time, so resolution falls back to the
+		// default user type's mappings (unchanged token-exchange behavior).
+		AttributeMappings: idp.GetAttributeMappings(&idpDTO, nil),
 	}, nil
 }
 

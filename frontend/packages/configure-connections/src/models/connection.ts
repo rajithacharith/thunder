@@ -131,10 +131,16 @@ export interface AttributeMapping {
 }
 
 /**
- * Resolves which local user type a federated identity is provisioned as.
+ * Resolves which local user type a federated identity maps to (selecting its attribute-mapping
+ * profile). `default` is the fixed fallback type. When `externalAttribute` and `valueMapping` are
+ * set, the type is derived from the
+ * value of that external attribute (`valueMapping` maps an external value to a local user type),
+ * falling back to `default`.
  */
 export interface UserTypeResolution {
   default: string;
+  externalAttribute?: string;
+  valueMapping?: Record<string, string>;
 }
 
 /**
@@ -146,11 +152,21 @@ export interface UserTypeAttributeMapping {
 }
 
 /**
+ * Resolves a returning federated identity to an existing local account when its subject identifier
+ * does not match an existing local subject. The listed external attributes are matched together (AND)
+ * to identify a unique account.
+ */
+export interface AccountLinking {
+  attributes: string[];
+}
+
+/**
  * External-to-local attribute mapping configuration for an authentication provider.
  */
 export interface AttributeConfiguration {
   userTypeResolution: UserTypeResolution;
   userTypeAttributeMappings?: UserTypeAttributeMapping[];
+  accountLinking?: AccountLinking;
 }
 
 /**

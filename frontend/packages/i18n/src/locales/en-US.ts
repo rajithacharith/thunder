@@ -1676,16 +1676,13 @@ const translations = {
     'detail.backToConnections': 'Back to Connections',
     'detail.subtitle': '{{name}} connection',
     'detail.tabs.general': 'General',
-    'detail.tabs.attributeMapping': 'Attribute Mapping',
+    'detail.tabs.attributeMapping': 'Attribute Configuration',
     'detail.quickCopy.title': 'Quick copy',
     'detail.quickCopy.description': 'Copy connection identifiers for use in your integration.',
     'detail.connectionId': 'Connection ID',
     'detail.connectionId.hint': 'Unique identifier for this connection.',
     'detail.credentials.title': 'Credentials',
     'detail.credentials.description': 'Credentials and endpoints for this connection. Secrets are stored write-only.',
-    'detail.provisioning.title': 'User provisioning',
-    'detail.provisioning.description':
-      'Choose the default user type and map the attributes this provider returns onto your local user schema.',
     'detail.dangerZone.title': 'Danger zone',
     'detail.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
     'detail.dangerZone.delete.title': 'Delete connection',
@@ -1748,18 +1745,46 @@ const translations = {
     'form.actions.delete': 'Delete connection',
 
     // Attribute mapping (authentication providers)
-    'attributeMapping.userType.label': 'Default user type',
+    'attributeMapping.userType.label': 'Default User Type',
     'attributeMapping.userType.placeholder': 'Select a user type',
-    'attributeMapping.userType.helper': 'New users signing in through this connection are provisioned as this type.',
-    'attributeMapping.userTypeRequired': 'Select a user type for the attribute mappings.',
-    'attributeMapping.add': 'Add mapping',
-    'attributeMapping.empty.title': 'No custom mappings',
-    'attributeMapping.empty.description':
-      "The provider's standard attributes are applied automatically. Add a mapping only to override how a specific attribute lands on your user schema.",
-    'attributeMapping.externalAttribute.label': 'External attribute',
+    'attributeMapping.userTypeRequired': 'Select a default user type.',
+    'attributeMapping.add': 'Add Mapping',
+    'attributeMapping.externalAttribute.label': 'External Attribute',
     'attributeMapping.externalAttribute.placeholder': 'e.g. given_name',
-    'attributeMapping.localAttribute.label': 'Local attribute',
+    'attributeMapping.localAttribute.label': 'Local Attribute',
     'attributeMapping.localAttribute.placeholder': 'e.g. firstName',
+    // Section 1 — user type resolution
+    'attributeMapping.resolution.title': 'User type resolution',
+    'attributeMapping.resolution.description':
+      'Select which local user type an external identity resolves to, choosing the attribute-mapping profile applied to it.',
+    'attributeMapping.resolution.dynamic.label': 'Resolve user type from an attribute',
+    'attributeMapping.resolution.externalAttribute.placeholder': 'e.g. user_type',
+    'attributeMapping.resolution.externalAttribute.helper': 'The attribute whose value decides the user type.',
+    'attributeMapping.resolution.valueMapping.title': 'Value Mapping',
+    'attributeMapping.resolution.valueMapping.enable': 'Enable value mapping',
+    'attributeMapping.resolution.valueMapping.hint': 'Map each attribute value to a user type.',
+    'attributeMapping.resolution.valueMapping.externalValue': 'External Value',
+    'attributeMapping.resolution.valueMapping.localUserType': 'Local User Type',
+    'attributeMapping.resolution.valueMapping.valuePlaceholder': 'e.g. employee',
+    'attributeMapping.resolution.addValue': 'Add Value',
+    'attributeMapping.resolution.default.helperFallback':
+      "Used when the attribute is missing or its value isn't mapped.",
+    // Section 2 — attribute mappings by user type
+    'attributeMapping.mappings.title': 'Attribute Mappings',
+    'attributeMapping.mappings.description':
+      'Map the attributes this provider returns onto your local user schema. Define a separate mapping set for each user type.',
+    'attributeMapping.mappings.userType': 'User Type',
+    'attributeMapping.mappings.userTypeRequired': 'Select a user type for this mapping set.',
+    'attributeMapping.mappings.addUserType': 'Add User Type',
+    'attributeMapping.mappings.remove': 'Remove',
+    // Section 3 — account linking
+    'attributeMapping.linking.title': 'Account Linking',
+    'attributeMapping.linking.description': 'The attributes used to find the associated local user.',
+    'attributeMapping.linking.label': 'External Attribute',
+    'attributeMapping.linking.labelCombo': 'External Attributes',
+    'attributeMapping.linking.placeholder': 'e.g. email',
+    'attributeMapping.linking.addAttribute': 'Add Attribute',
+    'attributeMapping.linking.and': 'AND',
 
     // Delete dialog
     'delete.title': 'Delete connection',
