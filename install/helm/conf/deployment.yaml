@@ -207,6 +207,7 @@ jwt:
 oauth:
   refresh_token:
     renew_on_grant: {{ .Values.configuration.oauth.refreshToken.renewOnGrant }}
+    revoke_previous_on_renew: {{ .Values.configuration.oauth.refreshToken.revokePreviousOnRenew }}
     validity_period: {{ .Values.configuration.oauth.refreshToken.validityPeriod }}
   authorization_code:
     validity_period: {{ .Values.configuration.oauth.authorizationCode.validityPeriod }}

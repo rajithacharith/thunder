@@ -371,6 +371,7 @@ configuration:
   oauth:
     refreshToken:
       renewOnGrant: false
+      revokePreviousOnRenew: true
       validityPeriod: 86400
     authorizationCode:
       validityPeriod: 600

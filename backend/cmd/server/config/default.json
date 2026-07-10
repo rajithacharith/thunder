@@ -113,6 +113,7 @@
   "oauth": {
     "refresh_token": {
       "renew_on_grant": false,
+      "revoke_previous_on_renew": true,
       "validity_period": 86400
     },
     "authorization_code": {

@@ -125,6 +125,12 @@ packages:
           structname: '{{.InterfaceName}}Mock'
           pkgname: revocationmock
           filename: "{{.InterfaceName}}_mock.go"
+      RefreshTokenRevokerInterface:
+        config:
+          dir: tests/mocks/oauth/oauth2/revocationmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: revocationmock
+          filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/oauth/oauth2/granthandlers:
     config:
