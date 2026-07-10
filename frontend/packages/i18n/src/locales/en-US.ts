@@ -741,6 +741,18 @@ const translations = {
     'delete.usages.title': 'The following agents list this user as their owner:',
     'delete.usages.more': '+{{count}} more',
     'delete.blocking.title': 'This user cannot be deleted until the following agents are reassigned or removed:',
+
+    // Credentials section on edit page
+    'manageUser.sections.credentials.title': 'Credentials',
+    'manageUser.sections.credentials.description': 'Update credential values such as passwords for this user.',
+    'manageUser.sections.credentials.info':
+      'Credential values are write-only and cannot be viewed. You can set new values below.',
+
+    // Update credentials
+    'updateCredentials.button': 'Update Credentials',
+    'updateCredentials.hint': 'Fill in only the credentials you want to update. Empty fields will be skipped.',
+    'updateCredentials.success': 'Credentials updated successfully.',
+    'updateCredentials.error': 'Failed to update credentials. Please try again.',
   },
 
   // ============================================================================

@@ -1044,6 +1044,8 @@ var defaultMessages = map[string]string{
 	"error.userservice.authentication_failed_description": "Invalid credentials provided",
 	"error.userservice.cannot_modify_declarative_resource": "Cannot modify declarative resource",
 	"error.userservice.cannot_modify_declarative_resource_description": "The user is declarative and cannot be modified or deleted",
+	"error.userservice.credential_update_not_allowed": "Credential update not allowed",
+	"error.userservice.credential_update_not_allowed_description": "The credential updates through this endpoint are not allowed",
 	"error.userservice.email_conflict": "Email conflict",
 	"error.userservice.email_conflict_description": "A user with the same email already exists",
 	"error.userservice.handle_path_required": "Handle path required",

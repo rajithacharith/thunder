@@ -46,6 +46,7 @@ import useGetUser from '../api/useGetUser';
 import useGetUserType from '../api/useGetUserType';
 import useGetUserTypes from '../api/useGetUserTypes';
 import useUpdateUser from '../api/useUpdateUser';
+import CredentialsTabPanel, {type CredentialFieldInfo} from '../components/edit-user/CredentialsTabPanel';
 import QuickCopySection from '../components/edit-user/QuickCopySection';
 import UserDeleteDialog from '../components/UserDeleteDialog';
 import renderSchemaField from '../utils/renderSchemaField';
@@ -113,6 +114,20 @@ export default function UserEditPage() {
       ([, fieldDef]) => !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential),
     );
   }, [userTypeDetails]);
+
+  const credentialFields: CredentialFieldInfo[] = useMemo(() => {
+    if (!userTypeDetails?.schema) return [];
+    return Object.entries(userTypeDetails.schema)
+      .filter(([, fieldDef]) => (fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential)
+      .map(([fieldName, fieldDef]) => {
+        let label = fieldName;
+        if (fieldDef.displayName) {
+          const resolved = resolveDisplayName(fieldDef.displayName);
+          if (resolved) label = resolved;
+        }
+        return {fieldName, label};
+      });
+  }, [userTypeDetails, resolveDisplayName]);
 
   const displayName = user?.display ?? user?.id ?? '';
 
@@ -282,6 +297,14 @@ export default function UserEditPage() {
           aria-controls="user-tabpanel-0"
           sx={{textTransform: 'none'}}
         />
+        {!user.isReadOnly && credentialFields.length > 0 && (
+          <Tab
+            label={t('users:manageUser.tabs.credentials', 'Credentials')}
+            id="user-tab-1"
+            aria-controls="user-tabpanel-1"
+            sx={{textTransform: 'none'}}
+          />
+        )}
       </Tabs>
 
       {/* Tab Panels */}
@@ -523,6 +546,13 @@ export default function UserEditPage() {
             )}
           </Stack>
         </TabPanel>
+
+        {/* Credentials Tab */}
+        {!user.isReadOnly && credentialFields.length > 0 && (
+          <TabPanel value={activeTab} index={1}>
+            <CredentialsTabPanel userId={userId!} credentialFields={credentialFields} />
+          </TabPanel>
+        )}
       </>
 
       {/* Delete Dialog */}
