@@ -122,6 +122,16 @@ describe('ConfigProvider', () => {
     expect(getTestId('server-url')).toBe('https://example.com');
   });
 
+  it('falls back to the served origin when no server block is configured', () => {
+    renderWithConfig(buildConfig({server: undefined}), ConfigConsumer);
+    expect(getTestId('server-url')).toBe(window.location.origin);
+  });
+
+  it('falls back to the served origin when hostname and port are not configured', () => {
+    renderWithConfig(buildConfig({server: {http_only: false}}), ConfigConsumer);
+    expect(getTestId('server-url')).toBe(window.location.origin);
+  });
+
   // --- getTrustedIssuerUrl ---
 
   describe('getTrustedIssuerUrl', () => {
@@ -169,6 +179,11 @@ describe('ConfigProvider', () => {
         ConfigConsumer,
       );
       expect(getTestId('trusted-issuer-url')).toBe('https://api.example.com');
+    });
+
+    it('falls back to the served origin when neither trusted_issuer nor server host is configured', () => {
+      renderWithConfig(buildConfig({server: undefined}), ConfigConsumer);
+      expect(getTestId('trusted-issuer-url')).toBe(window.location.origin);
     });
   });
 

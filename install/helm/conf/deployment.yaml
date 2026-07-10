@@ -43,11 +43,25 @@ server:
   {{- end }}
 
 gate_client:
+  # hostname/port/scheme default to the server's public URL. Required only when Gate is hosted separately.
+  {{- if .Values.configuration.gateClient.hostname }}
   hostname: {{ .Values.configuration.gateClient.hostname | quote }}
+  {{- end }}
+  {{- if .Values.configuration.gateClient.port }}
   port: {{ .Values.configuration.gateClient.port }}
+  {{- end }}
+  {{- if .Values.configuration.gateClient.scheme }}
   scheme: {{ .Values.configuration.gateClient.scheme | quote }}
+  {{- end }}
+  {{- if .Values.configuration.gateClient.path }}
+  path: {{ .Values.configuration.gateClient.path | quote }}
+  {{- end }}
+  {{- if .Values.configuration.gateClient.loginPath }}
   login_path: {{ .Values.configuration.gateClient.loginPath | quote }}
+  {{- end }}
+  {{- if .Values.configuration.gateClient.errorPath }}
   error_path: {{ .Values.configuration.gateClient.errorPath | quote }}
+  {{- end }}
 
 tls:
   min_version: {{ .Values.configuration.tls.minVersion | quote }}

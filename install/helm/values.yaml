@@ -150,6 +150,8 @@ configuration:
   server:
     port: 8090
     httpOnly: false
+    # The URL where users reach ThunderID in their browser.
+    # ThunderID uses it to build the login and error redirect links.
     publicUrl: "https://thunderid.local"
     # Security configuration.
     # jwksCacheTtl controls how long fetched JWKS responses are cached in-process for
@@ -175,12 +177,13 @@ configuration:
     #       - claim: "ouId"
     #         value: "<tenant-ou-id>"
 
-  # Gate client configuration
+  # Gate client configuration.
+  # hostname/port/scheme default to server.publicUrl. Required only when Gate is hosted separately.
   gateClient:
-    hostname: "thunderid.local"
-    port: 443
-    scheme: "https"
     path: "/gate"
+    # hostname: "thunderid.local"
+    # port: 443
+    # scheme: "https"
 
   # Branding configuration for the Console and Gate frontends.
   # productName: Display name shown in the browser tab and UI.

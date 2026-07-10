@@ -21,9 +21,6 @@
     }
   },
   "gate_client": {
-    "hostname": "localhost",
-    "port": 8090,
-    "scheme": "https",
     "path": "/gate"
   },
   "tls": {

@@ -44,9 +44,6 @@ window.__THUNDERID_RUNTIME_CONFIG__ = {
       'system:usertype:view',
     ],
   },
-  server: {
-    hostname: 'localhost',
-    port: 8090,
-    http_only: false,
-  },
+  // Defaults to the origin this app is served from. Add a `server` block with `public_url`
+  // (or `hostname`, `port`, `http_only`) to target a different backend.
 };
