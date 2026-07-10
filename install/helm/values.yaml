@@ -379,7 +379,7 @@ configuration:
 
   # Flow configuration
   flow:
-    defaultAuthFlowHandle: "default-basic-flow"
+    defaultAuthFlowHandle: "default-flow"
     maxVersionHistory: 3
     autoInferRegistration: true
     # Optional whitelist of built-in executor names to register at startup.

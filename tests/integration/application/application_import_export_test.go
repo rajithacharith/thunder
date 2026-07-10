@@ -103,12 +103,12 @@ func (s *ApplicationImportExportSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.ouID = ouID
 
-	authFlowID, err := testutils.GetFlowIDByHandle("default-basic-flow", "AUTHENTICATION")
+	authFlowID, err := testutils.GetFlowIDByHandle("default-flow", "AUTHENTICATION")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(authFlowID)
 	s.authFlowID = authFlowID
 
-	regFlowID, err := testutils.GetFlowIDByHandle("default-basic-flow", "REGISTRATION")
+	regFlowID, err := testutils.GetFlowIDByHandle("default-flow", "REGISTRATION")
 	s.Require().NoError(err)
 	s.Require().NotEmpty(regFlowID)
 	s.registrationFlowID = regFlowID

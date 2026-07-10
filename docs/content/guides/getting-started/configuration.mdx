@@ -407,8 +407,8 @@ Authentication and registration flow settings.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `flow.default_auth_flow_handle` | `default-basic-flow` | Handle of the default authentication flow |
-| `flow.user_onboarding_flow_handle` | `default-user-onboarding` | Handle of the default user onboarding flow |
+| `flow.default_auth_flow_handle` | `default-flow` | Handle of the default authentication flow |
+| `flow.user_onboarding_flow_handle` | `default-flow` | Handle of the default user onboarding flow |
 | `flow.max_version_history` | `10` | Maximum number of flow versions to retain |
 | `flow.auto_infer_registration` | `true` | If `true`, automatically infers registration from authentication flows |
 | `flow.executors` | *(all built-in executors)* | Whitelist of built-in executor names to register at startup. Omit the key or leave the list empty to register every built-in executor. When set, only the listed executors are available; flows that reference other executors fail validation at startup. Unknown names cause startup to fail. Duplicate names are ignored. |
@@ -496,7 +496,7 @@ Example single file:
 # resource_type: application
 name: My App
 ouHandle: default
-authFlowHandle: default-basic-flow
+authFlowHandle: default-flow
 ---
 # resource_type: group
 name: admins
