@@ -37,6 +37,9 @@ server:
         {{- end }}
       {{- end }}
     {{- end }}
+    {{- if .Values.configuration.server.security.directAuthSecret }}
+    direct_auth_secret: {{ .Values.configuration.server.security.directAuthSecret | quote }}
+    {{- end }}
   {{- end }}
 
 gate_client:

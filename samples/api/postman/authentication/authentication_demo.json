@@ -1150,7 +1150,7 @@
       ]
     },
     {
-      "name": "03 - Authenticate with Atomic APIs",
+      "name": "03 - Authenticate with Direct API endpoints",
       "item": [
         {
           "name": "03.01 - Credential Login",
@@ -1188,6 +1188,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1225,6 +1229,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1288,6 +1296,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1326,6 +1338,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1364,6 +1380,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1428,6 +1448,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1466,6 +1490,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1530,6 +1558,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1568,6 +1600,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1632,6 +1668,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -1670,6 +1710,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "Direct-Auth-Secret",
+                    "value": "{{direct_auth_secret}}"
                   }
                 ],
                 "body": {
@@ -3751,6 +3795,10 @@
     },
     {
       "key": "exec_challenge_token",
+      "value": ""
+    },
+    {
+      "key": "direct_auth_secret",
       "value": ""
     }
   ]

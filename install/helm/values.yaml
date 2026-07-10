@@ -160,8 +160,13 @@ configuration:
     # activates the feature; jwksUrl and audience are then required. The server accepts
     # tokens from the external authentication server and validates them via its JWKS
     # endpoint. Add the CP origin to cors.allowedOrigins when using this feature.
+    #
+    # directAuthSecret gates the Direct API endpoints (/auth/**, /register/passkey/**). These are
+    # secure by default: while it is unset they are blocked; set a strong value to enable them.
+    # Callers must then send it in the Direct-Auth-Secret header.
     # security:
     #   jwksCacheTtl: 300
+    #   directAuthSecret: "<strong-random-secret>"
     #   trustedIssuer:
     #     issuer: "https://cp.example.com"
     #     jwksUrl: "https://cp.example.com/oauth2/jwks"
