@@ -557,7 +557,7 @@ func (us *userService) UpdateUser(
 	// hashing, merging with existing credentials, and entity update.
 	e := userToEntity(user)
 	e.SystemAttributes = existingEntity.SystemAttributes
-	_, err = us.entityService.UpdateEntity(ctx, userID, e)
+	updated, err := us.entityService.UpdateEntity(ctx, userID, e)
 	if err != nil {
 		if svcErr := mapEntityError(err); svcErr != nil {
 			return nil, svcErr
@@ -566,6 +566,8 @@ func (us *userService) UpdateUser(
 			log.MaskedString(log.LoggerKeyUserID, userID))
 	}
 
+	// Sync cleaned attributes back — entity service removed credential fields from Attributes.
+	user.Attributes = updated.Attributes
 	logger.Debug(ctx, "Successfully updated user", log.MaskedString(log.LoggerKeyUserID, userID))
 	return user, nil
 }

@@ -915,7 +915,10 @@ func TestUserService_UpdateUser(t *testing.T) {
 	// Mock UpdateEntity call
 	storeMock.On("UpdateEntity", mock.Anything, userID, mock.MatchedBy(func(e *providers.Entity) bool {
 		return e.ID == userID
-	})).Return((*providers.Entity)(nil), nil).Once()
+	})).Return(&providers.Entity{
+		ID:         userID,
+		Attributes: updatedUser.Attributes,
+	}, nil).Once()
 
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
@@ -940,6 +943,8 @@ func TestUserService_UpdateUser(t *testing.T) {
 	storeMock.AssertNumberOfCalls(t, "UpdateEntity", 1)
 }
 
+// TestUserService_UpdateUser_WithCredentials tests that UpdateUser passes credentials in
+// attributes through to the entity service without leaking them.
 func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	userID := svcTestUserID1
 
@@ -971,7 +976,10 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	// Mock UpdateEntity - entity service handles credential extraction internally
 	storeMock.On("UpdateEntity", mock.Anything, userID, mock.MatchedBy(func(e *providers.Entity) bool {
 		return e.ID == userID
-	})).Return((*providers.Entity)(nil), nil).Once()
+	})).Return(&providers.Entity{
+		ID:         userID,
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`), // password is removed
+	}, nil).Once()
 
 	service := &userService{
 		entityService:     storeMock,
@@ -986,6 +994,8 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, userID, resp.ID)
+	require.JSONEq(t, `{"email":"test@example.com"}`, string(resp.Attributes))
+	require.NotContains(t, string(resp.Attributes), "password")
 
 	// Verify all expected calls were made
 	storeMock.AssertExpectations(t)
@@ -1078,7 +1088,10 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 						Type:     testUserType,
 					}, nil).Once()
 				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
-					Return((*providers.Entity)(nil), nil).Once()
+					Return(&providers.Entity{
+						ID:         userID,
+						Attributes: json.RawMessage(`{"email":"updated@example.com"}`),
+					}, nil).Once()
 			},
 			expectedError: nil,
 		},
@@ -1348,7 +1361,10 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 					Return(&entitytype.EntityType{OUID: existingOU},
 						(*tidcommon.ServiceError)(nil)).Maybe()
 				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
-					Return((*providers.Entity)(nil), nil).Maybe()
+					Return(&providers.Entity{
+						ID:         userID,
+						Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+					}, nil).Maybe()
 			}
 
 			if tt.setupExtraMocks != nil {
@@ -1386,6 +1402,8 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 	}
 }
 
+// TestUserService_UpdateUser_PreservesMultipleCredentials verifies that UpdateUser correctly
+// processes multiple credentials while preserving existing attributes and not leaking passwords.
 func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 	ctx := context.Background()
 	userID := svcTestUserID123
@@ -1433,7 +1451,15 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 	// Mock UpdateEntity — entity service handles credential extraction, hashing, and merging internally
 	storeMock.On("UpdateEntity", mock.Anything, userID, mock.MatchedBy(func(e *providers.Entity) bool {
 		return e.ID == userID
-	})).Return((*providers.Entity)(nil), nil).Once()
+	})).Return(&providers.Entity{
+		ID: userID,
+		Attributes: json.RawMessage(`{
+			"username": "john.doe",
+			"email": "john.updated@example.com",
+			"given_name": "John",
+			"family_name": "Doe"
+		}`), // password is removed
+	}, nil).Once()
 
 	// Create service
 	service := &userService{
@@ -1450,6 +1476,13 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 	require.Nil(t, svcErr)
 	require.NotNil(t, result)
 	require.Equal(t, userID, result.ID)
+	require.JSONEq(t, `{
+		"username": "john.doe",
+		"email": "john.updated@example.com",
+		"given_name": "John",
+		"family_name": "Doe"
+	}`, string(result.Attributes))
+	require.NotContains(t, string(result.Attributes), "password")
 
 	// Verify all mocks were called
 	storeMock.AssertExpectations(t)
