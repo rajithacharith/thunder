@@ -25,11 +25,11 @@ require the `Direct-Auth-Secret` header. The metadata endpoint stays public so P
     "id": "<subject-id>"
   },
   "resource": {
-    "type": "booking-api",
+    "type": "https://api.example.com/booking",
     "id": "<booking-id>"
   },
   "action": {
-    "name": "booking-api:reservations:view"
+    "name": "reservations:view"
   }
 }
 ```
@@ -53,7 +53,7 @@ require the `Direct-Auth-Secret` header. The metadata endpoint stays public so P
 | Action search            | `POST /access/v1/search/action`                                                                                                                   |
 | `subject.id`             | Required. Identifies the user, application, or agent being evaluated.                                                                             |
 | `subject.type`           | Optional. When provided, <ProductName /> validates that the subject ID matches the subject category.                                              |
-| `resource.type`          | Required. Maps to the <ProductName /> resource server handle.                                                                                     |
+| `resource.type`          | Required. Maps to the <ProductName /> resource server identifier.                                                                                 |
 | `resource.id`            | Optional in <ProductName />. Identifies the protected resource instance when provided and is reserved for future resource-instance authorization. |
 | `action.name`            | Required. Must match a permission registered on the resource server.                                                                              |
 | `context`                | Optional object for request-time attributes.                                                                                                      |
@@ -62,7 +62,7 @@ require the `Direct-Auth-Secret` header. The metadata endpoint stays public so P
 
 ## Configure <ProductName />
 
-The following example creates the `booking-api:reservations:view` permission and assigns it to a subject that can view
+The following example creates the `reservations:view` permission and assigns it to a subject that can view
 reservations.
 
 ### Create a Resource Server
@@ -71,7 +71,7 @@ reservations.
 2. Select **Resource Servers**, then select **New Resource Server**.
 3. Enter the following values:
    - **Name**: `Booking API`
-   - **Handle**: `booking-api`
+   - **Identifier**: `https://api.example.com/booking`
    - **Delimiter**: `:`
 4. Select **Create**.
 
@@ -95,7 +95,7 @@ For details about resource server fields and permission formats, see
    - **Name**: `View Reservations`
    - **Handle**: `view`
 4. Select **Create**.
-5. Confirm that the generated permission is `booking-api:reservations:view`.
+5. Confirm that the generated permission is `reservations:view`.
 
 The `action.name` value in an AuthZEN request must match this complete permission string.
 
@@ -103,7 +103,7 @@ The `action.name` value in an AuthZEN request must match this complete permissio
 
 1. Select **Roles**, then select **New Role**.
 2. Create a role named `Booking API Viewer`.
-3. Add the `booking-api:reservations:view` permission to the role.
+3. Add the `reservations:view` permission to the role.
 4. Complete the role creation.
 5. Open the role and select the **Assignments** tab.
 6. Add the users, groups, applications, or agents that can view reservations.
@@ -139,9 +139,9 @@ incorrect secret returns `401`. For more information, see
 Use the configured values in an access evaluation request:
 
 - Set `subject.id` to the ID of the user, application, or agent being evaluated.
-- Set `resource.type` to the resource server handle, `booking-api`.
+- Set `resource.type` to the resource server identifier, `https://api.example.com/booking`.
 - Optionally set `resource.id` to the reservation instance identifier.
-- Set `action.name` to the generated permission, `booking-api:reservations:view`.
+- Set `action.name` to the generated permission, `reservations:view`.
 
 ## Discover AuthZEN Metadata
 
@@ -178,11 +178,11 @@ curl -X POST https://{{productSlug}}.example.com/access/v1/evaluation \
       "id": "<subject-id>"
     },
     "resource": {
-      "type": "booking-api",
+      "type": "https://api.example.com/booking",
       "id": "<booking-id>"
     },
     "action": {
-      "name": "booking-api:reservations:view"
+      "name": "reservations:view"
     }
   }'
 ```
@@ -206,7 +206,7 @@ Denied response:
 }
 ```
 
-If `resource.type` does not match a resource server handle, or `action.name` does not match a registered permission,
+If `resource.type` does not match a resource server identifier, or `action.name` does not match a registered permission,
 
 <ProductName /> returns a denied decision with error context instead of allowing the request.
 
@@ -227,11 +227,11 @@ curl -X POST https://{{productSlug}}.example.com/access/v1/evaluations \
           "id": "<subject-id>"
         },
         "resource": {
-          "type": "booking-api",
+          "type": "https://api.example.com/booking",
           "id": "<booking-id>"
         },
         "action": {
-          "name": "booking-api:reservations:view"
+          "name": "reservations:view"
         }
       },
       {
@@ -240,11 +240,11 @@ curl -X POST https://{{productSlug}}.example.com/access/v1/evaluations \
           "id": "<subject-id>"
         },
         "resource": {
-          "type": "booking-api",
+          "type": "https://api.example.com/booking",
           "id": "<booking-id>"
         },
         "action": {
-          "name": "booking-api:reservations:delete"
+          "name": "reservations:delete"
         }
       }
     ]
@@ -286,7 +286,7 @@ curl -X POST https://{{productSlug}}.example.com/access/v1/search/action \
       "id": "<subject-id>"
     },
     "resource": {
-      "type": "booking-api",
+      "type": "https://api.example.com/booking",
       "id": "<booking-id>"
     }
   }'
@@ -298,10 +298,10 @@ Response:
 {
   "results": [
     {
-      "name": "booking-api:reservations:view"
+      "name": "reservations:view"
     },
     {
-      "name": "booking-api:reservations:update"
+      "name": "reservations:update"
     }
   ]
 }

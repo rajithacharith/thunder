@@ -192,8 +192,7 @@ type ResourceServer struct {
 	ID          string             `yaml:"id"                    json:"-"`
 	Name        string             `yaml:"name"                  json:"name"`
 	Description string             `yaml:"description,omitempty" json:"description,omitempty"`
-	Handle      string             `yaml:"handle"                json:"handle"`
-	Identifier  string             `yaml:"identifier,omitempty"  json:"identifier,omitempty"`
+	Identifier  string             `yaml:"identifier"            json:"identifier"`
 	Type        ResourceServerType `yaml:"type,omitempty"        json:"type,omitempty"`
 	OUID        string             `yaml:"ouId,omitempty"        json:"ouId"`
 	OUHandle    string             `yaml:"ouHandle,omitempty"    json:"-"`
@@ -1109,7 +1108,7 @@ type Subject struct {
 
 // AccessEvaluationResourceServer identifies the resource server for an access evaluation.
 type AccessEvaluationResourceServer struct {
-	Handle     string                 `json:"handle"`
+	ID         string                 `json:"id,omitempty"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 

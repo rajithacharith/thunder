@@ -99,7 +99,6 @@ resources:
 # resource_type: resource_server
 id: wayfinder-booking-rs
 name: Wayfinder Booking
-handle: wayfinder
 description: Protects the Wayfinder booking domain — same scopes guard the REST API on /api/* and the MCP tools on /mcp.
 # URL-shaped identifier per RFC 8707 (resource indicators), matching what the
 # Wayfinder MCP server advertises in /.well-known/oauth-protected-resource.
@@ -1679,7 +1678,7 @@ description: Public OAuth client for external MCP clients connecting to the Wayf
 ouHandle: default
 url: http://localhost:8787/mcp
 # Reuse the Concierge's auth flow so the OAuth consent screen surfaces the
-# requested wayfinder:booking:* scopes during the MCP Authorization tryout. Without
+# requested booking:* scopes during the MCP Authorization tryout. Without
 # this, ThunderID falls back to the default sign-in-only flow and no consent
 # step is shown.
 authFlowHandle: wayfinder-agent-auth-flow
@@ -1714,9 +1713,9 @@ ouHandle: default
 permissions:
   - resourceServerId: wayfinder-booking-rs
     permissions:
-      - wayfinder:booking:read
-      - wayfinder:booking:create
-      - wayfinder:booking:cancel
+      - booking:read
+      - booking:create
+      - booking:cancel
 assignments:
   - id: wayfinder-john-doe
     type: user
@@ -1759,8 +1758,8 @@ permissions:
       - agent:access
   - resourceServerId: wayfinder-booking-rs
     permissions:
-      - wayfinder:booking:upgrade
-      - wayfinder:upgrade:process
+      - booking:upgrade
+      - upgrade:process
 assignments:
   - id: wayfinder-john-doe
     type: user
@@ -1774,9 +1773,9 @@ ouHandle: default
 permissions:
   - resourceServerId: wayfinder-booking-rs
     permissions:
-      - wayfinder:booking:read
-      - wayfinder:booking:create
-      - wayfinder:booking:cancel
+      - booking:read
+      - booking:create
+      - booking:cancel
 assignments:
   - id: wayfinder-john-doe
     type: user
@@ -1787,13 +1786,13 @@ assignments:
 # resource_type: role
 id: recommender-role
 name: Recommender
-description: Grants access to wayfinder:booking:recommend and wayfinder:upgrade:search permissions, assigned to the Wayfinder Concierge agent
+description: Grants access to booking:recommend and upgrade:search permissions, assigned to the Wayfinder Concierge agent
 ouHandle: default
 permissions:
   - resourceServerId: wayfinder-booking-rs
     permissions:
-      - wayfinder:booking:recommend
-      - wayfinder:upgrade:search
+      - booking:recommend
+      - upgrade:search
 assignments:
   - id: wayfinder-concierge
     type: agent
@@ -1802,13 +1801,13 @@ assignments:
 # resource_type: role
 id: upgrade-scheduler-role
 name: Upgrade Scheduler
-description: Grants wayfinder:upgrade:read to the upgrade scheduler agent so its M2M token can list pending upgrade requests
+description: Grants upgrade:read to the upgrade scheduler agent so its M2M token can list pending upgrade requests
 ouHandle: default
 permissions:
   - resourceServerId: wayfinder-booking-rs
     permissions:
-      - wayfinder:upgrade:read
-      - wayfinder:upgrade:search
+      - upgrade:read
+      - upgrade:search
 assignments:
   - id: wayfinder-upgrade-agent
     type: agent
