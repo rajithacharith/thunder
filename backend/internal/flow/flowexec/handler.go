@@ -24,6 +24,7 @@ import (
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -58,7 +59,7 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	action := sysutils.SanitizeString(flowR.Action)
 	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 	challengeToken := sysutils.SanitizeString(flowR.ChallengeToken)
-	flowSecret := sysutils.SanitizeString(flowR.FlowSecret)
+	flowSecret := sysutils.SanitizeString(r.Header.Get(serverconst.FlowSecretHeaderName))
 
 	flowStep, flowErr := h.flowExecService.Execute(
 		r.Context(), appID, executionID, flowTypeStr, verbose, action, inputs, challengeToken, flowSecret)
