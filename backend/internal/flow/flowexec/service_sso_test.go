@@ -22,16 +22,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/session"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
@@ -56,17 +52,6 @@ func (s *ServiceSSOTestSuite) TearDownTest() {
 func (s *ServiceSSOTestSuite) newTestGraph() core.GraphInterface {
 	flowFactory, _ := core.Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"))
 	return flowFactory.CreateGraph(testFlowID, providers.FlowTypeAuthentication, 1)
-}
-
-// newGraphWithExecutor builds a single-node graph whose node is backed by the given executor.
-func (s *ServiceSSOTestSuite) newGraphWithExecutor(executorName string) core.GraphInterface {
-	flowFactory, _ := core.Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"))
-	graph := flowFactory.CreateGraph(testFlowID, providers.FlowTypeAuthentication, 1)
-	node, err := flowFactory.CreateNode("n1", string(common.NodeTypeTaskExecution), nil, false, false)
-	s.Require().NoError(err)
-	node.(core.ExecutorBackedNodeInterface).SetExecutorName(executorName)
-	s.Require().NoError(graph.AddNode(node))
-	return graph
 }
 
 func (s *ServiceSSOTestSuite) TestApplyInboundSSO_SelectsHandleForFlow() {
@@ -98,36 +83,4 @@ func (s *ServiceSSOTestSuite) TestApplyInboundSSO_NilGraph() {
 	applyInboundSSO(engineCtx, ctx)
 
 	s.Empty(engineCtx.SSOHandleIn)
-}
-
-func (s *ServiceSSOTestSuite) TestResolveActiveFlowVersion_FromProvider() {
-	provider := NewFlowProviderMock(s.T())
-	provider.EXPECT().GetFlow(mock.Anything, testFlowID).
-		Return(&providers.CompleteFlowDefinition{ID: testFlowID, ActiveVersion: 5}, nil)
-	svc := &flowExecService{flowProvider: provider}
-	engineCtx := &EngineContext{Graph: s.newTestGraph()}
-
-	version := svc.resolveActiveFlowVersion(context.Background(), engineCtx, log.GetLogger())
-
-	s.Equal(5, version)
-}
-
-func (s *ServiceSSOTestSuite) TestResolveActiveFlowVersion_NilGraph() {
-	// A nil graph short-circuits before the provider is consulted, so no GetFlow call is expected.
-	svc := &flowExecService{flowProvider: NewFlowProviderMock(s.T())}
-
-	version := svc.resolveActiveFlowVersion(context.Background(), &EngineContext{}, log.GetLogger())
-
-	s.Equal(0, version)
-}
-
-// TestFlowUsesSSOSession covers the version-lookup gate: a flow that establishes (Session) or consults
-// (SSO-Check) a session must have its active version resolved on every path — including the
-// fresh-login save path, which carries no inbound handle. Gating the version lookup on an inbound
-// handle would persist sessions at version 0 and fail the version check on the next login.
-func (s *ServiceSSOTestSuite) TestFlowUsesSSOSession() {
-	s.True(flowUsesSSOSession(s.newGraphWithExecutor(executor.ExecutorNameSession)))
-	s.True(flowUsesSSOSession(s.newGraphWithExecutor(executor.ExecutorNameSSOCheck)))
-	s.False(flowUsesSSOSession(s.newGraphWithExecutor(executor.ExecutorNameCredentialsAuth)))
-	s.False(flowUsesSSOSession(nil))
 }

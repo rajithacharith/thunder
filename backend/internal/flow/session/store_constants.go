@@ -49,7 +49,7 @@ var (
 	// rows when that execution has not established one. Used on the fresh join path to attach later
 	// checkpoints to the session an earlier join in the same execution already created.
 	queryGetSessionByExecutionID = model.DBQuery{
-		ID: "SSO-SESS-04",
+		ID: "SSO-SESS-03",
 		Query: `SELECT SESSION_ID, SUBJECT_ID, FLOW_ID, FLOW_VERSION, FLOW_EXECUTION_ID, HANDLE_ID, ` +
 			`AUTHENTICATED_AT, CREATED_AT, LAST_ACTIVE_AT, IDLE_EXPIRES_AT, ABSOLUTE_EXPIRES_AT, STATE, VERSION ` +
 			`FROM "SSO_SESSION" WHERE FLOW_EXECUTION_ID = $1 AND DEPLOYMENT_ID = $2`,
@@ -59,7 +59,7 @@ var (
 	// guard: it only matches when the stored VERSION equals the expected version, and it
 	// bumps VERSION on success. It never touches the session context.
 	queryUpdateSession = model.DBQuery{
-		ID: "SSO-SESS-03",
+		ID: "SSO-SESS-04",
 		Query: `UPDATE "SSO_SESSION" SET FLOW_VERSION = $1, HANDLE_ID = $2, ` +
 			`LAST_ACTIVE_AT = $3, IDLE_EXPIRES_AT = $4, ABSOLUTE_EXPIRES_AT = $5, STATE = $6, ` +
 			`VERSION = VERSION + 1, UPDATED_AT = CURRENT_TIMESTAMP ` +
@@ -70,7 +70,7 @@ var (
 	// (re-execution or a concurrent request) overwrites it rather than erroring on the primary key.
 	// The ON CONFLICT ... DO UPDATE form is valid in both PostgreSQL and SQLite.
 	queryCreateSessionContext = model.DBQuery{
-		ID: "SSO-SESS-AC-01",
+		ID: "SSO-SESS-05",
 		Query: `INSERT INTO "SSO_SESSION_CONTEXT" (SESSION_ID, DEPLOYMENT_ID, CHECKPOINT_ID, CONTEXT, ` +
 			`CONTEXT_VERSION) VALUES ($1, $2, $3, $4, $5) ` +
 			`ON CONFLICT (SESSION_ID, DEPLOYMENT_ID, CHECKPOINT_ID) DO UPDATE SET ` +
@@ -79,21 +79,21 @@ var (
 
 	// queryGetSessionContextByCheckpoint fetches one checkpoint's session context for a session.
 	queryGetSessionContextByCheckpoint = model.DBQuery{
-		ID: "SSO-SESS-AC-02",
+		ID: "SSO-SESS-06",
 		Query: `SELECT SESSION_ID, CHECKPOINT_ID, CONTEXT, CONTEXT_VERSION FROM "SSO_SESSION_CONTEXT" ` +
 			`WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2 AND CHECKPOINT_ID = $3`,
 	}
 
 	// queryDeleteSessionContext removes all of a session's checkpoint contexts.
 	queryDeleteSessionContext = model.DBQuery{
-		ID:    "SSO-SESS-AC-03",
+		ID:    "SSO-SESS-07",
 		Query: `DELETE FROM "SSO_SESSION_CONTEXT" WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryListCheckpointsBySessionID returns the checkpoint ids a session has saved. It is the
 	// existence check the SSO-Check node uses to decide availability without decrypting any context.
 	queryListCheckpointsBySessionID = model.DBQuery{
-		ID: "SSO-SESS-AC-04",
+		ID: "SSO-SESS-08",
 		Query: `SELECT CHECKPOINT_ID FROM "SSO_SESSION_CONTEXT" ` +
 			`WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
@@ -102,7 +102,7 @@ var (
 	// LAST_ACTIVE_AT (but preserving FIRST_JOINED_AT) when the application has already joined. The
 	// ON CONFLICT ... DO UPDATE form is valid in both PostgreSQL and SQLite.
 	queryUpsertParticipant = model.DBQuery{
-		ID: "SSO-SESS-PART-01",
+		ID: "SSO-SESS-09",
 		Query: `INSERT INTO "SSO_SESSION_PARTICIPANT" ` +
 			`(SESSION_ID, DEPLOYMENT_ID, APP_ID, FIRST_JOINED_AT, LAST_ACTIVE_AT) ` +
 			`VALUES ($1, $2, $3, $4, $5) ` +
@@ -112,14 +112,14 @@ var (
 	// queryListParticipantsBySessionID returns the applications that have joined a session, oldest
 	// first.
 	queryListParticipantsBySessionID = model.DBQuery{
-		ID: "SSO-SESS-PART-02",
+		ID: "SSO-SESS-10",
 		Query: `SELECT SESSION_ID, APP_ID, FIRST_JOINED_AT, LAST_ACTIVE_AT FROM "SSO_SESSION_PARTICIPANT" ` +
 			`WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY FIRST_JOINED_AT`,
 	}
 
 	// queryDeleteParticipantsBySessionID removes all participants of a session.
 	queryDeleteParticipantsBySessionID = model.DBQuery{
-		ID:    "SSO-SESS-PART-03",
+		ID:    "SSO-SESS-11",
 		Query: `DELETE FROM "SSO_SESSION_PARTICIPANT" WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )

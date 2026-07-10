@@ -32,7 +32,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	"github.com/thunder-id/thunderid/internal/flow/session"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
@@ -132,14 +131,6 @@ func (s *flowExecService) Execute(ctx context.Context,
 
 	// Resolve the inbound SSO handle for this flow from the request-scoped transport inputs.
 	applyInboundSSO(engineCtx, ctx)
-	// Resolve the active flow version whenever the flow establishes or consults an SSO session.
-	// Both paths need it: the save path (fresh login, which carries no inbound handle) stamps the
-	// version onto the new session, and the check path compares against it. Gating this on an
-	// inbound handle would save sessions at version 0 and then fail the version check on the next
-	// login. Flows that use no SSO session skip the lookup.
-	if flowUsesSSOSession(engineCtx.Graph) {
-		engineCtx.SSOFlowVersion = s.resolveActiveFlowVersion(ctx, engineCtx, logger)
-	}
 
 	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
 
@@ -193,43 +184,6 @@ func applyInboundSSO(engineCtx *EngineContext, ctx context.Context) {
 		return
 	}
 	engineCtx.SSOHandleIn = inbound.HandleFor(engineCtx.Graph.GetID())
-}
-
-// flowUsesSSOSession reports whether the flow graph contains a node that establishes or
-// consults an SSO session (the Session or SSO-Check executors). It gates the active-flow-version
-// lookup so only SSO-capable flows pay for it.
-func flowUsesSSOSession(graph core.GraphInterface) bool {
-	if graph == nil {
-		return false
-	}
-	for _, node := range graph.GetNodes() {
-		execNode, ok := node.(core.ExecutorBackedNodeInterface)
-		if !ok {
-			continue
-		}
-		name := execNode.GetExecutorName()
-		if name == executor.ExecutorNameSession || name == executor.ExecutorNameSSOCheck {
-			return true
-		}
-	}
-	return false
-}
-
-// resolveActiveFlowVersion returns the current active version of the flow, or 0 when it
-// cannot be determined. A 0 (unknown) version makes the SSO-Check node treat any saved
-// session as version-incompatible, i.e. it falls back to full authentication.
-func (s *flowExecService) resolveActiveFlowVersion(ctx context.Context, engineCtx *EngineContext,
-	logger *log.Logger) int {
-	if engineCtx.Graph == nil {
-		return 0
-	}
-	def, svcErr := s.flowProvider.GetFlow(ctx, engineCtx.Graph.GetID())
-	if svcErr != nil || def == nil {
-		logger.Debug(ctx, "Could not resolve active flow version for SSO check",
-			log.String("flowID", engineCtx.Graph.GetID()))
-		return 0
-	}
-	return def.ActiveVersion
 }
 
 // initContext initializes a new flow context with the given details.
@@ -368,6 +322,7 @@ func (s *flowExecService) initContext(ctx context.Context, appID string, flowTyp
 	}
 
 	engineCtx.FlowType = flow.FlowType
+	engineCtx.SSOFlowVersion = flow.ActiveVersion
 	graph, svcErr := s.graphBuilder.GetGraph(ctx, flow)
 	if svcErr != nil {
 		logger.Error(ctx, "Error retrieving graph from graph builder",
@@ -467,6 +422,7 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
 		return nil, &tidcommon.InternalServerError
 	}
+	engineContext.SSOFlowVersion = flow.ActiveVersion
 
 	// Set application context if required
 	if err := s.setApplicationToContext(&engineContext, logger); err != nil {

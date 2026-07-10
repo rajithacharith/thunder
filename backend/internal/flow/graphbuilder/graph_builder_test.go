@@ -20,9 +20,7 @@ package graphbuilder
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -1965,12 +1963,62 @@ func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_InvalidRegexFailsBuild(
 // registered executors, and builds into a graph with all expected nodes. It exercises the
 // real executor registry so a typo'd executor name or dangling node reference fails here.
 func (s *GraphBuilderTestSuite) TestSSOFlowDefinitionBuilds() {
-	raw, err := os.ReadFile("testdata/sso_flow.json")
-	s.Require().NoError(err)
-
-	var def providers.CompleteFlowDefinition
-	s.Require().NoError(json.Unmarshal(raw, &def))
-	def.ID = "auth-sso-flow-test"
+	def := providers.CompleteFlowDefinition{
+		ID:       "auth-sso-flow-test",
+		Name:     "Default SSO Authentication Flow",
+		Handle:   "default-sso-flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
+			{ID: "start", Type: "START", OnSuccess: "sso_check"},
+			{
+				ID:         "sso_check",
+				Type:       "TASK_EXECUTION",
+				Executor:   &providers.ExecutorDefinition{Name: executor.ExecutorNameSSOCheck},
+				Properties: map[string]interface{}{common.NodePropertyCheckpointRef: "session"},
+				OnSuccess:  "session",
+				OnFailure:  "prompt_credentials",
+			},
+			{
+				ID:           "basic_auth",
+				Type:         "TASK_EXECUTION",
+				Executor:     &providers.ExecutorDefinition{Name: executor.ExecutorNameCredentialsAuth},
+				OnSuccess:    "session",
+				OnIncomplete: "prompt_credentials",
+			},
+			{
+				ID:   "prompt_credentials",
+				Type: "PROMPT",
+				Prompts: []providers.PromptDefinition{
+					{
+						Inputs: []providers.InputDefinition{
+							{Ref: "input_001", Identifier: "username", Type: "TEXT_INPUT", Required: true},
+							{Ref: "input_002", Identifier: "password", Type: "PASSWORD_INPUT", Required: true},
+						},
+						Action: &providers.ActionDefinition{Ref: "action_001", NextNode: "basic_auth"},
+					},
+				},
+			},
+			{
+				ID:        "session",
+				Type:      "TASK_EXECUTION",
+				Executor:  &providers.ExecutorDefinition{Name: executor.ExecutorNameSession},
+				OnSuccess: "authorization_check",
+			},
+			{
+				ID:        "authorization_check",
+				Type:      "TASK_EXECUTION",
+				Executor:  &providers.ExecutorDefinition{Name: executor.ExecutorNameAuthorization},
+				OnSuccess: "auth_assert",
+			},
+			{
+				ID:        "auth_assert",
+				Type:      "TASK_EXECUTION",
+				Executor:  &providers.ExecutorDefinition{Name: executor.ExecutorNameAuthAssert},
+				OnSuccess: "end",
+			},
+			{ID: "end", Type: "END"},
+		},
+	}
 
 	flowFactory, graphCache := core.Initialize(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"))
