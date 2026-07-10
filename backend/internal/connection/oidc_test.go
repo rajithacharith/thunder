@@ -46,7 +46,7 @@ func TestOIDCSuite(t *testing.T) {
 }
 
 func (s *OIDCTestSuite) SetupTest() {
-	s.handler, s.mockIDP = newConnectionTestHandler(s.T())
+	s.handler, s.mockIDP, _ = newConnectionTestHandler(s.T())
 }
 
 func (s *OIDCTestSuite) TestToIDPDTOMapsEndpointsAndTokenExchange() {

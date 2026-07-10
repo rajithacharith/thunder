@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {AuthenticatorTypes, IdentityProviderTypes, useIdentityProviders} from '@thunderid/configure-connections';
 import {useHasMultipleOUs} from '@thunderid/configure-organization-units';
 import {useGetUserTypes} from '@thunderid/configure-user-types';
 import {useLogger} from '@thunderid/logger/react';
@@ -25,9 +26,6 @@ import type {JSX} from 'react';
 import {useState, useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLocation, useNavigate} from 'react-router';
-import useIdentityProviders from '../../connections/api/useIdentityProviders';
-import {AuthenticatorTypes} from '../../connections/models/authenticators';
-import {IdentityProviderTypes} from '../../connections/models/identity-provider';
 import useCreateFlow from '../../flows/api/useCreateFlow';
 import useGetFlowById from '../../flows/api/useGetFlowById';
 import type {BasicFlowDefinition} from '../../flows/models/responses';
