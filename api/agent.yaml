@@ -1325,6 +1325,76 @@ paths:
         "500":
           description: Internal server error
 
+  /agents/{id}/roles:
+    get:
+      tags:
+        - Agents
+      summary: List roles assigned to the agent
+      description: |
+        Returns a paginated list of role names assigned to the agent, both directly and through
+        group membership. Use the group and role APIs to manage the underlying assignments.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The unique identifier of the agent"
+          example: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of roles assigned to the agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRoleListResponse'
+              example:
+                totalResults: 2
+                startIndex: 1
+                count: 2
+                roles:
+                  - "agent-operator"
+                  - "billing-viewer"
+                links: []
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing agent ID
+                  value:
+                    code: "AGT-1008"
+                    message:
+                      key: "error.agentservice.missing_agent_id"
+                      defaultValue: "Missing agent ID"
+                    description:
+                      key: "error.agentservice.missing_agent_id_description"
+                      defaultValue: "The agent ID is required"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "AGT-1004"
+                message:
+                  key: "error.agentservice.agent_not_found"
+                  defaultValue: "Agent not found"
+                description:
+                  key: "error.agentservice.agent_not_found_description"
+                  defaultValue: "The agent with the specified id does not exist"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "500":
+          description: Internal server error
+
   /agent-types:
     get:
       tags:
@@ -2232,6 +2302,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AgentGroup'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    AgentRoleListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          example: 2
+        startIndex:
+          type: integer
+          example: 1
+        count:
+          type: integer
+          example: 2
+        roles:
+          type: array
+          items:
+            type: string
+          example: ["agent-operator", "billing-viewer"]
         links:
           type: array
           items:

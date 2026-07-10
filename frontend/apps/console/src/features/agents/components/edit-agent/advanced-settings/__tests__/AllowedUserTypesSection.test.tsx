@@ -19,7 +19,7 @@
 import userEvent from '@testing-library/user-event';
 import {render, screen, within} from '@thunderid/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type {Agent} from '../../../../models/agent';
+import type {Agent, OAuthAgentConfig} from '../../../../models/agent';
 import AllowedUserTypesSection from '../AllowedUserTypesSection';
 
 const {mockUseGetUserTypes} = vi.hoisted(() => ({
@@ -47,6 +47,11 @@ describe('AllowedUserTypesSection', () => {
     allowedUserTypes: ['employee'],
   };
 
+  const delegationEnabledConfig: OAuthAgentConfig = {
+    grantTypes: ['authorization_code'],
+    responseTypes: ['code'],
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseGetUserTypes.mockReturnValue({
@@ -60,8 +65,36 @@ describe('AllowedUserTypesSection', () => {
     });
   });
 
-  it('renders the section title and description', () => {
-    render(<AllowedUserTypesSection agent={agent} editedAgent={{}} onFieldChange={mockOnFieldChange} />);
+  it('returns null when oauth2Config is undefined', () => {
+    const {container} = render(
+      <AllowedUserTypesSection agent={agent} editedAgent={{}} onFieldChange={mockOnFieldChange} />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('returns null when authorization_code is not selected', () => {
+    const {container} = render(
+      <AllowedUserTypesSection
+        agent={agent}
+        editedAgent={{}}
+        oauth2Config={{grantTypes: ['client_credentials'], responseTypes: []}}
+        onFieldChange={mockOnFieldChange}
+      />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders the section title and description when authorization_code is selected', () => {
+    render(
+      <AllowedUserTypesSection
+        agent={agent}
+        editedAgent={{}}
+        oauth2Config={delegationEnabledConfig}
+        onFieldChange={mockOnFieldChange}
+      />,
+    );
 
     expect(screen.getByText('Allowed User Types')).toBeInTheDocument();
     expect(
@@ -70,7 +103,14 @@ describe('AllowedUserTypesSection', () => {
   });
 
   it('renders existing allowedUserTypes as chips', () => {
-    render(<AllowedUserTypesSection agent={agent} editedAgent={{}} onFieldChange={mockOnFieldChange} />);
+    render(
+      <AllowedUserTypesSection
+        agent={agent}
+        editedAgent={{}}
+        oauth2Config={delegationEnabledConfig}
+        onFieldChange={mockOnFieldChange}
+      />,
+    );
 
     expect(screen.getByText('employee')).toBeInTheDocument();
   });
@@ -80,6 +120,7 @@ describe('AllowedUserTypesSection', () => {
       <AllowedUserTypesSection
         agent={agent}
         editedAgent={{allowedUserTypes: ['customer']}}
+        oauth2Config={delegationEnabledConfig}
         onFieldChange={mockOnFieldChange}
       />,
     );
@@ -93,6 +134,7 @@ describe('AllowedUserTypesSection', () => {
       <AllowedUserTypesSection
         agent={{...agent, allowedUserTypes: undefined}}
         editedAgent={{}}
+        oauth2Config={delegationEnabledConfig}
         onFieldChange={mockOnFieldChange}
       />,
     );
@@ -106,6 +148,7 @@ describe('AllowedUserTypesSection', () => {
       <AllowedUserTypesSection
         agent={{...agent, allowedUserTypes: []}}
         editedAgent={{}}
+        oauth2Config={delegationEnabledConfig}
         onFieldChange={mockOnFieldChange}
       />,
     );
@@ -125,6 +168,7 @@ describe('AllowedUserTypesSection', () => {
       <AllowedUserTypesSection
         agent={{...agent, allowedUserTypes: []}}
         editedAgent={{}}
+        oauth2Config={delegationEnabledConfig}
         onFieldChange={mockOnFieldChange}
       />,
     );
@@ -138,8 +182,47 @@ describe('AllowedUserTypesSection', () => {
 
   it('handles missing user-type schemas gracefully', () => {
     mockUseGetUserTypes.mockReturnValueOnce({data: {types: undefined}, isLoading: false});
-    render(<AllowedUserTypesSection agent={agent} editedAgent={{}} onFieldChange={mockOnFieldChange} />);
+    render(
+      <AllowedUserTypesSection
+        agent={agent}
+        editedAgent={{}}
+        oauth2Config={delegationEnabledConfig}
+        onFieldChange={mockOnFieldChange}
+      />,
+    );
 
     expect(screen.getByText('employee')).toBeInTheDocument();
+  });
+
+  describe('validation', () => {
+    it('shows the required message when no user type is allowed', () => {
+      render(
+        <AllowedUserTypesSection
+          agent={{...agent, allowedUserTypes: []}}
+          editedAgent={{}}
+          oauth2Config={delegationEnabledConfig}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      expect(
+        screen.getByText('Select at least one user type that can sign in through this agent.'),
+      ).toBeInTheDocument();
+    });
+
+    it('does not show the required message when at least one user type is allowed', () => {
+      render(
+        <AllowedUserTypesSection
+          agent={agent}
+          editedAgent={{}}
+          oauth2Config={delegationEnabledConfig}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      expect(
+        screen.queryByText('Select at least one user type that can sign in through this agent.'),
+      ).not.toBeInTheDocument();
+    });
   });
 });

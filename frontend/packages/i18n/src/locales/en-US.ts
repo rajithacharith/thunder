@@ -1067,7 +1067,7 @@ const translations = {
     'edit.page.description.placeholder': 'Add a description',
     'edit.page.tabs.attributes': 'Attributes',
     'edit.page.unsavedChanges': 'You have unsaved changes',
-    'edit.page.reset': 'Discard',
+    'edit.page.reset': 'Reset',
     'edit.page.save': 'Save',
     'edit.page.saving': 'Saving…',
     'update.success': 'Agent updated successfully.',
@@ -1101,8 +1101,8 @@ const translations = {
     'edit.flows.allowedUserTypes.hint': 'Leave empty to allow any user type.',
 
     // Edit page — Advanced tab
-    'edit.advanced.redirectUris.title': 'Redirect URIs',
-    'edit.advanced.redirectUris.description': 'Allowed redirect destinations for the authorization code grant.',
+    'edit.advanced.redirectUris.title': 'Authorized redirect URIs',
+    'edit.advanced.redirectUris.description': 'For use with requests from a web server',
     'edit.advanced.redirectUris.empty': 'No redirect URIs configured.',
     'edit.advanced.redirectUris.addUri': 'Add Redirect URI',
     'edit.advanced.redirectUris.error.empty': 'URI cannot be empty',

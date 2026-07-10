@@ -31,7 +31,8 @@ export type OAuth2GrantType =
   | 'client_credentials'
   | 'password'
   | 'implicit'
-  | 'urn:openid:params:grant-type:ciba';
+  | 'urn:openid:params:grant-type:ciba'
+  | 'urn:ietf:params:oauth:grant-type:token-exchange';
 
 /**
  * OAuth2 Grant Type Constants
@@ -60,6 +61,8 @@ export const OAuth2GrantTypes = {
   IMPLICIT: 'implicit',
   /** Client-Initiated Backchannel Authentication (CIBA) - Decoupled authentication flow */
   CIBA: 'urn:openid:params:grant-type:ciba',
+  /** Token Exchange (RFC 8693) - Exchange a token for one scoped to a different resource/audience */
+  TOKEN_EXCHANGE: 'urn:ietf:params:oauth:grant-type:token-exchange',
 } as const;
 
 /**

@@ -409,8 +409,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, applicationExporter)
 
-	agentService, agentExporter, err := agent.Initialize(
-		mux, entityService, inboundClientService, ouService)
+	agentService, agentExporter, err := agent.Initialize(mux, entityService, inboundClientService, ouService,
+		roleService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize AgentService", log.Error(err))
 	}
