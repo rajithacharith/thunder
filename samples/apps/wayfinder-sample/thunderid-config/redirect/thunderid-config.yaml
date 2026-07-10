@@ -1805,7 +1805,7 @@ template: wallet
 ouHandle: default
 url: http://localhost:3000
 logoUrl: "emoji:🪪"
-authFlowHandle: default-basic-flow
+authFlowHandle: default-flow
 isRegistrationFlowEnabled: false
 isRecoveryFlowEnabled: false
 allowedUserTypes:
@@ -1835,7 +1835,7 @@ template: wallet
 ouHandle: default
 url: http://localhost:3000
 logoUrl: "emoji:🪪"
-authFlowHandle: default-basic-flow
+authFlowHandle: default-flow
 isRegistrationFlowEnabled: false
 isRecoveryFlowEnabled: false
 allowedUserTypes:

@@ -60,7 +60,7 @@ tosUri: https://localhost:3000/terms
 policyUri: https://localhost:3000/privacy
 contacts:
   - admin@example.com
-authFlowHandle: default-basic-flow
+authFlowHandle: default-flow
 isRegistrationFlowEnabled: true
 isRecoveryFlowEnabled: false
 assertion:

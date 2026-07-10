@@ -148,11 +148,11 @@ func (ts *ApplicationAPITestSuite) SetupSuite() {
 	appToUpdate.OUID = testOUID
 
 	// Get Flow IDs
-	defaultAuthFlowID, err = testutils.GetFlowIDByHandle("default-basic-flow", "AUTHENTICATION")
+	defaultAuthFlowID, err = testutils.GetFlowIDByHandle("default-flow", "AUTHENTICATION")
 	ts.Require().NoError(err, "Failed to get basic auth flow ID")
 	testApp.AuthFlowID = defaultAuthFlowID
 
-	defaultRegistrationFlowID, err = testutils.GetFlowIDByHandle("default-basic-flow", "REGISTRATION")
+	defaultRegistrationFlowID, err = testutils.GetFlowIDByHandle("default-flow", "REGISTRATION")
 	ts.Require().NoError(err, "Failed to get basic registration flow ID")
 	testApp.RegistrationFlowID = defaultRegistrationFlowID
 
