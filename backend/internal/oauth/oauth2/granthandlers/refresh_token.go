@@ -370,16 +370,15 @@ func (h *refreshTokenGrantHandler) extendCacheTTL(
 	if accessExpiry > maxExpiry {
 		maxExpiry = accessExpiry
 	}
-	desiredTTL := int(maxExpiry-now) + constants.AttributeCacheTTLBufferSeconds
-	if desiredTTL > cacheEntry.TTLSeconds {
-		if extErr := h.attrCacheService.ExtendAttributeCacheTTL(ctx, cacheID, desiredTTL); extErr != nil {
-			logger.Error(ctx, "Failed to extend attribute cache TTL",
-				log.String("cache_id", cacheID),
-				log.String("error", extErr.Error.String()))
-			return &model.ErrorResponse{
-				Error:            constants.ErrorServerError,
-				ErrorDescription: "Failed to extend attribute cache TTL",
-			}
+	desiredTTL := maxExpiry - now + constants.AttributeCacheTTLBufferSeconds
+	extErr := h.attrCacheService.ExtendAttributeCacheTTL(ctx, cacheID, int(desiredTTL))
+	if extErr != nil {
+		logger.Error(ctx, "Failed to extend attribute cache TTL",
+			log.String("cache_id", cacheID),
+			log.String("error", extErr.Error.String()))
+		return &model.ErrorResponse{
+			Error:            constants.ErrorServerError,
+			ErrorDescription: "Failed to extend attribute cache TTL",
 		}
 	}
 	return nil

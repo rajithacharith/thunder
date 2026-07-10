@@ -200,4 +200,6 @@ type RuntimeStoreProvider interface {
 
 	// Take retrieves and removes a value from the runtime store by its key.
 	Take(ctx context.Context, namespace RuntimeStoreNamespace, key string) ([]byte, error)
+
+	ExtendTTL(ctx context.Context, namespace RuntimeStoreNamespace, key string, ttlSeconds int64) error
 }

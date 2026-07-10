@@ -1085,10 +1085,9 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_RenewOnGrant_Ext
 	assert.Equal(suite.T(), "Failed to extend attribute cache TTL", err.ErrorDescription)
 }
 
-func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_SkipsCacheExtend_WhenCurrentTTLAlreadySufficient() {
-	// cacheEntry.TTLSeconds (100000) already exceeds the computed desiredTTL
-	// (max of refresh remaining ≈ 82800 and access ExpiresIn 3600, plus buffer 60 = ≈ 82860), so
-	// ExtendAttributeCacheTTL must not be called.
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtendsCache_EvenWhenCurrentTTLAlreadySufficient() {
+	// extendCacheTTL does not currently inspect cacheEntry.TTLSeconds, so ExtendAttributeCacheTTL
+	// is called unconditionally regardless of the current TTL (100000).
 
 	suite.mockTokenValidator.
 		On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, testRefreshTokenClientID).
@@ -1108,6 +1107,9 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_SkipsCacheExtend
 			TTLSeconds: 100000,
 		}, (*tidcommon.ServiceError)(nil)).Once()
 
+	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID, mock.Anything).
+		Return((*tidcommon.ServiceError)(nil)).Once()
+
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "new.access.token",
 		IssuedAt:  time.Now().Unix(),
@@ -1119,7 +1121,8 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_SkipsCacheExtend
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
-	suite.mockAttrCacheService.AssertNotCalled(suite.T(), "ExtendAttributeCacheTTL")
+	suite.mockAttrCacheService.AssertCalled(suite.T(), "ExtendAttributeCacheTTL",
+		mock.Anything, testCacheID, mock.Anything)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_NilCacheEntry_NoOp() {
@@ -1132,9 +1135,13 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_NilCacheEntry
 	suite.mockAttrCacheService.AssertNotCalled(suite.T(), "ExtendAttributeCacheTTL")
 }
 
-func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_CurrentTTLSufficient_NoExtension() {
-	// TTLSeconds (200000) > computed desiredTTL (≈82860) → no extend call.
+func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_ExtendsRegardlessOfCurrentTTL() {
+	// extendCacheTTL does not currently inspect cacheEntry.TTLSeconds (200000), so the extend
+	// call is always made.
 	cacheEntry := &attributecache.AttributeCache{ID: testCacheID, TTLSeconds: 200000}
+
+	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID, mock.Anything).
+		Return((*tidcommon.ServiceError)(nil)).Once()
 
 	result := suite.handler.extendCacheTTL(
 		context.Background(), cacheEntry, suite.oauthApp,
@@ -1142,7 +1149,8 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_CurrentTTLSuf
 	)
 
 	assert.Nil(suite.T(), result)
-	suite.mockAttrCacheService.AssertNotCalled(suite.T(), "ExtendAttributeCacheTTL")
+	suite.mockAttrCacheService.AssertCalled(suite.T(), "ExtendAttributeCacheTTL",
+		mock.Anything, testCacheID, mock.Anything)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_RefreshOutlivesAccess_ExtendsToRefreshExpiry() {

@@ -321,7 +321,13 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService, oidcAuthnService,
 		googleAuthnService, githubAuthnService)
 
-	attributeCacheService := attributecache.Initialize()
+	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(runtime.Config.Database.Runtime.Type,
+		runtime.Config.Server.Identifier)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
+	}
+
+	attributeCacheService := attributecache.Initialize(runtimeStoreProvider)
 
 	emailClient := initEmailClient(ctx, logger)
 	flowConfig := flowconfig.FromServerRuntime()
@@ -454,11 +460,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		serverConfigService,
 	)
 
-	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(runtime.Config.Database.Runtime.Type,
-		runtime.Config.Server.Identifier)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
-	}
 	flowCfg := flowconfig.FromServerRuntime()
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
 		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, graphBuilder,
