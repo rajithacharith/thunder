@@ -38,7 +38,6 @@ import (
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/role"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
@@ -134,15 +133,10 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	tokenSub := ""
 
 	jwtClaims := make(map[string]interface{})
-	jwtConfig := config.GetServerRuntime().Config.JWT
-	iss := jwtConfig.Issuer
 	validityPeriod := int64(0)
 
 	if ctx.Application.Assertion != nil {
 		validityPeriod = ctx.Application.Assertion.ValidityPeriod
-	}
-	if validityPeriod == 0 {
-		validityPeriod = jwtConfig.ValidityPeriod
 	}
 
 	authenticatorRefs := a.extractAuthenticatorReferences(ctx.ExecutionHistory)
@@ -229,7 +223,7 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	if ttlSecondsStr, exists := ctx.RuntimeData[common.RuntimeKeyUserAttributesCacheTTLSeconds]; exists {
 		// We are not in an App Native flow, so we need to cache the user attributes
 		if len(resolvedAttributes) > 0 {
-			ttlSeconds, err := strconv.Atoi(ttlSecondsStr)
+			ttlSeconds, err := strconv.ParseInt(ttlSecondsStr, 10, 64)
 			if err != nil {
 				logger.Error(ctx.Context, "Failed to parse TTL seconds from runtime data",
 					log.String("key", common.RuntimeKeyUserAttributesCacheTTLSeconds),
@@ -257,8 +251,9 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	}
 
 	jwtClaims["aud"] = ctx.EntityID
+	// iss is set to the default issuer configured in the JWT service, which is typically the server's base URL.
 	token, _, err := a.jwtService.GenerateJWT(
-		ctx.Context, tokenSub, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT, "")
+		ctx.Context, tokenSub, "", validityPeriod, jwtClaims, jwt.TokenTypeJWT, "")
 	if err != nil {
 		logger.Error(ctx.Context, "Failed to generate JWT token",
 			log.String("error", err.Error.DefaultValue))
