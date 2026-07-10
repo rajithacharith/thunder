@@ -69,6 +69,12 @@ export interface ConfigContextType {
   getScopes: () => string[];
 
   /**
+   * Gets the resource server identifier from the configuration
+   * @returns The identifier string, or undefined if not configured
+   */
+  getResourceIdentifier: () => string | undefined;
+
+  /**
    * Gets the complete client URL including protocol, hostname, port, and base path
    * @returns The full client URL (e.g., "https://localhost:8090/console")
    */
