@@ -23,4 +23,4 @@ description: |
   and the crypto encryption key live in a pre-created Kubernetes Secret in
   the data-plane namespace, referenced by name when the Resource is created.
 type: application
-version: 0.47.0
+version: 0.48.0
