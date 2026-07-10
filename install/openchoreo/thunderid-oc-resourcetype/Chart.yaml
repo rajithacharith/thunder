@@ -18,9 +18,11 @@ apiVersion: v2
 name: thunderid-oc-resourcetype
 description: |
   ResourceType definition that runs ThunderID itself as an OpenChoreo-managed
-  infra Resource, backed by an externally hosted PostgreSQL database (e.g.
-  AWS RDS). Connection details for the config, runtime, and user databases
-  and the crypto encryption key live in a pre-created Kubernetes Secret in
-  the data-plane namespace, referenced by name when the Resource is created.
+  infra Resource. Runs on the SQLite databases bundled in the image by
+  default (ephemeral, development only) or an externally hosted PostgreSQL
+  database (e.g. AWS RDS) for production. The crypto encryption key and, in
+  PostgreSQL mode, the database connection details are materialized from the
+  platform secret store (External Secrets Operator), referenced by store
+  path when the Resource is created.
 type: application
 version: 0.47.0

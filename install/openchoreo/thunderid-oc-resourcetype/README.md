@@ -2,16 +2,17 @@
 
 This Helm chart registers a `ClusterResourceType` (or namespace-scoped
 `ResourceType`) that runs the ThunderID Identity Provider as an
-OpenChoreo-managed platform Resource, backed by an **externally hosted
-PostgreSQL database** (e.g. AWS RDS).
+OpenChoreo-managed platform Resource. It runs on the **SQLite databases
+bundled in the image** by default (zero prerequisites, development only) or
+an **externally hosted PostgreSQL database** (e.g. AWS RDS) for production.
 
 Provisioning is **fully declarative**: all ThunderID resources
 (organization units, user types, applications, flows, themes, users) come
 from a single resources YAML supplied at Resource creation time. Nothing is
-bootstrapped or seeded into the database. Database connection
-details and the crypto encryption key never touch the control plane: they
-live in a Kubernetes Secret you pre-create in the data-plane namespace and
-reference by name.
+bootstrapped or seeded into the database. Sensitive values live in the
+platform secret store and are materialized onto the data plane by External
+Secrets Operator. They never touch the control plane, and no Kubernetes
+Secrets are created by hand.
 
 ## How It Works
 
@@ -20,13 +21,14 @@ thunderid-oc-resourcetype (this chart)
   └── ClusterResourceType "thunderid"      ← installed once per cluster
 
 Resource "thunderid" (created by you)
-  ├── parameters.secretName                ← points at your pre-created Secret
+  ├── parameters.secretStore               ← store path of the environment values
   ├── parameters.declarativeResources      ← resources YAML (required, carries everything)
   ├── parameters.env                       ← template variables for the resources YAML
   └── OpenChoreo cuts a ResourceRelease automatically
 
 ResourceReleaseBinding (created by you, one per environment)
   └── pins a ResourceRelease → OpenChoreo renders into the data-plane namespace:
+        ├── env ExternalSecret             ← materializes the environment values
         ├── resources ConfigMap            ← the declarative resources YAML
         ├── thunderid-config ConfigMap     ← deployment.yaml (DB fields as {{.VAR}} placeholders)
         ├── gate-config ConfigMap          ← Gate frontend config.js
@@ -45,8 +47,9 @@ resources for services explicitly opted into `mutable`/`composite` stores.
 ## Prerequisites
 
 1. A Kubernetes cluster with OpenChoreo installed (control plane + data plane).
-2. An accessible PostgreSQL server (e.g. AWS RDS) with **four databases**
-   created and the ThunderID schema loaded:
+2. Only with `runtime.dbType: postgres` — an accessible PostgreSQL server
+   (e.g. AWS RDS) with **four databases** created and the ThunderID schema
+   loaded:
 
    ```bash
    # against each database, run the matching script:
@@ -56,8 +59,14 @@ resources for services explicitly opted into `mutable`/`composite` stores.
    backend/dbscripts/operationdb/postgres.sql  # → operationdb
    ```
 
-3. A Secret with the connection details in the data-plane namespace — see
-   [Secret Contract](#secret-contract).
+   The default `dbType: sqlite` needs no database at all: it uses the
+   files bundled in the image. Storage is pod-local and ephemeral — runtime
+   data (sessions, tokens, database-backed stores) is lost on pod restart
+   and `replicas` must stay at 1 — so it suits development and evaluation
+   only.
+
+3. The environment values pushed to the platform secret store — see
+   [Secret Store Contract](#secret-store-contract).
 
 ## Install
 
@@ -74,28 +83,41 @@ helm install thunderid-type install/openchoreo/thunderid-oc-resourcetype \
 |-------|-------------|---------|
 | `resourceType.cluster` | `true` → `ClusterResourceType` (shared across all projects); `false` → namespaced `ResourceType` in the release namespace | `true` |
 
-## Secret Contract
+## Secret Store Contract
 
-Create one Secret per environment **in the data-plane namespace** (the
-OpenChoreo-generated namespace where the pods run, e.g.
-`dp-<org>-<project>-<environment>-<hash>`). See
-[samples/secret.yaml](samples/secret.yaml) for a full template.
+Push the environment values to the platform secret store (the External
+Secrets Operator `ClusterSecretStore` configured for the data plane, e.g.
+the OpenBao instance installed with OpenChoreo) as properties of **one
+remote secret per environment**:
 
-Every key is required — ThunderID fails fast at startup when one is missing:
+```bash
+bao kv put secret/thunderid/dev \
+  CRYPTO_ENCRYPTION_KEY=<64_HEX_CHAR_KEY> \
+  ADMIN_PASSWORD=<PASSWORD> \
+  DB_CONFIG_HOSTNAME=<DB_HOST> DB_CONFIG_PORT=5432 DB_CONFIG_NAME=configdb \
+  DB_CONFIG_USERNAME=<DB_USER> DB_CONFIG_PASSWORD=<DB_PASSWORD> DB_CONFIG_SSLMODE=require \
+  ... # same six for DB_RUNTIME_*, DB_USER_*, DB_OPERATION_*
+```
 
-| Key | Description |
-|-----|-------------|
+The ResourceType renders an `ExternalSecret` that extracts every property at
+`secretStore.key` into the container environment. ThunderID fails fast at
+startup when a referenced property is missing. The `DB_*` properties are
+only needed with `runtime.dbType: postgres`:
+
+| Property | Description |
+|----------|-------------|
 | `CRYPTO_ENCRYPTION_KEY` | 32-byte hex key (`openssl rand -hex 32`) |
 | `ADMIN_PASSWORD` | Admin user password, resolving the `{{.ADMIN_PASSWORD}}` placeholder in the declarative resources file |
-| `DB_CONFIG_HOSTNAME` / `_PORT` / `_NAME` / `_USERNAME` / `_PASSWORD` / `_SSLMODE` | Config database connection |
-| `DB_RUNTIME_*` (same six) | Runtime database connection |
-| `DB_USER_*` (same six) | User database connection |
-| `DB_OPERATION_*` (same six) | Operation database connection |
+| `DB_CONFIG_HOSTNAME` / `_PORT` / `_NAME` / `_USERNAME` / `_PASSWORD` / `_SSLMODE` | Config database connection (postgres only) |
+| `DB_RUNTIME_*` (same six) | Runtime database connection (postgres only) |
+| `DB_USER_*` (same six) | User database connection (postgres only) |
+| `DB_OPERATION_*` (same six) | Operation database connection (postgres only) |
 
 The rendered `deployment.yaml` keeps these fields as `{{.VAR}}` placeholders;
-ThunderID resolves them from the environment at startup. The Secret is
-injected into the server container via `envFrom`, so the values never appear
-in any control-plane object.
+ThunderID resolves them from the environment at startup. The materialized
+Secret is injected via `envFrom`. The values only transit between the store
+and the data plane and never appear in any control-plane object — the same
+guarantee OpenChoreo's `SecretReference` mechanism gives Component secrets.
 
 ## Create a ThunderID Instance
 
@@ -114,7 +136,9 @@ spec:
     kind: ClusterResourceType
     name: thunderid
   parameters:
-    secretName: thunderid-db
+    secretStore:
+      name: default          # ClusterSecretStore
+      key: thunderid/dev     # remote path holding the environment values
     env:
       - name: CONSOLE_CLIENT_ID
         value: CONSOLE
@@ -152,7 +176,7 @@ The practical workflow is to export from an existing ThunderID installation
   matching the REST API.
 - Exports strip credentials — add a `credentials:` block back to each user
   that must be able to log in. Use a template placeholder resolved from the
-  pre-created Secret so the password never appears in the Resource spec
+  secret store values so the password never appears in the Resource spec
   (values are hashed at load time):
 
   ```yaml
@@ -210,7 +234,7 @@ Semantics to be aware of:
   are not substituted into it.
 - In `deploymentYaml`, ThunderID's `{{.VAR}}` environment variable
   placeholders still resolve
-  at startup (from the `secretName` Secret and `parameters.env`), which is
+  at startup (from the secret store values and `parameters.env`), which is
   the way to keep per-environment values inside an override. The `config.js`
   files have no runtime substitution and are fully static.
 - With `deploymentYaml` overridden, the `runtime.*` knobs no longer shape
@@ -225,27 +249,30 @@ Semantics to be aware of:
 `runtime.tls.enabled: true` switches ThunderID from plain HTTP to HTTPS:
 `http_only` flips to `false` in the rendered `deployment.yaml`, and a
 kgateway `BackendConfigPolicy` is rendered so the gateway originates TLS to
-the backend. Set `runtime.tls.caSecretName` to a Secret carrying the root
-CA (`ca.crt`) to have the gateway verify the backend certificate. Left
-empty, verification is skipped — encrypted but unverified, which is the
-only workable mode for self-signed certificates like the image's bundled
-pair. The serving certificate is `config/certs/server.cert` /
+the backend. Set `runtime.tls.verifyBackend: true` to have the gateway
+verify the backend certificate against the root CA. This **requires
+`runtime.certs.storeKey`** to be set and that store entry to include a
+`ca.crt` property — the gateway policy references the `-certs` Secret
+materialized from it. If `verifyBackend` is set without `certs.storeKey`,
+the gateway silently falls back to skipping verification (no `-certs`
+Secret exists to reference). Left off, verification is skipped — encrypted
+but unverified, which is the only workable mode for self-signed
+certificates like the image's bundled pair. The serving certificate is `config/certs/server.cert` /
 `server.key` — the image's self-signed pair by default.
 
 The image bundles all its certificate material under
 `/opt/thunderid/config/certs/` (HTTPS serving pair, JWT signing pairs,
-crypto key). `runtime.certs` overrides any subset of these from a
-pre-created Secret in the data-plane namespace (see
-[samples/certs-secret.yaml](samples/certs-secret.yaml)): each key listed in
-`certs.files` is projected over the matching bundled file, the rest stay
-visible. Production deployments should at minimum override the JWT signing
-pair (`signing.cert` / `signing.key`) and, with TLS enabled, the serving
-pair:
+crypto key). `runtime.certs` overrides any subset of these from the
+platform secret store: `storeKey` names a remote secret whose properties
+are the file contents. Each property listed in `certs.files` is projected
+over the matching bundled file — the rest stay visible.
+Production deployments should at minimum override the JWT signing pair
+(`signing.cert` / `signing.key`) and, with TLS enabled, the serving pair:
 
 ```bash
-kubectl create secret generic thunderid-certs -n <data-plane-namespace> \
-  --from-file=server.cert=./tls.crt --from-file=server.key=./tls.key \
-  --from-file=signing.cert=./jwt.crt --from-file=signing.key=./jwt.key
+bao kv put secret/thunderid/dev-certs \
+  server.cert=@tls.crt server.key=@tls.key \
+  signing.cert=@jwt.crt signing.key=@jwt.key ca.crt=@ca.crt
 ```
 
 ```yaml
@@ -253,8 +280,9 @@ kubectl create secret generic thunderid-certs -n <data-plane-namespace> \
     runtime:
       tls:
         enabled: true
+        verifyBackend: true    # gateway verifies against the ca.crt property
       certs:
-        secretName: thunderid-certs
+        storeKey: thunderid/dev-certs
         files: [server.cert, server.key, signing.cert, signing.key]
 ```
 
@@ -273,7 +301,9 @@ A second `HTTPRoute` is rendered for that hostname and the Console's
 
 | Field | Description | Default |
 |-------|-------------|---------|
-| `secretName` | Name of the pre-created Secret in the data-plane namespace (**required**) | — |
+| `secretStore.name` | External Secrets Operator store to resolve against | `default` |
+| `secretStore.kind` | Store scope — `ClusterSecretStore` (cluster-scoped) or `SecretStore` (namespaced, in the data-plane namespace) | `ClusterSecretStore` |
+| `secretStore.key` | Remote path whose properties become the container environment (**required**) | — |
 | `image` | ThunderID container image | `ghcr.io/thunder-id/thunderid:latest` |
 | `declarativeResources` | Multi-doc declarative resources YAML, loaded at startup via `--resources` (**required**) | — |
 | `configOverrides.deploymentYaml` | Full-content override for the rendered `deployment.yaml`; empty uses the built-in default driven by `runtime.*`/environment configurations. Used verbatim (no CEL interpolation); `{{.VAR}}` environment variable placeholders still resolve at startup | `""` |
@@ -284,10 +314,11 @@ A second `HTTPRoute` is rendered for that hostname and the Console's
 | `runtime.stores.<service>` | Store mode override per service — `mutable`, `declarative`, or `composite`. Services: `user`, `userType`, `organizationUnit`, `identityProvider`, `application`, `group`, `role`, `theme`, `layout`, `translation`, `flow`, `resourceServer`, `serverConfig` | `""` (inherit) |
 | `runtime.tls.enabled` | `false` → plain HTTP; `true` → ThunderID serves HTTPS and a `BackendConfigPolicy` makes the gateway originate TLS to the backend | `false` |
 | `runtime.tls.minVersion` | Minimum TLS version (`1.2` / `1.3`) | `1.3` |
-| `runtime.tls.caSecretName` | Secret (data-plane namespace, key `ca.crt`) with the root CA the gateway verifies the backend certificate against; empty skips verification (encrypted, unverified) | `""` |
-| `runtime.certs.secretName` | Pre-created Secret (data-plane namespace) with certificate/key files to project over `config/certs/` | `""` |
-| `runtime.certs.files` | Secret keys to project — each overlays the matching bundled file (`server.cert`, `server.key`, `signing.cert`, `signing.key`, `ecdsa-signing.cert`, `ecdsa-signing.key`, `crypto.key`); the rest stay visible | `[]` |
+| `runtime.tls.verifyBackend` | Verify the backend certificate at the gateway against the `ca.crt` property at `runtime.certs.storeKey` (**requires** `certs.storeKey`; ignored otherwise); off skips verification (encrypted, unverified) | `false` |
+| `runtime.certs.storeKey` | Secret store path holding certificate/key files as properties, projected over `config/certs/` | `""` |
+| `runtime.certs.files` | Properties to project — each overlays the matching bundled file (`server.cert`, `server.key`, `signing.cert`, `signing.key`, `ecdsa-signing.cert`, `ecdsa-signing.key`, `crypto.key`); the rest stay visible | `[]` |
 | `runtime.defaultAuthFlowHandle` | Flow handle used when an application does not pin its own `authFlowId`; empty inherits the server default | `""` |
+| `runtime.dbType` | Database engine — `sqlite` (bundled files, ephemeral pod-local storage, development only) or `postgres` (externally hosted, production) | `sqlite` |
 | `runtime.imagePullPolicy` | `Always` / `IfNotPresent` / `Never` | `Always` |
 | `runtime.port` | Port the ThunderID server listens on | `8090` |
 | `runtime.gate.clientBase` | Gate frontend base path | `/gate` |
@@ -352,11 +383,11 @@ curl http://<environment>-<resourceName>-<ns>.<gateway-domain>:<port>/health/rea
 
 ## Security Considerations
 
-- Database credentials and the crypto key stay on the data plane; only the
-  Secret's *name* appears in the Resource spec.
+- Database credentials and the crypto key stay in the secret store and on
+  the data plane; only the store *path* appears in the Resource spec.
 - Use `sslmode: verify-full` for production database connections.
 - Keep user passwords out of the declarative resources file: use
-  `{{.ADMIN_PASSWORD}}`-style placeholders resolved from the pre-created
-  Secret, so credentials never appear in the Resource spec or any
+  `{{.ADMIN_PASSWORD}}`-style placeholders resolved from the secret store
+  values, so credentials never appear in the Resource spec or any
   control-plane object.
 - Pin a specific image tag instead of `latest` in production.
