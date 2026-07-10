@@ -612,6 +612,7 @@ components:
         scopes: { type: array, items: { type: string } }
         prompt: { type: string }
         tokenExchangeEnabled: { type: boolean }
+        idJagEnabled: { type: boolean, description: "Enable ID-JAG issuance for this identity provider (draft-ietf-oauth-identity-assertion-authz-grant), so that self-issued ID tokens naming it as issuer can be trusted for the jwt-bearer grant. Requires issuer and jwksEndpoint to be set." }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
     OIDCConnectionCreateRequest:
       allOf:
@@ -637,6 +638,7 @@ components:
         scopes: { type: array, items: { type: string } }
         prompt: { type: string }
         tokenExchangeEnabled: { type: boolean }
+        idJagEnabled: { type: boolean, description: "Enable ID-JAG issuance for this identity provider (draft-ietf-oauth-identity-assertion-authz-grant), so that self-issued ID tokens naming it as issuer can be trusted for the jwt-bearer grant. Requires issuer and jwksEndpoint to be set." }
         attributeConfiguration: { $ref: '#/components/schemas/AttributeConfiguration' }
 
     AttributeConfiguration:
