@@ -90,9 +90,9 @@ type EngineContext struct {
 	// SSOHandleIn carries the inbound SSO handle for this request. It is transient: read from
 	// the transport at the start of execution and never persisted with the flow context.
 	SSOHandleIn string
-	// SSOFlowVersion is the current active version of this flow's definition, resolved via
-	// the flow management provider. Transient; used by the SSO-Check node to reject sessions
-	// established at an incompatible flow version.
+	// SSOFlowVersion is the current active version of this flow's definition, captured from the
+	// flow fetched when the context is loaded. Transient; used by the SSO-Check node to reject
+	// sessions established at an incompatible flow version.
 	SSOFlowVersion int
 }
 

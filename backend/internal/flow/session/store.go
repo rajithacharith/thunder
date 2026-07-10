@@ -122,6 +122,194 @@ func (st *store) Update(ctx context.Context, s *Session) error {
 	})
 }
 
+// CreateContext persists the session context. It rejects payloads exceeding MaxSessionContextBytes.
+func (st *store) CreateContext(ctx context.Context, c SessionContext) error {
+	payload, err := c.serializePayload()
+	if err != nil {
+		return err
+	}
+	if len(payload) > MaxSessionContextBytes {
+		return errSessionContextTooLarge
+	}
+
+	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		_, execErr := dbClient.ExecuteContext(ctx, queryCreateSessionContext,
+			c.SessionID, st.deploymentID, c.CheckpointID, payload, c.ContextVersion)
+		if execErr != nil {
+			return fmt.Errorf("failed to create session context: %w", execErr)
+		}
+		return nil
+	})
+}
+
+// GetByCheckpoint fetches one checkpoint's session context.
+func (st *store) GetByCheckpoint(ctx context.Context, sessionID,
+	checkpointID string) (*SessionContext, error) {
+	var result *SessionContext
+
+	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		results, queryErr := dbClient.QueryContext(ctx, queryGetSessionContextByCheckpoint,
+			sessionID, st.deploymentID, checkpointID)
+		if queryErr != nil {
+			return fmt.Errorf("failed to execute query: %w", queryErr)
+		}
+		if len(results) == 0 {
+			return nil
+		}
+		if len(results) != 1 {
+			return fmt.Errorf("unexpected number of results: %d", len(results))
+		}
+
+		c, buildErr := st.buildSessionContextFromRow(results[0])
+		if buildErr != nil {
+			return buildErr
+		}
+		result = c
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ListCheckpointIDs returns the checkpoint ids a session has saved, without decrypting any payload.
+func (st *store) ListCheckpointIDs(ctx context.Context, sessionID string) ([]string, error) {
+	var ids []string
+
+	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		results, queryErr := dbClient.QueryContext(ctx, queryListCheckpointsBySessionID, sessionID, st.deploymentID)
+		if queryErr != nil {
+			return fmt.Errorf("failed to execute query: %w", queryErr)
+		}
+		for _, row := range results {
+			id, parseErr := parseString(row["checkpoint_id"], "checkpoint_id")
+			if parseErr != nil {
+				return parseErr
+			}
+			ids = append(ids, id)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+// Delete removes a session's session context.
+func (st *store) Delete(ctx context.Context, sessionID string) error {
+	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		_, err := dbClient.ExecuteContext(ctx, queryDeleteSessionContext, sessionID, st.deploymentID)
+		if err != nil {
+			return fmt.Errorf("failed to delete session context: %w", err)
+		}
+		return nil
+	})
+}
+
+// buildSessionContextFromRow parses a result row into an SessionContext.
+func (st *store) buildSessionContextFromRow(row map[string]interface{}) (*SessionContext, error) {
+	sessionID, err := parseString(row["session_id"], "session_id")
+	if err != nil {
+		return nil, err
+	}
+	checkpointID, err := parseString(row["checkpoint_id"], "checkpoint_id")
+	if err != nil {
+		return nil, err
+	}
+	contextVersion, err := parseInt(row["context_version"], "context_version")
+	if err != nil {
+		return nil, err
+	}
+	payload, err := parseSessionContextPayload(parseNullableString(row["context"]))
+	if err != nil {
+		return nil, err
+	}
+
+	return &SessionContext{
+		SessionID:      sessionID,
+		CheckpointID:   checkpointID,
+		RuntimeData:    payload.RuntimeData,
+		AuthUser:       payload.AuthUser,
+		CompletedSteps: payload.CompletedSteps,
+		ContextVersion: contextVersion,
+	}, nil
+}
+
+// Record inserts or refreshes a participant under the upsert query.
+func (st *store) Record(ctx context.Context, p Participant) error {
+	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		_, err := dbClient.ExecuteContext(ctx, queryUpsertParticipant,
+			p.SessionID, st.deploymentID, p.AppID, p.FirstJoinedAt, p.LastActiveAt)
+		if err != nil {
+			return fmt.Errorf("failed to record session participant: %w", err)
+		}
+		return nil
+	})
+}
+
+// ListBySessionID returns the participants of a session, oldest first.
+func (st *store) ListBySessionID(ctx context.Context, sessionID string) ([]Participant, error) {
+	var result []Participant
+
+	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		results, queryErr := dbClient.QueryContext(ctx, queryListParticipantsBySessionID, sessionID, st.deploymentID)
+		if queryErr != nil {
+			return fmt.Errorf("failed to execute query: %w", queryErr)
+		}
+		for _, row := range results {
+			p, buildErr := buildParticipantFromRow(row)
+			if buildErr != nil {
+				return buildErr
+			}
+			result = append(result, p)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// DeleteBySessionID removes all participants of a session.
+func (st *store) DeleteBySessionID(ctx context.Context, sessionID string) error {
+	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		_, err := dbClient.ExecuteContext(ctx, queryDeleteParticipantsBySessionID, sessionID, st.deploymentID)
+		if err != nil {
+			return fmt.Errorf("failed to delete session participants: %w", err)
+		}
+		return nil
+	})
+}
+
+// buildParticipantFromRow maps a database result row into a Participant.
+func buildParticipantFromRow(row map[string]interface{}) (Participant, error) {
+	sessionID, err := parseString(row["session_id"], "session_id")
+	if err != nil {
+		return Participant{}, err
+	}
+	appID, err := parseString(row["app_id"], "app_id")
+	if err != nil {
+		return Participant{}, err
+	}
+	firstJoinedAt, err := sysutils.ParseDBTimeField(row["first_joined_at"], "first_joined_at")
+	if err != nil {
+		return Participant{}, err
+	}
+	lastActiveAt, err := sysutils.ParseDBTimeField(row["last_active_at"], "last_active_at")
+	if err != nil {
+		return Participant{}, err
+	}
+	return Participant{
+		SessionID:     sessionID,
+		AppID:         appID,
+		FirstJoinedAt: firstJoinedAt,
+		LastActiveAt:  lastActiveAt,
+	}, nil
+}
+
 // withOperationDBClient runs fn with an operation database client. SSO sessions are persistent
 // state that must survive a runtime database flush, so they live in the operation datasource.
 func withOperationDBClient(dbProvider provider.DBProviderInterface,
