@@ -25,4 +25,4 @@ description: |
   platform secret store (External Secrets Operator), referenced by store
   path when the Resource is created.
 type: application
-version: 0.47.0
+version: 0.48.0
