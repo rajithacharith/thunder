@@ -1010,6 +1010,7 @@ const translations = {
     'createWizard.steps.organizationUnit': 'Organization unit',
     'createWizard.steps.profile': 'Profile',
     'createWizard.steps.owner': 'Owner',
+    'createWizard.name.title': "What's this agent called?",
     'createWizard.name.fieldLabel': 'Agent name',
     'createWizard.name.placeholder': 'e.g. Billing Service',
     'createWizard.name.suggestions.label': 'Need inspiration? Pick one:',
@@ -1024,7 +1025,7 @@ const translations = {
 
     // Client secret (creation)
     'clientSecret.saveTitle': 'Save your client secret',
-    'clientSecret.saveSubtitle': "Copy your client secret and store it somewhere safe. It won't be shown again.",
+    'clientSecret.saveSubtitle': "This secret won't be shown again. Copy it and store it somewhere safe.",
     'clientSecret.agentNameLabel': 'Agent name',
     'clientSecret.clientIdLabel': 'Client ID',
     'clientSecret.clientSecretLabel': 'Client Secret',
@@ -1065,50 +1066,158 @@ const translations = {
     'edit.page.back': 'Back to agents',
     'edit.page.description.empty': 'No description',
     'edit.page.description.placeholder': 'Add a description',
+    'edit.page.tabs.general': 'General',
     'edit.page.tabs.attributes': 'Attributes',
+    'edit.page.tabs.credentials': 'Credentials',
+    'edit.page.tabs.access': 'Access',
+    'edit.page.tabs.flows': 'Flows',
+    'edit.page.tabs.tokens': 'Tokens',
+    'edit.page.tabs.advanced': 'Advanced',
     'edit.page.unsavedChanges': 'You have unsaved changes',
-    'edit.page.reset': 'Discard',
+    'edit.page.unsavedChangesInvalid': 'Before saving, {{issues}}.',
+    'edit.page.validation.missingRedirectUri': 'add a redirect URI',
+    'edit.page.validation.missingAllowedUserType': 'select at least one allowed user type',
+    'edit.page.validation.missingCertificate': 'add a certificate',
+    'edit.page.validation.tokenSettings': 'fix the token settings',
+    'edit.page.reset': 'Reset',
     'edit.page.save': 'Save',
     'edit.page.saving': 'Saving…',
     'update.success': 'Agent updated successfully.',
     'update.error': 'Failed to update agent. Please try again.',
 
-    // Edit page — Attributes tab
+    // Edit page - Attributes tab
     'edit.attributes.title': 'Attributes',
     'edit.attributes.description': 'View and manage agent attribute values.',
     'edit.attributes.empty': 'No attributes available.',
     'edit.attributes.noEditable': 'No editable attributes available.',
+    'edit.attributes.noSchema': 'No schema available for editing',
 
-    // Edit page — General tab
-    'edit.general.sections.quickCopy.title': 'Quick Copy',
-    'edit.general.sections.quickCopy.description': 'Copy agent identifiers for use in your code.',
+    // Edit page - General tab
+    'edit.general.sections.quickCopy.title': 'Identifier',
+    'edit.general.sections.quickCopy.description': 'The unique identifier for this agent.',
     'edit.general.labels.agentId': 'Agent ID',
     'edit.general.labels.ownerId': 'Owner ID',
     'edit.general.agentId.hint': 'Unique identifier for this agent',
     'edit.general.clientId.hint': 'OAuth2 client identifier used by this agent to obtain tokens',
     'edit.general.owner.hint': 'Identifier of the user that owns this agent',
+    'edit.general.owner.empty': 'No owner assigned',
+    'edit.general.sections.owner.title': 'Owner',
+    'edit.general.sections.owner.description': 'The user accountable for this agent.',
+    'edit.general.sections.owner.label': 'Owner',
+    'edit.general.sections.owner.summaryDescription':
+      'The user who is accountable for this agent, shown in audit records and used as the contact point for questions about what this agent does. Assigning an owner does not give that user any special access to the agent. Manage this from the Advanced tab.',
+    'edit.general.sections.attributes.title': 'Attributes',
+    'edit.general.sections.attributes.description':
+      "A preview of this agent's attribute values. Manage them from the Attributes tab.",
+    'edit.general.sections.organizationUnit.title': 'Organization Unit',
+    'edit.general.sections.organizationUnit.description': 'The organization unit this agent belongs to.',
+    'edit.general.sections.dangerZone.title': 'Danger Zone',
+    'edit.general.sections.dangerZone.description': 'Actions here are permanent. Make sure before you proceed.',
     'edit.general.dangerZone.deleteAgent.title': 'Delete Agent',
     'edit.general.dangerZone.deleteAgent.description':
-      'Permanently delete this agent and all associated data. This action cannot be undone.',
+      'Permanently deletes this agent and immediately invalidates any tokens it has issued. This action cannot be undone.',
     'edit.general.dangerZone.deleteAgent.button': 'Delete Agent',
 
-    // Edit page — Flows tab
+    // Edit page - Credentials tab
+    'edit.credentials.clientId.title': 'Client ID',
+    'edit.credentials.clientId.description': 'The public identifier this agent uses to authenticate as a client.',
+    'edit.credentials.clientSecret.title': 'Client Secret',
+    'edit.credentials.clientSecret.description': 'The secret this agent uses to authenticate as a client.',
+    'edit.credentials.clientSecret.clientIdLabel': 'Client ID',
+    'edit.credentials.clientSecret.regenerateHint':
+      'Client secret was shown once at creation. Regenerate to issue a new one.',
+    'edit.credentials.clientSecret.regenerateButton': 'Regenerate secret',
+    'edit.credentials.tokenEndpointAuthMethod.title': 'Token Endpoint Auth Method',
+    'edit.credentials.tokenEndpointAuthMethod.description':
+      'Defines how this agent authenticates when requesting tokens.',
+    'edit.credentials.tokenEndpointAuthMethod.placeholder': 'Select an auth method',
+    'edit.credentials.tokenEndpointAuthMethod.hint':
+      'How this agent proves its identity when it calls the token endpoint.',
+    'edit.credentials.tokenEndpointAuthMethod.lockedHint': 'Set to "none" because this agent is a public client.',
+    'edit.credentials.certificate.title': 'Certificate',
+    'edit.credentials.certificate.description':
+      'Used to verify signed requests from this agent when it authenticates with private_key_jwt.',
+    'edit.credentials.certificate.sourceLabel': 'Public key source',
+    'edit.credentials.certificate.type.none': 'None',
+    'edit.credentials.certificate.type.jwks': 'JWKS (JSON)',
+    'edit.credentials.certificate.type.jwksUri': 'JWKS URI',
+    'edit.credentials.certificate.placeholder.jwks': '{ "keys": [ ... ] }',
+    'edit.credentials.certificate.placeholder.jwksUri': 'https://example.com/.well-known/jwks.json',
+    'edit.credentials.certificate.hint.jwks': 'The JSON Web Key Set to verify signed requests from this agent against.',
+    'edit.credentials.certificate.hint.jwksUri': 'The URL to verify signed requests from this agent against.',
+    'edit.credentials.certificate.error.required':
+      'This agent needs a certificate before it can use private_key_jwt authentication.',
+    'edit.credentials.certificate.error.valueRequired': 'This field cannot be empty.',
+
+    // Edit page - Access tab
+    'edit.access.groups.title': 'Groups',
+    'edit.access.groups.description':
+      'Groups this agent belongs to. Manage membership from the <manageLink>Groups page</manageLink>.',
+    'edit.access.groups.label': 'Groups',
+    'edit.access.groups.empty': 'This agent does not belong to any groups.',
+    'edit.access.groups.error': 'Failed to load groups for this agent.',
+    'edit.access.roles.title': 'Roles',
+    'edit.access.roles.description':
+      'Roles assigned to this agent, directly or through its groups. Manage assignments from the <manageLink>Roles page</manageLink>.',
+    'edit.access.roles.label': 'Roles',
+    'edit.access.roles.empty': 'This agent does not have any roles assigned.',
+    'edit.access.roles.error': 'Failed to load roles for this agent.',
+
+    // Edit page - Flows tab
     'edit.flows.allowedUserTypes.title': 'Allowed User Types',
     'edit.flows.allowedUserTypes.description':
       'Restrict which user types can authenticate or register through this agent.',
     'edit.flows.allowedUserTypes.label': 'User Types',
     'edit.flows.allowedUserTypes.placeholder': 'Select or add user types',
-    'edit.flows.allowedUserTypes.hint': 'Leave empty to allow any user type.',
+    'edit.flows.allowedUserTypes.hint': 'Only these user types can authenticate or register through this agent.',
+    'edit.flows.allowedUserTypes.required': 'Select at least one user type that can sign in through this agent.',
+    'edit.flows.delegationToggle.label': 'Delegated mode',
+    'edit.flows.delegationLock.message':
+      'These settings are frozen for this agent. Turn on Delegated mode above to unlock and start using them.',
 
-    // Edit page — Advanced tab
-    'edit.advanced.redirectUris.title': 'Redirect URIs',
-    'edit.advanced.redirectUris.description': 'Allowed redirect destinations for the authorization code grant.',
+    // Edit page - Advanced tab
+    'edit.advanced.redirectUris.title': 'Authorized redirect URIs',
+    'edit.advanced.redirectUris.description': 'For use with requests from a web server',
     'edit.advanced.redirectUris.empty': 'No redirect URIs configured.',
-    'edit.advanced.redirectUris.addUri': 'Add Redirect URI',
+    'edit.advanced.redirectUris.addUri': 'Add URI',
     'edit.advanced.redirectUris.error.empty': 'URI cannot be empty',
     'edit.advanced.redirectUris.error.invalid': 'Enter a valid URL',
-    'edit.advanced.redirectUris.required':
-      'At least one valid redirect URI is required for the authorization code grant.',
+    'edit.advanced.redirectUris.required': 'The Authorization Code grant requires at least one valid redirect URI.',
+    'edit.advanced.oauthAccess.title': 'OAuth Configuration',
+    'edit.advanced.oauthAccess.description': 'The grants and redirect URIs this agent is authorized to use.',
+    'edit.advanced.oauthAccess.grantTypes.label': 'Grant Types',
+    'edit.advanced.oauthAccess.grantTypes.hint':
+      'The greyed-out grants unlock once you turn on Delegated mode in the Flows tab.',
+    'edit.advanced.security.title': 'Security',
+    'edit.advanced.security.description':
+      'Controls how this agent protects the authorization code exchange when a user signs in.',
+    'edit.advanced.security.pkce.label': 'Require PKCE',
+    'edit.advanced.security.pkce.forced':
+      'This agent is set up as a public client, so PKCE is required and cannot be turned off.',
+    'edit.advanced.security.pkce.on': 'authorization_code is on for this agent, so PKCE is required automatically.',
+    'edit.advanced.security.pkce.notApplicable':
+      'PKCE only applies to the <code>authorization_code</code> grant. Turn that on to enable this setting.',
+    'edit.advanced.security.par.label': 'Require Pushed Authorization Requests',
+    'edit.advanced.security.par.hint':
+      'Require this agent to push its authorization request to the PAR endpoint before redirecting a user to sign in.',
+
+    // Edit page - Tokens tab
+    'edit.tokens.tabs.user': 'User',
+    'edit.tokens.tabs.agent': 'Agent',
+    'edit.tokens.delegationLock.message':
+      'These settings are frozen for this agent. Turn on Delegated mode in the Flows tab to unlock and start using them.',
+    'edit.tokens.agent.attributes.title': 'Access Token Attributes',
+    'edit.tokens.agent.attributes.description':
+      'Attributes included in the access token this agent receives for its own requests (client_credentials grant).',
+    'edit.tokens.agent.attributes.label': 'Add or Remove Attributes',
+    'edit.tokens.agent.attributes.hint': "Click on this agent's attributes to add them to its access token.",
+    'edit.tokens.agent.attributes.empty':
+      'No attributes available. Configure attributes for this agent in the Attributes tab.',
+    'edit.tokens.agent.validity.title': 'Token Validity',
+    'edit.tokens.agent.validity.label': 'Token Validity',
+    'edit.tokens.agent.validity.description': 'How long this access token remains valid before expiration.',
+    'edit.tokens.agent.validity.hint': 'Token validity period in seconds (e.g., 3600 for 1 hour).',
+    'edit.tokens.agent.validity.error': 'Enter a validity period of at least 1 second.',
 
     // Backend error code translations (per agent service error envelope).
     'errors.AGT-1001': 'The request body is malformed or contains invalid data.',

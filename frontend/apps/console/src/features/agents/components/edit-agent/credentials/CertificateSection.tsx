@@ -37,9 +37,9 @@ export default function CertificateSection({
   const {t} = useTranslation();
 
   const certificateTypeOptions = [
-    {value: CertificateTypes.NONE, label: t('applications:edit.advanced.certificate.type.none')},
-    {value: CertificateTypes.JWKS, label: t('applications:edit.advanced.certificate.type.jwks')},
-    {value: CertificateTypes.JWKS_URI, label: t('applications:edit.advanced.certificate.type.jwksUri')},
+    {value: CertificateTypes.NONE, label: t('agents:edit.credentials.certificate.type.none', 'None')},
+    {value: CertificateTypes.JWKS, label: t('agents:edit.credentials.certificate.type.jwks', 'JWKS (JSON)')},
+    {value: CertificateTypes.JWKS_URI, label: t('agents:edit.credentials.certificate.type.jwksUri', 'JWKS URI')},
   ];
 
   const currentCertType = certificate?.type ?? CertificateTypes.NONE;
@@ -47,12 +47,17 @@ export default function CertificateSection({
 
   return (
     <SettingsCard
-      title={t('applications:edit.advanced.labels.certificate')}
-      description={t('applications:edit.advanced.certificate.intro')}
+      title={t('agents:edit.credentials.certificate.title', 'Certificate')}
+      description={t(
+        'agents:edit.credentials.certificate.description',
+        'Used to verify signed requests from this agent when it authenticates with private_key_jwt.',
+      )}
     >
       <Stack spacing={2}>
         <FormControl fullWidth error={required && currentCertType === CertificateTypes.NONE}>
-          <FormLabel htmlFor="certificate-type">{t('applications:edit.advanced.labels.certificateType')}</FormLabel>
+          <FormLabel htmlFor="certificate-type">
+            {t('agents:edit.credentials.certificate.sourceLabel', 'Public key source')}
+          </FormLabel>
           <Autocomplete
             id="certificate-type"
             value={certificateTypeOptions.find((opt) => opt.value === currentCertType) ?? certificateTypeOptions[0]}
@@ -76,8 +81,8 @@ export default function CertificateSection({
           {required && currentCertType === CertificateTypes.NONE && (
             <FormHelperText>
               {t(
-                'applications:edit.advanced.certificate.error.required',
-                'A certificate is required for private_key_jwt authentication.',
+                'agents:edit.credentials.certificate.error.required',
+                'This agent needs a certificate before it can use private_key_jwt authentication.',
               )}
             </FormHelperText>
           )}
@@ -96,18 +101,24 @@ export default function CertificateSection({
             error={required && !currentCertValue}
             placeholder={
               currentCertType === CertificateTypes.JWKS_URI
-                ? t('applications:edit.advanced.certificate.placeholder.jwksUri')
-                : t('applications:edit.advanced.certificate.placeholder.jwks')
+                ? t(
+                    'agents:edit.credentials.certificate.placeholder.jwksUri',
+                    'https://example.com/.well-known/jwks.json',
+                  )
+                : t('agents:edit.credentials.certificate.placeholder.jwks', '{ "keys": [ ... ] }')
             }
             helperText={
               required && !currentCertValue
-                ? t(
-                    'applications:edit.advanced.certificate.error.valueRequired',
-                    'Please enter a value for the selected certificate type.',
-                  )
+                ? t('agents:edit.credentials.certificate.error.valueRequired', 'This field cannot be empty.')
                 : currentCertType === CertificateTypes.JWKS_URI
-                  ? t('applications:edit.advanced.certificate.hint.jwksUri')
-                  : t('applications:edit.advanced.certificate.hint.jwks')
+                  ? t(
+                      'agents:edit.credentials.certificate.hint.jwksUri',
+                      'The URL to verify signed requests from this agent against.',
+                    )
+                  : t(
+                      'agents:edit.credentials.certificate.hint.jwks',
+                      'The JSON Web Key Set to verify signed requests from this agent against.',
+                    )
             }
           />
         )}

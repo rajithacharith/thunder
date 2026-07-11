@@ -147,6 +147,8 @@ export default function AgentCreatePage(): JSX.Element {
           grantTypes: ['client_credentials'],
           tokenEndpointAuthMethod: 'client_secret_basic',
           responseTypes: [],
+          // PKCE requires the authorization_code grant, which new agents don't have yet.
+          pkceRequired: false,
           token: {
             accessToken: {userConfig: {validityPeriod: 3600, attributes: []}},
             // idToken is required by the shared OAuth2Token type; default agent grants don't issue
