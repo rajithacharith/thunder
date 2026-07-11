@@ -1208,3 +1208,9 @@ func (e *Event) Validate() error {
 
 	return nil
 }
+
+// CaptchaVerificationResult holds the outcome of a captcha token verification.
+type CaptchaVerificationResult struct {
+	// Success reports whether the provider accepted the token as valid.
+	Success bool
+}
