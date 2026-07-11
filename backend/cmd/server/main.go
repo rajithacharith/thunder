@@ -30,6 +30,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -225,7 +226,8 @@ func loadCertConfig(ctx context.Context, logger *log.Logger, runtimeSvc kmprovid
 // createHTTPServer creates and configures an HTTP server with common settings.
 func createHTTPServer(ctx context.Context, logger *log.Logger, cfg *config.Config, mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface, revocationEnforcer revocationcache.EnforcerInterface) *http.Server {
-	securityMiddleware := createSecurityMiddleware(ctx, logger, mux, jwtService, revocationEnforcer)
+	securityMiddleware := createSecurityMiddleware(ctx, logger, mux, jwtService, revocationEnforcer,
+		cfg.Server.SecurityConfig.DirectAuthSecret)
 
 	// Build the middleware chain with proper execution order.
 	// Request flow: CorrelationID (outermost) -> AccessLog -> Security -> Route Handler (innermost)
@@ -268,8 +270,9 @@ func createTLSListener(ctx context.Context, logger *log.Logger, server *http.Ser
 }
 
 func createSecurityMiddleware(ctx context.Context, logger *log.Logger, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface, revocationEnforcer revocationcache.EnforcerInterface) http.Handler {
-	middlewareFunc, err := security.Initialize(jwtService, revocationEnforcer)
+	jwtService jwt.JWTServiceInterface, revocationEnforcer revocationcache.EnforcerInterface,
+	directAuthSecret string) http.Handler {
+	middlewareFunc, err := security.Initialize(jwtService, revocationEnforcer, directAuthSecret)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize security middleware", log.Error(err))
 	}
@@ -369,8 +372,16 @@ func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) 
 			}
 		}
 
-		// Get the file path
+		// Assert the resolved path stays within `directory` before touching the filesystem.
 		filePath := path.Join(directory, r.URL.Path)
+		cleanDir := filepath.Clean(directory)
+		if filePath != cleanDir && !strings.HasPrefix(filePath, cleanDir+string(os.PathSeparator)) {
+			logger.Warn(r.Context(), "Rejected request with out-of-bounds path",
+				log.String("requested_path", r.URL.Path),
+				log.String("route_prefix", routePrefix))
+			http.NotFound(w, r)
+			return
+		}
 
 		// Check if the requested file is index.html
 		isIndexHTML := r.URL.Path == "/index.html" || path.Base(filePath) == "index.html"

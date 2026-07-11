@@ -111,6 +111,9 @@ type RefreshTokenClaims struct {
 	ActorSub         string
 	// JTI is the refresh token's unique identifier, used for deny-list (revocation) enforcement.
 	JTI string
+	// Exp is the refresh token's expiry (exp claim); used to bound the deny-list entry when the token
+	// is revoked on rotation.
+	Exp int64
 }
 
 // SubjectTokenClaims represents the validated claims from a subject token (for token exchange).

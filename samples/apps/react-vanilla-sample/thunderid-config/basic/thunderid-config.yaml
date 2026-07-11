@@ -61,8 +61,8 @@ policyUri: https://localhost:3000/privacy
 contacts:
   - admin@example.com
   - support@example.com
-authFlowHandle: default-basic-flow
-registrationFlowHandle: default-basic-flow
+authFlowHandle: default-flow
+registrationFlowHandle: default-flow
 isRegistrationFlowEnabled: true
 isRecoveryFlowEnabled: false
 assertion:

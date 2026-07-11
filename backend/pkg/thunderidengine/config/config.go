@@ -57,6 +57,10 @@ type SecurityConfig struct {
 	TrustedIssuer          TrustedIssuerConfig   `yaml:"trusted_issuer"           json:"trusted_issuer"`
 	SystemPermissionPrefix string                `yaml:"system_permission_prefix" json:"system_permission_prefix"`
 	TokenRevocation        TokenRevocationConfig `yaml:"token_revocation"         json:"token_revocation"`
+	// DirectAuthSecret gates the Direct API endpoints (/auth/**, /register/passkey/**). When
+	// set, callers must present this value in the Direct-Auth-Secret header; when empty, those
+	// endpoints are blocked (secure by default).
+	DirectAuthSecret string `yaml:"direct_auth_secret" json:"direct_auth_secret"`
 }
 
 // TokenRevocationConfig configures the Resource Server's token-revocation enforcement: an in-memory
@@ -162,8 +166,9 @@ type AuthClassConfig struct {
 
 // RefreshTokenConfig holds the refresh token configuration details.
 type RefreshTokenConfig struct {
-	RenewOnGrant   bool  `yaml:"renew_on_grant"  json:"renew_on_grant"`
-	ValidityPeriod int64 `yaml:"validity_period" json:"validity_period"`
+	RenewOnGrant          bool  `yaml:"renew_on_grant"           json:"renew_on_grant"`
+	RevokePreviousOnRenew bool  `yaml:"revoke_previous_on_renew" json:"revoke_previous_on_renew"`
+	ValidityPeriod        int64 `yaml:"validity_period"          json:"validity_period"`
 }
 
 // AuthorizationCodeConfig holds the authorization code configuration details.

@@ -71,9 +71,9 @@ func (suite *CreateSecurityMiddlewareTestSuite) SetupTest() {
 // TestCreateSecurityMiddleware_MultipleInvocations tests that multiple calls work correctly
 func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_MultipleInvocations() {
 	// Execute multiple times
-	handler1 := createSecurityMiddleware(context.Background(), suite.logger, suite.mux, suite.mockJWTService, nil)
-	handler2 := createSecurityMiddleware(context.Background(), suite.logger, suite.mux, suite.mockJWTService, nil)
-	handler3 := createSecurityMiddleware(context.Background(), suite.logger, suite.mux, suite.mockJWTService, nil)
+	handler1 := createSecurityMiddleware(context.Background(), suite.logger, suite.mux, suite.mockJWTService, nil, "")
+	handler2 := createSecurityMiddleware(context.Background(), suite.logger, suite.mux, suite.mockJWTService, nil, "")
+	handler3 := createSecurityMiddleware(context.Background(), suite.logger, suite.mux, suite.mockJWTService, nil, "")
 
 	// Assert - each call should return a new handler instance
 	assert.NotNil(suite.T(), handler1)
@@ -277,6 +277,19 @@ func TestCreateStaticFileHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Equal(t, string(indexContent), rr.Body.String())
+	})
+
+	t.Run("rejects path escaping the served directory", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/app/placeholder", nil)
+		// Set an out-of-bounds path directly to exercise the containment check,
+		// bypassing the ServeMux normalization that would run in production.
+		req.URL.Path = "/app/../../../../etc/passwd"
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		assert.NotContains(t, rr.Body.String(), "root:")
 	})
 }
 

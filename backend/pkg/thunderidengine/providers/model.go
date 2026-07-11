@@ -732,11 +732,20 @@ type UserTypeAttributeMapping struct {
 	Attributes []AttributeMapping `json:"attributes,omitempty" yaml:"attributes,omitempty"`
 }
 
+// AccountLinking configures which attributes resolve the local user for an incoming federated
+// identity when the subject identifier does not. Attributes is a list of external claim names (each
+// resolved to its local counterpart via the IdP's attribute mappings); those with a value are matched
+// together to resolve a unique local user.
+type AccountLinking struct {
+	Attributes []string `json:"attributes,omitempty" yaml:"attributes,omitempty"`
+}
+
 // AttributeConfiguration holds the user-type resolution and per-user-type attribute mappings for an
 // identity provider.
 type AttributeConfiguration struct {
 	UserTypeResolution        *UserTypeResolution        `json:"userTypeResolution,omitempty"        yaml:"user_type_resolution,omitempty"`         //nolint:lll
 	UserTypeAttributeMappings []UserTypeAttributeMapping `json:"userTypeAttributeMappings,omitempty" yaml:"user_type_attribute_mappings,omitempty"` //nolint:lll
+	AccountLinking            *AccountLinking            `json:"accountLinking,omitempty"            yaml:"accountLinking,omitempty"`               //nolint:lll
 }
 
 // ConsentElementApproval represents a user's approval decision for a specific element.
@@ -863,6 +872,10 @@ type ExecutorResponse struct {
 	Assertion      string                 `json:"assertion,omitempty"`
 	Error          *common.ServiceError   `json:"error,omitempty"`
 	AuthUser       AuthUser               `json:"-"`
+	// EngineData carries executor output the flow engine consumes internally (for example, a
+	// transport signal such as a minted session handle). Unlike AdditionalData, it is never
+	// serialized to the client.
+	EngineData map[string]string `json:"-"`
 }
 
 // ExecutionPolicy defines behavioral policies for node execution.

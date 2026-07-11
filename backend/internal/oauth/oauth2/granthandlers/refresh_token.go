@@ -49,6 +49,7 @@ type refreshTokenGrantHandler struct {
 	tokenValidator   tokenservice.TokenValidatorInterface
 	attrCacheService attributecache.AttributeCacheServiceInterface
 	resourceService  providers.ResourceServerProvider
+	refreshRevoker   revocation.RefreshTokenRevokerInterface
 }
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
@@ -58,6 +59,7 @@ func newRefreshTokenGrantHandler(
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	resourceService providers.ResourceServerProvider,
+	refreshRevoker revocation.RefreshTokenRevokerInterface,
 	cfg oauthconfig.Config,
 ) RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
@@ -67,6 +69,7 @@ func newRefreshTokenGrantHandler(
 		tokenValidator:   tokenValidator,
 		attrCacheService: attrCacheService,
 		resourceService:  resourceService,
+		refreshRevoker:   refreshRevoker,
 	}
 }
 
@@ -269,6 +272,21 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 			logger.Error(ctx, "Failed to issue refresh token", log.String("error", errResp.Error))
 			return nil, errResp
 		}
+
+		// Single-use: revoke the consumed refresh token so it cannot be replayed (RFC 9700 §4.14.2).
+		// Fail closed — if the revocation cannot be recorded, the old token would remain usable, so the
+		// rotation is rejected and the client retries with the still-valid old token.
+		if h.cfg.OAuth.RefreshToken.RevokePreviousOnRenew {
+			expiryTime := time.Unix(refreshTokenClaims.Exp, 0).UTC()
+			if err := h.refreshRevoker.RevokeRefreshToken(
+				ctx, refreshTokenClaims.JTI, expiryTime); err != nil {
+				logger.Error(ctx, "Failed to revoke rotated refresh token", log.Error(err))
+				return nil, &model.ErrorResponse{
+					Error:            constants.ErrorServerError,
+					ErrorDescription: "Failed to rotate refresh token",
+				}
+			}
+		}
 	} else {
 		tokenResponse.RefreshToken = model.TokenDTO{
 			Token:    tokenRequest.RefreshToken,
@@ -370,16 +388,15 @@ func (h *refreshTokenGrantHandler) extendCacheTTL(
 	if accessExpiry > maxExpiry {
 		maxExpiry = accessExpiry
 	}
-	desiredTTL := int(maxExpiry-now) + constants.AttributeCacheTTLBufferSeconds
-	if desiredTTL > cacheEntry.TTLSeconds {
-		if extErr := h.attrCacheService.ExtendAttributeCacheTTL(ctx, cacheID, desiredTTL); extErr != nil {
-			logger.Error(ctx, "Failed to extend attribute cache TTL",
-				log.String("cache_id", cacheID),
-				log.String("error", extErr.Error.String()))
-			return &model.ErrorResponse{
-				Error:            constants.ErrorServerError,
-				ErrorDescription: "Failed to extend attribute cache TTL",
-			}
+	desiredTTL := maxExpiry - now + constants.AttributeCacheTTLBufferSeconds
+	extErr := h.attrCacheService.ExtendAttributeCacheTTL(ctx, cacheID, int(desiredTTL))
+	if extErr != nil {
+		logger.Error(ctx, "Failed to extend attribute cache TTL",
+			log.String("cache_id", cacheID),
+			log.String("error", extErr.Error.String()))
+		return &model.ErrorResponse{
+			Error:            constants.ErrorServerError,
+			ErrorDescription: "Failed to extend attribute cache TTL",
 		}
 	}
 	return nil

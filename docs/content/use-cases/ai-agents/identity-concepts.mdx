@@ -70,7 +70,7 @@ See [Manage Agents](/docs/next/guides/guides/agents/manage-agents) and [Agent Au
 
 ## Flows
 
-A flow is the sequence of steps a user moves through when signing in or granting consent. Wayfinder Web uses the bundled `default-basic-flow` for sign-in. The agent uses a separate **Wayfinder Agent Authentication Flow** that drives the OBO consent screen.
+A flow is the sequence of steps a user moves through when signing in or granting consent. Wayfinder Web uses the bundled `default-flow` for sign-in. The agent uses a separate **Wayfinder Agent Authentication Flow** that drives the OBO consent screen.
 
 The consent screen surfaces each requested `wayfinder:booking:*` permission as an individual toggle. The user picks which ones to grant, and the issued token carries only what they ticked — the agent cannot widen its access after the fact. The resulting OBO token identifies *both* the user (as the subject) and the agent (as the actor), so downstream services know the request was made by an agent acting for that user. The token's effective permissions are the intersection of what the user holds and what the user just consented to.
 
