@@ -1530,28 +1530,6 @@ inboundAuthConfig:
 
 ---
 # resource_type: application
-# Confidential OAuth client used by the Wayfinder backend to call the
-# ThunderID AuthZEN PDP. This client authenticates the backend and is not the
-# subject of the access evaluation.
-id: wayfinder-authzen-client
-name: Wayfinder AuthZEN Client
-description: Backend service that requests MCP tool authorization decisions from the ThunderID AuthZEN PDP.
-ouHandle: default
-inboundAuthConfig:
-  - type: oauth2
-    config:
-      clientId: "{{.AUTHZEN_CLIENT_ID}}"
-      clientSecret: "{{.AUTHZEN_CLIENT_SECRET}}"
-      grantTypes:
-        - client_credentials
-      tokenEndpointAuthMethod: client_secret_basic
-      publicClient: false
-      token:
-        accessToken:
-          validityPeriod: 3600
-
----
-# resource_type: application
 # Public OAuth client used by external MCP clients (e.g. MCP Inspector)
 # to call the Wayfinder MCP server on /mcp.
 # Used by the MCP Authorization tryout to demonstrate ThunderID-secured MCP
@@ -1647,20 +1625,6 @@ permissions:
 assignments:
   - id: wayfinder-john-doe
     type: user
-
----
-# resource_type: role
-id: wayfinder-authzen-client-role
-name: Wayfinder AuthZEN Client
-description: Grants the Wayfinder backend permission to call the ThunderID AuthZEN PDP.
-ouHandle: default
-permissions:
-  - resourceServerId: 01900000-0000-7000-8000-000000000020
-    permissions:
-      - system
-assignments:
-  - id: wayfinder-authzen-client
-    type: app
 
 ---
 # resource_type: role
