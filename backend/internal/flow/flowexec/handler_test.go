@@ -120,7 +120,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_ServiceError() {
 	t := s.T()
 	mockSvc := NewFlowExecServiceInterfaceMock(t)
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, &ErrorDirectFlowInitiationNotPermitted)
 
 	h := newFlowExecutionHandler(mockSvc, session.NewCookieTransport(false), 0)
@@ -140,7 +140,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_Success() {
 		Status:      providers.FlowStatusIncomplete,
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(flowStep, (*tidcommon.ServiceError)(nil))
 
 	h := newFlowExecutionHandler(mockSvc, session.NewCookieTransport(false), 0)
@@ -161,9 +161,9 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_PropagatesInboundSSOCo
 	var gotInbound session.InboundHandle
 	var gotOK bool
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Run(func(ctx context.Context, _ string, _ string, _ string, _ bool, _ string,
-			_ map[string]string, _ string, _ string) {
+			_ map[string]string, _ string, _ string, _ string) {
 			gotInbound, gotOK = session.InboundFrom(ctx)
 		}).
 		Return(&FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete},
@@ -194,7 +194,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_WritesSSOHandleCookie(
 		SSOFlowID:    "flow-1",
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(flowStep, (*tidcommon.ServiceError)(nil))
 
 	// secure=true and a non-zero TTL so the emitted cookie carries the expected transport settings.
@@ -220,6 +220,26 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_WritesSSOHandleCookie(
 	s.True(ssoCookie.HttpOnly)
 }
 
+// The Attestation-Token request header must be read and forwarded to the service layer as the
+// attestation token argument.
+func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_AttestationTokenHeaderForwarded() {
+	t := s.T()
+	mockSvc := NewFlowExecServiceInterfaceMock(t)
+	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "play-integrity-token").
+		Return(&FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete},
+			(*tidcommon.ServiceError)(nil))
+
+	h := newFlowExecutionHandler(mockSvc, session.NewCookieTransport(false), 0)
+	req := httptest.NewRequest(http.MethodPost, "/flow/execute", bytes.NewBufferString(testFlowExecRequestBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Attestation-Token", "play-integrity-token")
+	w := httptest.NewRecorder()
+
+	h.HandleFlowExecutionRequest(w, req)
+	s.Equal(http.StatusOK, w.Code)
+}
+
 func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_StepWithError() {
 	t := s.T()
 	mockSvc := NewFlowExecServiceInterfaceMock(t)
@@ -236,7 +256,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_StepWithError() {
 		Error:       stepErr,
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(flowStep, (*tidcommon.ServiceError)(nil))
 
 	h := newFlowExecutionHandler(mockSvc, session.NewCookieTransport(false), 0)

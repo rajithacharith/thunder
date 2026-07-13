@@ -80,6 +80,27 @@ Registration, recovery, and user onboarding flows are **not** restricted because
 
 See the [API Reference](../../../../apis#tag/flow-execution) for endpoint specifications.
 
+### Attestation
+
+A confidential server-side application authenticates at flow initiation with a Flow Secret, but a mobile application cannot safely hold one. Instead, a mobile client proves its identity through platform attestation: when an application configures **Play Integrity attestation**, it may initiate a sign-in flow directly by presenting a Google [Play Integrity](https://developer.android.com/google/play/integrity) token. <ProductName /> verifies the token against Google's Play Integrity API and confirms that the attested app matches the registered package name and signing certificate before starting the flow.
+
+Attestation is a client-level setting configured at the application level, independent of the OAuth 2.0 protocol, so it applies to any application type, including embedded apps with no OAuth 2.0 configuration. When attestation is configured, it takes precedence: the application must present a valid attestation token to initiate a flow, and any Flow Secret is ignored. See [Configure Play Integrity Attestation](../../guides/applications/application-settings.mdx#configure-play-integrity-attestation) for how to configure it.
+
+To initiate a new flow, the mobile client requests a Play Integrity token from Google and presents it in the `Attestation-Token` request header of the Flow Execution request:
+
+```http
+POST /flow/execute
+Content-Type: application/json
+Attestation-Token: <play-integrity-token>
+
+{
+  "applicationId": "<application-id>",
+  "flowType": "AUTHENTICATION"
+}
+```
+
+An attested mobile app that omits the token is rejected with `401 Unauthorized`. A token that fails verification is also rejected with `401 Unauthorized`. Verification fails, for example, on a wrong package name, an unmatched signing certificate, or an app not recognized by Google Play. Flow **continuation** requests (those carrying an `executionId`) do not require an attestation token.
+
 ### Integration Modes
 
 App-native authentication supports two modes, **Verbose** and **Non-Verbose**, controlled via the `verbose` field in the Flow Execution API. These modes offer different levels of UI granularity to the application. A <ProductName /> SDK typically consumes these modes and manages API calls, state, and response parsing. Both modes follow the same request-response cycle: the application calls the Flow Execution API, receives the next step, renders the screen, collects user input, and submits the response back. The difference lies in how much detail <ProductName /> returns for each step.

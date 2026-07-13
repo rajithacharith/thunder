@@ -38,7 +38,9 @@ import (
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -70,6 +72,7 @@ type applicationService struct {
 	entityProvider       entityprovider.EntityProviderInterface
 	ouService            oupkg.OrganizationUnitServiceInterface
 	i18nService          i18nmgt.I18nServiceInterface
+	cryptoSvc            kmprovider.RuntimeCryptoProvider
 	dependencyRegistry   resourcedependency.Registry
 }
 
@@ -79,6 +82,7 @@ func newApplicationService(
 	entityProvider entityprovider.EntityProviderInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
+	cryptoSvc kmprovider.RuntimeCryptoProvider,
 ) ApplicationServiceInterface {
 	return &applicationService{
 		logger:               log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
@@ -86,6 +90,7 @@ func newApplicationService(
 		entityProvider:       entityProvider,
 		ouService:            ouService,
 		i18nService:          i18nService,
+		cryptoSvc:            cryptoSvc,
 	}
 }
 
@@ -121,6 +126,9 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 
 	inboundClient := toInboundClient(processedDTO)
 	oauthProfile := toOAuthProfile(processedDTO)
+	if svcErr := as.resolveAttestationCredentialsForPersist(ctx, appID, &inboundClient); svcErr != nil {
+		return nil, svcErr
+	}
 
 	// Create entity.
 	var clientID string
@@ -392,6 +400,9 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 
 	inboundClient := toInboundClient(processedDTO)
 	oauthProfile := toOAuthProfile(processedDTO)
+	if svcErr := as.resolveAttestationCredentialsForPersist(ctx, appID, &inboundClient); svcErr != nil {
+		return nil, svcErr
+	}
 
 	var newOAuthClientID string
 	if inboundAuthConfig != nil && inboundAuthConfig.OAuthConfig != nil {
@@ -764,6 +775,7 @@ func toInboundClient(dto *model.ApplicationProcessedDTO) inboundmodel.InboundCli
 		Assertion:                 dto.Assertion,
 		LoginConsent:              dto.LoginConsent,
 		AllowedUserTypes:          dto.AllowedUserTypes,
+		Attestation:               dto.Attestation,
 	}
 
 	// Pack remaining fields into Properties.
@@ -814,6 +826,7 @@ func toProcessedDTO(
 			Assertion:                 dao.Assertion,
 			LoginConsent:              dao.LoginConsent,
 			AllowedUserTypes:          dao.AllowedUserTypes,
+			Attestation:               dao.Attestation.WithoutCredentials(),
 		},
 	}
 
@@ -1643,6 +1656,56 @@ func resolveClientSecret(
 	return nil
 }
 
+// resolveAttestationCredentialsForPersist prepares the write-only Play Integrity service account
+// credentials on the inbound client for persistence: newly supplied credentials are encrypted so
+// they are never stored in plaintext, while an omitted value on an update falls back to the
+// previously stored (encrypted) credentials. The client's Attestation is replaced with a fresh copy
+// so the caller's input is not mutated.
+func (as *applicationService) resolveAttestationCredentialsForPersist(
+	ctx context.Context, appID string, inboundClient *inboundmodel.InboundClient,
+) *tidcommon.ServiceError {
+	if inboundClient == nil || inboundClient.Attestation == nil ||
+		inboundClient.Attestation.Android == nil {
+		return nil
+	}
+
+	android := *inboundClient.Attestation.Android
+	android.CertificateSha256Digests = append([]string(nil),
+		inboundClient.Attestation.Android.CertificateSha256Digests...)
+
+	if android.ServiceAccountCredentials != "" {
+		params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM}
+		ciphertext, _, err := as.cryptoSvc.Encrypt(ctx, nil, params,
+			[]byte(android.ServiceAccountCredentials))
+		if err != nil {
+			as.logger.Error(ctx, "Failed to encrypt attestation credentials",
+				log.String("appID", appID), log.Error(err))
+			return &tidcommon.InternalServerError
+		}
+		android.ServiceAccountCredentials = string(ciphertext)
+	} else {
+		// No new credentials supplied: preserve the existing stored (encrypted) value. Distinguish a
+		// missing record (nothing to preserve, e.g. on create) from a genuine lookup failure — the
+		// latter must not silently overwrite stored credentials with an empty value.
+		existing, err := as.inboundClientService.GetInboundClientByEntityID(ctx, appID)
+		switch {
+		case err == nil:
+			if existing != nil && existing.Attestation != nil && existing.Attestation.Android != nil {
+				android.ServiceAccountCredentials = existing.Attestation.Android.ServiceAccountCredentials
+			}
+		case errors.Is(err, inboundclient.ErrInboundClientNotFound):
+			// No existing record; there is no stored credential to preserve.
+		default:
+			as.logger.Error(ctx, "Failed to load existing attestation credentials for preservation",
+				log.String("appID", appID), log.Error(err))
+			return &tidcommon.InternalServerError
+		}
+	}
+
+	inboundClient.Attestation = &providers.AttestationConfig{Android: &android}
+	return nil
+}
+
 // enrichApplicationWithCertificate retrieves and adds OAuth certificates to the application.
 func (as *applicationService) enrichApplicationWithCertificate(
 	ctx context.Context, application *providers.Application,
@@ -1683,6 +1746,7 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *providers.App
 			Assertion:                 dto.Assertion,
 			AllowedUserTypes:          dto.AllowedUserTypes,
 			LoginConsent:              dto.LoginConsent,
+			Attestation:               dto.Attestation,
 		},
 		Template:  dto.Template,
 		URL:       dto.URL,
@@ -1786,6 +1850,7 @@ func buildBaseApplicationProcessedDTO(appID string, app *model.ApplicationDTO,
 			Assertion:                 assertion,
 			AllowedUserTypes:          app.AllowedUserTypes,
 			LoginConsent:              app.LoginConsent,
+			Attestation:               app.Attestation,
 		},
 		Template:  app.Template,
 		URL:       app.URL,
@@ -1866,6 +1931,7 @@ func buildReturnApplicationDTO(
 			Assertion:                 assertion,
 			AllowedUserTypes:          app.AllowedUserTypes,
 			LoginConsent:              app.LoginConsent,
+			Attestation:               app.Attestation.WithoutCredentials(),
 		},
 		Template:  app.Template,
 		URL:       app.URL,

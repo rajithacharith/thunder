@@ -193,6 +193,18 @@ type AuthorizationProvider interface {
 	) (*AccessEvaluationsResponse, *common.ServiceError)
 }
 
+// AttestationProvider verifies a platform attestation token (e.g. a Google Play Integrity token)
+// against an application's attestation configuration, proving the binary identity of a mobile
+// client. It reports the verification outcome as a boolean rather than an error so that a definitive
+// rejection (token invalid) is not mistaken for an operational failure (provider outage,
+// misconfiguration): the latter is surfaced as a non-nil ServiceError.
+type AttestationProvider interface {
+	// Verify returns true when the token proves the expected binary identity. It returns false with
+	// a nil error for a definitive rejection, and a non-nil ServiceError for an operational failure
+	// that prevented verification from completing.
+	Verify(ctx context.Context, cfg *AttestationConfig, token string) (bool, *common.ServiceError)
+}
+
 // RuntimeStoreProvider defines the interface for runtime store operations.
 type RuntimeStoreProvider interface {
 	// Put stores a value in the runtime store with the specified key and TTL (time-to-live) in seconds.

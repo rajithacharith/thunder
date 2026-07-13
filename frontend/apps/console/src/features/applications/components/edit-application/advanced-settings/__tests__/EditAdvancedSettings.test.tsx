@@ -76,6 +76,33 @@ describe('EditAdvancedSettings', () => {
       expect(screen.getByText('applications:edit.advanced.labels.metadata')).toBeInTheDocument();
     });
 
+    it('should not render the attestation section by default', () => {
+      render(
+        <EditAdvancedSettings
+          application={mockApplication}
+          editedApp={{}}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      expect(screen.queryByText('applications:edit.advanced.labels.attestation')).not.toBeInTheDocument();
+    });
+
+    it('should render the attestation section when the template supports it', () => {
+      render(
+        <EditAdvancedSettings
+          application={mockApplication}
+          editedApp={{}}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+          showAttestation
+        />,
+      );
+
+      expect(screen.getByText('applications:edit.advanced.labels.attestation')).toBeInTheDocument();
+    });
+
     it('should render without OAuth2 config when not provided', () => {
       render(<EditAdvancedSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 

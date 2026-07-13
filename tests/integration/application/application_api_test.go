@@ -1040,6 +1040,62 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 	}
 }
 
+// TestCreateApplicationWithAttestation verifies that a mobile application's Google Play Integrity
+// attestation configuration round-trips (package name and signing digests are returned), while the
+// write-only service account credentials are never returned in responses.
+func (ts *ApplicationAPITestSuite) TestCreateApplicationWithAttestation() {
+	const testClientID = "attestation_test_oauth_client"
+
+	app := Application{
+		OUID:                      testOUID,
+		Name:                      "Attestation Test App",
+		Description:               "Mobile app configured with Play Integrity attestation",
+		AuthFlowID:                defaultAuthFlowID,
+		RegistrationFlowID:        defaultRegistrationFlowID,
+		IsRegistrationFlowEnabled: false,
+		// Attestation is a client-level setting, configured at the top level of the application
+		// independent of the OAuth2 protocol config.
+		Attestation: &AttestationConfig{
+			Android: &AndroidAttestationConfig{
+				PackageName:               "com.example.myapp",
+				CertificateSha256Digests:  []string{"AA:BB:CC", "DD:EE:FF"},
+				ServiceAccountCredentials: `{"type":"service_account","project_id":"demo"}`,
+			},
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"myapp://callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "none",
+					PKCERequired:            true,
+					PublicClient:            true,
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "expected application creation to succeed")
+	ts.Require().NotEmpty(appID)
+	defer func() {
+		ts.Require().NoError(deleteApplication(appID), "expected application deletion to succeed")
+	}()
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err, "expected application retrieval to succeed")
+	ts.Require().NotNil(retrieved.Attestation, "attestation config should be returned")
+	ts.Require().NotNil(retrieved.Attestation.Android, "android attestation config should be returned")
+	ts.Assert().Equal("com.example.myapp", retrieved.Attestation.Android.PackageName)
+	ts.Assert().Equal([]string{"AA:BB:CC", "DD:EE:FF"}, retrieved.Attestation.Android.CertificateSha256Digests)
+	// The write-only service account credentials must never be returned.
+	ts.Assert().Empty(retrieved.Attestation.Android.ServiceAccountCredentials,
+		"service account credentials must not be returned in GET responses")
+}
+
 // TestCreateApplicationCertLifecycle verifies that a certificate created with an
 // application is also removed from the database when the application is deleted.
 // This confirms that the cert INSERT and the app INSERT are part of the same

@@ -209,3 +209,33 @@ var ErrorMaxCallDepthExceeded = tidcommon.ServiceError{
 		DefaultValue: "The maximum allowed call depth has been exceeded during flow execution",
 	},
 }
+
+// ErrorAttestationRequired defines the error when a mobile application initiates a new flow without
+// presenting a platform attestation token.
+var ErrorAttestationRequired = tidcommon.ServiceError{
+	Code: "FES-1014",
+	Type: tidcommon.ClientErrorType,
+	Error: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.attestation_required",
+		DefaultValue: "Authentication required",
+	},
+	ErrorDescription: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.attestation_required_description",
+		DefaultValue: "Mobile applications must present a valid attestation token to initiate a new flow",
+	},
+}
+
+// ErrorAttestationInvalid defines the error when a mobile application presents an attestation token
+// that fails verification.
+var ErrorAttestationInvalid = tidcommon.ServiceError{
+	Code: "FES-1015",
+	Type: tidcommon.ClientErrorType,
+	Error: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.attestation_invalid",
+		DefaultValue: "Authentication failed",
+	},
+	ErrorDescription: tidcommon.I18nMessage{
+		Key:          "error.flowexecservice.attestation_invalid_description",
+		DefaultValue: "The provided attestation token is invalid",
+	},
+}

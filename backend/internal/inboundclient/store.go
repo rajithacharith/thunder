@@ -40,6 +40,7 @@ type inboundClientJSONBlob struct {
 	Assertion        *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
 	LoginConsent     *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
 	AllowedUserTypes []string                         `json:"allowedUserTypes,omitempty"`
+	Attestation      *providers.AttestationConfig     `json:"attestation,omitempty"`
 	Properties       map[string]interface{}           `json:"properties,omitempty"`
 }
 
@@ -113,6 +114,7 @@ func marshalInboundClient(c inboundmodel.InboundClient) (
 		Assertion:        c.Assertion,
 		LoginConsent:     c.LoginConsent,
 		AllowedUserTypes: c.AllowedUserTypes,
+		Attestation:      c.Attestation,
 		Properties:       c.Properties,
 	}
 	propertiesBytes, err = marshalNullableJSON(blob)
@@ -493,6 +495,7 @@ func buildInboundClientFromRow(ctx context.Context, row map[string]interface{}) 
 			client.Assertion = blob.Assertion
 			client.LoginConsent = blob.LoginConsent
 			client.AllowedUserTypes = blob.AllowedUserTypes
+			client.Attestation = blob.Attestation
 			client.Properties = blob.Properties
 		}
 	}

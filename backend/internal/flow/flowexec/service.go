@@ -46,15 +46,16 @@ import (
 
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
-	flowEngine       flowEngineInterface
-	flowProvider     providers.FlowProvider
-	graphBuilder     graphbuilder.GraphBuilderInterface
-	flowStore        flowStoreInterface
-	actorProvider    providers.ActorProvider
-	observabilitySvc providers.ObservabilityProvider
-	transactioner    transaction.Transactioner
-	cryptoSvc        kmprovider.RuntimeCryptoProvider
-	cfg              flowconfig.Config
+	flowEngine          flowEngineInterface
+	flowProvider        providers.FlowProvider
+	graphBuilder        graphbuilder.GraphBuilderInterface
+	flowStore           flowStoreInterface
+	actorProvider       providers.ActorProvider
+	observabilitySvc    providers.ObservabilityProvider
+	transactioner       transaction.Transactioner
+	cryptoSvc           kmprovider.RuntimeCryptoProvider
+	attestationVerifier providers.AttestationProvider
+	cfg                 flowconfig.Config
 }
 
 // newFlowExecService creates a new instance of flowExecService with the provided dependencies.
@@ -64,25 +65,27 @@ func newFlowExecService(flowProvider providers.FlowProvider,
 	observabilitySvc providers.ObservabilityProvider,
 	transactioner transaction.Transactioner,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
+	attestationVerifier providers.AttestationProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
 	cfg flowconfig.Config) FlowExecServiceInterface {
 	return &flowExecService{
-		flowProvider:     flowProvider,
-		flowStore:        flowStore,
-		flowEngine:       flowEngine,
-		actorProvider:    actorProvider,
-		observabilitySvc: observabilitySvc,
-		transactioner:    transactioner,
-		cryptoSvc:        cryptoSvc,
-		graphBuilder:     graphBuilder,
-		cfg:              cfg,
+		flowProvider:        flowProvider,
+		flowStore:           flowStore,
+		flowEngine:          flowEngine,
+		actorProvider:       actorProvider,
+		observabilitySvc:    observabilitySvc,
+		transactioner:       transactioner,
+		cryptoSvc:           cryptoSvc,
+		attestationVerifier: attestationVerifier,
+		graphBuilder:        graphBuilder,
+		cfg:                 cfg,
 	}
 }
 
 // Execute executes a flow with the given data
 func (s *flowExecService) Execute(ctx context.Context,
 	appID, executionID, flowType string, verbose bool,
-	action string, inputs map[string]string, challengeToken, flowSecret string) (
+	action string, inputs map[string]string, challengeToken, flowSecret, attestationToken string) (
 	*FlowStep, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
 
@@ -93,7 +96,8 @@ func (s *flowExecService) Execute(ctx context.Context,
 	var loadErr *tidcommon.ServiceError
 
 	if isNewFlow(executionID) {
-		engineCtx, loadErr = s.loadNewContext(ctx, appID, flowType, verbose, action, inputs, flowSecret, logger)
+		engineCtx, loadErr = s.loadNewContext(ctx, appID, flowType, verbose, action, inputs,
+			flowSecret, attestationToken, logger)
 		if loadErr != nil {
 			logger.Error(ctx, "Failed to load new flow context",
 				log.String("appID", appID),
@@ -188,14 +192,15 @@ func applyInboundSSO(engineCtx *EngineContext, ctx context.Context) {
 
 // initContext initializes a new flow context with the given details.
 func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr string, verbose bool,
-	action string, inputs map[string]string, flowSecret string, logger *log.Logger) (
+	action string, inputs map[string]string, flowSecret, attestationToken string, logger *log.Logger) (
 	*EngineContext, *tidcommon.ServiceError) {
 	flowType, err := validateFlowType(flowTypeStr)
 	if err != nil {
 		return nil, err
 	}
 
-	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, flowType, flowSecret, logger); svcErr != nil {
+	if svcErr := s.checkDirectFlowInitiationAllowed(
+		ctx, appID, flowType, flowSecret, attestationToken, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -215,12 +220,15 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 //     component, not via a direct HTTP call.
 //   - FlowSecret — a backend / server-side application (including embedded apps with no protocol
 //     profile) that must authenticate at flow initiation by presenting its Flow Secret.
+//   - Attestation — a mobile application that authenticates at flow initiation by presenting a valid
+//     platform attestation (e.g. a Google Play Integrity token) proving its binary identity.
 //
 // Other flow types (registration, recovery, user onboarding) are not restricted. The classification
-// is derived from neutral actor data resolved through the actor layer; Flow Secret verification is
-// the only credential check that remains here.
+// is derived from neutral actor data resolved through the actor layer; credential verification
+// (Flow Secret or attestation) is the only check that remains here.
 func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, appID string,
-	flowType providers.FlowType, flowSecret string, logger *log.Logger) *tidcommon.ServiceError {
+	flowType providers.FlowType, flowSecret, attestationToken string,
+	logger *log.Logger) *tidcommon.ServiceError {
 	if flowType != providers.FlowTypeAuthentication {
 		return nil
 	}
@@ -228,7 +236,7 @@ func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, 
 		return nil
 	}
 
-	mode, svcErr := s.resolveFlowInitiationMode(ctx, appID)
+	mode, attestationCfg, svcErr := s.resolveFlowInitiationMode(ctx, appID)
 	if svcErr != nil {
 		if svcErr.Code == actorprovider.ErrorActorNotFound.Code {
 			return &ErrorInvalidAppID
@@ -253,6 +261,8 @@ func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, 
 			return &ErrorFlowSecretInvalid
 		}
 		return nil
+	case flowInitiationAttestation:
+		return s.verifyAttestation(ctx, attestationCfg, attestationToken)
 	default:
 		logger.Error(ctx, "Unknown flow initiation mode for application",
 			log.String("appID", appID))
@@ -260,26 +270,56 @@ func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, 
 	}
 }
 
+// verifyAttestation validates the platform attestation token presented by a mobile application at
+// flow initiation. Decrypting the stored service account credentials, bounding the verification
+// call with a deadline, and calling the Play Integrity API are all handled by the attestation
+// provider.
+func (s *flowExecService) verifyAttestation(ctx context.Context,
+	attestationCfg *providers.AttestationConfig, attestationToken string) *tidcommon.ServiceError {
+	if attestationToken == "" {
+		return &ErrorAttestationRequired
+	}
+
+	verified, svcErr := s.attestationVerifier.Verify(ctx, attestationCfg, attestationToken)
+	if svcErr != nil {
+		return svcErr
+	}
+	if !verified {
+		return &ErrorAttestationInvalid
+	}
+	return nil
+}
+
 // resolveFlowInitiationMode derives how the given application is permitted to initiate a new
 // authentication flow, using neutral actor data resolved through the actor layer. A non-existent
 // application returns ErrorActorNotFound so the caller can distinguish an unknown app from a
-// backend app.
+// backend app. The resolved OAuth profile (nil for embedded apps) is returned for downstream
+// credential checks.
 func (s *flowExecService) resolveFlowInitiationMode(
 	ctx context.Context, appID string,
-) (flowInitiationMode, *tidcommon.ServiceError) {
-	profile, svcErr := s.actorProvider.GetOAuthProfileByID(ctx, appID)
-	if svcErr != nil && svcErr.Code != actorprovider.ErrorActorNotFound.Code {
-		return 0, svcErr
+) (flowInitiationMode, *providers.AttestationConfig, *tidcommon.ServiceError) {
+	// The inbound client is protocol-agnostic and exists for every valid application. Platform
+	// attestation is a client-level binary-identity check, so it is resolved here first and takes
+	// precedence regardless of whether the application also has an OAuth2 protocol profile. An
+	// unknown application surfaces as ErrorActorNotFound so the caller can map it to an invalid app.
+	client, clientErr := s.actorProvider.GetInboundClientByID(ctx, appID)
+	if clientErr != nil {
+		return 0, nil, clientErr
+	}
+	if client.Attestation != nil && client.Attestation.Android != nil {
+		return flowInitiationAttestation, client.Attestation, nil
 	}
 
-	// No protocol profile means either a server-side embedded app (exists, no OAuth config) or a
-	// non-existent application. Confirm existence so an unknown app surfaces as ErrorActorNotFound
-	// rather than being treated as a backend app.
+	// No attestation configured: classify by protocol profile.
+	profile, svcErr := s.actorProvider.GetOAuthProfileByID(ctx, appID)
+	if svcErr != nil && svcErr.Code != actorprovider.ErrorActorNotFound.Code {
+		return 0, nil, svcErr
+	}
+
+	// No protocol profile means a server-side embedded app: it initiates flows directly by
+	// presenting its Flow Secret.
 	if profile == nil {
-		if _, clientErr := s.actorProvider.GetInboundClientByID(ctx, appID); clientErr != nil {
-			return 0, clientErr
-		}
-		return flowInitiationFlowSecret, nil
+		return flowInitiationFlowSecret, nil, nil
 	}
 
 	// A redirect-based (authorization_code) profile — public or confidential — must initiate flows
@@ -288,9 +328,9 @@ func (s *flowExecService) resolveFlowInitiationMode(
 	// may initiate a flow directly.
 	if slices.Contains(profile.GrantTypes, string(providers.GrantTypeAuthorizationCode)) ||
 		isClientCredentialsOnly(profile.GrantTypes) {
-		return flowInitiationNotPermitted, nil
+		return flowInitiationNotPermitted, nil, nil
 	}
-	return flowInitiationFlowSecret, nil
+	return flowInitiationFlowSecret, nil, nil
 }
 
 // isClientCredentialsOnly reports whether client_credentials is the only configured grant type.

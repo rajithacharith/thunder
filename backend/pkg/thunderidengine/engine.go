@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/thunder-id/thunderid/internal/attestation"
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
@@ -138,9 +139,11 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	engineCtx.graphBuilder = graphbuilder.Initialize(engineCtx.flowFactory, engineCtx.execRegistry,
 		engineCtx.interceptorRegistry, graphCache)
 
+	attestationProvider := attestation.Initialize(engineCtx.runtimeCryptoSvc)
 	flowExecService, err := flowexec.Initialize(mux, engineCtx.flowProvider, engineCtx.actorProvider,
 		engineCtx.execRegistry, engineCtx.interceptorRegistry, engineCtx.observabilitySvc,
-		engineCtx.runtimeCryptoSvc, engineCtx.graphBuilder, runtimeStoreProvider, transactioner, flowConfig)
+		engineCtx.runtimeCryptoSvc, attestationProvider, engineCtx.graphBuilder, runtimeStoreProvider,
+		transactioner, flowConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}

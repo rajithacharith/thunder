@@ -203,6 +203,16 @@ export interface ApplicationTemplate {
     };
   };
   /**
+   * Optional per-template capability flags that gate optional configuration surfaces in the edit UI.
+   */
+  capabilities?: {
+    /**
+     * Whether this template supports platform attestation (e.g. Google Play Integrity). When true,
+     * the attestation configuration section is shown in the application's advanced settings.
+     */
+    attestation?: boolean;
+  };
+  /**
    * Optional integration guides for this template
    */
   integrationGuides?: IntegrationGuides;

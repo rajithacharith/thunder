@@ -17,13 +17,14 @@
  */
 
 import {Stack} from '@wso2/oxygen-ui';
+import AttestationSection from './AttestationSection';
 import CertificateSection from './CertificateSection';
 import MetadataSection from './MetadataSection';
 import OAuth2ConfigSection from './OAuth2ConfigSection';
 import type {Application} from '../../../models/application';
 import type {ApplicationTemplate} from '../../../models/application-templates';
 import type {InboundAuthConfig} from '../../../models/inbound-auth';
-import type {OAuth2Config} from '../../../models/oauth';
+import type {AttestationConfig, OAuth2Config} from '../../../models/oauth';
 
 /**
  * Props for the {@link EditAdvancedSettings} component.
@@ -56,6 +57,11 @@ interface EditAdvancedSettingsProps {
    * discovery's `grant_types_supported`. Omit to offer every discovery-advertised grant type.
    */
   allowedGrantTypes?: string[];
+  /**
+   * Whether the platform attestation section is shown. Driven by the template's `attestation`
+   * capability, so it appears only for templates that support it (e.g. mobile).
+   */
+  showAttestation?: boolean;
 }
 
 type OAuthCertificate = {type: string; value?: string} | null;
@@ -78,6 +84,7 @@ export default function EditAdvancedSettings({
   oauth2Constraints = undefined,
   onFieldChange,
   allowedGrantTypes = undefined,
+  showAttestation = false,
 }: EditAdvancedSettingsProps) {
   const handleOAuth2ConfigChange = (updates: Partial<OAuth2Config>) => {
     const currentInboundAuth: InboundAuthConfig[] = editedApp.inboundAuthConfig ?? application.inboundAuthConfig ?? [];
@@ -90,6 +97,17 @@ export default function EditAdvancedSettings({
   const handleCertificateChange = (cert: OAuthCertificate) => {
     handleOAuth2ConfigChange({certificate: cert});
   };
+
+  // Attestation is a client-level (protocol-agnostic) setting, so it is stored at the top level of
+  // the application rather than nested under the OAuth2 config. This lets any application type —
+  // including embedded apps with no OAuth2 config — enable it.
+  const handleAttestationChange = (attestation: AttestationConfig | null) => {
+    onFieldChange('attestation', attestation);
+  };
+
+  // Prefer the edited value whenever it has been set — including an explicit null, which represents
+  // the user clearing attestation. Only fall back to the stored value when the field is untouched.
+  const currentAttestation = 'attestation' in editedApp ? editedApp.attestation : application.attestation;
 
   return (
     <Stack spacing={3}>
@@ -106,6 +124,13 @@ export default function EditAdvancedSettings({
         required={oauth2Config?.tokenEndpointAuthMethod === 'private_key_jwt'}
         disabled={application.isReadOnly}
       />
+      {showAttestation && (
+        <AttestationSection
+          attestation={currentAttestation}
+          onAttestationChange={handleAttestationChange}
+          disabled={application.isReadOnly}
+        />
+      )}
       <MetadataSection application={application} />
     </Stack>
   );

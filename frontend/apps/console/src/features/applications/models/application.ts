@@ -17,6 +17,7 @@
  */
 
 import type {InboundAuthConfig} from './inbound-auth';
+import type {AttestationConfig} from './oauth';
 import type {AssertionConfig} from './token';
 
 /**
@@ -299,6 +300,14 @@ export interface Application {
    * Defines how assertions are generated for this application.
    */
   assertion?: AssertionConfig;
+
+  /**
+   * Platform attestation configuration used to verify the binary identity of a mobile client
+   * when it initiates a flow directly, independent of the OAuth2 protocol. The service account
+   * credentials are write-only and never returned in GET responses. null or undefined means no
+   * attestation is configured.
+   */
+  attestation?: AttestationConfig | null;
 
   /**
    * Whether this application is read-only (declarative/immutable)
