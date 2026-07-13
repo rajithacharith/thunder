@@ -128,10 +128,7 @@ vi.mock('../../../utils/computeExecutorConnections', () => ({
 vi.mock('@thunderid/configure-connections', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@thunderid/configure-connections')>()),
   useIdentityProviders: () => ({data: []}),
-}));
-
-vi.mock('@/features/notification-senders/api/useNotificationSenders', () => ({
-  default: () => ({data: []}),
+  useSMSProviders: () => ({data: []}),
 }));
 
 // Use vi.hoisted for mocks that need to be referenced in vi.mock
@@ -629,7 +626,7 @@ describe('DecoratedVisualFlow', () => {
 
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
-      expect(mockCompute).toHaveBeenCalledWith({identityProviders: [], notificationSenders: []});
+      expect(mockCompute).toHaveBeenCalledWith({identityProviders: [], smsProviders: []});
     });
   });
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -19,52 +19,55 @@
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunderid/contexts';
 import {useThunderID} from '@thunderid/react';
-import NotificationSenderQueryKeys from '../constants/query-keys';
-import type {NotificationSenderListResponse} from '../models/notification-sender';
+import ConnectionQueryKeys from '../constants/query-keys';
+import {ConnectionInstanceCategories, type ConnectionInstance, type ConnectionListResponse} from '../models/connection';
 
 /**
- * Custom hook to fetch message notification senders from the server.
+ * Custom hook to fetch SMS providers from the server.
  *
- * @returns TanStack Query result object with notification senders data
+ * Backed by GET /connections?category=sms-provider (server default page size — up to
+ * 30 instances; larger deployments would need pagination support added here).
+ *
+ * @returns TanStack Query result object with SMS providers data
  *
  * @example
  * ```tsx
- * function SendersList() {
- *   const { data, isLoading, error } = useNotificationSenders();
+ * function ProvidersList() {
+ *   const { data, isLoading, error } = useSMSProviders();
  *
  *   if (isLoading) return <div>Loading...</div>;
  *   if (error) return <div>Error: {error.message}</div>;
  *
  *   return (
  *     <ul>
- *       {data?.map((sender) => (
- *         <li key={sender.id}>{sender.name}</li>
+ *       {data?.map((provider) => (
+ *         <li key={provider.id}>{provider.name}</li>
  *       ))}
  *     </ul>
  *   );
  * }
  * ```
  */
-export default function useNotificationSenders(): UseQueryResult<NotificationSenderListResponse> {
+export default function useSMSProviders(): UseQueryResult<ConnectionInstance[]> {
   const {http} = useThunderID();
   const {getServerUrl} = useConfig();
 
-  return useQuery<NotificationSenderListResponse>({
-    queryKey: [NotificationSenderQueryKeys.NOTIFICATION_SENDERS, NotificationSenderQueryKeys.MESSAGE_SENDERS],
-    queryFn: async (): Promise<NotificationSenderListResponse> => {
+  return useQuery<ConnectionInstance[]>({
+    queryKey: [ConnectionQueryKeys.CONNECTIONS, ConnectionQueryKeys.SMS_PROVIDERS],
+    queryFn: async (): Promise<ConnectionInstance[]> => {
       const serverUrl: string = getServerUrl();
 
       const response: {
-        data: NotificationSenderListResponse;
+        data: ConnectionListResponse;
       } = await http.request({
-        url: `${serverUrl}/notification-senders/message`,
+        url: `${serverUrl}/connections?category=${ConnectionInstanceCategories.SMS_PROVIDER}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       } as unknown as Parameters<typeof http.request>[0]);
 
-      return response.data;
+      return response.data.connections;
     },
   });
 }

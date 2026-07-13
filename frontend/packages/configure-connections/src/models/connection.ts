@@ -45,16 +45,50 @@ export type ConnectionCategory =
   | 'data-store';
 
 /**
- * One entry of GET /connections — structural data only.
+ * Functional categories served by the backend /connections?category= filter.
  */
-export interface ConnectionTypeSummary {
-  type: ConnectionType;
-  configured: boolean;
-  instanceCount: number;
+export const ConnectionInstanceCategories = {
+  IDENTITY_PROVIDER: 'identity-provider',
+  SMS_PROVIDER: 'sms-provider',
+} as const;
+
+export type ConnectionInstanceCategory =
+  (typeof ConnectionInstanceCategories)[keyof typeof ConnectionInstanceCategories];
+
+/**
+ * Instance vendor type — ConnectionType plus 'custom' (custom SMS gateway senders, which
+ * have no /connections CRUD vendor yet but appear in the flat listing).
+ */
+export type ConnectionInstanceType = ConnectionType | 'custom';
+
+/**
+ * One entry of GET /connections — a configured connection instance.
+ */
+export interface ConnectionInstance {
+  id: string;
+  name: string;
+  description?: string;
+  type: ConnectionInstanceType;
+  categories: ConnectionInstanceCategory[];
 }
 
+/**
+ * A pagination link on a list response.
+ */
+export interface ConnectionListLink {
+  href: string;
+  rel: string;
+}
+
+/**
+ * Paginated response of GET /connections.
+ */
 export interface ConnectionListResponse {
-  connections: ConnectionTypeSummary[];
+  totalResults: number;
+  startIndex: number;
+  count: number;
+  connections: ConnectionInstance[];
+  links: ConnectionListLink[];
 }
 
 /**

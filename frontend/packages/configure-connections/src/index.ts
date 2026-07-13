@@ -21,9 +21,11 @@ export {default as useConnection} from './api/useConnection';
 export {default as useConnectionInstances} from './api/useConnectionInstances';
 export * from './api/useConnectionInstances';
 export {default as useConnections} from './api/useConnections';
+export * from './api/useConnections';
 export {default as useCreateConnection} from './api/useCreateConnection';
 export {default as useDeleteConnection} from './api/useDeleteConnection';
 export {default as useIdentityProviders} from './api/useIdentityProviders';
+export {default as useSMSProviders} from './api/useSMSProviders';
 export {default as useUpdateConnection} from './api/useUpdateConnection';
 
 // Components

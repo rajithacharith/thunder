@@ -60,7 +60,7 @@ export default function SelectConnectionType({selectedType, onSelect}: SelectCon
       comingSoon: false,
     },
     {
-      // FE-only placeholder; the backend message-sender API is not wired yet.
+      // FE-only placeholder; the backend SMS provider API is not wired yet.
       type: 'custom-sms' as ConnectionType,
       labelKey: 'wizard.type.sms.label',
       descriptionKey: 'wizard.type.sms.description',
