@@ -329,6 +329,7 @@ type ReplModel struct {
 	upgradeRequested  bool // set when the /upgrade command is executed
 	switchRequested   bool // set when the /use command is executed
 	newVersion        string
+	nodeWarning       string // non-empty shows a persistent Node.js version notice below the banner
 
 	showWalkthrough  bool
 	walkthroughPanes []walkthroughPane
@@ -1380,6 +1381,10 @@ func (m ReplModel) render() string {
 
 	b.WriteString(BannerString() + "\n")
 
+	if m.nodeWarning != "" {
+		b.WriteString(noteBoxStyle.Render(Yellow("⚠ "+m.nodeWarning)) + "\n\n")
+	}
+
 	statusPart := ""
 	switch m.status {
 	case statusStarting:
@@ -1474,14 +1479,16 @@ func clamp(v, min, max int) int {
 
 // RunREPL starts the interactive REPL and blocks until the user exits.
 // newVersion, if non-empty, causes a banner to appear prompting the user to /upgrade.
+// nodeWarning, if non-empty, is shown below the banner for the life of the session.
 // port overrides the default health-check port when non-zero.
 // Returns upgradeRequested=true when the user ran /upgrade, switchRequested=true when /use.
 func RunREPL(
 	version string, proc *exec.Cmd, installPath string,
-	verbose, isFirstRun bool, newVersion string, port int,
+	verbose, isFirstRun bool, newVersion, nodeWarning string, port int,
 ) (upgradeRequested, switchRequested bool, err error) {
 	m := NewReplModel(version, proc, installPath, verbose, isFirstRun)
 	m.newVersion = newVersion
+	m.nodeWarning = nodeWarning
 	if port > 0 {
 		m.checkPort = port
 	}
