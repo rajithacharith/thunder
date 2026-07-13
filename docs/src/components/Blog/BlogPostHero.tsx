@@ -98,7 +98,7 @@ export default function BlogPostHero({content}: {content: BlogPostContextValue})
               fontSize: '10px',
               fontWeight: 600,
               textTransform: 'uppercase',
-              color: '#8bf9fa',
+              color: isLight ? '#1856b3' : '#8bf9fa',
               bgcolor: 'rgba(54,136,255,0.12)',
               border: '1px solid rgba(54,136,255,0.28)',
               borderRadius: '6px',

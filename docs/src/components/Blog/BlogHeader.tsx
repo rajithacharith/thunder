@@ -19,8 +19,11 @@
 import {Box, Typography} from '@wso2/oxygen-ui';
 import {JSX} from 'react';
 import ProductName from '@site/src/components/ProductName';
+import useIsDarkMode from '../../hooks/useIsDarkMode';
 
 export default function BlogHeader(): JSX.Element {
+  const isDark = useIsDarkMode();
+  const eyebrowColor = isDark ? '#8bf9fa' : '#1a6fe8';
   return (
     <Box sx={{maxWidth: 1200, width: '100%', mx: 'auto', px: {xs: 2, sm: 4}, pt: {xs: 5, md: 7}, pb: 1}}>
       <Box
@@ -34,10 +37,10 @@ export default function BlogHeader(): JSX.Element {
           fontWeight: 600,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
-          color: '#8bf9fa',
+          color: eyebrowColor,
         }}
       >
-        <Box component="span" sx={{width: 5, height: 5, borderRadius: '50%', bgcolor: '#8bf9fa', boxShadow: '0 0 10px #8bf9fa'}} />
+        <Box component="span" sx={{width: 5, height: 5, borderRadius: '50%', bgcolor: eyebrowColor, boxShadow: `0 0 10px ${eyebrowColor}`}} />
         The <ProductName /> blog
       </Box>
 
