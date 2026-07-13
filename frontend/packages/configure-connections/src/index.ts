@@ -38,7 +38,6 @@ export {default as ConnectionFullPageLayout} from './components/ConnectionFullPa
 export {default as ConnectionsList} from './components/ConnectionsList';
 export {default as MaskedSecretField} from './components/MaskedSecretField';
 export {default as ReadOnlyCopyField} from './components/ReadOnlyCopyField';
-export {default as ConnectionAttributeMappingStep} from './components/create-connection/ConnectionAttributeMappingStep';
 export {default as SelectConnectionType} from './components/create-connection/SelectConnectionType';
 
 // Config

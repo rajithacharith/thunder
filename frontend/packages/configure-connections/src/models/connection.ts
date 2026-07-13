@@ -25,6 +25,7 @@ export const ConnectionTypes = {
   GOOGLE: 'google',
   GITHUB: 'github',
   OIDC: 'oidc',
+  OAUTH: 'oauth',
   TWILIO: 'twilio',
   VONAGE: 'vonage',
 } as const;
@@ -161,6 +162,17 @@ export interface TwilioConnectionRequest {
 }
 
 /**
+ * Request payload for generic OAuth 2.0 connections — no OpenID Connect discovery and no
+ * id_token, so the user profile is always fetched from userInfoEndpoint (required, unlike OIDC).
+ */
+export interface OAuth2ConnectionRequest extends OAuthConnectionRequest {
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  userInfoEndpoint: string;
+  logoutEndpoint?: string;
+}
+
+/**
  * Request payload for a Vonage SMS connection.
  */
 export interface VonageConnectionRequest {
@@ -175,6 +187,7 @@ export interface VonageConnectionRequest {
 export type ConnectionRequest =
   | OAuthConnectionRequest
   | OIDCConnectionRequest
+  | OAuth2ConnectionRequest
   | TwilioConnectionRequest
   | VonageConnectionRequest;
 

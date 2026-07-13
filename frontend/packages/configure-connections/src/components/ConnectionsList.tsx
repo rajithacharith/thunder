@@ -43,13 +43,16 @@ export default function ConnectionsList(): JSX.Element {
   const summaries = useMemo(() => connectionsQuery.data ?? [], [connectionsQuery.data]);
   const oidcConfigured: boolean = summaries.some((s) => s.type === ConnectionTypes.OIDC && s.instanceCount > 0);
   const oidcInstancesQuery = useConnectionInstances(ConnectionTypes.OIDC, {enabled: oidcConfigured});
+  const oauthConfigured: boolean = summaries.some((s) => s.type === ConnectionTypes.OAUTH && s.instanceCount > 0);
+  const oauthInstancesQuery = useConnectionInstances(ConnectionTypes.OAUTH, {enabled: oauthConfigured});
 
   const cards: ConnectionCardModel[] = useMemo(
     () =>
       buildConnectionCards(summaries, CONNECTION_VENDOR_META, {
         [ConnectionTypes.OIDC]: oidcInstancesQuery.data ?? [],
+        [ConnectionTypes.OAUTH]: oauthInstancesQuery.data ?? [],
       }),
-    [summaries, oidcInstancesQuery.data],
+    [summaries, oidcInstancesQuery.data, oauthInstancesQuery.data],
   );
 
   const filteredCards: ConnectionCardModel[] = useMemo(() => {
