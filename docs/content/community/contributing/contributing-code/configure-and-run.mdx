@@ -96,15 +96,19 @@ Use this approach when you need to debug the backend and frontend independently.
 
 **Terminal 3 - Seed the initial data (one-time only):**
 
+The `bootstrap` subcommand never invents an admin password on its own. Pass one explicitly with `--admin-password` (or `ADMIN_PASSWORD`).
+
 <CodeGroup>
   <CodeBlock lang="bash" label="Linux/macOS">
     {`PUBLIC_URL="https://localhost:8090" \\
   go run -C backend/cmd/server . bootstrap \\
+  --admin-password "admin" \\
   --console-redirect-uris "https://localhost:5191/console"`}
   </CodeBlock>
   <CodeBlock lang="powershell" label="Windows">
     {`$env:PUBLIC_URL = "https://localhost:8090"
 go run -C backend/cmd/server . bootstrap \`
+  --admin-password "admin" \`
   --console-redirect-uris "https://localhost:5191/console"`}
   </CodeBlock>
 </CodeGroup>

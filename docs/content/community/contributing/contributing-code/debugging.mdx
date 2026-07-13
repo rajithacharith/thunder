@@ -77,11 +77,13 @@ cd <repo-root>
 
 Seed the initial data (one-time only) with the in-process `bootstrap` subcommand.
 It creates the default resources directly through the service layer, so no running
-server or security bypass is required:
+server or security bypass is required. The subcommand never invents an admin password
+on its own, so pass one explicitly with `--admin-password`:
 
 ```bash
 PUBLIC_URL="https://localhost:8090" \
   go run -C backend/cmd/server . bootstrap \
+  --admin-password "admin" \
   --console-redirect-uris "https://localhost:5191/console"
 ```
 
@@ -216,7 +218,7 @@ In VS Code, open these files and set breakpoints:
 ### 3. Trigger the Flow
 
 1. Navigate to [https://localhost:5191/console](https://localhost:5191/console)
-2. Log in with the admin credentials configured during setup (default: `admin` / `admin`)
+2. Log in with the admin credentials from Step 2 (username `admin`, password `admin` if you used the example above)
 3. Go to **Users** section
 4. Click **Add User**
 5. Select **User Type: Person**
