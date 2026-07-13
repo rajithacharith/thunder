@@ -34,12 +34,14 @@ type idpBackedVendor struct {
 }
 
 // idpBackedVendors is the set of connection types backed by the identity-provider service.
-// A single generic "oidc" connection (shown as "Custom OIDC" in the console) covers custom
-// providers; a dedicated generic OAuth type can be added later if a non-OIDC provider needs it.
+// The generic "oidc" connection covers custom OIDC providers;
+// "oauth" covers OAuth 2.0 providers that don't implement OIDC discovery and have no id_token,
+// relying on userInfoEndpoint instead.
 var idpBackedVendors = []idpBackedVendor{
 	{name: "google", idpType: providers.IDPTypeGoogle},
 	{name: "github", idpType: providers.IDPTypeGitHub},
 	{name: "oidc", idpType: providers.IDPTypeOIDC},
+	{name: "oauth", idpType: providers.IDPTypeOAuth},
 }
 
 // smsBackedVendor maps a connection path segment to an underlying message-provider type.
