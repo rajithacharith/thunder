@@ -47,9 +47,17 @@ Start a local ThunderID instance. Pick the method that works best for you:
 
 <RunThunderID />
 
-Once it's running, the console is available at [https://localhost:8090](https://localhost:8090).
+Once it's running, the console is available at [https://localhost:8090/console](https://localhost:8090/console).
 
 ## Create an Application
+
+:::info Test User
+If you used the default setup, sign in to the Console with the default admin credentials:
+
+**Username:** `admin`
+
+**Password:** `admin`
+:::
 
 Open the Console at <ConsoleUrl />, navigate to **Applications**, and click **Add Application**:
 
@@ -57,6 +65,10 @@ Open the Console at <ConsoleUrl />, navigate to **Applications**, and click **Ad
 2. Enter a name (e.g. `My JavaScript App`) and create an application. The rest of the settings can stay at their defaults.
 3. Copy the **Client ID** from the **General** tab. You'll need it when configuring the SDK.
 4. Under **General**, add `http://localhost:5173` to the list of **Authorized Redirect URIs**.
+
+:::warning Configure CORS
+The Browser SDK calls the <ProductName /> API directly from the browser, so you need to allow your app's origin. In the Console, go to **Settings**, and under the **System** section, open the **CORS** tab. Enter `http://localhost:5173` (or the relevant URL for your setup) and click **Add Origin**.
+:::
 
 ## Create a JavaScript App
 
