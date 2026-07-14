@@ -557,6 +557,7 @@ type OAuthClient struct {
 	OUID                               string                  `yaml:"ouId,omitempty"`
 	ClientID                           string                  `yaml:"clientId,omitempty"`
 	RedirectURIs                       []string                `yaml:"redirectUris,omitempty"`
+	PostLogoutRedirectURIs             []string                `yaml:"postLogoutRedirectUris,omitempty"`
 	GrantTypes                         []GrantType             `yaml:"grantTypes,omitempty"`
 	ResponseTypes                      []ResponseType          `yaml:"responseTypes,omitempty"`
 	TokenEndpointAuthMethod            TokenEndpointAuthMethod `yaml:"tokenEndpointAuthMethod,omitempty"`
@@ -675,6 +676,7 @@ func (c *AttestationConfig) WithoutCredentials() *AttestationConfig {
 // OAuthProfile is the persistence shape (OAUTH_PROFILE JSONB column).
 type OAuthProfile struct {
 	RedirectURIs                       []string            `json:"redirectUris"`
+	PostLogoutRedirectURIs             []string            `json:"postLogoutRedirectUris,omitempty"`
 	GrantTypes                         []string            `json:"grantTypes"`
 	ResponseTypes                      []string            `json:"responseTypes"`
 	TokenEndpointAuthMethod            string              `json:"tokenEndpointAuthMethod"`
@@ -699,6 +701,8 @@ type InboundClient struct {
 	IsRegistrationFlowEnabled bool
 	RecoveryFlowID            string
 	IsRecoveryFlowEnabled     bool
+	SignOutFlowID             string
+	IsSignOutFlowEnabled      bool
 	ThemeID                   string
 	LayoutID                  string
 	Assertion                 *AssertionConfig
@@ -1011,6 +1015,9 @@ type InboundAuthProfile struct {
 	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"         yaml:"recoveryFlowId,omitempty"         jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
 	RecoveryFlowHandle        string              `json:"recoveryFlowHandle,omitempty"     yaml:"recoveryFlowHandle,omitempty"     jsonschema:"Recovery flow handle. Optional. Alternative to recoveryFlowId — resolved to an ID at import time."`
 	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"            yaml:"isRecoveryFlowEnabled"            jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId or recoveryFlowHandle to be set."`
+	SignOutFlowID             string              `json:"signOutFlowId,omitempty"           yaml:"signOutFlowId,omitempty"           jsonschema:"Sign-out flow ID. Optional. Specifies the flow that terminates the SSO session established by the authentication flow."`
+	SignOutFlowHandle         string              `json:"signOutFlowHandle,omitempty"       yaml:"signOutFlowHandle,omitempty"       jsonschema:"Sign-out flow handle. Optional. Alternative to signOutFlowId — resolved to an ID at import time."`
+	IsSignOutFlowEnabled      bool                `json:"isSignOutFlowEnabled"              yaml:"isSignOutFlowEnabled"              jsonschema:"Enable sign-out. Set to true to allow terminating the SSO session for this application. Requires signOutFlowId or signOutFlowHandle to be set."`
 	ThemeID                   string              `json:"themeId,omitempty"                yaml:"themeId,omitempty"                jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
 	LayoutID                  string              `json:"layoutId,omitempty"               yaml:"layoutId,omitempty"               jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"              yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
@@ -1025,6 +1032,7 @@ type OAuthConfigWithSecret struct {
 	ClientID                           string                  `json:"clientId,omitempty"                 yaml:"clientId,omitempty"                 jsonschema:"OAuth client ID (auto-generated if not provided)"`
 	ClientSecret                       string                  `json:"clientSecret,omitempty"             yaml:"clientSecret,omitempty"             jsonschema:"OAuth client secret (auto-generated if not provided)"`
 	RedirectURIs                       []string                `json:"redirectUris,omitempty"             yaml:"redirectUris,omitempty"             jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
+	PostLogoutRedirectURIs             []string                `json:"postLogoutRedirectUris,omitempty"   yaml:"postLogoutRedirectUris,omitempty"   jsonschema:"Allowed post-logout redirect URIs. Optional. A post_logout_redirect_uri supplied to the logout endpoint must match one of these."`
 	GrantTypes                         []GrantType             `json:"grantTypes,omitempty"               yaml:"grantTypes,omitempty"               jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
 	ResponseTypes                      []ResponseType          `json:"responseTypes,omitempty"            yaml:"responseTypes,omitempty"            jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
 	TokenEndpointAuthMethod            TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"  yaml:"tokenEndpointAuthMethod,omitempty"  jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`

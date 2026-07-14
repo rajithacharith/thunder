@@ -221,6 +221,18 @@ export interface Application {
   isRecoveryFlowEnabled?: boolean;
 
   /**
+   * SignOut flow ID
+   * @example 'b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e'
+   */
+  signOutFlowId?: string;
+
+  /**
+   * Whether signout flow is enabled
+   * @example true
+   */
+  isSignOutFlowEnabled?: boolean;
+
+  /**
    * User attributes to include
    * @example ['email', 'username', 'given_name', 'family_name', 'roles']
    */

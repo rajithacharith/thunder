@@ -208,6 +208,17 @@ func (st *store) Delete(ctx context.Context, sessionID string) error {
 	})
 }
 
+// DeleteSession removes the session row itself.
+func (st *store) DeleteSession(ctx context.Context, sessionID string) error {
+	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+		_, err := dbClient.ExecuteContext(ctx, queryDeleteSession, sessionID, st.deploymentID)
+		if err != nil {
+			return fmt.Errorf("failed to delete session: %w", err)
+		}
+		return nil
+	})
+}
+
 // buildSessionContextFromRow parses a result row into an SessionContext.
 func (st *store) buildSessionContextFromRow(row map[string]interface{}) (*SessionContext, error) {
 	sessionID, err := parseString(row["session_id"], "session_id")

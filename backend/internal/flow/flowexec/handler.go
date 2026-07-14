@@ -99,6 +99,11 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 			h.ssoHandleTTL)
 	}
 
+	// Clear the per-flow SSO cookie when the flow terminated the session (sign-out).
+	if flowStep.SSOClearFlowID != "" {
+		h.ssoTransport.Clear(w, session.CookieName(flowStep.SSOClearFlowID))
+	}
+
 	flowResp := FlowResponse{
 		ExecutionID:    flowStep.ExecutionID,
 		StepID:         flowStep.StepID,

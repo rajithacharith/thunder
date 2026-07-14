@@ -202,8 +202,9 @@ func (ts *DiscoveryTestSuite) TestOIDCDiscovery_GET_Success() {
 	ts.Contains(metadata.ClaimsSupported, "email", "Should support email claim (from email scope)")
 	ts.Contains(metadata.ClaimsSupported, "phone_number", "Should support phone_number claim (from phone scope)")
 
-	// Verify not implemented endpoints are empty
-	ts.Empty(metadata.EndSessionEndpoint, "EndSessionEndpoint should be empty (not implemented)")
+	// Verify RP-initiated logout endpoint is advertised
+	ts.NotEmpty(metadata.EndSessionEndpoint, "EndSessionEndpoint should be present")
+	ts.Contains(metadata.EndSessionEndpoint, "/oauth2/logout", "EndSessionEndpoint should contain correct path")
 
 	// Verify RFC 9207 issuer identification support
 	ts.True(metadata.AuthorizationResponseIssParameterSupported,

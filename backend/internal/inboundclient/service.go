@@ -322,6 +322,13 @@ func (s *inboundClientService) ResolveInboundAuthProfileHandles(
 		}
 		profile.RecoveryFlowID = flow.ID
 	}
+	if profile.SignOutFlowID == "" && profile.SignOutFlowHandle != "" {
+		flow, svcErr := s.flowMgt.GetFlowByHandle(ctx, profile.SignOutFlowHandle, providers.FlowTypeSignOut)
+		if svcErr != nil {
+			return ErrFKInvalidSignOutFlow
+		}
+		profile.SignOutFlowID = flow.ID
+	}
 	return nil
 }
 
@@ -530,6 +537,7 @@ func BuildOAuthClient(
 		ClientID:                           clientID,
 		EntityCategory:                     entityCategory,
 		RedirectURIs:                       p.RedirectURIs,
+		PostLogoutRedirectURIs:             p.PostLogoutRedirectURIs,
 		TokenEndpointAuthMethod:            providers.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod),
 		PKCERequired:                       p.PKCERequired,
 		PublicClient:                       p.PublicClient,
@@ -589,6 +597,10 @@ func (s *inboundClientService) resolveFlowDefaults(ctx context.Context, c *inbou
 	if c.RecoveryFlowID == "" {
 		// If a recovery flow is not defined, disable recovery flow for the application.
 		c.IsRecoveryFlowEnabled = false
+	}
+	if c.SignOutFlowID == "" {
+		// If a sign-out flow is not defined, disable sign-out for the application.
+		c.IsSignOutFlowEnabled = false
 	}
 	return nil
 }
@@ -1039,6 +1051,9 @@ func (s *inboundClientService) validateFKs(ctx context.Context, c *inboundmodel.
 	if err := s.validateRecoveryFlowID(ctx, c.RecoveryFlowID); err != nil {
 		return err
 	}
+	if err := s.validateSignOutFlowID(ctx, c.SignOutFlowID); err != nil {
+		return err
+	}
 	if err := s.validateThemeID(ctx, c.ThemeID); err != nil {
 		return err
 	}
@@ -1092,6 +1107,21 @@ func (s *inboundClientService) validateRecoveryFlowID(ctx context.Context, flowI
 	}
 	if !valid {
 		return ErrFKInvalidRecoveryFlow
+	}
+	return nil
+}
+
+// validateSignOutFlowID validates that the sign-out flow ID exists and is of the correct type.
+func (s *inboundClientService) validateSignOutFlowID(ctx context.Context, flowID string) error {
+	if flowID == "" || s.flowMgt == nil {
+		return nil
+	}
+	valid, svcErr := s.flowMgt.IsValidFlow(ctx, flowID, providers.FlowTypeSignOut)
+	if svcErr != nil {
+		return ErrFKFlowServerError
+	}
+	if !valid {
+		return ErrFKInvalidSignOutFlow
 	}
 	return nil
 }

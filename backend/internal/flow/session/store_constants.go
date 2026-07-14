@@ -122,4 +122,10 @@ var (
 		ID:    "SSO-SESS-11",
 		Query: `DELETE FROM "SSO_SESSION_PARTICIPANT" WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
+
+	// queryDeleteSession removes the session row itself.
+	queryDeleteSession = model.DBQuery{
+		ID:    "SSO-SESS-12",
+		Query: `DELETE FROM "SSO_SESSION" WHERE SESSION_ID = $1 AND DEPLOYMENT_ID = $2`,
+	}
 )

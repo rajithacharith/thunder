@@ -187,7 +187,10 @@ func applyInboundSSO(engineCtx *EngineContext, ctx context.Context) {
 	if !ok {
 		return
 	}
-	engineCtx.SSOHandleIn = inbound.HandleFor(engineCtx.Graph.GetID())
+	// ssoFlowID resolves the flow whose session this execution operates on — the running flow for
+	// login/SSO, or the login flow (SessionFlowID) for a sign-out flow — so the correct per-flow cookie
+	// is selected.
+	engineCtx.SSOHandleIn = inbound.HandleFor(ssoFlowID(engineCtx))
 }
 
 // initContext initializes a new flow context with the given details.
@@ -213,8 +216,8 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 	return engineCtx, nil
 }
 
-// checkDirectFlowInitiationAllowed governs which applications may initiate an authentication flow
-// directly over HTTP, based on how the application is classified:
+// checkDirectFlowInitiationAllowed governs which applications may initiate an authentication or
+// sign-out flow directly over HTTP, based on how the application is classified:
 //   - RedirectOnly — the application signs users in through a redirect-based protocol component
 //     (currently OAuth 2.0 authorization_code apps) and must have its flows initiated by that
 //     component, not via a direct HTTP call.
@@ -223,13 +226,15 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 //   - Attestation — a mobile application that authenticates at flow initiation by presenting a valid
 //     platform attestation (e.g. a Google Play Integrity token) proving its binary identity.
 //
-// Other flow types (registration, recovery, user onboarding) are not restricted. The classification
-// is derived from neutral actor data resolved through the actor layer; credential verification
+// Sign-out is guarded like authentication so a native caller must prove its identity before ending a
+// session; a redirect-based app is pushed to the RP-initiated /oauth2/logout endpoint instead. Other
+// flow types (registration, recovery, user onboarding) are not restricted. The classification is
+// derived from neutral actor data resolved through the actor layer; credential verification
 // (Flow Secret or attestation) is the only check that remains here.
 func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, appID string,
 	flowType providers.FlowType, flowSecret, attestationToken string,
 	logger *log.Logger) *tidcommon.ServiceError {
-	if flowType != providers.FlowTypeAuthentication {
+	if flowType != providers.FlowTypeAuthentication && flowType != providers.FlowTypeSignOut {
 		return nil
 	}
 	if appID == "" {
@@ -523,6 +528,13 @@ func (s *flowExecService) setApplicationToContext(engineCtx *EngineContext,
 		return svcErr
 	}
 	engineCtx.Application = *app
+
+	// A sign-out flow runs a different flow than the one that owns the SSO session. Carry the login
+	// (auth) flow id so the session is resolved, and its cookie cleared, under that flow rather than
+	// the running sign-out flow. Re-derived here on every context load, so it is never persisted.
+	if engineCtx.FlowType == providers.FlowTypeSignOut {
+		engineCtx.SessionFlowID = engineCtx.Application.AuthFlowID
+	}
 	return nil
 }
 
@@ -668,6 +680,17 @@ func (s *flowExecService) getFlowGraph(ctx context.Context, appID string, flowTy
 		return client.RecoveryFlowID, nil
 	}
 
+	if flowType == providers.FlowTypeSignOut {
+		if !client.IsSignOutFlowEnabled {
+			return "", &ErrorSignOutFlowDisabled
+		} else if client.SignOutFlowID == "" {
+			logger.Error(ctx, "Sign-out flow is not configured for the application",
+				log.String("appID", appID))
+			return "", &tidcommon.InternalServerError
+		}
+		return client.SignOutFlowID, nil
+	}
+
 	// Default to authentication flow ID
 	if client.AuthFlowID == "" {
 		logger.Error(ctx, "Authentication flow is not configured for the entity",
@@ -682,7 +705,7 @@ func (s *flowExecService) getFlowGraph(ctx context.Context, appID string, flowTy
 func validateFlowType(flowTypeStr string) (providers.FlowType, *tidcommon.ServiceError) {
 	switch providers.FlowType(flowTypeStr) {
 	case providers.FlowTypeAuthentication, providers.FlowTypeRegistration, providers.FlowTypeUserOnboarding,
-		providers.FlowTypeRecovery:
+		providers.FlowTypeRecovery, providers.FlowTypeSignOut:
 		return providers.FlowType(flowTypeStr), nil
 	default:
 		return "", &ErrorInvalidFlowType

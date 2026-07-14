@@ -189,6 +189,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 	appForReturn.AuthFlowID = inboundClient.AuthFlowID
 	appForReturn.RegistrationFlowID = inboundClient.RegistrationFlowID
 	appForReturn.RecoveryFlowID = inboundClient.RecoveryFlowID
+	appForReturn.SignOutFlowID = inboundClient.SignOutFlowID
 	var oauthToken *providers.OAuthTokenConfig
 	var userInfo *providers.UserInfoConfig
 	var scopeClaims map[string][]string
@@ -271,6 +272,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 	processedDTO.AuthFlowID = inboundClient.AuthFlowID
 	processedDTO.RegistrationFlowID = inboundClient.RegistrationFlowID
 	processedDTO.RecoveryFlowID = inboundClient.RecoveryFlowID
+	processedDTO.SignOutFlowID = inboundClient.SignOutFlowID
 
 	return processedDTO, inboundAuthConfig, nil
 }
@@ -435,6 +437,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	appForReturn.AuthFlowID = inboundClient.AuthFlowID
 	appForReturn.RegistrationFlowID = inboundClient.RegistrationFlowID
 	appForReturn.RecoveryFlowID = inboundClient.RecoveryFlowID
+	appForReturn.SignOutFlowID = inboundClient.SignOutFlowID
 	var oauthToken *providers.OAuthTokenConfig
 	var userInfo *providers.UserInfoConfig
 	var scopeClaims map[string][]string
@@ -770,6 +773,8 @@ func toInboundClient(dto *model.ApplicationProcessedDTO) inboundmodel.InboundCli
 		IsRegistrationFlowEnabled: dto.IsRegistrationFlowEnabled,
 		RecoveryFlowID:            dto.RecoveryFlowID,
 		IsRecoveryFlowEnabled:     dto.IsRecoveryFlowEnabled,
+		SignOutFlowID:             dto.SignOutFlowID,
+		IsSignOutFlowEnabled:      dto.IsSignOutFlowEnabled,
 		ThemeID:                   dto.ThemeID,
 		LayoutID:                  dto.LayoutID,
 		Assertion:                 dto.Assertion,
@@ -821,6 +826,8 @@ func toProcessedDTO(
 			IsRegistrationFlowEnabled: dao.IsRegistrationFlowEnabled,
 			RecoveryFlowID:            dao.RecoveryFlowID,
 			IsRecoveryFlowEnabled:     dao.IsRecoveryFlowEnabled,
+			SignOutFlowID:             dao.SignOutFlowID,
+			IsSignOutFlowEnabled:      dao.IsSignOutFlowEnabled,
 			ThemeID:                   dao.ThemeID,
 			LayoutID:                  dao.LayoutID,
 			Assertion:                 dao.Assertion,
@@ -927,6 +934,7 @@ func buildOAuthProfileFromProcessed(inboundAuth inboundmodel.InboundAuthConfigPr
 	oa := inboundAuth.OAuthConfig
 	return &providers.OAuthProfile{
 		RedirectURIs:                       oa.RedirectURIs,
+		PostLogoutRedirectURIs:             oa.PostLogoutRedirectURIs,
 		GrantTypes:                         sysutils.ConvertToStringSlice(oa.GrantTypes),
 		ResponseTypes:                      sysutils.ConvertToStringSlice(oa.ResponseTypes),
 		TokenEndpointAuthMethod:            string(oa.TokenEndpointAuthMethod),
@@ -1723,6 +1731,8 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *providers.App
 			IsRegistrationFlowEnabled: dto.IsRegistrationFlowEnabled,
 			RecoveryFlowID:            dto.RecoveryFlowID,
 			IsRecoveryFlowEnabled:     dto.IsRecoveryFlowEnabled,
+			SignOutFlowID:             dto.SignOutFlowID,
+			IsSignOutFlowEnabled:      dto.IsSignOutFlowEnabled,
 			ThemeID:                   dto.ThemeID,
 			LayoutID:                  dto.LayoutID,
 			Assertion:                 dto.Assertion,
@@ -1747,6 +1757,7 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *providers.App
 				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                           oauthAppConfig.ClientID,
 					RedirectURIs:                       oauthAppConfig.RedirectURIs,
+					PostLogoutRedirectURIs:             oauthAppConfig.PostLogoutRedirectURIs,
 					GrantTypes:                         oauthAppConfig.GrantTypes,
 					ResponseTypes:                      oauthAppConfig.ResponseTypes,
 					TokenEndpointAuthMethod:            oauthAppConfig.TokenEndpointAuthMethod,
@@ -1779,6 +1790,8 @@ func buildBasicApplicationResponse(
 		IsRegistrationFlowEnabled: cfg.IsRegistrationFlowEnabled,
 		RecoveryFlowID:            cfg.RecoveryFlowID,
 		IsRecoveryFlowEnabled:     cfg.IsRecoveryFlowEnabled,
+		SignOutFlowID:             cfg.SignOutFlowID,
+		IsSignOutFlowEnabled:      cfg.IsSignOutFlowEnabled,
 		ThemeID:                   cfg.ThemeID,
 		LayoutID:                  cfg.LayoutID,
 		IsReadOnly:                cfg.IsReadOnly,
@@ -1827,6 +1840,8 @@ func buildBaseApplicationProcessedDTO(appID string, app *model.ApplicationDTO,
 			IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 			RecoveryFlowID:            app.RecoveryFlowID,
 			IsRecoveryFlowEnabled:     app.IsRecoveryFlowEnabled,
+			SignOutFlowID:             app.SignOutFlowID,
+			IsSignOutFlowEnabled:      app.IsSignOutFlowEnabled,
 			ThemeID:                   app.ThemeID,
 			LayoutID:                  app.LayoutID,
 			Assertion:                 assertion,
@@ -1873,6 +1888,7 @@ func buildOAuthInboundAuthConfigProcessedDTO(
 			ID:                                 appID,
 			ClientID:                           inboundAuthConfig.OAuthConfig.ClientID,
 			RedirectURIs:                       inboundAuthConfig.OAuthConfig.RedirectURIs,
+			PostLogoutRedirectURIs:             inboundAuthConfig.OAuthConfig.PostLogoutRedirectURIs,
 			GrantTypes:                         inboundAuthConfig.OAuthConfig.GrantTypes,
 			ResponseTypes:                      inboundAuthConfig.OAuthConfig.ResponseTypes,
 			TokenEndpointAuthMethod:            inboundAuthConfig.OAuthConfig.TokenEndpointAuthMethod,
@@ -1908,6 +1924,8 @@ func buildReturnApplicationDTO(
 			IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 			RecoveryFlowID:            app.RecoveryFlowID,
 			IsRecoveryFlowEnabled:     app.IsRecoveryFlowEnabled,
+			SignOutFlowID:             app.SignOutFlowID,
+			IsSignOutFlowEnabled:      app.IsSignOutFlowEnabled,
 			ThemeID:                   app.ThemeID,
 			LayoutID:                  app.LayoutID,
 			Assertion:                 assertion,
@@ -1934,6 +1952,7 @@ func buildReturnApplicationDTO(
 				ClientID:                           inboundAuthConfig.OAuthConfig.ClientID,
 				ClientSecret:                       inboundAuthConfig.OAuthConfig.ClientSecret,
 				RedirectURIs:                       inboundAuthConfig.OAuthConfig.RedirectURIs,
+				PostLogoutRedirectURIs:             inboundAuthConfig.OAuthConfig.PostLogoutRedirectURIs,
 				GrantTypes:                         inboundAuthConfig.OAuthConfig.GrantTypes,
 				ResponseTypes:                      inboundAuthConfig.OAuthConfig.ResponseTypes,
 				TokenEndpointAuthMethod:            inboundAuthConfig.OAuthConfig.TokenEndpointAuthMethod,

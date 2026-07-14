@@ -94,6 +94,12 @@ type EngineContext struct {
 	// flow fetched when the context is loaded. Transient; used by the SSO-Check node to reject
 	// sessions established at an incompatible flow version.
 	SSOFlowVersion int
+	// SessionFlowID overrides the flow whose SSO session this execution operates on. It is set for
+	// sign-out flows, which run a different flow than the one that owns the session: the login (auth)
+	// flow id is carried here so the inbound cookie, SSO inputs, and cookie clear all resolve under
+	// that flow rather than the running sign-out flow. Empty for all other flows. Transient — re-derived
+	// from the application on each context load, never persisted.
+	SessionFlowID string
 }
 
 // mergeRuntimeData merges the given data into RuntimeData.
@@ -228,6 +234,10 @@ type FlowStep struct {
 	// the JSON response body.
 	SSOHandleOut string
 	SSOFlowID    string
+	// SSOClearFlowID carries the flow id whose per-flow SSO cookie the transport layer must clear
+	// after this step terminated the session (sign-out). Empty when nothing was cleared. Not part of
+	// the JSON response body.
+	SSOClearFlowID string
 }
 
 // FlowData holds the data returned by a flow execution step

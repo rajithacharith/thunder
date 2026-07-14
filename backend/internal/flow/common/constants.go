@@ -226,6 +226,11 @@ const (
 	// to the transport layer for the per-flow cookie. Using the generic EngineData channel keeps SSO
 	// concepts out of the reusable engine contract.
 	RuntimeKeySSOSessionHandle = "ssoSessionHandle"
+	// RuntimeKeySSOSessionCleared is the ExecutorResponse EngineData signal the session sign-out node
+	// raises once it has terminated the session, telling the transport layer to clear the per-flow
+	// cookie. Like RuntimeKeySSOSessionHandle it rides the engine-only EngineData channel, keeping SSO
+	// concepts off the reusable engine contract.
+	RuntimeKeySSOSessionCleared = "ssoSessionCleared"
 )
 
 // SSOCheckpointKey scopes a per-checkpoint SSO control key (RuntimeKeySSOSessionPresent,

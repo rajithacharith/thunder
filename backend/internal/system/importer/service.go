@@ -744,6 +744,9 @@ func (s *importService) importApplication(
 	if mappedFlowID, ok := flowIDAliases[req.RegistrationFlowID]; ok {
 		req.RegistrationFlowID = mappedFlowID
 	}
+	if mappedFlowID, ok := flowIDAliases[req.SignOutFlowID]; ok {
+		req.SignOutFlowID = mappedFlowID
+	}
 
 	appDTO := applicationRequestToDTO(&req)
 	normalizeOAuthConfigForImport(ctx, appDTO)
@@ -858,6 +861,9 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 			RecoveryFlowID:            req.RecoveryFlowID,
 			RecoveryFlowHandle:        req.RecoveryFlowHandle,
 			IsRecoveryFlowEnabled:     req.IsRecoveryFlowEnabled,
+			SignOutFlowID:             req.SignOutFlowID,
+			SignOutFlowHandle:         req.SignOutFlowHandle,
+			IsSignOutFlowEnabled:      req.IsSignOutFlowEnabled,
 			ThemeID:                   req.ThemeID,
 			LayoutID:                  req.LayoutID,
 			Assertion:                 req.Assertion,
@@ -887,6 +893,7 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 					ClientID:                           config.OAuthConfig.ClientID,
 					ClientSecret:                       config.OAuthConfig.ClientSecret,
 					RedirectURIs:                       config.OAuthConfig.RedirectURIs,
+					PostLogoutRedirectURIs:             config.OAuthConfig.PostLogoutRedirectURIs,
 					GrantTypes:                         config.OAuthConfig.GrantTypes,
 					ResponseTypes:                      config.OAuthConfig.ResponseTypes,
 					TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,

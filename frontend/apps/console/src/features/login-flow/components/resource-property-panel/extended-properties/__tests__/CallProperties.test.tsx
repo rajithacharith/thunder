@@ -78,12 +78,13 @@ describe('CallProperties', () => {
     expect(combobox).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('lists flows from the API and excludes the flow currently being edited', () => {
+  it('lists flows from the API and excludes the flow being edited and sign-out flows', () => {
     mockUseGetFlows.mockReturnValue({
       data: {
         flows: [
           {id: 'flow-a', name: 'Flow A', flowType: 'AUTHENTICATION'},
           {id: 'flow-b', name: 'Flow B', flowType: 'REGISTRATION'},
+          {id: 'flow-so', name: 'Sign Out', flowType: 'SIGNOUT'},
           {id: 'current-flow-id', name: 'Self', flowType: 'AUTHENTICATION'},
         ],
       },
@@ -95,6 +96,8 @@ describe('CallProperties', () => {
     expect(screen.getByText('Flow A (AUTHENTICATION)')).toBeInTheDocument();
     expect(screen.getByText('Flow B (REGISTRATION)')).toBeInTheDocument();
     expect(screen.queryByText('Self (AUTHENTICATION)')).not.toBeInTheDocument();
+    // Sign-out flows are not valid call targets and must not appear in the picker.
+    expect(screen.queryByText('Sign Out (SIGNOUT)')).not.toBeInTheDocument();
   });
 
   it('writes the chosen flow id back to data.flow', () => {

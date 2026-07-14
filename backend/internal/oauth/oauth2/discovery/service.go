@@ -103,8 +103,13 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) (*OIDCProviderM
 		IDTokenEncryptionEncValuesSupported:  inboundmodel.SupportedIDTokenEncryptionEncs,
 		ClaimsSupported:                      ds.getSupportedClaims(),
 		ClaimsParameterSupported:             true,
+		EndSessionEndpoint:                   ds.getEndSessionEndpoint(),
 		AcrValuesSupported:                   ds.getSupportedAcrValues(),
 	}, nil
+}
+
+func (ds *discoveryService) getEndSessionEndpoint() string {
+	return ds.cfg.BaseURL + constants.OAuth2LogoutEndpoint
 }
 
 func (ds *discoveryService) getIssuer() string {

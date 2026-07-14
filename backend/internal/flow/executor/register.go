@@ -273,6 +273,10 @@ func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 			reg.RegisterExecutor(ExecutorNameSession, newSessionExecutor(
 				deps.FlowFactory, deps.SessionService, deps.AuthnProvider))
 		},
+		ExecutorNameSessionSignOut: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
+			reg.RegisterExecutor(ExecutorNameSessionSignOut, newSessionSignOutExecutor(
+				deps.FlowFactory, deps.SessionService))
+		},
 		ExecutorNameOTPExecutor: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameOTPExecutor, newOTPExecutor(
 				deps.FlowFactory, deps.OTPService, deps.AuthnProvider, deps.EntityProvider))

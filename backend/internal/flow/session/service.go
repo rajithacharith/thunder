@@ -59,6 +59,14 @@ type Service interface {
 	// the session's last-active timestamp and idle deadline, and records the joining participant
 	// (both best-effort). It errors when the session or its checkpoint context no longer exists.
 	LoadCheckpoint(ctx context.Context, handle, checkpoint, appID string) (*Session, *SessionContext, error)
+
+	// Terminate ends the session referenced by handle: it marks the session ENDED (so it can no
+	// longer back SSO) and removes its checkpoint contexts and participants, all in one transaction.
+	// When flowID is non-empty the handle must belong to that flow, guarding against ending a
+	// session grouped under a different flow. It is idempotent — a no-op returning (nil, nil) when
+	// no session matches the handle, and the unchanged session when it is already ended — and
+	// returns the ended session on success.
+	Terminate(ctx context.Context, handle, flowID string) (*Session, error)
 }
 
 // SaveCheckpointInput carries the data a Session join needs to persist. The caller resolves the
@@ -208,6 +216,45 @@ func (s *service) LoadCheckpoint(ctx context.Context, handle, checkpoint, appID 
 	}
 
 	return sess, sc, nil
+}
+
+// Terminate implements Service.
+func (s *service) Terminate(ctx context.Context, handle, flowID string) (*Session, error) {
+	if handle == "" {
+		return nil, nil
+	}
+	sess, err := s.store.GetByHandle(ctx, handle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load session for termination: %w", err)
+	}
+	if sess == nil {
+		return nil, nil
+	}
+	// The handle must belong to the expected flow. A per-flow handle resolving to a session grouped
+	// under a different flow should never happen; surface it as an error rather than silently skipping.
+	if flowID != "" && sess.FlowID != flowID {
+		return nil, fmt.Errorf("session handle belongs to flow %q, expected %q", sess.FlowID, flowID)
+	}
+	// Hard-delete the session and its derived state (checkpoint contexts and participants) in one
+	// transaction. Sign-out ends SSO reuse outright and nothing references the session afterwards, so the
+	// row is removed rather than tombstoned. DeleteSession removes the session row (SSO_SESSION), Delete
+	// its checkpoint contexts (SSO_SESSION_CONTEXT), and DeleteBySessionID its participants
+	// (SSO_SESSION_PARTICIPANT). Repeated calls are idempotent: once the row is gone, GetByHandle
+	// returns nil above.
+	if txErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		if delErr := s.store.DeleteSession(txCtx, sess.SessionID); delErr != nil {
+			return delErr
+		}
+		if delErr := s.store.Delete(txCtx, sess.SessionID); delErr != nil {
+			return delErr
+		}
+		return s.store.DeleteBySessionID(txCtx, sess.SessionID)
+	}); txErr != nil {
+		return nil, fmt.Errorf("failed to terminate session: %w", txErr)
+	}
+
+	s.logger.Debug(ctx, "Terminated SSO session", log.String("flowId", sess.FlowID))
+	return sess, nil
 }
 
 // targetSession returns the session this execution's checkpoints attach to, establishing one when

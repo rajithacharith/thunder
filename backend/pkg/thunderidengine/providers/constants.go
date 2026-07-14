@@ -55,6 +55,8 @@ const (
 	FlowTypeUserOnboarding FlowType = "USER_ONBOARDING"
 	// FlowTypeRecovery represents a flow execution for account recovery (e.g., password reset).
 	FlowTypeRecovery FlowType = "RECOVERY"
+	// FlowTypeSignOut represents a flow execution for terminating an SSO session.
+	FlowTypeSignOut FlowType = "SIGNOUT"
 )
 
 // ValidFlowTypes is the set of supported flow types.
@@ -63,6 +65,7 @@ var ValidFlowTypes = []FlowType{
 	FlowTypeRegistration,
 	FlowTypeUserOnboarding,
 	FlowTypeRecovery,
+	FlowTypeSignOut,
 }
 
 // NodeVariant identifies a PROMPT node sub-type that activates a variant-specific code path.
@@ -495,6 +498,7 @@ const (
 	NamespaceFlow           RuntimeStoreNamespace = "flow:state"
 	NamespaceAuthzCode      RuntimeStoreNamespace = "authz:code"
 	NamespaceAuthzReq       RuntimeStoreNamespace = "authz:req"
+	NamespaceLogoutReq      RuntimeStoreNamespace = "logout:req"
 	NamespacePAR            RuntimeStoreNamespace = "par:req"
 	NamespaceCIBA           RuntimeStoreNamespace = "ciba:req"
 	NamespaceJTI            RuntimeStoreNamespace = "jti:token"

@@ -34,6 +34,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/granthandlers"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/introspect"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
+	oauth2logout "github.com/thunder-id/thunderid/internal/oauth/oauth2/logout"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/par"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/token"
@@ -66,6 +67,7 @@ func Initialize(
 	i18nService providers.I18nProvider,
 	idpService providers.IDPProvider,
 	dpopVerifier dpop.VerifierInterface,
+	runtimeStore providers.RuntimeStoreProvider,
 	cfg oauthconfig.Config,
 ) error {
 	jwks.Initialize(mux, runtimeCrypto)
@@ -101,5 +103,6 @@ func Initialize(
 		tokenValidator, actorProvider, attributeCacheSvc,
 		discoveryService, dpopVerifier, cfg)
 	callback.Initialize(mux, oauth2AuthzService, cibaService, cfg)
+	oauth2logout.Initialize(mux, jwtService, actorProvider, flowExecService, runtimeStore, cfg)
 	return nil
 }

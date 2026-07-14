@@ -2376,15 +2376,21 @@ func (s *ServiceTestSuite) TestSetApplicationToContext_BuildApplicationError() {
 func (s *ServiceTestSuite) TestExecute_NewFlow_GuardRejections() {
 	cases := []struct {
 		name       string
+		flowType   providers.FlowType
 		grantTypes []string
 		flowSecret string
 		wantCode   string
 	}{
-		{"redirect-based app blocked", []string{"authorization_code"}, "",
+		{"redirect-based app blocked", providers.FlowTypeAuthentication, []string{"authorization_code"}, "",
 			ErrorDirectFlowInitiationNotPermitted.Code},
-		{"m2m app blocked", []string{"client_credentials"}, "",
+		{"m2m app blocked", providers.FlowTypeAuthentication, []string{"client_credentials"}, "",
 			ErrorDirectFlowInitiationNotPermitted.Code},
-		{"flow-native app without secret",
+		{"flow-native app without secret", providers.FlowTypeAuthentication,
+			[]string{"client_credentials", "urn:ietf:params:oauth:grant-type:token-exchange"}, "",
+			ErrorFlowSecretRequired.Code},
+		{"sign-out redirect-based app blocked", providers.FlowTypeSignOut, []string{"authorization_code"}, "",
+			ErrorDirectFlowInitiationNotPermitted.Code},
+		{"sign-out flow-native app without secret", providers.FlowTypeSignOut,
 			[]string{"client_credentials", "urn:ietf:params:oauth:grant-type:token-exchange"}, "",
 			ErrorFlowSecretRequired.Code},
 	}
@@ -2411,7 +2417,7 @@ func (s *ServiceTestSuite) TestExecute_NewFlow_GuardRejections() {
 			}
 
 			flowStep, svcErr := service.Execute(context.Background(), "test-app", "",
-				string(providers.FlowTypeAuthentication), false, "submit", map[string]string{}, "", tc.flowSecret, "")
+				string(tc.flowType), false, "submit", map[string]string{}, "", tc.flowSecret, "")
 
 			s.Nil(flowStep)
 			s.NotNil(svcErr)

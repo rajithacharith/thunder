@@ -347,6 +347,13 @@ export interface OAuth2Config {
   redirectUris?: string[];
 
   /**
+   * List of valid URIs the OP may redirect the user to after RP-initiated signout.
+   * A post_logout_redirect_uri supplied to the signout endpoint must match one of these.
+   * @example ['https://myapp.com', 'https://myapp.com/logged-out']
+   */
+  postLogoutRedirectUris?: string[];
+
+  /**
    * Allowed OAuth2 grant types
    * Defines which OAuth2 flows the application can use
    * @example [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN]

@@ -52,6 +52,8 @@ type CallStepData = StepData & {flow?: {ref?: string}};
 
 const CALL_NODE_WIDTH = 260;
 
+// Sign-out flows are intentionally absent: they cannot be selected as call targets, so a Call node
+// never references one and there is nothing to open.
 const FLOW_TYPE_TO_ROUTE_SEGMENT: Record<string, string> = {
   [FlowType.AUTHENTICATION]: 'signin',
   [FlowType.REGISTRATION]: 'registration',
