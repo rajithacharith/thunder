@@ -154,8 +154,9 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
-			assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, tt.attribute)
-			assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, "already exists")
+			assert.Equal(suite.T(), tt.attribute, resp.Error.ErrorDescription.Params["attribute"])
+			assert.Equal(suite.T(), tt.attribute, resp.Error.Error.Params["attribute"])
+			assert.Contains(suite.T(), resp.Error.ErrorDescription.String(), "already associated")
 			suite.mockEntityProvider.AssertExpectations(suite.T())
 		})
 	}
