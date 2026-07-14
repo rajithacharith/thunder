@@ -2630,6 +2630,45 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Mappings_ResolvedByClaim() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":       "ext-user-123",
+		"iss":       testExternalIssuer,
+		"aud":       "https://example.com",
+		"exp":       float64(now + 3600),
+		"user_type": "staff",
+		"emp_id":    "E-42",
+	}
+	token := suite.createExternalJWT(claims)
+	idpDTOs := buildExternalIDPDTOs()
+	idpDTOs[0].AttributeConfiguration = &providers.AttributeConfiguration{
+		UserTypeResolution: &providers.UserTypeResolution{
+			Default:           "person",
+			ExternalAttribute: "user_type",
+			ValueMapping:      map[string]string{"staff": "employee"},
+		},
+		UserTypeAttributeMappings: []providers.UserTypeAttributeMapping{
+			{UserType: "person", Attributes: []providers.AttributeMapping{}},
+			{UserType: "employee", Attributes: []providers.AttributeMapping{
+				{ExternalAttribute: "emp_id", LocalAttribute: "employeeNumber"}}},
+		},
+	}
+
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", mock.Anything, token, testExternalJWKS).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	// The claim-resolved "employee" user type's mapping is applied, not the default's.
+	assert.Equal(suite.T(), "E-42", result.UserAttributes["employeeNumber"])
+	suite.mockIDPService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
 func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_NoMappings_Verbatim() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{

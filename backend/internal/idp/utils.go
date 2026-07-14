@@ -50,20 +50,26 @@ func GetPropertyValue(properties []cmodels.Property, name string) string {
 }
 
 // GetMappedUserType returns the resolved local user type for the IDP's attribute mapping, or an
-// empty string when no mapping is configured. When claim-driven resolution is configured
-// (ExternalAttribute + ValueMapping), the user type is derived from the value of that external claim;
-// otherwise, or when the value is unmapped or missing, the configured default user type is returned.
+// empty string when no mapping is configured. When claim-driven resolution is configured with a
+// value mapping (ExternalAttribute + ValueMapping), the user type is derived by mapping the external
+// claim value. When an external attribute is configured without a value mapping, the external claim
+// value is used directly as the user type. In either case, when the claim is missing or its value is
+// unmapped, the configured default user type is returned.
 func GetMappedUserType(idp *providers.IDPDTO, claims map[string]interface{}) string {
 	if idp == nil || idp.AttributeConfiguration == nil || idp.AttributeConfiguration.UserTypeResolution == nil {
 		return ""
 	}
 	resolution := idp.AttributeConfiguration.UserTypeResolution
 	externalAttribute := strings.TrimSpace(resolution.ExternalAttribute)
-	if externalAttribute != "" && len(resolution.ValueMapping) > 0 {
+	if externalAttribute != "" {
 		if value, ok := getNestedValue(claims, externalAttribute); ok {
 			key := sysutils.ConvertInterfaceValueToString(value)
-			if userType, ok := resolution.ValueMapping[key]; ok {
-				return userType
+			if len(resolution.ValueMapping) > 0 {
+				if userType, ok := resolution.ValueMapping[key]; ok {
+					return userType
+				}
+			} else if trimmed := strings.TrimSpace(key); trimmed != "" {
+				return trimmed
 			}
 		}
 	}

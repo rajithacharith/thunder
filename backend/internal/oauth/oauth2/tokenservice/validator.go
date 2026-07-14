@@ -239,7 +239,7 @@ func (tv *tokenValidator) ValidateSubjectToken(
 	}
 
 	// Not a server-issued token — try external IDP issuers.
-	issuerInfo, resolveErr := tv.resolveExternalIssuer(ctx, iss)
+	issuerInfo, resolveErr := tv.resolveExternalIssuer(ctx, iss, claims)
 	if resolveErr != nil {
 		return nil, fmt.Errorf("failed to exchange token for issuer %q: %w", iss, resolveErr)
 	}
@@ -290,8 +290,12 @@ type tokenExchangeIssuerInfo struct {
 }
 
 // resolveExternalIssuer looks up an external IDP whose issuer property matches the given issuer.
-func (tv *tokenValidator) resolveExternalIssuer(ctx context.Context, issuer string) (
-	*tokenExchangeIssuerInfo, error) {
+// The subject token claims are used to resolve the user type for attribute mapping.
+func (tv *tokenValidator) resolveExternalIssuer(
+	ctx context.Context,
+	issuer string,
+	claims map[string]interface{},
+) (*tokenExchangeIssuerInfo, error) {
 	if tv.idpService == nil {
 		return nil, fmt.Errorf("no external issuers configured")
 	}
@@ -315,9 +319,7 @@ func (tv *tokenValidator) resolveExternalIssuer(ctx context.Context, issuer stri
 		Issuer:               issuer,
 		JWKSURL:              jwksURL,
 		TrustedTokenAudience: idp.GetPropertyValue(idpDTO.Properties, idp.PropTrustedTokenAudience),
-		// Claims are not available at issuer-resolution time, so resolution falls back to the
-		// default user type's mappings (unchanged token-exchange behavior).
-		AttributeMappings: idp.GetAttributeMappings(&idpDTO, nil),
+		AttributeMappings:    idp.GetAttributeMappings(&idpDTO, claims),
 	}, nil
 }
 
