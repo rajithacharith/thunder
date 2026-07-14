@@ -1057,7 +1057,7 @@ function run() {
     # the backend without manual configuration. Regenerated on every run and picked up by
     # the bootstrap one-shot; it is git-ignored and never packaged (see build()).
     cat > "$BACKEND_DIR/bootstrap/02-server-configurations.yaml" <<EOF
-# resource_type: server_config
+resource_type: server_config
 name: cors
 value:
   allowedOrigins:
