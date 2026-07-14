@@ -3411,7 +3411,7 @@ const translations = {
     'core.elements.richText.action.ref.label': 'Connected step',
 
     // Call step
-    'core.call.unconfiguredLabel': 'Call flow',
+    'core.call.unconfiguredLabel': 'Flow',
     'core.call.selectFlow': 'Select a flow to invoke',
     'core.call.referencedFlow': 'Referenced flow',
     'core.call.tooltip.configure': 'Configure',
