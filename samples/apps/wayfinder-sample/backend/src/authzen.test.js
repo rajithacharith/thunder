@@ -75,8 +75,8 @@ test("sends the direct auth secret for access evaluations", async () => {
     });
     const request = {
         subject: { id: "user-1" },
-        resource: { type: "wayfinder" },
-        action: { name: "wayfinder:booking:read" },
+        resource: { type: "http://localhost:8787/mcp" },
+        action: { name: "booking:read" },
     };
 
     assert.equal((await evaluateAccess(request)).decision, true);
@@ -94,7 +94,7 @@ test("sends the direct auth secret for access evaluations", async () => {
     assert.deepEqual(JSON.parse(requests[0].options.body), request);
     assert.match(
         logs[0],
-        /ALLOW subject=user-1 resource=wayfinder action=wayfinder:booking:read/,
+        /ALLOW subject=user-1 resource=http:\/\/localhost:8787\/mcp action=booking:read/,
     );
     assert.doesNotMatch(logs.join(" "), /authzen-direct-auth-secret/);
 });
@@ -109,8 +109,8 @@ test("requires the direct auth secret in authzen mode", async () => {
     await assert.rejects(
         evaluateAccess({
             subject: { id: "user-1" },
-            resource: { type: "wayfinder" },
-            action: { name: "wayfinder:booking:read" },
+            resource: { type: "http://localhost:8787/mcp" },
+            action: { name: "booking:read" },
         }),
         /THUNDER_BASE_URL and THUNDERID_DIRECT_AUTH_SECRET are required/,
     );
@@ -129,8 +129,8 @@ test("sends one PDP request per concurrent evaluation", async () => {
     });
     const request = {
         subject: { id: "user-1" },
-        resource: { type: "wayfinder" },
-        action: { name: "wayfinder:booking:read" },
+        resource: { type: "http://localhost:8787/mcp" },
+        action: { name: "booking:read" },
     };
 
     await Promise.all([
@@ -153,8 +153,8 @@ test("fails closed when the PDP response has no decision", async () => {
     await assert.rejects(
         evaluateAccess({
             subject: { id: "user-1" },
-            resource: { type: "wayfinder" },
-            action: { name: "wayfinder:booking:read" },
+            resource: { type: "http://localhost:8787/mcp" },
+            action: { name: "booking:read" },
         }),
         /returned no decision/,
     );
@@ -171,14 +171,14 @@ test("fails closed when the PDP denies the permission", async () => {
     await assert.rejects(
         evaluateAccess({
             subject: { id: "agent-1" },
-            resource: { type: "wayfinder" },
-            action: { name: "wayfinder:booking:create" },
+            resource: { type: "http://localhost:8787/mcp" },
+            action: { name: "booking:create" },
         }),
         (error) => {
             assert.equal(error.code, "insufficient_permission");
             assert.equal(
                 error.requiredPermission,
-                "wayfinder:booking:create",
+                "booking:create",
             );
             return true;
         },

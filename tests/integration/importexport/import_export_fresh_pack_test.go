@@ -1034,12 +1034,12 @@ permissions: []
 // parent-child resource hierarchy. Verifies the child resource is created with the
 // correct parent (resolved via the handle map) and actions are attached.
 func (s *GroupRoleResourceImportExportSuite) TestImportResourceServerWithNestedResources() {
-	handle := "nested-rs-" + s.handleSuffix
+	identifier := "nested-rs-" + s.handleSuffix
 
 	yamlContent := fmt.Sprintf(`resource_type: resource_server
 name: Nested Resource Server %s
 description: Resource server with nested resources
-handle: %s
+identifier: %s
 ouId: %s
 delimiter: ":"
 resources:
@@ -1056,7 +1056,7 @@ resources:
     actions:
       - name: Read Child
         handle: read-child
-`, s.handleSuffix, handle, s.ouID,
+`, s.handleSuffix, identifier, s.ouID,
 		s.handleSuffix, s.handleSuffix, s.handleSuffix)
 
 	resp, err := s.importResources(importRequest{
@@ -1104,7 +1104,7 @@ resources:
 // already exists (upsert path). The nested resources also already exist so conflict
 // recovery must use the scoped parent ID when looking up the existing child resource.
 func (s *GroupRoleResourceImportExportSuite) TestImportResourceServerUpsertNestedResources() {
-	handle := "upsert-rs-" + s.handleSuffix
+	identifier := "upsert-rs-" + s.handleSuffix
 
 	buildYAML := func(id string) string {
 		idLine := ""
@@ -1114,7 +1114,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportResourceServerUpsertNeste
 		return fmt.Sprintf(`resource_type: resource_server
 %sname: Upsert Resource Server %s
 description: Resource server for upsert test
-handle: %s
+identifier: %s
 ouId: %s
 delimiter: ":"
 resources:
@@ -1129,7 +1129,7 @@ resources:
     actions:
       - name: Write
         handle: write
-`, idLine, s.handleSuffix, handle, s.ouID,
+`, idLine, s.handleSuffix, identifier, s.ouID,
 			s.handleSuffix, s.handleSuffix, s.handleSuffix)
 	}
 

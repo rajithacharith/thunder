@@ -50,7 +50,7 @@ AuthZEN mode uses the server-level Direct Auth Secret for the backend-to-PDP cal
 1. The user signs in to the Wayfinder web app via the `WAYFINDER` OAuth application. The issued token carries `agent:access` (from the Chat User role).
 2. When the user sends a chat message, the frontend calls `POST /chat` on the AI Agent API with the user's access token in the `Authorization` header. The AI Agent validates the token has the `agent:access` scope before processing the message.
 3. For browsing tools (search flights, search hotels), the AI Agent uses its own M2M token (obtained via `client_credentials` with the `WAYFINDER-CONCIERGE` credentials) to call the Wayfinder server's `/mcp` endpoint.
-4. For mutating tools (create booking, cancel booking), the AI Agent returns a `need_user_consent` response. The frontend opens a consent popup, the user signs in and picks which booking permissions to grant (`wayfinder:booking:read`, `wayfinder:booking:create`, `wayfinder:booking:cancel`), and the authorization code is submitted to `POST /chat/consent`. The agent exchanges it for a user-context token, and the frontend retries the original message. Because `WAYFINDER-CONCIERGE` is a ThunderID *agent*, the issued user-context token automatically includes an `act` claim with the agent's entity ID. This creates an implicit on-behalf-of token. The Wayfinder server logs this delegation (`sub` = the user, `act.sub` = the agent) without any explicit token-exchange step.
+4. For mutating tools (create booking, cancel booking), the AI Agent returns a `need_user_consent` response. The frontend opens a consent popup, the user signs in and picks which booking permissions to grant (`booking:read`, `booking:create`, `booking:cancel`), and the authorization code is submitted to `POST /chat/consent`. The agent exchanges it for a user-context token, and the frontend retries the original message. Because `WAYFINDER-CONCIERGE` is a ThunderID *agent*, the issued user-context token automatically includes an `act` claim with the agent's entity ID. This creates an implicit on-behalf-of token. The Wayfinder server logs this delegation (`sub` = the user, `act.sub` = the agent) without any explicit token-exchange step.
 5. The Wayfinder server validates the JWT on every request. REST endpoints always enforce token scopes. MCP tools enforce token scopes in the default `scope` mode or send the current user or agent and required permission to the ThunderID PDP in `authzen` mode.
 
 ## What This Demonstrates
@@ -61,10 +61,10 @@ AuthZEN mode uses the server-level Direct Auth Secret for the backend-to-PDP cal
 - **Scope-based access control** on the AI Agent's HTTP API. Only users with `agent:access` can use the chat. Users without this scope (e.g. `jane.smith`) can browse and book through the UI but cannot use the Wayfinder Concierge.
 - A **typed user model** with the `Customer` user type for consumers and the `Staff` user type for internal team. Self sign-up, password recovery, and staff invitation flows back the B2C use-case story.
 - An **on-behalf-of (OBO)** flow triggered from inside a chat session: the agent returns a consent request, the frontend opens a popup where the user picks which booking permissions to grant, and the issued user-context token only carries the approved subset. The token is an **implicit OBO token**. It carries an `act` claim naming the agent that mediated the login, so the resource server sees both the user (`sub`) and the acting agent (`act.sub`) from a single token.
-- A REST API that **verifies the JWT** and **enforces scopes per route** (`wayfinder:booking:read`, `wayfinder:booking:create`, `wayfinder:booking:cancel`, `wayfinder:booking:recommend`).
+- A REST API that **verifies the JWT** and **enforces scopes per route** (`booking:read`, `booking:create`, `booking:cancel`, `booking:recommend`).
 - A **self-service profile page** at `/profile` that calls ThunderID's `/users/me` directly with the `WAYFINDER` user token to read account details, edit attributes, and change the password.
 - **Multi-LLM support**. The Wayfinder Concierge works with both **Anthropic Claude** and **Google Gemini**, selectable via an environment variable.
-- **CIBA-based flight upgrade**. A background upgrade scheduler uses CIBA (Client-Initiated Backchannel Authentication) to authenticate the customer out-of-band via email or SMS notification. The customer approves the upgrade on their own device; the scheduler then processes it with a CIBA-issued token carrying the `wayfinder:upgrade:process` scope.
+- **CIBA-based flight upgrade**. A background upgrade scheduler uses CIBA (Client-Initiated Backchannel Authentication) to authenticate the customer out-of-band via email or SMS notification. The customer approves the upgrade on their own device; the scheduler then processes it with a CIBA-issued token carrying the `upgrade:process` scope.
 - **Verifiable Credentials (OID4VCI / OID4VP)**. Members can add a Wayfinder Sky Pass to their EUDI wallet straight from the profile page (OpenID4VCI issuance). The Skyline Lounge kiosk (`lounge/`) verifies the pass using OpenID4VP selective disclosure, reading only the `tier` and `full_name` claims.
 
 ## Project Structure
@@ -122,7 +122,7 @@ The import creates:
 | `Customer` | User type | Consumer schema (`username`, `email`, `password`, `given_name`, `family_name`, `mobile_number`, `sub`) with self-registration enabled |
 | `Staff` | User type | Internal team schema (`username`, `email`, `password`, `displayName`) |
 | `wayfinder-agent` | Resource server | `agent:access` permission |
-| `wayfinder` | Resource server | Handle-prefixed booking and upgrade permissions, such as `wayfinder:booking:read` and `wayfinder:upgrade:process`. Protects both `/api/*` (REST) and `/mcp` (MCP tools) on the Wayfinder server. |
+| `wayfinder` | Resource server | Booking and upgrade permissions, such as `booking:read` and `upgrade:process`. Protects both `/api/*` (REST) and `/mcp` (MCP tools) on the Wayfinder server. |
 | `WAYFINDER` | Application | Public OAuth app (PKCE, redirect to `http://localhost:5173`) with registration and recovery flows enabled |
 | `WAYFINDER-CONCIERGE` | Agent | Confidential OAuth client with `client_credentials` + `authorization_code` grants |
 | `WAYFINDER-UPGRADE-AGENT` | Agent | CIBA-only confidential client used by the upgrade scheduler to authenticate customers out-of-band |
@@ -136,9 +136,9 @@ The import creates:
 | `Support` | Role | Staff role for consumer support workflows |
 | `DestinationsAdmin` | Role | Staff role for curating featured destinations |
 | `OpsAdmin` | Role | Staff role for managing other staff, assigned to `alex.carter` |
-| `Wayfinder Chat User` | Role | `agent:access`, `wayfinder:booking:upgrade`, and `wayfinder:upgrade:process` permissions, assigned to `john.doe` |
-| `Recommender` | Role | `wayfinder:booking:recommend` and `wayfinder:upgrade:search` permissions, assigned to the Wayfinder Concierge |
-| `Upgrade Scheduler` | Role | `wayfinder:upgrade:read` and `wayfinder:upgrade:search` permissions, assigned to the upgrade scheduler agent |
+| `Wayfinder Chat User` | Role | `agent:access`, `booking:upgrade`, and `upgrade:process` permissions, assigned to `john.doe` |
+| `Recommender` | Role | `booking:recommend` and `upgrade:search` permissions, assigned to the Wayfinder Concierge |
+| `Upgrade Scheduler` | Role | `upgrade:read` and `upgrade:search` permissions, assigned to the upgrade scheduler agent |
 | `john.doe` / `john.doe` | User | Demo user with Concierge access, booking, and upgrade permissions |
 | `jane.smith` / `jane.smith` | User | Demo user with booking permissions but **no** Concierge access |
 | `alex.carter` / `alex.carter` | User | Staff with the `OpsAdmin` role for inviting other staff |
@@ -259,10 +259,10 @@ For example, `recommend_bookings` evaluates:
     "id": "wayfinder-concierge"
   },
   "resource": {
-    "type": "wayfinder"
+    "type": "http://localhost:8787/mcp"
   },
   "action": {
-    "name": "wayfinder:booking:recommend"
+    "name": "booking:recommend"
   }
 }
 ```
@@ -311,7 +311,7 @@ You can also ask the agent for general recommendations. For example:
 Suggest a few flight deals.
 ```
 
-This calls the `recommend_bookings` MCP tool, which serves `GET /api/bookings/recommended` from the same service module with the agent's M2M token. The tool requires the `wayfinder:booking:recommend` permission, which is granted to the `WAYFINDER-CONCIERGE` agent via its **Recommender** role assignment.
+This calls the `recommend_bookings` MCP tool, which serves `GET /api/bookings/recommended` from the same service module with the agent's M2M token. The tool requires the `booking:recommend` permission, which is granted to the `WAYFINDER-CONCIERGE` agent via its **Recommender** role assignment.
 
 Then:
 
@@ -319,21 +319,21 @@ Then:
 Book flight 2
 ```
 
-The agent will pause and ask for your permission. A popup opens and you sign in as the demo user via the agent's OAuth application. You pick which booking permissions to grant in the consent screen. The booking then succeeds, or returns 403 if you denied `wayfinder:booking:create`.
+The agent will pause and ask for your permission. A popup opens and you sign in as the demo user via the agent's OAuth application. You pick which booking permissions to grant in the consent screen. The booking then succeeds, or returns 403 if you denied `booking:create`.
 
 ### Verify AuthZEN Decisions
 
 With `AUTHORIZATION_MODE=authzen`, ask the Concierge for recommendations and inspect the Wayfinder backend log:
 
 ```text
-[authzen] ALLOW subject=wayfinder-concierge resource=wayfinder action=wayfinder:booking:recommend
+[authzen] ALLOW subject=wayfinder-concierge resource=http://localhost:8787/mcp action=booking:recommend
 ```
 
 Calling `recommend_bookings` directly as `john.doe` through MCP Inspector is denied because the **Recommender** role is
 assigned to the Concierge agent, not John:
 
 ```text
-[authzen] DENY subject=wayfinder-john-doe resource=wayfinder action=wayfinder:booking:recommend
+[authzen] DENY subject=wayfinder-john-doe resource=http://localhost:8787/mcp action=booking:recommend
 ```
 
 ### Manage Your Profile

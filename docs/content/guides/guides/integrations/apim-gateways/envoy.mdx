@@ -300,7 +300,7 @@ Expected response:
 
 JWT authentication confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Envoy accepts any valid <ProductName /> token for the protected route.
 
-Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Envoy then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce scope-based authorization — for example, restricting a read endpoint to tokens with `resources-api:resource:read` — without changing the upstream service.
+Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Envoy then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce scope-based authorization — for example, restricting a read endpoint to tokens with `resource:read` — without changing the upstream service.
 
 The steps below build on the JWT authentication configuration from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the Envoy configuration to enforce scope validation.
 
@@ -318,7 +318,6 @@ For a full reference, see [Resource Servers](../../../resource-servers).
 2. Navigate to **Resource Servers** → **New Resource Server**.
 3. Fill in the following fields:
    - **Name**: `Resources API`
-   - **Handle**: `resources-api`
    - **Identifier**: `https://api.example.com/resources`
    - **Description**: `Handles resource operations`
    - **Delimiter**: `:` (colon)
@@ -341,7 +340,7 @@ A Resource represents a specific entity within the API, such as `/resources`. Re
 #### Create Resource Actions
 
 Actions define the operations allowed on a resource.
-Each action produces a scope in the format `<resource-server-handle>:<resource-handle>:<action-handle>`.
+Each action produces a scope in the format `<resource-handle>:<action-handle>`.
 <ProductName /> includes these scopes in tokens issued to applications that hold the corresponding role.
 
 **Using the Console:**
@@ -353,7 +352,7 @@ Each action produces a scope in the format `<resource-server-handle>:<resource-h
    - **Handle**: `read`
    - **Description**: `Permission to read resources`
 4. Click **Create**.
-5. Note the generated permission shown in the action details: `resources-api:resource:read`.
+5. Note the generated permission shown in the action details: `resource:read`.
 
 #### Create a Role and assign permission
 
@@ -363,7 +362,7 @@ Roles bundle one or more permissions together. Assign roles to applications to c
 2. Fill in the following fields:
    - **Name**: `Resources API Reader`
 3. Click **Continue**.
-4. Under **Assign permissions**, choose `resources-api:resource:read`.
+4. Under **Assign permissions**, choose `resource:read`.
 5. Click **Continue**.
 
 #### Assign a Role to the Application
@@ -436,7 +435,7 @@ http_filters:
                         name: "x-jwt-scope"
                         string_match:
                           safe_regex:
-                            regex: "(^|\\s)resources-api:resource:read(\\s|$)"
+                            regex: "(^|\\s)resource:read(\\s|$)"
             principals:
               - any: true
   - name: envoy.filters.http.router
@@ -446,7 +445,7 @@ http_filters:
 
 </div>
 
-Add one scope policy for each protected route or operation. For example, an update endpoint can require a separate scope such as `resources-api:resource:update`.
+Add one scope policy for each protected route or operation. For example, an update endpoint can require a separate scope such as `resource:update`.
 
 **Scope configuration reference:**
 
@@ -454,7 +453,7 @@ Add one scope policy for each protected route or operation. For example, an upda
 |---|---|---|
 | `claim_to_headers.claim_name` | `scope` | JWT claim that stores scopes |
 | `claim_to_headers.header_name` | `x-jwt-scope` | Header Envoy uses to check the token scopes |
-| `string_match.safe_regex.regex` | `(^\|\\s)resources-api:resource:read(\\s\|$)` | Required scope to access the matching route. The regular expression matches scope token boundaries in a space-delimited scope claim. |
+| `string_match.safe_regex.regex` | `(^\|\\s)resource:read(\\s\|$)` | Required scope to access the matching route. The regular expression matches scope token boundaries in a space-delimited scope claim. |
 | `action` | `ALLOW` | Allows only requests that match one of the configured scope policies |
 
 Restart Envoy to apply the changes:
@@ -476,7 +475,7 @@ curl -kL -X POST 'https://<THUNDER_HOST>:8090/oauth2/token' \
   --user '<CLIENT_ID>:<CLIENT_SECRET>' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'scope=resources-api:resource:read'
+  --data-urlencode 'scope=resource:read'
 ```
 
 The response confirms the scope is present:
@@ -486,7 +485,7 @@ The response confirms the scope is present:
   "access_token": "<ACCESS_TOKEN>",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "scope": "resources-api:resource:read"
+  "scope": "resource:read"
 }
 ```
 
@@ -547,16 +546,16 @@ The adapter sends this AuthZEN request for `GET /resources/<RESOURCE_ID>`:
     "id": "<SUBJECT_ID>"
   },
   "resource": {
-    "type": "resources-api",
+    "type": "https://api.example.com/resources",
     "id": "<RESOURCE_ID>"
   },
   "action": {
-    "name": "resources-api:resource:read"
+    "name": "resource:read"
   }
 }
 ```
 
-The action name must match a permission registered in <ProductName />. In this guide, the Resource Server handle, Resource handle, and Action handle produce `resources-api:resource:read`; if your adapter sends a different action name, the PDP returns `decision: false`.
+The action name must match a permission registered in <ProductName />. In this guide, the Resource handle and Action handle produce `resource:read`; if your adapter sends a different action name, the PDP returns `decision: false`.
 
 ### Configure the Authorization Adapter
 
@@ -632,8 +631,8 @@ def resource_id_from_path(path):
 
 def action_for(method, path):
     if method == "GET" and path.startswith("/resources"):
-        return "resources-api:resource:read"
-    return "resources-api:resource:unknown"
+        return "resource:read"
+    return "resource:unknown"
 
 def build_authzen_request(method, path, headers):
     subject = {"id": headers.get("x-authenticated-subject", "").strip()}
@@ -656,7 +655,7 @@ def build_authzen_request(method, path, headers):
     return {
         "subject": subject,
         "resource": {
-            "type": "resources-api",
+            "type": "https://api.example.com/resources",
             "id": resource_id_from_path(path),
         },
         "action": {
@@ -1108,7 +1107,7 @@ envoy -c envoy.yaml
 
 #### Obtain an Access Token
 
-Use a user token or client credentials token for a subject that has the `resources-api:resource:read` permission through the `Resources API Reader` role.
+Use a user token or client credentials token for a subject that has the `resource:read` permission through the `Resources API Reader` role.
 
 For a [client credentials](../../../protocols/oauth-oidc/client-credentials/) token, request the corresponding scope from <ProductName />:
 
@@ -1117,7 +1116,7 @@ curl -kL -X POST 'https://<THUNDER_HOST>:8090/oauth2/token' \
   --user '<CLIENT_ID>:<CLIENT_SECRET>' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'scope=resources-api:resource:read'
+  --data-urlencode 'scope=resource:read'
 ```
 
 Save the returned `access_token` as `ACCESS_TOKEN`. The token contains the scope associated with the assigned permission.

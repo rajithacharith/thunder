@@ -3888,7 +3888,6 @@ const translations = {
     'listing.columns.name': 'Name',
     'listing.columns.type': 'Type',
     'listing.columns.identifier': 'Identifier',
-    'listing.columns.handle': 'Handle',
     'listing.columns.actions': 'Actions',
     'listing.systemResourceServer': 'System resource server',
     'listing.error': 'Failed to load resource servers.',
@@ -3966,12 +3965,13 @@ const translations = {
     'create.name.nameLabelMcp': 'MCP Server Name',
     'create.name.namePlaceholder': 'e.g. Payments API',
     'create.name.suggestions': 'Need inspiration? Pick one:',
-    'create.name.handleLabel': 'Handle (Optional)',
-    'create.name.handlePlaceholder': 'e.g. payments-api',
-    'create.name.handleHint':
-      'The handle prefixes every permission in this resource server. It cannot be changed after creation.',
-    'create.name.handleHintMcp':
-      'The handle prefixes every permission in this MCP server. It cannot be changed after creation.',
+    'create.name.identifierLabel': 'Identifier',
+    'create.name.identifierPlaceholder': 'https://api.example.com',
+    'create.name.identifierPlaceholderMcp': 'https://mcp.example.com',
+    'create.name.identifierHint':
+      'A unique identifier for this resource server. When set as an absolute URI, it becomes the token audience for RFC 8707 resource indicators.',
+    'create.name.identifierHintMcp':
+      'A unique identifier for this MCP server. When set as an absolute URI, it becomes the token audience for RFC 8707 resource indicators.',
     'create.separator.title': 'Choose your permission delimiter',
     'create.separator.subtitle':
       'The delimiter character joins parts of a permission string. This cannot be changed after creation.',
@@ -3992,6 +3992,7 @@ const translations = {
     'edit.tab.resources': 'Resources',
     'edit.tab.advanced': 'Advanced Settings',
     'edit.back': 'Back to resource servers',
+    'edit.identifierRequired': 'Identifier is required.',
     'edit.notFound': 'Resource server not found.',
     'edit.systemResourceServer': 'System',
     'edit.tabs': 'Resource server settings',
@@ -4017,6 +4018,7 @@ const translations = {
     'edit.dangerZone.deleteServer': 'Delete resource server',
     'edit.dangerZone.deleteServerMcp': 'Delete MCP server',
     'tree.title': 'Resource Hierarchy',
+    'detail.identifierRequired': 'Identifier is required.',
     'tree.add': 'Add',
     'tree.addResource': 'Add resource',
     'tree.addServerAction': 'Add server-level action',
