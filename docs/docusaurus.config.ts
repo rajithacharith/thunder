@@ -216,7 +216,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   ],
 
   themeConfig: {
-    image: 'assets/images/social-card.png',
+    image: 'assets/images/og-image.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
