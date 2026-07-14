@@ -94,13 +94,18 @@ vi.mock('../../../hooks/useVisualFlowHandlers', () => ({
   }),
 }));
 
+const {mockAddToViewAtIndex, mockAddToFormAtIndex} = vi.hoisted(() => ({
+  mockAddToViewAtIndex: vi.fn(),
+  mockAddToFormAtIndex: vi.fn(),
+}));
+
 vi.mock('../../../hooks/useDragDropHandlers', () => ({
   default: () => ({
     addCanvasNode: vi.fn(),
     addToView: vi.fn(),
     addToForm: vi.fn(),
-    addToViewAtIndex: vi.fn(),
-    addToFormAtIndex: vi.fn(),
+    addToViewAtIndex: mockAddToViewAtIndex,
+    addToFormAtIndex: mockAddToFormAtIndex,
   }),
 }));
 
@@ -1238,6 +1243,55 @@ describe('DecoratedVisualFlow', () => {
       });
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
+    });
+
+    it('should handle drop on element inside a stack nested inside a form', () => {
+      // Form contains a Stack, and the Stack contains the drop target element.
+      const targetNode: Node = {
+        id: 'step-1',
+        position: {x: 0, y: 0},
+        data: {
+          components: [
+            {
+              id: 'form-1',
+              type: 'BLOCK',
+              components: [
+                {
+                  id: 'stack-1',
+                  type: 'STACK',
+                  components: [{id: 'button-1', type: 'BUTTON'}],
+                },
+              ],
+            },
+          ],
+        },
+      };
+      mockGetNodes.mockReturnValue([targetNode]);
+
+      renderComponent(<DecoratedVisualFlow {...defaultProps} />);
+
+      // Simulate drop on button-1, which lives inside stack-1, which lives inside form-1.
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {type: 'IMAGE'},
+            },
+          },
+          target: {
+            id: 'button-1',
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
+            },
+          },
+        },
+        canceled: false,
+      });
+
+      // The nested stack (not the form, and not a view-level fallback) should be the target container.
+      expect(mockAddToFormAtIndex).toHaveBeenCalledWith(expect.anything(), 'step-1', 'stack-1', 'button-1');
+      expect(mockAddToViewAtIndex).not.toHaveBeenCalled();
     });
 
     it('should call confirm handler from useContainerDialogConfirm', () => {

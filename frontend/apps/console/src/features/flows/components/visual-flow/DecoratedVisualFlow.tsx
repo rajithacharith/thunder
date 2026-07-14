@@ -66,7 +66,7 @@ import useUIPanelState from '../../hooks/useUIPanelState';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import useVisualFlowHandlers from '../../hooks/useVisualFlowHandlers';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
-import {BlockTypes, ElementTypes, type Element} from '../../models/elements';
+import {BlockTypes, type Element} from '../../models/elements';
 import type {MetadataInterface} from '../../models/metadata';
 import Notification, {NotificationType} from '../../models/notification';
 import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
@@ -82,6 +82,7 @@ import {
   stripSimulationNodeClasses,
   withSimulationClasses,
 } from '../../utils/stripSimulationClasses';
+import {findContainingComponent} from '../../utils/updateNestedComponent';
 import {widgetNeedsViewContainer} from '../../utils/widgetUtils';
 import Droppable from '../dnd/Droppable';
 import ResourcePanel from '../resource-panel/ResourcePanel';
@@ -590,14 +591,10 @@ function DecoratedVisualFlow({
         // Dropping on an existing sortable element - insert at that position
         const targetElementId = target.id;
 
-        // Check if the target element is inside a form or stack
+        // Check if the target element is inside a form or stack, at any nesting depth
         const targetNode = getNodes().find((n) => n.id === targetData.stepId);
         const nodeData = targetNode?.data as StepData | undefined;
-        const parentContainer = nodeData?.components?.find(
-          (c: Element) =>
-            (c.type === BlockTypes.Form || c.type === ElementTypes.Stack) &&
-            c.components?.some((child: Element) => child.id === targetElementId),
-        );
+        const parentContainer = findContainingComponent(nodeData?.components ?? [], targetElementId);
 
         if (parentContainer) {
           // Target element is inside a form or stack, insert at that position within it
