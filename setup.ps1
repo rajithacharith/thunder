@@ -65,6 +65,8 @@ $ADMIN_PASSWORD_GENERATED = $false
 # generated during setup and written to deployment.yaml.
 $DIRECT_AUTH_SECRET = if ($env:DIRECT_AUTH_SECRET) { $env:DIRECT_AUTH_SECRET } else { "" }
 $DIRECT_AUTH_SECRET_GENERATED = $false
+# Set when key material is generated this run (controls the one-time notice).
+$CERTS_GENERATED = $false
 
 # ============================================================================
 # Logging Functions
@@ -388,12 +390,109 @@ function Show-DirectAuthSecretNotice {
     Write-Host ""
 }
 
+# Write DER bytes as a PEM file (64-char lines, LF endings) of the given block type.
+function Write-PemFile {
+    param(
+        [string]$Path,
+        [string]$Type,
+        [byte[]]$Der
+    )
+    $b64 = [Convert]::ToBase64String($Der)
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.Append("-----BEGIN $Type-----`n")
+    for ($i = 0; $i -lt $b64.Length; $i += 64) {
+        $len = [Math]::Min(64, $b64.Length - $i)
+        [void]$sb.Append($b64.Substring($i, $len))
+        [void]$sb.Append("`n")
+    }
+    [void]$sb.Append("-----END $Type-----`n")
+    [System.IO.File]::WriteAllText($Path, $sb.ToString())
+}
+
+# Generate a self-signed cert/key PEM pair if absent, using .NET (no openssl needed on Windows).
+function New-SelfSignedCertPair {
+    param(
+        [string]$CertFile,
+        [string]$KeyFile,
+        [string]$Algo
+    )
+    if ((Test-Path $CertFile) -and (Test-Path $KeyFile)) {
+        return
+    }
+
+    $subject = "CN=localhost, OU=$PRODUCT_NAME, O=WSO2"
+    $san = New-Object System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder
+    $san.AddDnsName("localhost")
+    $san.AddIpAddress([System.Net.IPAddress]::Parse("127.0.0.1"))
+
+    if ($Algo -eq 'ecdsa') {
+        $key = [System.Security.Cryptography.ECDsa]::Create([System.Security.Cryptography.ECCurve+NamedCurves]::nistP256)
+        $req = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+            $subject, $key, [System.Security.Cryptography.HashAlgorithmName]::SHA256)
+        $days = 3650
+    }
+    else {
+        $key = [System.Security.Cryptography.RSA]::Create(2048)
+        $req = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+            $subject, $key, [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+            [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+        $days = 365
+    }
+    $req.CertificateExtensions.Add($san.Build())
+
+    $notBefore = [System.DateTimeOffset]::UtcNow.AddDays(-1)
+    $notAfter = [System.DateTimeOffset]::UtcNow.AddDays($days)
+    $cert = $req.CreateSelfSigned($notBefore, $notAfter)
+
+    Write-PemFile -Path $CertFile -Type "CERTIFICATE" -Der $cert.RawData
+    Write-PemFile -Path $KeyFile -Type "PRIVATE KEY" -Der $key.ExportPkcs8PrivateKey()
+    $cert.Dispose()
+    $key.Dispose()
+    $script:CERTS_GENERATED = $true
+}
+
+# Generate the server TLS, JWT signing, and AES key material if absent (reused on later runs).
+function Set-Certificates {
+    $configFile = Resolve-ConfigFile
+    if ($configFile) {
+        $certDir = Join-Path (Split-Path -Parent $configFile) "config/certs"
+    }
+    else {
+        $certDir = "./config/certs"
+    }
+    New-Item -ItemType Directory -Force -Path $certDir | Out-Null
+    # Absolute path so the .NET file writes below resolve correctly (they ignore the PowerShell location).
+    $certDir = (Resolve-Path -LiteralPath $certDir).Path
+
+    New-SelfSignedCertPair -CertFile (Join-Path $certDir "server.cert") -KeyFile (Join-Path $certDir "server.key") -Algo rsa
+    New-SelfSignedCertPair -CertFile (Join-Path $certDir "signing.cert") -KeyFile (Join-Path $certDir "signing.key") -Algo rsa
+    New-SelfSignedCertPair -CertFile (Join-Path $certDir "ecdsa-signing.cert") -KeyFile (Join-Path $certDir "ecdsa-signing.key") -Algo ecdsa
+
+    $cryptoKey = Join-Path $certDir "crypto.key"
+    if (-not (Test-Path $cryptoKey)) {
+        $bytes = New-Object 'System.Byte[]' 32
+        [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+        $hex = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''
+        [System.IO.File]::WriteAllText($cryptoKey, $hex)
+        $script:CERTS_GENERATED = $true
+    }
+}
+
+# Print a one-time notice when key material was generated this run.
+function Show-CertificatesNotice {
+    if (-not $CERTS_GENERATED) { return }
+    Write-Host "Generated missing security material in config/certs."
+    Write-Host "  Preserve this directory; if these keys are lost or changed, previously issued tokens and encrypted data can no longer be validated or decrypted."
+    Write-Host ""
+}
+
 # Read configuration
 Read-Config | Out-Null
 
 # Configure the admin password and Direct Auth Secret before bootstrap so both are ready to use.
 Set-AdminPassword
 Set-DirectAuthSecret
+Set-Certificates
 
 # Construct base URL (internal API endpoint)
 $BASE_URL = "$($script:PROTOCOL)://$($script:HOSTNAME):$($script:PORT)"
@@ -523,6 +622,7 @@ if ($SILENT_MODE) {
     Write-Host ""
     Show-AdminCredentialsNotice
     Show-DirectAuthSecretNotice
+    Show-CertificatesNotice
     Write-Host "Run .\start.ps1 to start ${PRODUCT_NAME}."
     Write-Host ""
 }
@@ -533,6 +633,7 @@ else {
     Write-Host ""
     Show-AdminCredentialsNotice
     Show-DirectAuthSecretNotice
+    Show-CertificatesNotice
     Write-Host "[INFO] Next steps:"
     Write-Host "   1. Start the server: .\start.ps1" -ForegroundColor Cyan
     Write-Host "   2. Access $PRODUCT_NAME at: $BASE_URL" -ForegroundColor Cyan

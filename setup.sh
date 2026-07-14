@@ -61,6 +61,8 @@ ADMIN_PASSWORD_GENERATED=false
 # generated during setup and written to deployment.yaml.
 DIRECT_AUTH_SECRET="${DIRECT_AUTH_SECRET:-}"
 DIRECT_AUTH_SECRET_GENERATED=false
+# Set when key material is generated this run (controls the one-time notice).
+CERTS_GENERATED=false
 
 # Color codes
 RED='\033[0;31m'
@@ -401,12 +403,73 @@ print_direct_auth_secret_notice() {
     echo ""
 }
 
+# Generate a self-signed cert/key pair if it does not already exist.
+generate_x509_cert() {
+    local cert_file="$1" key_file="$2" algo="$3"
+    if [ -f "$cert_file" ] && [ -f "$key_file" ]; then
+        return 0
+    fi
+    if [ "$algo" = "ecdsa" ]; then
+        openssl ecparam -name prime256v1 -genkey -noout -param_enc named_curve -out "$key_file" >/dev/null 2>&1 || true
+        openssl req -new -x509 -nodes -days 3650 -key "$key_file" -out "$cert_file" \
+            -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" >/dev/null 2>&1 || true
+    else
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "$key_file" -out "$cert_file" \
+            -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" >/dev/null 2>&1 || true
+    fi
+    if [ ! -f "$cert_file" ] || [ ! -f "$key_file" ]; then
+        log_error "Failed to generate certificate: $cert_file (is openssl installed?)"
+        exit 1
+    fi
+    CERTS_GENERATED=true
+}
+
+# Generate the server TLS, JWT signing, and AES key material if absent (reused on later runs).
+configure_certificates() {
+    local config_file cert_dir
+    config_file="$(resolve_config_file)"
+    if [ -n "$config_file" ]; then
+        cert_dir="$(dirname "$config_file")/config/certs"
+    else
+        cert_dir="./config/certs"
+    fi
+    mkdir -p "$cert_dir"
+
+    generate_x509_cert "$cert_dir/server.cert" "$cert_dir/server.key" rsa
+    generate_x509_cert "$cert_dir/signing.cert" "$cert_dir/signing.key" rsa
+    generate_x509_cert "$cert_dir/ecdsa-signing.cert" "$cert_dir/ecdsa-signing.key" ecdsa
+
+    local crypto_key="$cert_dir/crypto.key"
+    if [ ! -f "$crypto_key" ]; then
+        local key
+        key="$(openssl rand -hex 32 2>/dev/null || true)"
+        if [ -z "$key" ]; then
+            key="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+        fi
+        printf '%s' "$key" > "$crypto_key"
+        CERTS_GENERATED=true
+    fi
+}
+
+# Print a one-time notice when key material was generated this run.
+print_certificates_notice() {
+    if [ "$CERTS_GENERATED" != "true" ]; then
+        return 0
+    fi
+    echo "Generated missing security material in config/certs."
+    echo "  Preserve this directory; if these keys are lost or changed, previously issued tokens and encrypted data can no longer be validated or decrypted."
+    echo ""
+}
+
 # Read configuration
 read_config
 
 # Configure the admin password and Direct Auth Secret before bootstrap so both are ready to use.
 configure_admin_password
 configure_direct_auth_secret
+configure_certificates
 
 # Construct base URL (internal API endpoint)
 BASE_URL="${PROTOCOL}://${HOSTNAME}:${PORT}"
@@ -516,6 +579,7 @@ if [ "$SILENT_MODE" = "true" ]; then
     echo ""
     print_admin_credentials_notice
     print_direct_auth_secret_notice
+    print_certificates_notice
     echo "Run ./start.sh to start ${PRODUCT_NAME}."
     echo ""
 else
@@ -525,6 +589,7 @@ else
     echo ""
     print_admin_credentials_notice
     print_direct_auth_secret_notice
+    print_certificates_notice
 fi
 
 # Cleanup will be called automatically via trap

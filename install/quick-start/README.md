@@ -19,7 +19,7 @@ docker compose up
 
 This will automatically:
 1. **Initialize** the database from the image
-2. **Run setup** — bootstraps default resources (admin user, sample apps, etc.)
+2. **Run setup** — bootstraps default resources (admin user, sample apps, etc.) and generates this deployment's own TLS, JWT signing, and encryption keys
 3. **Start the server** — ThunderID is ready to serve requests
 
 Once running, ThunderID is available at:
@@ -43,10 +43,12 @@ The Compose file defines three services:
 | Service | Description |
 |---|---|
 | `thunderid-db-init` | One-shot container that copies the initial database files to a shared volume |
-| `thunderid-setup` | One-shot container that bootstraps default resources via `setup.sh` |
+| `thunderid-setup` | One-shot container that bootstraps default resources and generates this deployment's key material via `setup.sh` |
 | `thunderid` | The ThunderID server — starts after setup completes |
 
 The `thunderid-db-init` and `thunderid-setup` services run once and exit. Only `thunderid` stays running.
+
+The setup step generates unique TLS, JWT signing, and encryption keys into a shared `thunderid-certs` volume that the server reads. They are generated once and reused on later runs. `docker compose down` keeps them; `docker compose down -v` removes them, so the next start generates fresh keys (invalidating any previously issued tokens and encrypted data).
 
 ---
 

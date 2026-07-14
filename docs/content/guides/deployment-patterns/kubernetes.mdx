@@ -280,6 +280,14 @@ Also set `deployment.securityContext.readOnlyRootFilesystem: false` when using S
 
 Set `replicaCount: 1` when using SQLite: multiple replicas writing to the same SQLite files will corrupt the database.
 
+## Cryptographic Material
+
+When `setup.enabled` is `true` (the default), the setup job generates per-install TLS, JWT signing, and AES encryption keys into a dedicated certs PersistentVolumeClaim, and the server reads them from it. This PVC must persist for the life of the deployment: if it is lost, previously encrypted data cannot be decrypted and previously issued tokens can no longer be validated. Configure its size and storage class under `certs.persistence`.
+
+The certs PVC defaults to `ReadWriteOnce`, which fits a single-node or single-replica install. If you run more than one replica and the pods can land on different nodes, set `certs.persistence.accessMode` to `ReadWriteMany` with a storage class that supports it, so every replica can read the material. Alternatively, provide your own key material and set `setup.enabled` to `false`.
+
+For production TLS, terminate HTTPS at your ingress or gateway with a CA-issued certificate (`ingress.tlsSecretsName` / `gateway.tls`); the certificate the setup job generates for the server is self-signed.
+
 ## Health Checks
 
 The chart configures startup, readiness, and health probes automatically. Override the timing values under `deployment:` in your `custom-values.yaml` if you need to adjust them:

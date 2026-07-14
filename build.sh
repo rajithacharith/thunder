@@ -471,6 +471,8 @@ function prepare_backend_for_packaging() {
     cp -r "$SERVER_SCRIPTS_DIR" "$DIST_DIR/$PRODUCT_FOLDER/"
     cp -r "$SERVER_DB_SCRIPTS_DIR" "$DIST_DIR/$PRODUCT_FOLDER/"
     mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
+    # Never ship key material: strip any dev certs/keys that "cp -r config" above may have copied in.
+    rm -f "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"/*.cert "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"/*.key
 
     # Copy bootstrap directory
     echo "Copying bootstrap scripts..."
@@ -478,15 +480,7 @@ function prepare_backend_for_packaging() {
     # Never ship the dev-only CORS seed that `run` stages into the source bootstrap dir.
     rm -f "$DIST_DIR/$PRODUCT_FOLDER/bootstrap/02-server-configurations.yaml"
 
-    echo "=== Ensuring server certificates exist in the distribution ==="
-    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "server"
-    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "signing"
-    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "ecdsa-signing"
-    echo "================================================================"
-
-    echo "=== Ensuring crypto file exists in the distribution ==="
-    ensure_crypto_file "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
-    echo "================================================================"
+    # Key material is not generated into the distribution; setup.sh generates it per deployment.
 }
 
 function prepare_frontend_for_packaging() {

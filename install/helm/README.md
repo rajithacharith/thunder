@@ -379,7 +379,7 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.tls.minVersion`                    | Minimum TLS version                                                                                                                                     | `1.3`                        |
 | `configuration.tls.certFile`                      | Server TLS certificate file path                                                                                                                        | `config/certs/server.cert` |
 | `configuration.tls.keyFile`                       | Server TLS key file path                                                                                                                                | `config/certs/server.key`  |
-| `configuration.crypto.encryption.key`             | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production)                                                   | `file://config/certs/crypto.key` |
+| `configuration.crypto.encryption.key`             | Crypto encryption key. The setup job generates a unique per-deployment key at this path; supply your own 32-byte (64-character) hex value to manage it yourself.  | `file://config/certs/crypto.key` |
 | `configuration.crypto.passwordHashing.algorithm`  | Password hashing algorithm                                            | `PBKDF2`                     |
 | `configuration.crypto.passwordHashing.pbkdf2.salt_size` | PBKDF2 salt size                                                | `16`                         |
 | `configuration.crypto.passwordHashing.pbkdf2.iterations` | PBKDF2 iterations                                              | `600000`                     |

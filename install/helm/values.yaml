@@ -445,6 +445,27 @@ persistence:
   size: 1Gi
   annotations: {}
 
+# Storage for the cryptographic material (TLS, JWT signing, and AES encryption keys) that the setup
+# job generates. This generation is a quickstart/evaluation convenience: nothing is baked into the
+# image, and every install gets its own unique keys on this dedicated PVC, which the server reads.
+# Only used when setup.enabled=true.
+#
+# Treat this PVC as persistent — losing it invalidates all issued tokens and previously-encrypted
+# data. For production, do not rely on the auto-generated self-signed TLS certificate; terminate TLS
+# with a CA-issued certificate at your ingress/gateway (see ingress.tlsSecretsName / gateway.tls) and
+# review the production deployment guide.
+#
+# accessMode defaults to ReadWriteOnce, which fits a single-node or single-replica install. If
+# deployment.replicaCount > 1 and the replicas can be scheduled onto different nodes, set accessMode
+# to ReadWriteMany (needs a storage class that supports it) so every replica can read the material,
+# or provide your own key material and set setup.enabled=false.
+certs:
+  persistence:
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 16Mi
+    annotations: {}
+
 # Declarative resources mount configuration.
 # Mounts files under ThunderID's config/resources directory.
 declarativeResources:

@@ -53,7 +53,7 @@ This command will automatically set up your complete development environment:
 
 - Installs frontend dependencies and builds packages
 - Starts the frontend development servers
-- Generates TLS certificates (if missing)
+- Generates local development key material if missing: TLS, JWT signing, and encryption keys (release builds never bake key material; each deployment generates its own at setup)
 - Initializes SQLite databases
 - Starts the backend server
 - Runs the bootstrap script which creates:
