@@ -11,9 +11,8 @@ scope checks.
 
 Set `AUTHORIZATION_MODE=authzen` to have the MCP server request each protected
 tool decision from the ThunderID AuthZEN PDP. In this mode, configure
-`THUNDERID_AUTHZEN_CLIENT_ID` and `THUNDERID_AUTHZEN_CLIENT_SECRET` with the
-Wayfinder AuthZEN Client application credentials from the redirect configuration
-bundle. The backend obtains a `system`-scoped token for the PDP call, while the
+`THUNDERID_DIRECT_AUTH_SECRET` with the same Direct Auth Secret configured in
+the ThunderID server. The backend sends this secret on the PDP call, while the
 user or agent from the incoming MCP token remains the evaluation subject.
 
 This setting applies only to MCP tool authorization. REST endpoint scope checks

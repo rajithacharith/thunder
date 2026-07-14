@@ -54,7 +54,9 @@ const DirectAuthHeaderValue = "integration-direct-auth-secret"
 // isDirectAuthPath reports whether the path is one of the Direct API endpoints gated by the Direct API
 // Secret.
 func isDirectAuthPath(path string) bool {
-	return strings.HasPrefix(path, "/auth/") || strings.HasPrefix(path, "/register/passkey/")
+	return strings.HasPrefix(path, "/auth/") ||
+		strings.HasPrefix(path, "/register/passkey/") ||
+		strings.HasPrefix(path, "/access/")
 }
 
 // RoundTrip implements http.RoundTripper interface

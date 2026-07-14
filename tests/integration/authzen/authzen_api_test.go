@@ -209,6 +209,83 @@ func (ts *AuthZENAPITestSuite) TestMetadataDiscovery() {
 	ts.Equal(authzenServerURL+"/access/v1/search/action", metadata.SearchActionEndpoint)
 }
 
+func (ts *AuthZENAPITestSuite) TestMetadataDiscoveryDoesNotRequireDirectAuthSecret() {
+	resp, body := ts.doUnauthenticatedRequest(http.MethodGet, "/.well-known/authzen-configuration", nil, nil)
+	ts.Require().Equal(http.StatusOK, resp.StatusCode, string(body))
+
+	var metadata metadataResponse
+	ts.Require().NoError(json.Unmarshal(body, &metadata))
+	ts.Equal(authzenServerURL, metadata.PolicyDecisionPoint)
+}
+
+func (ts *AuthZENAPITestSuite) TestAccessEndpointsRequireDirectAuthSecret() {
+	accessEndpoints := []struct {
+		name string
+		path string
+		body []byte
+	}{
+		{
+			name: "single evaluation",
+			path: "/access/v1/evaluation",
+			body: mustJSON(evaluationRequest{
+				Subject:  subject{Type: "user", ID: ts.userID},
+				Resource: resource{Type: authzenResourceHandle, ID: ts.resourceID},
+				Action:   action{Name: ts.readPermission},
+			}),
+		},
+		{
+			name: "batch evaluations",
+			path: "/access/v1/evaluations",
+			body: mustJSON(evaluationsRequest{
+				Evaluations: []evaluationRequest{
+					{
+						Subject:  subject{Type: "user", ID: ts.userID},
+						Resource: resource{Type: authzenResourceHandle, ID: ts.resourceID},
+						Action:   action{Name: ts.readPermission},
+					},
+				},
+			}),
+		},
+		{
+			name: "action search",
+			path: "/access/v1/search/action",
+			body: mustJSON(searchActionRequest{
+				Subject:  subject{Type: "user", ID: ts.userID},
+				Resource: resource{Type: authzenResourceHandle, ID: ts.resourceID},
+			}),
+		},
+	}
+
+	for _, endpoint := range accessEndpoints {
+		ts.Run(endpoint.name+" missing secret", func() {
+			resp, body := ts.doUnauthenticatedRequest(http.MethodPost, endpoint.path, endpoint.body, nil)
+			ts.Require().Equal(http.StatusUnauthorized, resp.StatusCode, string(body))
+
+			var errResp testutils.ErrorResponse
+			ts.Require().NoError(json.Unmarshal(body, &errResp))
+			ts.Equal("AUTH-4010", errResp.Code)
+		})
+
+		ts.Run(endpoint.name+" wrong secret", func() {
+			resp, body := ts.doUnauthenticatedRequest(http.MethodPost, endpoint.path, endpoint.body, map[string]string{
+				testutils.DirectAuthHeaderName: "wrong-secret",
+			})
+			ts.Require().Equal(http.StatusUnauthorized, resp.StatusCode, string(body))
+
+			var errResp testutils.ErrorResponse
+			ts.Require().NoError(json.Unmarshal(body, &errResp))
+			ts.Equal("AUTH-4010", errResp.Code)
+		})
+
+		ts.Run(endpoint.name+" valid secret", func() {
+			resp, body := ts.doUnauthenticatedRequest(http.MethodPost, endpoint.path, endpoint.body, map[string]string{
+				testutils.DirectAuthHeaderName: testutils.DirectAuthHeaderValue,
+			})
+			ts.Require().Equal(http.StatusOK, resp.StatusCode, string(body))
+		})
+	}
+}
+
 func (ts *AuthZENAPITestSuite) TestEvaluateAccessAllowedAndDenied() {
 	allowed := ts.evaluate(evaluationRequest{
 		Subject: subject{Type: "user", ID: ts.userID},
@@ -1116,6 +1193,34 @@ func (ts *AuthZENAPITestSuite) doRequestWithHeaders(
 	}
 
 	resp, err := testutils.GetHTTPClient().Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	ts.Require().NoError(err)
+	return resp, respBody
+}
+
+func (ts *AuthZENAPITestSuite) doUnauthenticatedRequest(
+	method string,
+	path string,
+	body []byte,
+	headers map[string]string,
+) (*http.Response, []byte) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+	req, err := http.NewRequest(method, authzenServerURL+path, reader)
+	ts.Require().NoError(err)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	for name, value := range headers {
+		req.Header.Set(name, value)
+	}
+
+	resp, err := testutils.GetRawHTTPClient().Do(req)
 	ts.Require().NoError(err)
 	defer resp.Body.Close()
 
