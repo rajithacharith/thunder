@@ -533,8 +533,8 @@ declarativeResources:
     #     path: applications/my-web-app.yaml
     #     mountPath: /opt/thunderid/config/resources/applications/my-web-app.yaml
     #   - key: google-idp
-    #     path: identity_providers/google.yaml
-    #     mountPath: /opt/thunderid/config/resources/identity_providers/google.yaml
+    #     path: connections/google.yaml
+    #     mountPath: /opt/thunderid/config/resources/connections/google.yaml
     #   - key: default-org
     #     path: organization_units/default.yaml
     #     mountPath: /opt/thunderid/config/resources/organization_units/default.yaml
@@ -551,8 +551,8 @@ declarativeResources:
     #     path: applications/my-app.yaml
     #     mountPath: /opt/thunderid/config/resources/applications/my-app.yaml
     #   - key: google-idp
-    #     path: identity_providers/google.yaml
-    #     mountPath: /opt/thunderid/config/resources/identity_providers/google.yaml
+    #     path: connections/google.yaml
+    #     mountPath: /opt/thunderid/config/resources/connections/google.yaml
 
 # Setup Job configuration
 # Runs setup.sh as a one-time initialization job during Helm install

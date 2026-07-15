@@ -35,9 +35,8 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/thunder-id/thunderid/internal/application"
+	"github.com/thunder-id/thunderid/internal/connection"
 	"github.com/thunder-id/thunderid/internal/entitytype"
-	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
@@ -75,8 +74,7 @@ func (suite *HandlerTestSuite) SetupTest() {
 	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(suite.mockAppService),
-		idp.NewIDPExporterForTest(suite.mockIDPService),
-		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
+		connection.NewConnectionExporterForTest(suite.mockIDPService, suite.mockNotificationService),
 		entitytype.NewEntityTypeExporterForTest(suite.mockEntityTypeService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
@@ -379,8 +377,7 @@ func TestGenerateAndSendZipResponse_Standalone(t *testing.T) {
 	mockEntityTypeService := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
-		idp.NewIDPExporterForTest(mockIDPService),
-		notification.NewNotificationSenderExporterForTest(mockNotificationService),
+		connection.NewConnectionExporterForTest(mockIDPService, mockNotificationService),
 		entitytype.NewEntityTypeExporterForTest(mockEntityTypeService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
@@ -418,8 +415,7 @@ func TestNewExportHandler(t *testing.T) {
 	mockEntityTypeService := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
-		idp.NewIDPExporterForTest(mockIDPService),
-		notification.NewNotificationSenderExporterForTest(mockNotificationService),
+		connection.NewConnectionExporterForTest(mockIDPService, mockNotificationService),
 		entitytype.NewEntityTypeExporterForTest(mockEntityTypeService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
@@ -847,8 +843,7 @@ func BenchmarkGenerateAndSendZipResponse(b *testing.B) {
 	mockEntityTypeService := entitytypemock.NewEntityTypeServiceInterfaceMock(b)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
-		idp.NewIDPExporterForTest(mockIDPService),
-		notification.NewNotificationSenderExporterForTest(mockNotificationService),
+		connection.NewConnectionExporterForTest(mockIDPService, mockNotificationService),
 		entitytype.NewEntityTypeExporterForTest(mockEntityTypeService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
@@ -887,8 +882,7 @@ func setupBenchmarkTest(b *testing.B) (*exportHandler, []byte) {
 	mockEntityTypeService := entitytypemock.NewEntityTypeServiceInterfaceMock(b)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
-		idp.NewIDPExporterForTest(mockIDPService),
-		notification.NewNotificationSenderExporterForTest(mockNotificationService),
+		connection.NewConnectionExporterForTest(mockIDPService, mockNotificationService),
 		entitytype.NewEntityTypeExporterForTest(mockEntityTypeService),
 	}
 	parameterizer := newParameterizer(templatingRules{})

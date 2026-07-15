@@ -104,13 +104,16 @@ func (s *ServiceTestSuite) TestListInstancesAllCategories() {
 	s.Equal(3, got.Count)
 
 	// Sorted by type, then lowercase name, then ID; case-insensitive name ordering.
-	s.Equal("s1", got.Connections[0].ID)
-	s.Equal("custom", got.Connections[0].Type)
-	s.Equal([]connectionCategory{categorySMSProvider}, got.Connections[0].Categories)
-	s.Equal("2", got.Connections[1].ID) // "Google A" before "google B"
+	// "google" sorts before "sms-gateway" (the custom sender's vendor name).
+	s.Equal("2", got.Connections[0].ID) // "Google A" before "google B"
+	s.Equal("google", got.Connections[0].Type)
+	s.Equal([]connectionCategory{categoryIdentityProvider}, got.Connections[0].Categories)
+	s.Equal("1", got.Connections[1].ID)
 	s.Equal("google", got.Connections[1].Type)
 	s.Equal([]connectionCategory{categoryIdentityProvider}, got.Connections[1].Categories)
-	s.Equal("1", got.Connections[2].ID)
+	s.Equal("s1", got.Connections[2].ID)
+	s.Equal("sms-gateway", got.Connections[2].Type)
+	s.Equal([]connectionCategory{categorySMSProvider}, got.Connections[2].Categories)
 }
 
 func (s *ServiceTestSuite) TestListInstancesIDJagEnabled() {
@@ -214,6 +217,43 @@ func (s *ServiceTestSuite) TestListInstancesSMSSkipsIdPs() {
 	s.Require().Len(got.Connections, 1)
 	s.Equal("s1", got.Connections[0].ID)
 	s.mockIDP.AssertNotCalled(s.T(), "GetIdentityProviderList", mock.Anything)
+}
+
+func (s *ServiceTestSuite) TestListInstancesSkipsUnregisteredSenderProvider() {
+	s.mockNotif.On("ListSendersByType", mock.Anything, ncommon.NotificationSenderTypeMessage).
+		Return([]ncommon.NotificationSenderDTO{
+			{ID: "s1", Name: "SMS", Type: ncommon.NotificationSenderTypeMessage,
+				Provider: ncommon.MessageProviderTypeTwilio},
+			{ID: "s2", Name: "Unregistered", Type: ncommon.NotificationSenderTypeMessage,
+				Provider: ncommon.MessageProviderType("unregistered-provider")},
+		}, (*tidcommon.ServiceError)(nil))
+
+	got, svcErr := s.svc.listInstances(context.Background(), categorySMSProvider,
+		serverconst.DefaultPageSize, 0)
+	s.Nil(svcErr)
+	s.Require().Len(got.Connections, 1)
+	s.Equal("s1", got.Connections[0].ID)
+}
+
+func (s *ServiceTestSuite) TestListInstancesSortsByIDWhenTypeAndNameTie() {
+	s.mockIDP.On("GetIdentityProviderList", mock.Anything).Return([]idp.BasicIDPDTO{
+		{ID: "2", Name: "Same Name", Type: providers.IDPTypeGoogle},
+		{ID: "1", Name: "Same Name", Type: providers.IDPTypeGoogle},
+	}, (*tidcommon.ServiceError)(nil))
+	s.mockNotif.On("ListSendersByType", mock.Anything, ncommon.NotificationSenderTypeMessage).
+		Return([]ncommon.NotificationSenderDTO{}, (*tidcommon.ServiceError)(nil))
+
+	got, svcErr := s.svc.listInstances(context.Background(), "", serverconst.DefaultPageSize, 0)
+	s.Nil(svcErr)
+	s.Require().Len(got.Connections, 2)
+	s.Equal("1", got.Connections[0].ID)
+	s.Equal("2", got.Connections[1].ID)
+}
+
+func (s *ServiceTestSuite) TestSMSVendorNameUnregisteredProviderReturnsFalse() {
+	name, ok := smsVendorName(ncommon.MessageProviderType("unregistered-provider"))
+	s.False(ok)
+	s.Empty(name)
 }
 
 func (s *ServiceTestSuite) TestListInstancesError() {

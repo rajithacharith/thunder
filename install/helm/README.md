@@ -555,7 +555,7 @@ declarativeResources:
     name: thunderid-declarative-resources
     items:
       - organizations/default/organization.yaml
-      - identity-providers/google.yaml
+      - connections/google.yaml
 ```
 
 ### Declarative Resources Mounting Guide
@@ -590,7 +590,7 @@ Create a ConfigMap where keys represent the target directory structure:
 kubectl create configmap thunderid-declarative-resources \
   --from-file=applications/application1.yaml=./declarative-resources/applications/application1.yaml \
   --from-file=organizations/default/organization.yaml=./declarative-resources/organizations/default/organization.yaml \
-  --from-file=identity-providers/google.yaml=./declarative-resources/identity-providers/google.yaml
+  --from-file=connections/google.yaml=./declarative-resources/connections/google.yaml
 ```
 
 Configure Helm values:
@@ -607,8 +607,8 @@ declarativeResources:
         path: applications/application1.yaml
       - key: organizations/default/organization.yaml
         path: organizations/default/organization.yaml
-      - key: identity-providers/google.yaml
-        path: identity-providers/google.yaml
+      - key: connections/google.yaml
+        path: connections/google.yaml
 
 # Example with explicit key/path remapping
 declarativeResources:
@@ -619,7 +619,7 @@ declarativeResources:
       - key: app1
         path: applications/application1.yaml
       - key: idp-google
-        path: identity-providers/google.yaml
+        path: connections/google.yaml
 ```
 
 Install or upgrade:
@@ -641,7 +641,7 @@ declarativeResources:
       - key: app1
         path: applications/application1.yaml
       - key: idp-google
-        path: identity-providers/google.yaml
+        path: connections/google.yaml
 ```
 
 #### Mount All Keys From Source

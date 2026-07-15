@@ -24,19 +24,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 	"time"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
-	"github.com/thunder-id/thunderid/internal/notification/client"
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/template"
 )
 
 const otpSessionAudience = "otp-svc"
@@ -60,30 +57,21 @@ type generatedOTP struct {
 type OTPServiceInterface interface {
 	GenerateOTP(ctx context.Context, recipient, recipientAttr string) (
 		sessionToken string, otpValue string, expirySeconds int64, svcErr *tidcommon.ServiceError)
-	SendOTP(ctx context.Context, request common.SendOTPDTO) (*common.SendOTPResultDTO, *tidcommon.ServiceError)
 	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (
 		*common.VerifyOTPResultDTO, *tidcommon.ServiceError)
 }
 
 // otpService implements the OTPServiceInterface.
 type otpService struct {
-	logger           *log.Logger
-	jwtService       jwt.JWTServiceInterface
-	senderMgtService NotificationSenderMgtSvcInterface
-	clientFactory    client.ClientFactoryInterface
-	templateService  template.TemplateServiceInterface
+	logger     *log.Logger
+	jwtService jwt.JWTServiceInterface
 }
 
 // newOTPService returns a new instance of OTPServiceInterface.
-func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
-	jwtSvc jwt.JWTServiceInterface, templateSvc template.TemplateServiceInterface,
-	clientFactory client.ClientFactoryInterface) OTPServiceInterface {
+func newOTPService(jwtSvc jwt.JWTServiceInterface) OTPServiceInterface {
 	return &otpService{
-		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService")),
-		jwtService:       jwtSvc,
-		senderMgtService: notifSenderSvc,
-		clientFactory:    clientFactory,
-		templateService:  templateSvc,
+		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService")),
+		jwtService: jwtSvc,
 	}
 }
 
@@ -119,54 +107,6 @@ func (s *otpService) GenerateOTP(ctx context.Context, recipient, recipientAttr s
 	expirySeconds := s.getOTPValidityPeriodInMillis() / 1000
 	logger.Debug(ctx, "OTP generated successfully", log.MaskedString("recipient", recipient))
 	return sessionToken, otp.Value, expirySeconds, nil
-}
-
-// SendOTP sends an OTP to the specified recipient using the provided sender.
-func (s *otpService) SendOTP(
-	ctx context.Context, otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *tidcommon.ServiceError) {
-	logger := s.logger
-	logger.Debug(ctx, "Sending OTP", log.MaskedString("recipient", otpDTO.Recipient),
-		log.String("channel", otpDTO.Channel), log.String("senderId", otpDTO.SenderID))
-
-	if otpDTO.Channel == "" {
-		otpDTO.Channel = string(common.ChannelTypeSMS)
-	}
-
-	if err := s.validateOTPSendRequest(otpDTO); err != nil {
-		return nil, err
-	}
-
-	sender, svcErr := s.senderMgtService.GetSender(ctx, otpDTO.SenderID)
-	if svcErr != nil {
-		if svcErr.Code == ErrorSenderNotFound.Code {
-			return nil, &ErrorSenderNotFound
-		}
-		return nil, &tidcommon.InternalServerError
-	}
-	if sender == nil {
-		return nil, &ErrorSenderNotFound
-	}
-
-	sessionToken, otpValue, _, otpErr := s.GenerateOTP(ctx, otpDTO.Recipient, "mobile_number")
-	if otpErr != nil {
-		logger.Error(ctx, "Failed to generate OTP", log.String("error", otpErr.Code))
-		return nil, &tidcommon.InternalServerError
-	}
-
-	switch common.ChannelType(otpDTO.Channel) {
-	case common.ChannelTypeSMS:
-		if svcErr := s.sendSMSOTP(ctx, otpDTO.Recipient, otpValue, *sender, logger); svcErr != nil {
-			return nil, svcErr
-		}
-	default:
-		return nil, &ErrorUnsupportedChannel
-	}
-
-	logger.Debug(ctx, "OTP sent successfully", log.MaskedString("recipient", otpDTO.Recipient))
-
-	return &common.SendOTPResultDTO{
-		SessionToken: sessionToken,
-	}, nil
 }
 
 // VerifyOTP verifies the provided OTP against the session token.
@@ -209,20 +149,6 @@ func (s *otpService) VerifyOTP(
 	}, nil
 }
 
-// validateOTPSendRequest validates the OTP send request.
-func (s *otpService) validateOTPSendRequest(request common.SendOTPDTO) *tidcommon.ServiceError {
-	if strings.TrimSpace(request.Recipient) == "" {
-		return &ErrorInvalidRecipient
-	}
-	if request.SenderID == "" {
-		return &ErrorInvalidSenderID
-	}
-	if request.Channel != string(common.ChannelTypeSMS) {
-		return &ErrorUnsupportedChannel
-	}
-	return nil
-}
-
 // validateOTPVerifyRequest validates the OTP verify request.
 func (s *otpService) validateOTPVerifyRequest(request common.VerifyOTPDTO) *tidcommon.ServiceError {
 	if request.SessionToken == "" {
@@ -231,36 +157,6 @@ func (s *otpService) validateOTPVerifyRequest(request common.VerifyOTPDTO) *tidc
 	if request.OTPCode == "" {
 		return &ErrorInvalidOTP
 	}
-	return nil
-}
-
-// sendSMSOTP sends an SMS OTP to the recipient.
-func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otpVal string,
-	sender common.NotificationSenderDTO, logger *log.Logger) *tidcommon.ServiceError {
-	otpCfg := s.resolveOTPConfig()
-	expiryMinutes := strconv.FormatInt(int64(otpCfg.ValidityPeriodSeconds)/60, 10)
-	templateData := template.TemplateData{"otpCode": otpVal, "expiryMinutes": expiryMinutes}
-	rendered, svcErr := s.templateService.Render(ctx, template.ScenarioOTP, template.TemplateTypeSMS, templateData)
-	if svcErr != nil {
-		logger.Error(ctx, "Failed to render SMS OTP template", log.String("error", svcErr.Code))
-		return &tidcommon.InternalServerError
-	}
-
-	_client, clientSvcErr := s.clientFactory.GetClient(ctx, sender)
-	if clientSvcErr != nil {
-		return clientSvcErr
-	}
-
-	if !_client.IsChannelSupported(common.ChannelTypeSMS) {
-		return &ErrorUnsupportedChannel
-	}
-
-	notifData := common.NotificationData{Recipient: recipient, Body: rendered.Body}
-	if err := _client.Send(ctx, common.ChannelTypeSMS, notifData); err != nil {
-		logger.Error(ctx, "Failed to send SMS OTP", log.Error(err))
-		return &tidcommon.InternalServerError
-	}
-
 	return nil
 }
 

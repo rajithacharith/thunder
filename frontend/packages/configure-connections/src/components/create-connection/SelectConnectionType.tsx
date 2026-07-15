@@ -91,7 +91,8 @@ export default function SelectConnectionType({
       requiresCustomStep: true,
     },
     {
-      // FE-only placeholder; the backend SMS provider API is not wired yet.
+      // Backend support (/connections/sms-gateway) is wired; the console wizard for this
+      // card is a follow-up, so it stays comingSoon here.
       type: 'custom-sms' as ConnectionType,
       labelKey: 'wizard.type.sms.label',
       descriptionKey: 'wizard.type.sms.description',
