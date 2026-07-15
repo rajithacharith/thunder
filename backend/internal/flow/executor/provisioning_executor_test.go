@@ -373,7 +373,6 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Sch
 			"username": "testuser",
 			"userID":   "user-123",
 			"code":     "auth-code",
-			"nonce":    "test-nonce",
 		},
 		RuntimeData: map[string]string{userTypeKey: testUserType},
 		NodeInputs:  []providers.Input{},
@@ -384,7 +383,6 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Sch
 	assert.Equal(suite.T(), "testuser", result["username"])
 	assert.NotContains(suite.T(), result, "userID")
 	assert.NotContains(suite.T(), result, "code")
-	assert.NotContains(suite.T(), result, "nonce")
 }
 
 // TestGetAttributesForProvisioning_RequiredAttrsFromMultipleSources verifies that required schema

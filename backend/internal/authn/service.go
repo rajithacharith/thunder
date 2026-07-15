@@ -44,6 +44,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/notification"
 	notifcommon "github.com/thunder-id/thunderid/internal/notification/common"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -320,16 +321,17 @@ func (as *authenticationService) StartIDPAuthentication(
 
 	// Route to appropriate service based on IDP type
 	var redirectURL string
+	var metadata map[string]string
 	var buildURLErr *tidcommon.ServiceError
 	switch identityProvider.Type {
 	case providers.IDPTypeOAuth:
-		redirectURL, buildURLErr = as.oauthService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, _, buildURLErr = as.oauthService.BuildAuthorizeURL(ctx, idpID)
 	case providers.IDPTypeOIDC:
-		redirectURL, buildURLErr = as.oidcService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, metadata, buildURLErr = as.oidcService.BuildAuthorizeURL(ctx, idpID)
 	case providers.IDPTypeGoogle:
-		redirectURL, buildURLErr = as.googleService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, metadata, buildURLErr = as.googleService.BuildAuthorizeURL(ctx, idpID)
 	case providers.IDPTypeGitHub:
-		redirectURL, buildURLErr = as.githubService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, _, buildURLErr = as.githubService.BuildAuthorizeURL(ctx, idpID)
 	default:
 		logger.Error(ctx, "Unsupported IDP type", log.String("idpId", idpID),
 			log.String("type", string(identityProvider.Type)))
@@ -340,8 +342,12 @@ func (as *authenticationService) StartIDPAuthentication(
 		return nil, buildURLErr
 	}
 
-	// Generate session token
-	sessionToken, err := as.createSessionToken(ctx, idpID, identityProvider.Type)
+	// Generate session token, embedding the OIDC nonce when present.
+	var nonce string
+	if metadata != nil {
+		nonce = metadata[oauth2const.RequestParamNonce]
+	}
+	sessionToken, err := as.createSessionToken(ctx, idpID, identityProvider.Type, nonce)
 	if err != nil {
 		logger.Error(ctx, "Failed to create session token", log.String("idpId", idpID),
 			log.String("error", err.Error.DefaultValue))
@@ -382,7 +388,10 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 		"federated": &common.FederatedAuthCredential{
 			IDPID:   sessionData.IDPID,
 			IDPType: sessionData.IDPType,
-			Code:    code,
+			AuthorizationData: common.AuthorizationData{
+				Code:  code,
+				Nonce: sessionData.Nonce,
+			},
 		},
 	}
 	authUser, _, svcErr := as.authnProvider.AuthenticateUser(
@@ -658,11 +667,12 @@ func (as *authenticationService) validateIDPType(ctx context.Context, requestedT
 }
 
 // createSessionToken creates a JWT session token with authentication session data.
-func (as *authenticationService) createSessionToken(ctx context.Context, idpID string, idpType providers.IDPType) (
-	string, *tidcommon.ServiceError) {
+func (as *authenticationService) createSessionToken(ctx context.Context, idpID string,
+	idpType providers.IDPType, nonce string) (string, *tidcommon.ServiceError) {
 	sessionData := AuthSessionData{
 		IDPID:   idpID,
 		IDPType: idpType,
+		Nonce:   nonce,
 	}
 	claims := map[string]interface{}{
 		"auth_data": sessionData,

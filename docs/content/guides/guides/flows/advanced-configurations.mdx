@@ -611,7 +611,6 @@ Authenticates users via a generic OIDC provider. After the OIDC redirect, <Produ
 
 **Input Configuration:**
 - `code` (required): the authorization code returned by the OIDC provider after redirect. Default: `code`. If not provided, the executor redirects to the OIDC provider to start the authorization flow and get a code.
-- `nonce` (optional): the nonce value for OIDC replay protection. Default: `nonce`
 
 **Example:**
 
@@ -663,7 +662,6 @@ Authenticates users via Google OIDC. After the OAuth redirect, <ProductName /> e
 
 **Input Configuration:**
 - `code` (required): the authorization code returned by Google after user consent. Default: `code`
-- `nonce` (optional): the nonce value for OIDC replay protection. Default: `nonce`
 
 **Example:**
 
