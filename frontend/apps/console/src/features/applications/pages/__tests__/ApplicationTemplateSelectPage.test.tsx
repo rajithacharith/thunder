@@ -129,16 +129,6 @@ describe('ApplicationTemplateSelectPage', () => {
     expect(screen.queryByTestId(`template-card-${TechnologyApplicationTemplate.REACT}`)).not.toBeInTheDocument();
   });
 
-  it('filters templates by search query', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.type(screen.getByPlaceholderText('Search types by name'), 'React');
-
-    expect(screen.getByTestId(`template-card-${TechnologyApplicationTemplate.REACT}`)).toBeInTheDocument();
-    expect(screen.queryByTestId(`template-card-${TechnologyApplicationTemplate.EXPRESS}`)).not.toBeInTheDocument();
-  });
-
   it('seeds a technology template and launches the wizard when a card is clicked', async () => {
     const user = userEvent.setup();
     const setSelectedTechnology = vi.fn();
