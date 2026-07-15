@@ -1,40 +1,34 @@
 ---
 name: docs-review
-description: Structural, writing quality, and technical accuracy review for ThunderID — applies docs-check, docs-review-style, and docs-review-tech on a single file and produces one combined pass/fail report with a confidence rating. Use before merging any doc PR.
+description: Runs docs-check, docs-review-style, and docs-review-tech on one file; combines results into a pass/fail report with a confidence rating. Use before merging any doc PR, or whenever asked for a full or complete review of a documentation page.
 allowed-tools: Read Bash WebFetch WebSearch
 ---
 
 # ThunderID Docs — Full Review
 
-Orchestrates a complete review of a single ThunderID documentation file. Runs all three review skills in sequence and combines their output into one structured report.
+Orchestrates a complete review of one file. Runs all three review skills in sequence and combines their output into one structured report.
 
 ## Usage
 
-Invoked as `/docs-review [file-path]`
+Invoked as `/docs-review [file-path]`. If no path is given, ask which file. If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop: it's agent instructions, not a documentation page.
 
-If no path is given, ask which file to review.
-
-If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop and say this skill only reviews published documentation content — a skill file is agent instructions, not a documentation page.
-
-This skill covers structural standards, writing quality (including AI-writing-pattern detection and voice consistency), and technical accuracy. For new pages or significant rewrites, also run `/docs-seo` to check discoverability — its findings are advisory and listed separately.
+Covers structural standards, writing quality (AI-pattern detection, voice consistency), and technical accuracy. For new pages or significant rewrites, also run `/docs-seo`; its findings are advisory and listed separately.
 
 ---
 
 ## Review Sequence
 
-Execute each skill's checks in full, in the order listed below. Read each skill's instructions and apply every check to the target file before moving to the next skill. Do not skip to the output format — run all checks first, then compile the combined report.
+Run each skill's checks in full, in order, before compiling the combined report — don't skip to the output format early.
 
-1. **`/docs-check`** — structural standards: frontmatter, heading hierarchy, code block language tags, ProductName usage, internal links, Stepper config, image alt text, sidebar registration, and (as a suggestion, not a gate) sidebar placement fit
-2. **`/docs-review-style`** — writing quality and consistency: AI vocabulary, sentence cadence, promotional tone, generic writing, rhetorical scaffolding, voice calibration against sibling pages, per-rule style (contractions, terminology, formatting, doc-type patterns), step count/decomposition, and step ordering across UI screens
-3. **`/docs-review-tech`** — technical accuracy: protocol claims, code examples, API/SDK accuracy, configuration claims, security claims, diagram-to-text consistency
+1. **`/docs-check`** — frontmatter, heading hierarchy, code block tags, ProductName usage, internal links, Stepper config, alt text, sidebar registration/placement.
+2. **`/docs-review-style`** — AI vocabulary, sentence cadence, promotional tone, generic writing, rhetorical scaffolding, voice vs. siblings, per-rule style (contractions, terminology, formatting, doc-type patterns), step count/decomposition, step ordering.
+3. **`/docs-review-tech`** — protocol claims, code examples, API/SDK accuracy, config claims, security claims, diagram-to-text consistency.
 
-Do not skip any skill. Each catches different failure modes.
+Don't skip any — each catches different failure modes.
 
 ---
 
 ## Combined Output
-
-After all three reviews are complete, produce a single combined report:
 
 ```
 Reviewing: [file path]
@@ -42,13 +36,13 @@ Doc type: [detected type]
 
 ─────────────────────────────────────
 DOCS-CHECK
-[Paste the docs-check output block. Omit passing checks — show only failures and warnings.]
+[Paste the docs-check output. Omit passing checks — show only failures and warnings.]
 
 DOCS-REVIEW-STYLE
-[Paste the docs-review-style output block. Omit passing checks — show only failures and warnings.]
+[Paste the docs-review-style output. Omit passing checks.]
 
 DOCS-REVIEW-TECH
-[Paste the docs-review-tech output block. Omit passing checks — show failures, warnings, and the category coverage summary.]
+[Paste the docs-review-tech output. Omit passing checks — keep the category coverage summary.]
 
 ─────────────────────────────────────
 OVERALL RESULT: PASS / FAIL
@@ -59,8 +53,7 @@ Failures: [count]
 Warnings: [count]
 ```
 
-If all three reviews pass cleanly, show only the passing summary for each:
-
+If all three pass cleanly, show only the passing summary:
 ```
 DOCS-CHECK
   ✅  All checks passed
@@ -81,35 +74,23 @@ Hard gate failures: 0
 
 ## Confidence Rating
 
-**High** — All three skills pass with at most 2 low-severity warnings. The doc is ready for merge review.
+**High** — all three pass with at most 2 low-severity warnings; ready for merge review.
 
-**Medium** — One or more skills produced non-gate-triggering failures or warnings. Address the flagged items before merging.
+**Medium** — one or more skills produced non-gate failures or warnings; address before merging.
 
-**Low** — Any hard gate failure from any skill. The doc must be revised before it can merge.
+**Low** — any hard gate failure from any skill; must be revised before merge.
 
 ---
 
 ## Hard Gate Summary
 
-The overall review FAILS if any of the following are true:
+Overall review FAILS if any of these are true:
 
-From `docs-check`:
-- Any ❌ FAIL (see docs-check for the full list: title, description length/prefix, heading hierarchy, toc_progress/Stepper consistency, ProductName in prose, absolute links, Stepper config, line dividers)
+From `docs-check`: any ❌ FAIL (title, description length/prefix, heading hierarchy, toc_progress/Stepper consistency, ProductName in prose, absolute links, Stepper config, line dividers).
 
-From `docs-review-style` (see its Hard Gate Rules):
-- Any em dash or en dash present
-- 5 or more AI vocabulary violations remaining
-- Any rhetorical scaffolding phrase present
-- More than one symmetric contrast construction
+From `docs-review-style` (its Hard Gate Rules): any em/en dash present; 5+ AI vocabulary violations; any rhetorical scaffolding phrase; 2+ symmetric contrast constructions. (Step Count/Decomposition and Step Locality are also checked there but never gate — they resolve by asking the user, not a mechanical fail.)
 
-(Step Count and Decomposition and Step Locality are also checked by `docs-review-style` but never contribute to this list — they resolve by asking the user whether their structure is intentional, not by a mechanical fail.)
-
-From `docs-review-tech`:
-- Any CRITICAL issue
-- 3 or more HIGH issues
-- Any code example that cannot be verified
-- Any security claim that cannot be verified against two authoritative sources
-- A cross-page contradiction
+From `docs-review-tech`: any CRITICAL issue; 3+ HIGH issues; any unverifiable code example; any security claim unverifiable against two authoritative sources; a cross-page contradiction.
 
 ---
 
@@ -120,4 +101,4 @@ From `docs-review-tech`:
 | Structural standards | delegates | `/docs-check` |
 | Writing quality, voice, AI-pattern detection | delegates | `/docs-review-style` |
 | Technical accuracy | delegates | `/docs-review-tech` |
-| Page scaffold creation | | `/docs-new-page` |
+| Page scaffold creation | — | `/docs-new-page` |

@@ -1,5 +1,6 @@
 ---
 title: OpenChoreo
+docType: guide
 sidebar_position: 3
 persona: iam
 description: Run {{ProductName}} as a fully declarative OpenChoreo ResourceType, with secrets sourced from the platform secret store and a choice of SQLite or PostgreSQL.
@@ -13,7 +14,7 @@ This guide walks you through running <ProductName /> as an OpenChoreo `Resource`
 
 Key characteristics of this deployment model:
 
-- Provisioning is **fully declarative**. Every <ProductName /> resource — organization units, user types, applications, flows, themes, and users — comes from a single resources file supplied at `Resource` creation time.
+- Provisioning is **fully declarative**. Every <ProductName /> resource, organization units, user types, applications, flows, themes, and users, comes from a single resources file supplied at `Resource` creation time.
 - Sensitive values are **materialized from the platform secret store** by External Secrets Operator.
 - The database backend is a parameter. The default `sqlite` mode needs no external database; `postgres` mode targets an externally hosted PostgreSQL instance.
 
@@ -179,7 +180,7 @@ Set the database engine through the `runtime.dbType` parameter.
 `sqlite` mode uses the database files bundled in the container image. It needs no external database and no `DB_*` properties in the secret store.
 
 :::warning
-SQLite storage is pod-local and ephemeral. Runtime data — sessions, tokens, and database-backed stores — is lost on pod restart, and replicas must stay at 1. Use SQLite for development and evaluation only.
+SQLite storage is pod-local and ephemeral. Runtime data, sessions, tokens, and database-backed stores, is lost on pod restart, and replicas must stay at 1. Use SQLite for development and evaluation only.
 :::
 
 ### PostgreSQL
@@ -215,7 +216,7 @@ Load the schema scripts from the same version as the container image set in `par
 The `ResourceType` exposes further parameters for production hardening:
 
 - `runtime.tls.enabled` serves HTTPS from the container and configures the gateway to originate TLS to the backend.
-- `runtime.certs` overrides the bundled certificate material — the serving pair and the JWT signing pair — from the secret store.
+- `runtime.certs` overrides the bundled certificate material, the serving pair and the JWT signing pair, from the secret store.
 - `configOverrides` replaces the generated `deployment.yaml`, Gate `config.js`, or Console `config.js` files when the built-in templates do not cover a setting.
 
 For the full parameter reference, see the chart documentation at `install/openchoreo/thunderid-oc-resourcetype/README.md`.
@@ -224,9 +225,9 @@ For the full parameter reference, see the chart documentation at `install/opench
 
 OpenChoreo provides built-in environment management with promotion workflows. Three environments are available out of the box:
 
-1. **Development** — for active development and testing.
-2. **Staging** — for pre-production validation.
-3. **Production** — for live traffic.
+1. **Development**: for active development and testing.
+2. **Staging**: for pre-production validation.
+3. **Production**: for live traffic.
 
 To promote <ProductName /> to another environment, create a `ResourceReleaseBinding` for that environment, provide its secret store values, and pin the same release.
 

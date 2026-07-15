@@ -1,5 +1,6 @@
 ---
 title: Add an OIDC Identity Provider
+docType: guide
 sidebar_position: 4
 persona: iam
 description: Configure a generic OpenID Connect identity provider for federated authentication.
@@ -18,7 +19,7 @@ This guide explains how to register a generic OpenID Connect (OIDC) identity pro
 :::tip Finding endpoint URLs
 Most OIDC providers publish their endpoint URLs in a discovery document at:
 
-```
+```text
 https://<provider-domain>/.well-known/openid-configuration
 ```
 
@@ -127,7 +128,7 @@ Each entry has a `userType` (the user type whose schema defines the valid local 
 
 Behavior:
 
-- The `externalAttribute` (source) supports attributes in complex forms. We can use **dot notation** to read a value nested inside another attribute — for example, `email.work` reads the `work` field from an `email` object.
+- The `externalAttribute` (source) supports attributes in complex forms. We can use **dot notation** to read a value nested inside another attribute, for example, `email.work` reads the `work` field from an `email` object.
 - The `localAttribute` (target) must be an attribute defined in the profile's `userType` schema; this is validated when the IdP is created or updated.
 - An attribute whose name is mapped is renamed to its local attribute; attributes without a mapping pass through unchanged.
 
@@ -185,5 +186,5 @@ Behavior:
 
 ## Next Steps
 
-- [Connect an IdP to an Application](../connect-idp-to-application) — Add this OIDC IdP to an application's authentication flow.
-- [Manage Identity Providers](../manage-identity-providers) — Update or delete identity providers.
+- [Connect an IdP to an Application](../connect-idp-to-application): Add this OIDC IdP to an application's authentication flow.
+- [Manage Identity Providers](../manage-identity-providers): Update or delete identity providers.

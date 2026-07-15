@@ -1,286 +1,164 @@
 ---
 name: docs-review-style
-description: Reviews existing ThunderID documentation MDX content for writing quality, linguistic consistency, and AI-writing-pattern detection — flags AI vocabulary, passive voice, weak phrasing, condescension markers, em dashes, contractions, hand-built diagrams, rhetorical scaffolding, promotional tone, generic/interchangeable content, type-specific pattern violations (intro sentences, page-ending labels), oversized step sequences, and step ordering that bounces between UI screens with no dependency forcing it — the last two are proposed as a restructuring and confirmed with the user rather than auto-failed. Also calibrates the page against sibling pages to catch voice drift that's technically rule-compliant but still reads like a different author wrote it. Reports every issue with the exact quote and a suggested rewrite; never fixes silently. Use when polishing a draft, reviewing AI-generated content, improving a page before merging, or specifically chasing down why the docs don't read as one consistent voice. For writing new content into placeholders, use `/docs-edit` instead.
+description: Reviews existing ThunderID doc MDX content for writing quality: AI vocabulary, passive voice, condescension, em/en dashes, contractions, rhetorical scaffolding, promotional tone, step structure, and voice drift vs sibling pages. Reports issues with quotes and rewrites; never fixes silently. Use whenever asked to review, polish, improve, or fix the writing or tone of a doc, or make it sound less AI-generated. For new content, use `/docs-edit`.
 allowed-tools: Read Bash
 ---
 
 # ThunderID Docs Writing Quality Review
 
-Review an existing `.mdx` file for writing quality, linguistic consistency, and AI-writing-pattern detection. Report every issue with the exact quote and a suggested rewrite. Never fix silently — explain every change. Do not touch structure, frontmatter completeness, or link format — those are for `/docs-check`. Do not check technical accuracy — that is `/docs-review-tech`. For writing new content into placeholders, use `/docs-edit` instead.
-
-This skill enforces all ThunderID writing quality and style rules, including detection of AI-sounding structural patterns: writing that is technically accurate but still generic, over-explained, promotional, or structurally hollow.
+Review an existing `.mdx` file for writing quality, linguistic consistency, and AI-writing-pattern detection. Report every issue with the exact quote and a suggested rewrite; never fix silently. Structure, frontmatter, and links are `/docs-check`'s job; technical accuracy is `/docs-review-tech`'s; new content is `/docs-edit`'s.
 
 ## Usage
 
-Invoked as `/docs-review-style [file-path]`
-
-If no path is given, ask which file to review.
-
-If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop and say this skill only reviews published documentation content — a skill file is agent instructions, not a documentation page, and these style rules do not apply to it.
+Invoked as `/docs-review-style [file-path]`. If no path is given, ask which file. If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop: these are agent instructions, not documentation, and style rules don't apply.
 
 ---
 
 ## Step 1: Identify the Doc Type
 
-Read the full file. Identify the doc type from frontmatter or structure:
+Read the full file. Read the `docType` frontmatter field — every page has one (`quickstart`, `guide`, `concept`, `reference`, `use-case`, or `community`) and `docs-check` gates on it being present and valid, so this is the source of truth, not a guess from structure.
 
-- **quickstart** — has `toc_progress: quickstart` or `<Stepper>` with imperative H2 steps
-- **guide** — task-oriented how-to page, no Stepper
-- **concept** — explains a concept or pattern; no step instructions
-- **reference** — factual, structured; tables and lists over prose
-- **use-case** — scenario overview page
+- **quickstart** — step-by-step guide connecting a technology to ThunderID; `<Stepper>` with imperative H2 steps
+- **guide** — task-oriented how-to, no Stepper
+- **concept** — explains an idea/pattern, no step instructions
+- **reference** — factual, tables/lists over prose
+- **use-case** — scenario overview
+- **community** — project-contribution docs, not end-user product docs; apply the same universal writing checks, skip the per-type checks in Step 4
 
-State the detected doc type before running any checks. If ambiguous, ask.
+State the type before running checks. If `docType` is missing (an older page not yet migrated) or the content clearly doesn't match its stated type, flag it and fall back to inferring from structure.
 
 ---
 
 ## Step 2: Calibrate Against the Established Voice
 
-A page can pass every itemized rule below and still not sound like it belongs in the same body of work as the rest of the docs. Before running the rule-based checks, read 2–3 sibling pages of the same doc type, preferring the same section or category as the target file. Use them to notice what "sounding consistent" actually means beyond what the itemized rules cover:
+Rule-compliant prose can still fail to sound like the rest of the docs. Before the itemized checks, read 2-3 sibling pages of the same type (same section/category preferred) and compare:
 
-- **Sentence rhythm**: are sibling pages' sentences short and declarative, or do they mix in longer explanatory sentences? Does the target page's rhythm match, or does it read noticeably choppier or more meandering?
-- **Framing of intros and transitions**: how do sibling pages open a section, introduce an example, or move from one step to the next? Does the target page follow a similar pattern, or does it introduce its own idiosyncratic phrasing?
-- **Level of formality and directness**: do sibling pages address the reader with the same degree of directness and the same absence of filler, or does the target page feel noticeably more casual, more hedging, or more clipped in comparison?
-- **Structural habits**: do sibling pages use examples, admonitions, or tables at a similar density? A page that's unusually sparse or unusually example-heavy compared to its siblings reads as written by a different author, even when every individual sentence is rule-compliant.
+- **Sentence rhythm** — short and declarative, or a mix with longer explanatory sentences? Does the target match?
+- **Intro/transition framing** — how do siblings open a section or move between steps, vs. the target?
+- **Formality/directness** — same directness and lack of filler, or more casual, hedging, or clipped?
+- **Structural habits** — similar density of examples, admonitions, tables?
 
-Flag deviations concretely: quote the target page's phrasing next to a comparable phrase from a sibling page, and name the specific difference. "The tone feels off" is not a finding — a side-by-side quote and what's different about it is.
+Flag deviations concretely: quote the target next to a comparable sibling phrase and name the difference. "The tone feels off" is not a finding.
 
-If no sibling pages exist yet (a genuinely new section with no precedent), skip this check and say so.
+If no sibling pages exist yet, skip this check and say so.
 
 ---
 
 ## Step 3: Universal Checks (All Doc Types)
 
-Apply these regardless of doc type.
-
----
-
 ### Active Voice
-
 Instructions must use active voice.
-
-- ❌ "The configuration can be set by navigating to..."
-- ✅ "Navigate to... and set the configuration."
-- ❌ "An application will be created."
-- ✅ "<ProductName /> creates an application."
-
-Flag every passive voice instance in instructions. Suggest the active rewrite.
-
----
+- ❌ "The configuration can be set by navigating to..." → ✅ "Navigate to... and set the configuration."
 
 ### Address the Reader as "You"
-
-Use second-person "you" in instructions and guidance. Never label the audience in the text.
-
-- ❌ "Developers can use this flow to..."
-- ✅ "Use this flow to..."
-- ❌ "For platform engineers evaluating..."
-- ✅ (Write to them directly, not about them.)
-
----
+Use second person; never label the audience.
+- ❌ "Developers can use this flow to..." → ✅ "Use this flow to..."
 
 ### No Condescension Markers
-
-Never imply a task is easy. Cut or rephrase:
-
-- "Simply run..." → "Run..."
-- "Just add..." → "Add..."
-- "All you need to do is..." → state the instruction directly
-- "Easily configure..." → "Configure..."
-- "Straightforward setup" → remove the qualifier
-
----
+Never imply a task is easy: cut "Simply," "Just," "All you need to do is," "Easily," "Straightforward."
 
 ### No Hedging in Instructions
-
-Instructions must be direct.
-
-- ❌ "You may want to consider running..."  → "Run..."
-- ❌ "It might be worth checking..." → "Check..."
-- ❌ "You will need to..." (future tense) → "You need to..." or just the imperative
-- ❌ "You can run..." (when it's a required step) → "Run..."
-
-"You can" is fine only when something is genuinely optional.
-
----
+Be direct: "You may want to consider running..." → "Run...". "You can run..." → "Run..." unless the step is genuinely optional.
 
 ### One Action Per Sentence
-
-In steps and instructions, each sentence performs one action. Do not chain actions with "and."
-
-- ❌ "Click **New Application** and fill in the name and select the type."
-- ✅ "Click **New Application**. Enter a name, then select an application type."
-
----
+Don't chain actions with "and" in steps.
+- ❌ "Click **New Application** and fill in the name and select the type." → ✅ "Click **New Application**. Enter a name, then select an application type."
 
 ### AI Vocabulary — Cut or Replace
+Flag in prose (outside code blocks):
 
-Flag any of the following in prose (outside code blocks):
+**Always cut/replace:** additionally, align with, crucial, delve, emphasizing, enduring, enhance, foster, garner, highlight (verb), interplay, intricate/intricacies, key (filler), landscape (abstract), leveraging, navigate (abstract), pivotal, robust, showcase, tapestry (abstract), testament, underscore (verb), valuable, vibrant
 
-**Always cut or replace:** additionally, align with, crucial, delve, emphasizing, enduring, enhance, foster, garner, highlight (verb), interplay, intricate/intricacies, key (filler adjective), landscape (abstract), leveraging, navigate (abstract), pivotal, robust, showcase, tapestry (abstract), testament, underscore (verb), valuable, vibrant
+**Cut in technical docs:** game-changer, cutting-edge, seamlessly, empower, powerful (filler), comprehensive (filler), streamline (abstract), next-generation, out-of-the-box (filler), intuitive (filler claim), scalable (state the scale/how instead), enable/allows you to (use the imperative), end-to-end (filler), holistic, synergy, paradigm, unlock (abstract)
 
-**Cut in technical docs:** game-changer, cutting-edge, seamlessly, empower, powerful (filler), comprehensive (filler), streamline (abstract), next-generation, out-of-the-box (filler), intuitive (as a filler claim), scalable (state the specific scale and how), enable/allows you to (use the imperative or describe the capability directly), end-to-end (filler), holistic, synergy, paradigm, unlock (abstract — "unlock potential")
+For each instance: quote → suggest replacement or "cut". Complements the Vale style in CI (which catches most automatically); this confirms no context-dependent uses remain (e.g. "navigate" as abstract verb vs. UI instruction).
 
-For each instance: quote the original → suggest the replacement or "cut". This complements the ThunderID Vale style in CI, which catches most of these words automatically — this check confirms no context-dependent uses remain (e.g., "navigate" as an abstract verb vs. a UI navigation instruction) before merge.
-
-**Hard gate:** if 5 or more instances remain (counting each occurrence separately, not unique words), treat this as a hard gate failure — see Hard Gate Rules below.
-
----
+**Hard gate:** 5+ instances (counting occurrences, not unique words) → hard gate failure.
 
 ### Filler Phrases — Cut
-
-- "In order to" → "To"
-- "Due to the fact that" → "Because"
-- "At this point in time" → "Now" or cut
-- "Has the ability to" → "Can"
-- "It is important to note that" → delete, then state the point
-- "Please note that" → cut
-- "Note that" as a sentence opener → restructure or use an admonition
-- "Essentially" / "Basically" → cut
-- "Ultimately" as an empty closer → cut
-
----
+"In order to" → "To" · "Due to the fact that" → "Because" · "At this point in time" → "Now"/cut · "Has the ability to" → "Can" · "It is important to note that" → delete, state the point · "Please note that" → cut · "Note that" as opener → restructure · "Essentially"/"Basically" → cut · "Ultimately" as empty closer → cut
 
 ### Superficial -ing Tails
-
-Flag present participle phrases tacked onto sentences to fake depth:
-
-- ❌ "...allowing you to manage users efficiently."
-- ✅ Cut the tail. If the point matters, make it its own sentence with real content.
-- ❌ "...enabling seamless integration with your existing setup."
-- ✅ State what the integration does specifically, or cut entirely.
-
----
+Cut present-participle tails tacked on to fake depth.
+- ❌ "...allowing you to manage users efficiently." → cut the tail; if it matters, make it its own sentence with real content.
 
 ### Over-Explaining the Obvious
-
-Do not describe what the reader can see, or explain consequences that are self-evident.
-
-- ❌ "Click the **Save** button to save your changes." → "Click **Save**."
-- ❌ "This creates an application, which will now appear in the list." → "This creates the application."
-- ❌ "Run the following command to run the server:" → "Run:"
-
----
+Don't describe what's visible or state self-evident consequences.
+- ❌ "Click the **Save** button to save your changes." → ✅ "Click **Save**."
 
 ### No Em Dashes or En Dashes
-
-Em dashes (—) and en dashes (–) must not appear anywhere in the file. Rewrite the sentence instead.
-
-Search with:
-```bash
-grep -n '[—–]' <file>
-```
+Em dashes (—) and en dashes (–) must not appear anywhere. Search: `grep -n '[—–]' <file>`. Pick the narrowest fix, usually a period or comma; reach for a colon only when it clearly fits (Colon Rules below).
 
 | Usage | Replace with |
 |---|---|
-| `X — Y` (parenthetical aside) | Two sentences, or a comma |
-| `X — Y` (definition/explanation) | Colon |
-| `X — Y` (contrast) | ", while Y" or ", but Y" |
-| `X — Y` (elaboration) | ", including Y" or ": Y" |
-| `X – Y` (range in prose) | Spell out: "X to Y" |
+| Two complete sentences joined for effect | Period, split into two |
+| Parenthetical aside | Comma, or remove the aside |
+| Sentence introducing a list/explanation/result | Colon (see Colon Rules) |
+| Contrast | ", but Y" / ", while Y" |
+| Elaboration that isn't a full sentence | Comma ("X, including Y") |
+| Range in prose | Spell out: "X to Y" |
 
-**Hard gate:** if any em dash or en dash remains, treat this as a hard gate failure — see Hard Gate Rules below.
+**Hard gate:** any em/en dash remaining → hard gate failure.
 
----
+### Comma Rules
+Use commas to make structure unambiguous, not to imitate speech pauses.
+
+1. **Lists**: comma before the final and/or (serial comma). ❌ "password, passkey and social login" → ✅ "...passkey, and social login."
+2. **Introductory phrases**: comma after ("After you restart the server, verify..."). Short phrases don't strictly need one; stay consistent.
+3. **Two complete sentences joined by a coordinating conjunction** (and/but/or/nor/for/so/yet): comma before it, only when both sides are complete. ✅ "...successfully, but the application cannot connect." No comma when the second half isn't a full sentence.
+4. **Nonessential info** gets commas; essential (identifying) info doesn't.
+5. **Coordinate adjectives** (test: insert "and"): ✅ "a valid, absolute URL." Not when they form one unit: "a public API endpoint."
+6. **Direct address** takes a comma (rare here, since instructions address the reader implicitly).
+7. **Transitional words** (however, therefore) take a comma after them at sentence start.
+
+Flag: comma splices ("expired, request a new token" → period or "so"); a comma between subject and verb; a comma before "and" joining one subject with two actions; comma overload (split into sentences instead).
+
+### Colon Rules
+Use a colon to introduce an explanation, list, or result, only when the text before it could stand alone as a sentence (UI labels and compact reference lines are the exception).
+
+1. List after a complete sentence: "Configure the following: hostname, port, public URL." Not "Configure: hostname..."
+2. Explanation/result: "...failed for one reason: the token had expired."
+3. Examples: prefer "such as" or "For example," over "for example:".
+4. Introducing code, commands, or output.
+5. Headings/labels ("Default value: localhost"); no trailing colon on a heading unless it's a label.
+6. Never split a verb/preposition from its object: ❌ "are: password, passkey" → ✅ "are password, passkey, and social login."
+7. Lowercase after a colon unless a proper noun, a quoted sentence, code, a UI label, or multiple complete sentences follow (prefer a bulleted list instead).
+
+Test: colon when the first part creates an expectation the second fulfills, not just because a list appears somewhere in the sentence.
 
 ### Language: US English
-
-Flag non-US spellings. Common cases:
-- "organise" → "organize"
-- "colour" → "color"
-- "licence" (noun) → "license"
-- "cancelled" → "canceled"
-- "centre" → "center"
-
----
+"organise"→organize, "colour"→color, "licence" (noun)→license, "cancelled"→canceled, "centre"→center.
 
 ### No Contractions
-
-Documentation must be precise, not conversational. Flag all contractions.
-- "you'll" → "you will" or rewrite as imperative
-- "it's" → "it is"
-- "don't" → "do not"
-- "can't" → "cannot"
-
----
-
-### Oxford Comma
-
-Always use the Oxford comma in lists of three or more items.
-- ❌ "Supports password, passkey and social login."
-- ✅ "Supports password, passkey, and social login."
-
----
+Flag all: "you'll"→you will, "it's"→it is, "don't"→do not, "can't"→cannot.
 
 ### Numbers
-
-- Spell out one through nine in prose; use numerals for 10 and above.
-- Always use numerals for: port numbers, version numbers, time values, and counts in technical context regardless of size.
-  - ✅ "The server listens on port 8090."
-  - ✅ "This creates 3 redirect URIs."
-- Use `%` directly — never spell out "percent."
-- Use numerals + unit for all measurements: `512 MB`, `30 seconds`.
-
----
+Spell out one-nine in prose; numerals for 10+. Always numerals for ports, versions, time values, and counts regardless of size ("port 8090", "3 redirect URIs"). Use `%` directly. Numerals + unit for measurements (`512 MB`, `30 seconds`).
 
 ### UI Element Formatting
-
-**Bold** for UI labels, button names, menu items, and field names — exactly as they appear in the interface.
-- ✅ "Click **Save**."  ❌ "Click the save button."  ❌ "Click 'Save'."
-
-`Inline code` for: file paths, CLI commands, config keys and values, code identifiers, environment variables, port numbers in technical context.
-
-No quotes around UI elements or code values. Use bold or code formatting instead.
-
----
+**Bold** for UI labels, buttons, menu items, fields, exactly as shown. `Inline code` for file paths, CLI commands, config keys/values, identifiers, env vars, port numbers. No quotes around UI elements or code values.
 
 ### No Emojis
-
-Do not use emojis anywhere in prose, headings, table cells, or as decorative icons in front of a term. This includes technology/type icons (⚛️, 🌐, 📱, 🤖) in tables — use the bold term alone, or a text label if a category needs distinguishing.
-
-- ❌ "| ⚛️ **Browser App** | ..." → "| **Browser App** | ..."
-- ❌ "✉️ Check your email" → "Check your email"
-- ❌ "🎉 All checks passed!" → "All checks passed."
-
-This does not apply to admonition/status characters that are part of the site's own tooling output (e.g., ✅/❌ in a `/docs-review-style` report) or to product branding metadata outside doc content (e.g., the site's emoji favicon in `docusaurus.product.config.ts`).
-
----
+None in prose, headings, table cells, or as decorative icons (including tech-type icons like ⚛️🌐📱🤖 in tables — use the bold term alone). Exception: admonition/status characters that are the site's own tooling output (✅/❌ in a review report), or product branding metadata outside doc content.
 
 ### Admonition Usage
+By type, not for variety:
 
-Use Docusaurus admonitions by type, not for visual variety.
-
-| Admonition | When to use |
+| Admonition | When |
 |---|---|
-| `:::note` | Supplementary information the reader should be aware of but is not blocking. |
-| `:::tip` | A faster path, a shortcut, or a useful best practice. |
-| `:::warning` | An action that could cause data loss, misconfiguration, or unexpected behavior. |
-| `:::danger` | An action that is destructive or irreversible. |
-| `:::info` | Background context or conceptual framing, used in use-case pages only. |
+| `:::note` | Supplementary, non-blocking |
+| `:::tip` | Shortcut or best practice |
+| `:::warning` | Risk of data loss/misconfiguration |
+| `:::danger` | Destructive/irreversible |
+| `:::info` | Background/conceptual framing (use-case pages only) |
 
-Flag any admonition that restates what the preceding paragraph already said, or where inline prose would be clearer.
-
----
+Flag any admonition restating the preceding paragraph, or where inline prose would be clearer.
 
 ### Diagrams Must Be Mermaid
-
-Any flow diagram, architecture diagram, sequence diagram, or similar visual must use a fenced ` ```mermaid ` code block. Flag:
-
-- Raw SVG elements (`<svg>`, `<rect>`, `<path>`, `<text>`, and similar) used to hand-build a diagram
-- ASCII art or box-drawing characters (`┌`, `─`, `│`, `→`, and similar) used to represent a diagram
-- A screenshot or image standing in for a diagram that has no source of truth
-
-Only accept a non-Mermaid diagram when the layout genuinely cannot be expressed in Mermaid (e.g., precise pixel-level annotation over a real UI screenshot). State the reason when allowing an exception.
-
-Do not add a `%%{init: {'theme': ...}}%%` directive or inline `style`/`classDef` color overrides to a Mermaid block. The site applies the brand color scheme globally (`docusaurus.config.ts` → `themeConfig.mermaid`); a per-diagram override will drift from the rest of the docs and may clash between light and dark mode.
-
----
+Any diagram must use a fenced ` ```mermaid ` block. Flag raw SVG, ASCII/box-drawing art, or a screenshot standing in for a diagram with no source of truth. Exception only when the layout genuinely can't be Mermaid (e.g. pixel-level annotation over a real screenshot) — state why. Don't add `%%{init...}%%` or inline style/classDef overrides; the site applies brand colors globally (`docusaurus.config.ts` → `themeConfig.mermaid`) and per-diagram overrides drift and can clash between light/dark mode.
 
 ### No Informal Abbreviations
-
-Flag informal shorthand in prose and spell out the full word:
-
-| Use | Never use |
+| Use | Never |
 |-----|-----------|
 | configuration(s) | configs |
 | development | dev |
@@ -288,351 +166,179 @@ Flag informal shorthand in prose and spell out the full word:
 | environment(s) | env, envs |
 | repository/repositories | repo, repos |
 
-This applies to prose only — leave file paths, config file names, branch names, and code identifiers as-is (`.env`, `docker-compose.prod.yml`, the `dev` branch, `go.mod`'s `require` block, and similar are correct exactly as written).
-
----
+Prose only — leave file paths, config file names, branch names, and code identifiers as-is (`.env`, `docker-compose.prod.yml`, the `dev` branch, etc.).
 
 ### Consistent Terminology
-
-Flag any use of the wrong term from this list:
-
-| Use | Never use |
+| Use | Never |
 |-----|-----------|
 | sign in | log in, login (verb) |
 | sign out | log out, logout (verb) |
-| sign-in (adjective/noun) | login, log-in |
+| sign-in (adj/noun) | login, log-in |
 | application | app (in prose) |
 | configure | setup (verb), set-up |
 | navigate to | go to, head to |
-| select | choose, pick (for UI dropdowns/options) |
-| click | press, tap (for desktop UI) |
-| run | execute, invoke (for CLI commands) |
-| create | add, make (for Console resources) |
-| delete | remove, destroy (for Console resources) |
+| select | choose, pick (UI dropdowns/options) |
+| click | press, tap (desktop UI) |
+| run | execute, invoke (CLI) |
+| create | add, make (Console resources) |
+| delete | remove, destroy (Console resources) |
 | redirect URI | callback URL, redirect URL |
-| access token | auth token (unless specifically discussing a non-JWT token) |
-| identity provider | IdP (spell out on first use per page; thereafter IdP is acceptable) |
-
----
+| access token | auth token (unless a specific non-JWT token) |
+| identity provider | IdP (spell out first use per page) |
 
 ### Inclusive Language
-
-Flag any of the following:
-
 | Avoid | Use |
 |---|---|
-| whitelist / blacklist | allowlist / denylist |
-| master / slave | primary / replica |
+| whitelist/blacklist | allowlist/denylist |
+| master/slave | primary/replica |
 | sanity check | quick check, confidence check |
-| dummy value | placeholder value, example value |
+| dummy value | placeholder/example value |
 
-Flag use of "he/him" for hypothetical or unnamed users → "they/them".
-
-Flag ableist metaphors used for technical behavior (e.g., "crazy configuration") → describe the actual problem.
-
----
+Flag "he/him" for hypothetical users → they/them. Flag ableist metaphors ("crazy configuration") → describe the actual problem.
 
 ### Sentence Cadence
+**Choppy**: in running prose (skip code/lists/headings/admonitions/table cells), flag 3+ consecutive sentences of 8 words or fewer. Fine inside numbered steps or `<Stepper>` — only flag running prose.
 
-**Choppy cadence**: for each paragraph of running prose (skip code blocks, bullet lists, headings, admonition blocks, and table cells), flag any run of three or more consecutive sentences with eight or fewer words.
-
-- ❌ "Configure the redirect URI. Save the application. Open the flow designer."
-- ✅ "Configure the redirect URI and save the application, then open the flow designer to set up the sign-in steps."
-
-This is acceptable in a numbered list of steps or inside `<Stepper>` steps — only flag it in running prose paragraphs.
-
-**Long sentences and paragraphs**: flag any sentence in running prose that exceeds 30 words — if it requires re-reading to parse, rewrite as two shorter sentences. Flag any paragraph of running prose with more than five sentences — break it into smaller paragraphs or convert part of it to a list.
-
----
+**Long**: flag any prose sentence over 30 words, or any paragraph over 5 sentences — split or listify.
 
 ### AI Structural Patterns
+Survive word-level scans; check across the full page.
 
-These patterns survive word-level scans. Check each one across the full page.
-
-**Sentence length uniformity**: flag any run of 4 or more consecutive sentences that fall within the same 8-word band (e.g., all 12–20 words). Docs prose should vary — a short sentence can make a technical point land hard; a longer sentence carries the context that explains it.
-
-- ❌ "The SDK initializes on page load. It reads the stored token. It checks for expiry. It refreshes if needed."
-- ✅ "On page load, the SDK initializes, reads the stored token, and checks for expiry. If the token has expired, it refreshes automatically before any API call is made."
-
-**Paragraph length uniformity**: flag any run of 3 or more consecutive paragraphs that are the same length (all single sentences, or all exactly 3 sentences) — every paragraph weighing exactly the same reads as machine-authored.
-
-**Template repetition**: flag any page where 3 or more sections follow the exact same structural pattern (e.g., definition → explanation → example, repeated in each H2). One or two sections sharing a structure is fine.
-
-**Generic connector abuse**: flag these as paragraph starters — they create transitions that sound smooth but carry no meaning:
-- "Furthermore,"
-- "Moreover,"
-- "Additionally,"
-- "In addition to this,"
-- "It is also worth noting that"
-- "This highlights the importance of"
-
-For each match: cut the connector and revise the sentence to reference the specific content of the previous paragraph instead.
-
----
+- **Sentence length uniformity**: flag 4+ consecutive sentences in the same 8-word band. Prose should vary.
+- **Paragraph length uniformity**: flag 3+ consecutive paragraphs of identical length.
+- **Template repetition**: flag 3+ sections following the identical structural pattern (e.g. definition → explanation → example every H2). 1-2 is fine.
+- **Generic connector abuse** as paragraph starters: "Furthermore," "Moreover," "Additionally," "In addition to this," "It is also worth noting that," "This highlights the importance of." Cut and reference the previous paragraph's specific content instead.
 
 ### Rhetorical Scaffolding
+The subtlest tell, and the most common reason technically correct docs still read as hollow.
 
-The subtlest AI writing tells, and the most common reason a technically correct doc still reads as hollow.
+**Templated pivots** — flag every occurrence: "Here's where it gets interesting," "Here's where things get [adj]," "But here's the thing," "At its core," "This is where it all comes together," "The bottom line:," "That's not the whole story," "This sounds like a minor distinction until...," "This is the core tension." Replace with the specific concept, step, or behavior under discussion.
 
-**Templated section pivots** — flag every occurrence, they replace specific content with a generic transition:
-- "Here's where it gets interesting"
-- "Here's where things get [adjective]"
-- "But here's the thing"
-- "At its core"
-- "This is where it all comes together"
-- "The bottom line:"
-- "That's not the whole story"
-- "This sounds like a minor distinction until..."
-- "This is the core tension"
+**Symmetric contrast framing** — flag every "It's not X. It's Y." construction ("The question isn't whether X. It's whether Y."). One per page is fine; 2+ is a hard gate. Fix: break the symmetry, concede the first clause, or collapse into one sentence with uneven clause lengths.
 
-For each match: replace the phrase with a sentence that names the specific concept, step, or product behavior under discussion. Scaffolding is universal; specificity is human.
+**Exhaustive enumeration on repeated mention**: flag a list (prerequisites, steps, options) spelled out in full more than once on the same page — abbreviate on second mention ("the same three flags as above").
 
-**Symmetric contrast framing** — flag every "It's not X. It's Y." construction with artificially parallel clauses:
-- "The question isn't whether X. It's whether Y."
-- "It's not about what [X] does. It's about what [X] can't do."
-- "The problem isn't [A]. The problem is [B]."
+**Triplet paragraph rhythm**: flag 3+ consecutive paragraphs following [Statement]. [Qualifier]. [Why it matters]. — mix up where the conclusion lands.
 
-One such construction per page is acceptable. Two or more is a hard gate failure — see Hard Gate Rules below. For each duplicate: break the symmetry, concede the first clause, or collapse it into one sentence with uneven clause lengths.
-
-**Exhaustive enumeration on repeated mention**: if a list of items (prerequisites, steps, config options) is spelled out in full more than once in the same page, flag the repeated instance. A human expert abbreviates on second mention ("the same three flags as above"); AI lists everything every time.
-
-**Triplet paragraph rhythm**: flag sections where three or more consecutive paragraphs follow this three-beat pattern: [Statement]. [It does not do X / qualifier]. [That distinction matters / why it matters]. Mix it up — front-load the conclusion, bury the point mid-paragraph, or leave the reader to draw the inference.
-
-**Hard gate:** if any rhetorical scaffolding phrase appears, or if more than one symmetric contrast construction appears, treat this as a hard gate failure — see Hard Gate Rules below.
-
----
+**Hard gate:** any rhetorical scaffolding phrase, or 2+ symmetric contrast constructions.
 
 ### Interchangeability Test
-
-For the first paragraph of each section (after the heading), ask: could this exact paragraph appear in the docs for a completely different product, unchanged? A section intro that passes this test is generic scaffolding — it must contain at least one element specific to ThunderID: a named concept (flows, applications, identity providers), a specific behavior, a concrete step, or a technical constraint.
-
-Flag any section intro that fails this test. Suggest what specific element would make it non-interchangeable.
-
----
+For each section's first paragraph: could it appear unchanged in a different product's docs? If so it's generic scaffolding — it needs at least one ThunderID-specific element (a named concept, specific behavior, concrete step, or technical constraint). Flag failures and suggest what would make it specific.
 
 ### Promotional Tone
-
-Docs must be neutral and precise, not marketing copy. Flag any sentence that:
-- Claims a feature is better, faster, simpler, or easier without a specific technical basis ("simplifies your workflow")
-- Uses adjective stacking to describe ThunderID's capabilities ("flexible, powerful, enterprise-ready")
-- Frames a technical fact as a selling point ("ThunderID's advanced flow engine lets you...")
-- Uses "powerful," "rich," "best-in-class," or similar with no accompanying technical specificity
-- Describes what the product "allows you to" do when it should just describe what the product does
-
-Promotional tone hides technical meaning. Replace it with the specific technical fact.
-
-- ❌ "ThunderID's flexible flow engine lets you build any authentication experience."
-- ✅ "The flow designer supports conditional branching, multi-factor steps, and external service calls within a single sign-in flow."
-
----
+Docs are neutral and precise, not marketing copy. Flag: unsupported superiority claims ("simplifies your workflow"), adjective stacking ("flexible, powerful, enterprise-ready"), technical facts framed as selling points, "powerful"/"rich"/"best-in-class" with no specificity, "allows you to" instead of just describing the behavior.
+- ❌ "ThunderID's flexible flow engine lets you build any authentication experience." → ✅ "The flow designer supports conditional branching, multi-factor steps, and external service calls within a single sign-in flow."
 
 ### Generic Writing
+**Specificity test** (concept pages exempt): each section needs at least one of: a ThunderID-specific behavior/constraint, a concrete example with real values/steps/outcome, or a trade-off/limitation/condition. Flag failures with what detail would fix it.
 
-A page that contains only definitions and category descriptions, with no technical specifics about how ThunderID implements the concept, is not useful documentation.
-
-**Specificity test**: for each section (a concept page is exempt — it explains ideas, not behaviors), check whether it contains at least one of:
-- A specific behavior or constraint unique to ThunderID (not just "this is how OAuth works")
-- A concrete example with real values, real steps, or a real outcome
-- A trade-off, limitation, or condition the reader needs to know
-
-Flag each section that fails this test on a guide, quickstart, or reference page. Note what kind of concrete detail would make it pass.
-
-**Section necessity test**: for each H2 section, ask whether a reader could skip it entirely and still follow the rest of the page. Filler sections typically restate the introduction, provide generic background the target reader already knows, or could appear in any software product's docs on the same topic unchanged. For each section that fails: flag it, and state whether it should be cut, merged with an adjacent section, or replaced with ThunderID-specific content.
-
----
+**Section necessity test**: could the reader skip this H2 and still follow the page? Filler sections restate the intro, give generic background, or could belong to any product's docs unchanged. Flag and say whether to cut, merge, or replace with ThunderID-specific content.
 
 ### Instruction Precision
+For quickstart/guide steps:
 
-For quickstart and guide pages, scan each step instruction for:
+**Vague outcomes**: does the step say what to expect when the result is non-obvious? ❌ "Configure the OAuth settings." → ✅ "Set **Redirect URI** to `http://localhost:3000/callback`. <ProductName /> rejects requests that redirect elsewhere."
 
-**Vague outcomes**: does the step tell the reader what to expect after completing it, when the result is non-obvious?
-- ❌ "Configure the OAuth settings."
-- ✅ "Set the **Redirect URI** to `http://localhost:3000/callback`. <ProductName /> rejects auth requests that redirect to any other URI."
-
-**Ambiguous UI references**: does the step reference a UI element that might not be clearly identifiable?
-- ❌ "Open the settings." (Which settings — application settings, flow settings, server config?)
-- ✅ "In the Console, navigate to **Applications** → [App name] → **Protocol**."
-
----
+**Ambiguous UI references**: ❌ "Open the settings." (which settings?) → ✅ "In the Console, navigate to **Applications** → [App name] → **Protocol**."
 
 ### Step Count and Decomposition
+Count steps in a single Stepper/numbered sequence.
 
-For quickstart Steppers and any numbered step list in a guide, count the steps in a single sequence.
+**Confirmation marker**: `<!-- docs-review-style: step-count-confirmed steps=N -->` immediately above, with matching N → skip to ✅. Stale (N mismatched) → treat as absent.
 
-**Check for a confirmation marker first.** If an HTML comment of the form `<!-- docs-review-style: step-count-confirmed steps=N -->` sits immediately above the Stepper (or the first item of the numbered list) and `N` matches the current step count exactly, skip straight to ✅ passed — this was already confirmed and nothing has changed since. If the marker is present but `N` no longer matches the current count, treat it as stale: run the check below as if no marker existed, since the structure changed after the last confirmation.
+Not a hard gate. No valid marker and 10+ steps:
+1. Propose a specific restructuring: split into multiple pages (genuinely separate tasks), group into labeled phases (one continuous task with natural internal structure), or fold trivial steps ("click Save") into a neighbor.
+2. Ask the user directly whether the flat structure or the restructuring is better (batch with Step Locality below if both apply).
+3. If confirmed intentional: mark ✅ passed, tell them the exact marker to add (`steps={N}`) — this skill is read-only, so `/docs-edit` or a manual edit adds it. If they want to restructure: mark `[needs writer input]`.
 
-Not a hard gate — a long step sequence doesn't automatically fail the review, because sometimes the flat structure genuinely is the right call. When no valid marker is found and a single Stepper or numbered list reaches 10 or more steps:
-
-1. Analyze the actual steps and propose a specific restructuring:
-   - **Split into multiple pages** when the steps span genuinely separate tasks a reader might do independently (e.g., "set up the identity provider" vs. "connect it to your application" vs. "test the connection").
-   - **Group into labeled phases** within the same page when the steps are one continuous task but have a natural internal structure (e.g., "Configure the basics" for steps 1-4, "Set up security" for steps 5-8, "Verify" for steps 9-10) — use sub-headings or a phase label above each cluster, not a flat renumbered list.
-   - **Fold trivial steps into a neighbor** when a step is only "click Save" or similar and doesn't need to stand alone.
-2. Present the proposal with your reasoning, and ask the user directly: *"Do you think the current flat structure is the right way to present this, or would restructuring it as proposed work better?"* (See Batching below if Step Locality also needs to ask on the same page.)
-3. If the user confirms the current structure is intentional, mark this check ✅ passed in the report — do not leave it as an open ❌ finding just because the count crossed the threshold. Also tell them the exact marker to add so future reviews don't ask again: `<!-- docs-review-style: step-count-confirmed steps={N} -->` placed immediately above the Stepper or list. This skill cannot write it for you (read-only); `/docs-edit` can add it as part of the same edit if the user is about to make other changes to the page. If they agree to restructure instead, mark it `[needs writer input]` pending the actual rewrite.
-
-"Too many steps, please shorten" is not a finding — the count is only the trigger for the conversation, not the verdict.
-
----
+"Too many steps, shorten it" alone is not a finding — the count only triggers the conversation.
 
 ### Step Locality (Minimize Screen Switching)
+Identify each step's UI location (tab/page/screen named or clearly implied).
 
-For step sequences, identify which UI location each step operates in when stated or clearly implied — a tab, page, screen, or section named in the step (e.g., "Navigate to the **Applications** tab").
+**Confirmation marker**: `<!-- docs-review-style: step-locality-confirmed screens=A,B,C -->` above the sequence, matching the current screen order exactly → skip to ✅. Stale → treat as absent.
 
-**Check for a confirmation marker first.** If an HTML comment of the form `<!-- docs-review-style: step-locality-confirmed screens=A,B,C -->` sits immediately above the sequence, and the comma-separated screen names match the current step-by-step screen order exactly (in order, including repeats), skip straight to ✅ passed. If the marker is present but the screen sequence no longer matches, treat it as stale and run the check below as if no marker existed.
+Not a hard gate. No valid marker, and 2+ steps at the same location are separated by an unrelated-location step with no dependency either way:
+- ❌ Settings → Applications → back to Settings → ✅ Applications first, then both Settings actions merged.
 
-Not a hard gate. When no valid marker is found, and two or more steps targeting the same UI location are separated by an intervening step targeting a different location, and the intervening step's outcome isn't a dependency for those steps (and they aren't a dependency for it):
-
-- ❌ "Step 3: In **Settings**, enable SSO. Step 4: In **Applications**, create a new app. Step 5: Back in **Settings**, set the redirect URI."
-- ✅ "Step 3: In **Applications**, create a new app. Step 4: In **Settings**, enable SSO and set the redirect URI." (both Settings actions merged and grouped together; Applications work happens first since nothing in Settings depends on it)
-
-Before flagging, check for a genuine dependency: if the reader must return to a screen only because an intervening step produced something that screen's step needs (e.g., an app ID to paste into a Settings field), the reordering is not a violation — say so explicitly and skip the flag entirely. Only surface back-and-forth that exists for no dependency reason.
-
-When it applies:
-1. Propose the specific reordered or regrouped step sequence.
-2. Ask the user directly: *"Do you think the current order is the right way to go, or should it be regrouped as proposed?"* (See Batching below if Step Count also needs to ask on the same page.)
-3. If the user confirms the current order is intentional, mark it ✅ passed. Also tell them the exact marker to add: `<!-- docs-review-style: step-locality-confirmed screens={ordered list} -->` (e.g., `screens=Applications,Settings`), placed immediately above the sequence. Same as above, this skill can only report the line — `/docs-edit` or a manual edit adds it. Otherwise mark it `[needs writer input]` pending the reorder.
-
-"Steps are out of order" alone is not a finding — the user's stated intent decides the outcome, not the detected pattern alone.
-
----
+Before flagging, check for a genuine dependency (an intervening step produces something the return step needs) — if so, skip the flag. When it applies: propose the reordered/regrouped sequence, ask the user directly (batch with Step Count if both fire). If confirmed intentional: mark ✅, give the marker (`screens={ordered list}`). Otherwise `[needs writer input]`.
 
 ### Batching Step Count and Step Locality Questions
-
-If both checks need to ask the user on the same page, do not ask twice. Run both checks' detection first, then combine into a single message covering both, the same way `/docs-new-page` batches its upfront questions:
+If both need to ask on the same page, combine into one message (matching how `/docs-new-page` batches its questions):
 
 > This page has two structural things worth confirming:
-> 1. **Step count** — {N} steps in one sequence. {one-line restructuring proposal, or "no restructuring needed" if only Step Locality fired}
-> 2. **Step order** — {screens involved}. {one-line reorder proposal, or "no reorder needed" if only Step Count fired}
->
-> Are the current structure and order intentional, or would you like either restructured as proposed?
+> 1. **Step count** — {N} steps. {proposal or "no restructuring needed"}
+> 2. **Step order** — {screens}. {proposal or "no reorder needed"}
+> Are the current structure and order intentional, or would you like either restructured?
 
-Process both answers before finalizing the report; each still resolves independently (one can be confirmed while the other gets restructured).
-
----
+Process both answers before finalizing; each resolves independently.
 
 ### Concept Bleed
-
-Flag any page where content from the wrong doc type has crept in, beyond the specific rules already covered per doc type in Step 4 below (quickstart conceptual detours, concept imperative instructions, reference narrative prose):
-
-- **Guide with reference tables**: a guide that embeds a full parameter reference table instead of linking to the reference page.
-
-For each instance: flag it, identify the doc type it belongs to, and suggest whether to cut, summarize, or link out.
+Beyond the per-type rules in Step 4, flag a **guide** embedding a full parameter reference table instead of linking to the reference page. Name the correct doc type and suggest cut/summarize/link out.
 
 ---
 
 ## Hard Gate Rules
+These four determine pass/fail; every other ❌ finding should still be fixed before merge but doesn't gate:
 
-The rules below are called out as hard gates because they were previously enforced as blocking failures by a standalone AI-pattern review. Every other ❌ finding in this skill should still be fixed before merge, but these four specifically determine the pass/fail `Result` in the Output Format below:
+1. Any em/en dash present.
+2. 5+ AI vocabulary instances remain.
+3. Any rhetorical scaffolding phrase present.
+4. 2+ symmetric contrast constructions.
 
-1. Any em dash or en dash is present.
-2. 5 or more AI vocabulary instances (Phase 1 banned words) remain.
-3. Any rhetorical scaffolding phrase is present.
-4. More than one symmetric contrast construction appears.
-
-Step Count and Decomposition and Step Locality (above) are deliberately **not** in this list — they resolve through asking the user whether their structure is intentional, not through a mechanical count or pattern match, so they never contribute to `Result: FAIL` on their own.
+Step Count/Decomposition and Step Locality are deliberately excluded — they resolve by asking the user, not by mechanical count/pattern match.
 
 ---
 
 ## Step 4: Doc-Type-Specific Checks
 
-After universal checks, apply the rules for the detected doc type. Type-specific rules below override the universal rules in Step 2 where they conflict. For reference pages in particular, the "no second-person" rule supersedes the universal "address the reader as you" rule.
-
----
+Apply after universal checks; these override Step 2/3 where they conflict. For reference pages, "no second-person" supersedes the universal "address the reader as you."
 
 ### Quickstart
+**Intro**: must open "*Use this guide to [verb] [outcome].*" ❌ "This guide explains how to connect React..." → ✅ "Use this guide to add sign-in to a React app using <ProductName />."
 
-**Intro sentence**
-Must open with: *"Use this guide to [verb] [outcome]."*
+**Step headings**: imperative verb phrases, not label nouns. ❌ `## Application Configuration` → ✅ `## Configure the Application`.
 
-- ❌ "This guide explains how to connect React to <ProductName />."
-- ✅ "Use this guide to add sign-in to a React app using <ProductName />."
+**No conceptual detours mid-step**: link out for background ("See [Flows](link)"); flag inline explanations longer than one sentence.
 
-**Step headings (H2 inside Stepper)**
-Must be imperative verb phrases, not label nouns:
-
-- ❌ `## Application Configuration` → `## Configure the Application`
-- ❌ `## Installation` → `## Install the SDK`
-- ❌ `## Authentication Setup` → `## Set Up Authentication`
-
-**No conceptual detours mid-step**
-If background context is needed, link out: *"See [Flows](relative-link)."* Do not embed explanations inside a step. Flag any inline concept explanation longer than one sentence.
-
-**Page ending label**
-Must be `## What's Next`. Flag any other label.
-
----
+**Page ending**: must be `## What's Next`.
 
 ### Guide
+**Intro**: leads with the task/outcome, not a page description. ❌ "This guide is about configuring X." / "This guide walks you through X." → ✅ "Configure X to enable Y in your application."
 
-**Intro sentence**
-Lead with the task or outcome the reader will achieve. Do not open with a page description.
+**No "This page/guide/document" openers in body** (docs-check only checks this in frontmatter `description`).
 
-- ❌ "This guide is about configuring X."
-- ❌ "This guide walks you through X." — starts with a page description, not the task
-- ✅ "Configure X to enable Y in your application."
-- ✅ "Add X support to your ThunderID deployment by updating the flow."
-
-**No "This page/guide/document" sentence openers in the body**
-Flag these in the body text — they signal weak intros that lead with the page rather than the task. Note: `/docs-check` only checks this pattern in the `description` frontmatter field, not in body text.
-
-**Page ending label**
-Must be `## Next Steps` or `## Related Guides`. Flag `## Go Further`, `## What's Next?` (with question mark), or anything else.
-
----
+**Page ending**: `## Next Steps` or `## Related Guides`. Flag `## Go Further`, `## What's Next?`, or others.
 
 ### Concept
+**No imperative instructions** ("Click X", "Run Y") — link to a guide instead.
 
-**No imperative instructions**
-Concept pages explain; they do not instruct. Flag any "Click X", "Run Y", "Navigate to Z". These belong in a guide — link there instead.
+**Opening defines the concept** ("What is X?"); not a task, list, or historical claim.
 
-**Opening must define the concept**
-The first paragraph must answer: *"What is X?"* It must not begin with a task, a list, or a historical claim.
+**No "How to" in title/headings** — misplaced content, move to a guide or reframe.
 
-**No "How to" in the title or any heading**
-Concept pages are not tasks. A heading like `## How to Use Flows` in a concept page signals misplaced content — either move it to a guide or reframe it as explanation.
-
-**Page ending label**
-Must be `## Related`. Flag any other label.
-
----
+**Page ending**: must be `## Related`.
 
 ### Reference
+**No narrative prose** where a table fits better.
 
-**No narrative prose where a table fits better**
-If a section describes a list of fields, parameters, or options in paragraphs, flag it and suggest a table.
+**No second-person**: imperative or third-person for parameter descriptions. ❌ "You can set this to `true`..." → ✅ "Set to `true` to enable caching."
 
-**No second-person address**
-Reference material is read non-linearly. Avoid "you" — write in the imperative or third-person for parameter descriptions.
+**No "you need to"/"you should."**
 
-- ❌ "You can set this to `true` to enable caching."
-- ✅ "Set to `true` to enable caching."
-
-**No "you need to" or "you should" constructions**
-Reference pages state facts, not guidance.
-
-**No page ending section required.** Skip the ending check.
-
----
+**No page ending section required.**
 
 ### Use-Case
+**Intro** frames scenario and audience, not a feature list.
 
-**Intro must frame scenario and audience**
-The opening paragraph must answer: what scenario does this cover, and what kind of product or user does it apply to? It must not open with a feature list.
+**"When to Choose This Pattern"**: bullet criteria, not prose.
 
-**"When to Choose This Pattern" section**
-Must use bullet criteria, not prose paragraphs. If written as prose, flag and suggest converting to a bullet list.
-
-**Page ending label**
-Must be `## Try It Out` or `## Next Steps`. Flag other labels.
+**Page ending**: `## Try It Out` or `## Next Steps`.
 
 ---
 
 ## Output Format
-
-Group findings by check category. Omit categories with no issues. For each finding:
-- Quote the original text (with line number where possible)
-- State what is wrong in one line
-- Suggest a rewrite, or mark `[needs writer input]` if context is required to fix it
+Group findings by check category; omit categories with no issues. Per finding: quote the text (with line number), state what's wrong in one line, suggest a rewrite or mark `[needs writer input]`.
 
 ```
 Reviewing: docs/content/guides/guides/applications/manage-applications.mdx
@@ -640,11 +346,9 @@ Doc type: guide
 Sibling pages read: manage-users.mdx, manage-roles.mdx
 
 CROSS-PAGE CONSISTENCY
-  ❌  This page opens each step with a one-sentence imperative ("Click Save."), but manage-users.mdx
-      and manage-roles.mdx both lead steps with a one-line rationale before the action
-      (e.g., "To scope this role to a team, select an organization unit first."). This page reads
-      terser and less explained than its siblings.
-      → Add a short rationale clause before at least the non-obvious steps, matching the sibling pattern.
+  ❌  Steps open with a bare imperative ("Click Save."); siblings lead with a one-line rationale
+      first (e.g., "To scope this role to a team, select an organization unit first.").
+      → Add a short rationale before non-obvious steps, matching sibling pattern.
 
 ACTIVE VOICE
   ❌  line 23: "The application can be deleted by navigating to Settings."
@@ -652,7 +356,7 @@ ACTIVE VOICE
 
 AI VOCABULARY
   ❌  line 41: "leverage the SDK" → "use the SDK"
-  ❌  line 67: "streamline your workflow" → cut or replace with what it specifically does
+  ❌  line 67: "streamline your workflow" → cut or state what it specifically does
 
 FILLER PHRASES
   ❌  line 12: "In order to register" → "To register"
@@ -673,14 +377,7 @@ Hard gates: 0
 Issues: 6 failures · 1 pass
 ```
 
-If a doc type check passes cleanly, include one line for it:
-```
-QUICKSTART: STEP HEADINGS
-  ✅  all H2 headings are imperative verb phrases
-```
-
-`Result` is `FAIL` only when at least one Hard Gate Rule (above) is triggered; otherwise it is `PASS` even if non-gating ❌ issues remain — those still need fixing before merge, but a human editorial call is expected on judgment-based findings (e.g., cross-page consistency, section necessity) in a way a hard gate is not. If all checks pass cleanly with zero issues:
-
+`Result` is `FAIL` only when a Hard Gate Rule triggers; otherwise `PASS` even with non-gating ❌ issues remaining (still fix before merge, but judgment-based findings get human review, unlike hard gates). All-clean:
 ```
 ─────────────────────────────────────
 Result: PASS

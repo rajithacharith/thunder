@@ -41,6 +41,7 @@ jobs:
             BASE_REF="${{ github.base_ref }}"
           fi
           FILES=$(git diff --name-only --diff-filter=ACMR "origin/${BASE_REF}...HEAD" -- '*.md' '*.mdx' ':!.agent/skills/**')
+          echo "base_ref=origin/${BASE_REF}" >> "$GITHUB_OUTPUT"
           if [ -z "$FILES" ]; then
             echo "No markdown files changed."
             echo "has_files=false" >> "$GITHUB_OUTPUT"
@@ -53,6 +54,8 @@ jobs:
 
       - name: 🔍 Run docs-lint
         if: steps.changed-files.outputs.has_files == 'true'
+        env:
+          DOCS_LINT_BASE_REF: ${{ steps.changed-files.outputs.base_ref }}
         run: |
           mapfile -t FILES < /tmp/changed-docs.txt
           ./scripts/docs-lint.sh "${FILES[@]}"

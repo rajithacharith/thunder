@@ -1,5 +1,6 @@
 ---
 title: Manage Resource Servers
+docType: guide
 sidebar_position: 14
 persona: iam
 description: Create and manage resource servers, resources, and actions to define permissions.
@@ -31,7 +32,7 @@ Resource Server (identifier: "https://api.example.com/booking", delimiter: ":")
 
 Permission strings use one of two forms. Flat permissions, for server-level actions, are just the `{action-handle}` (for example, `list`). Hierarchical permissions follow `{resource-handle}{delimiter}{action-handle}` (for example, `reservations:create`). Permission strings are not prefixed by the resource server; the resource server is identified by its `identifier`, which becomes the access token audience.
 
-- **Resource Server**: container for all resources and actions. Requires a unique `identifier`. When the identifier is set to an absolute URI, the resource server is used in [resource indicator](../resource-indicators) flows (RFC 8707).
+- **Resource Server**: container for all resources and actions. Requires a unique `identifier`. When the identifier is set to an absolute URI, the resource server is used in [resource indicator](../protocols/oauth-oidc/resource-indicators) flows (RFC 8707).
 - **Resource**: a named entity within a resource server. Resources can nest to form hierarchies.
 - **Action**: an operation that can be performed. Actions can exist at the resource server level (global) or within a specific resource.
 
@@ -293,11 +294,11 @@ curl -kL -X DELETE https://localhost:8090/resource-servers/<resource-server-id>/
 ## Best Practices
 
 - **Plan handle names before creation.** The `handle` on resources and actions is immutable, as is the resource server `delimiter`. Use lowercase with hyphens for readability (for example, `reservations`, `create`).
-- **Use absolute URIs as identifiers for RFC 8707.** The `identifier` field accepts any string, but only resource servers with absolute URI identifiers (such as `https://api.example.com/booking`) are used in [resource indicator](../resource-indicators) flows. Set a URI identifier if you need audience-restricted access tokens.
+- **Use absolute URIs as identifiers for RFC 8707.** The `identifier` field accepts any string, but only resource servers with absolute URI identifiers (such as `https://api.example.com/booking`) are used in [resource indicator](../protocols/oauth-oidc/resource-indicators) flows. Set a URI identifier if you need audience-restricted access tokens.
 - **Create one resource server per API boundary.** Separate resource servers for different microservices or applications produce cleaner permission models and more targeted access tokens.
 - **Choose the delimiter before creation.** The delimiter separates hierarchy levels in permission strings and cannot be changed. The colon (`:`) is the most common choice.
 
 ## Next Steps
 
-- [Resource Indicators](../resource-indicators): request audience-restricted access tokens targeting specific resource servers.
-- [Organization Units](../organization-units): organize resource servers within organizational boundaries.
+- [Resource Indicators](../protocols/oauth-oidc/resource-indicators), request audience-restricted access tokens targeting specific resource servers.
+- [Organization Units](../organization-units), organize resource servers within organizational boundaries.

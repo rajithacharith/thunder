@@ -1,5 +1,6 @@
 ---
 title: Protect APIs on Apache APISIX with {{ProductName}}
+docType: guide
 description: Configure Apache APISIX to validate JWT access tokens issued by {{ProductName}} and enforce scope-based authorization on your upstream APIs.
 sidebar_position: 1
 ---
@@ -15,7 +16,7 @@ This guide explains how to secure your APIs at the [Apache APISIX](https://apisi
 The guide covers two core integration approaches available in Apache APISIX:
 
 - **[Token Validation](#configure-jwt-token-validation-in-apache-apisix):** Configure APISIX to validate incoming JWTs issued by <ProductName /> using the [OpenID Connect plugin](https://apisix.apache.org/docs/apisix/plugins/openid-connect/), ensuring only authenticated requests access your APIs.
-- **[Scope-Based Authorization](#configure-scope-based-authorization-in-apache-apisix):** Leverage <ProductName />'s [RBAC](../../../../key-concepts/authorization/) capabilities to enforce strict, APISIX-driven access control policies on upstream APIs.
+- **[Scope-Based Authorization](#configure-scope-based-authorization-in-apache-apisix):** Leverage <ProductName />'s [RBAC](../../../../key-concepts/authorization) capabilities to enforce strict, APISIX-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -265,7 +266,7 @@ APISIX inspects the token, finds the `headers:read` scope absent, and returns `4
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `discovery` | `https://<THUNDER_HOST>:8090/.well-known/openid-configuration` | <ProductName />'s OIDC discovery endpoint. The plugin fetches the JWKS from here and verifies each token's signature, issuer, and expiry. The hostname must be resolvable from inside the APISIX Docker container, use your host machine's IP address, not `localhost`. |
+| `discovery` | `https://<THUNDER_HOST>:8090/.well-known/openid-configuration` | <ProductName />'s OIDC discovery endpoint. The plugin fetches the JWKS from here and verifies each token's signature, issuer, and expiry. The hostname must be resolvable from inside the APISIX Docker container. Use your host machine's IP address, not `localhost`. |
 | `client_id` | `<CLIENT_ID>` | Client ID of the <ProductName /> Backend Service application. |
 | `client_secret` | `<CLIENT_SECRET>` | Client secret of the <ProductName /> Backend Service application. |
 | `bearer_only` | `true` | Requires a Bearer token in all requests. APISIX returns `401` for requests without a valid token instead of redirecting to a sign-in page. |
