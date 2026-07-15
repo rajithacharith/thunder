@@ -101,9 +101,12 @@ func (h *jwtBearerGrantHandler) HandleGrant(ctx context.Context, tokenRequest *m
 		}
 	}
 
-	// Granted scopes = (assertion scope ∩ the app's registered scopes), further intersected with the
-	// request scope parameter when present.
-	grantedScopes := intersectScopes(assertionClaims.Scopes, oauthApp.Scopes)
+	// Granted scopes start from the assertion's scope claim, narrowed by the request scope parameter
+	// when present. The app's registered scopes are intentionally NOT intersected here: no other grant
+	// enforces oauthApp.Scopes (the scope validator is a passthrough), and resource-server-scoped
+	// narrowing below (when a resource claim is present) is the correct authorization boundary. Per-app
+	// resource authorization is expected to be handled by app-resource subscription once implemented.
+	grantedScopes := assertionClaims.Scopes
 	if tokenRequest.Scope != "" {
 		grantedScopes = intersectScopes(grantedScopes, tokenservice.ParseScopes(tokenRequest.Scope))
 	}

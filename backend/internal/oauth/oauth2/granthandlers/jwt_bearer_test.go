@@ -234,8 +234,8 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_InvalidAssertion() 
 	assert.Equal(suite.T(), "Invalid assertion", errResp.ErrorDescription)
 }
 
-// Granted scopes are the intersection of the assertion scopes, the app's registered scopes, and the
-// request scope parameter.
+// Granted scopes are the intersection of the assertion scopes and the request scope parameter. The
+// app's registered scopes are not consulted.
 func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_ScopeIntersection() {
 	now := time.Now().Unix()
 	tokenRequest := &model.TokenRequest{
@@ -245,8 +245,8 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_ScopeIntersection()
 		Scope:     "read admin",
 	}
 
-	// Assertion carries [read write], app registers [read write], request narrows to [read admin].
-	// Only "read" survives all three; "write" not requested, "admin" not registered/asserted.
+	// Assertion carries [read write], request narrows to [read admin]. Only "read" survives the
+	// intersection; "write" was not requested, "admin" was not asserted.
 	suite.mockTokenValidator.On("ValidateIDJAGAssertion", mock.Anything, testAssertion, testClientID).
 		Return(&tokenservice.IDJAGAssertionClaims{
 			Sub:    testUserID,
@@ -271,6 +271,44 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_ScopeIntersection()
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), []string{"read"}, result.AccessToken.Scopes)
+}
+
+// Regression test: previously the granted scopes were intersected with oauthApp.Scopes, so an app with
+// no registered scopes silently produced an empty-scope token. The app's registered scopes are no
+// longer consulted, so the assertion's scopes are granted in full when no request scope narrows them.
+func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_EmptyAppScopes_AssertionScopesGranted() {
+	now := time.Now().Unix()
+	suite.oauthApp.Scopes = []string{}
+	tokenRequest := &model.TokenRequest{
+		GrantType: string(providers.GrantTypeJWTBearer),
+		ClientID:  testClientID,
+		Assertion: testAssertion,
+	}
+
+	suite.mockTokenValidator.On("ValidateIDJAGAssertion", mock.Anything, testAssertion, testClientID).
+		Return(&tokenservice.IDJAGAssertionClaims{
+			Sub:    testUserID,
+			Iss:    testCustomIssuer,
+			Scopes: []string{"read", "write"},
+		}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
+		})).Return(&model.TokenDTO{
+		Token:     testTokenExchangeJWT,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  now,
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+		Subject:   testUserID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{"read", "write"}, result.AccessToken.Scopes)
 }
 
 // RFC 8707: when the assertion carries a resource claim, the resource AS resolves it to registered
