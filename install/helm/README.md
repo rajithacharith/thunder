@@ -475,10 +475,6 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.flow.maxVersionHistory`            | Maximum flow version history to retain                                                                                                                  | `3`                          |
 | `configuration.flow.autoInferRegistration`        | Enable auto-infer registration flow                                                                                                                     | `true`                       |
 | `configuration.passkey.allowedOrigins`            | Passkey allowed origins                                                                                                                                 | `[]`                         |
-| `configuration.consent.enabled`                   | Enable consent service                                                                                                                                  | `false`                      |
-| `configuration.consent.baseUrl`                   | Base URL of the consent service                                                                                                                         | `""`                         |
-| `configuration.consent.timeout`                   | Timeout for consent service API calls in seconds                                                                                                        | `5`                          |
-| `configuration.consent.maxRetries`                | Max retry attempts for transient errors when calling consent service API                                                                                | `3`                          |
 
 > CORS allowed origins are configured through the server-config `cors` section — by creating the declarative resource `config/resources/server_configs/cors.yaml` (with `server_config.store: composite` set so it loads at boot) or at runtime with `PUT /server-config/cors` — not through Helm values.
 

@@ -291,7 +291,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 	}
 
 	resolvedClient, resolvedOAuth, svcErr := s.reconcileInboundForUpdate(
-		ctx, agentID, req, clientID, clientSecret, currentName, req.Name)
+		ctx, agentID, req, clientID, clientSecret)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -916,7 +916,7 @@ func (s *agentService) createInboundForAgent(ctx context.Context, agentID string
 
 	hasSecret := clientSecret != ""
 	if err := s.inboundClientService.CreateInboundClient(
-		ctx, &client, oauthProfile, hasSecret, agent.Name,
+		ctx, &client, oauthProfile, hasSecret,
 	); err != nil {
 		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
@@ -930,7 +930,7 @@ func (s *agentService) createInboundForAgent(ctx context.Context, agentID string
 
 // reconcileInboundForUpdate creates, updates, or removes the inbound client row and returns the mutated structs.
 func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID string,
-	req *model.UpdateAgentRequest, clientID, clientSecret, oldName, newName string,
+	req *model.UpdateAgentRequest, clientID, clientSecret string,
 ) (inboundmodel.InboundClient, *providers.OAuthProfile, *tidcommon.ServiceError) {
 	wantsInbound := updateNeedsInboundClient(req)
 
@@ -959,12 +959,8 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 	hasSecret := clientSecret != ""
 
 	if hasExisting {
-		entityName := newName
-		if entityName == "" {
-			entityName = oldName
-		}
 		if err := s.inboundClientService.UpdateInboundClient(ctx, &client,
-			oauthProfile, hasSecret, clientID, entityName); err != nil {
+			oauthProfile, hasSecret, clientID); err != nil {
 			if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 				return inboundmodel.InboundClient{}, nil, svcErr
 			}
@@ -975,7 +971,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 		return client, oauthProfile, nil
 	}
 
-	if err := s.inboundClientService.CreateInboundClient(ctx, &client, oauthProfile, hasSecret, newName); err != nil {
+	if err := s.inboundClientService.CreateInboundClient(ctx, &client, oauthProfile, hasSecret); err != nil {
 		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
@@ -1517,10 +1513,6 @@ func (s *agentService) translateInboundClientError(ctx context.Context, err erro
 	if errors.As(err, &opErr) {
 		return s.translateCertOperationError(ctx, opErr)
 	}
-	var consentErr *inboundclient.ConsentSyncError
-	if errors.As(err, &consentErr) {
-		return translateConsentSyncError(consentErr)
-	}
 	return nil
 }
 
@@ -1816,12 +1808,4 @@ func (s *agentService) translateCertOperationError(
 		Key:          key,
 		DefaultValue: prefix + err.Underlying.ErrorDescription.DefaultValue,
 	})
-}
-
-// translateConsentSyncError maps a typed ConsentSyncError to an agent-service error.
-func translateConsentSyncError(err *inboundclient.ConsentSyncError) *tidcommon.ServiceError {
-	if err.IsClientError() {
-		return ErrorConsentSyncFailed.WithParams(map[string]string{"code": err.Underlying.Code})
-	}
-	return &tidcommon.InternalServerError
 }

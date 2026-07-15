@@ -572,7 +572,6 @@ type Config struct {
 	Translation          TranslationConfig                `yaml:"translation"           json:"translation"`
 	Email                EmailConfig                      `yaml:"email"                 json:"email"`
 	Notification         NotificationConfig               `yaml:"notification"          json:"notification"`
-	Consent              engineconfig.ConsentConfig       `yaml:"consent"               json:"consent"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

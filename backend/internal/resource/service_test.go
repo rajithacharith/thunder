@@ -32,25 +32,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/consent"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
-	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
-
-// newDisabledConsentServiceMock returns a consent service mock with IsEnabled returning false,
-// suitable for resource tests that do not assert on consent sync behavior.
-func newDisabledConsentServiceMock(t interface {
-	mock.TestingT
-	Cleanup(func())
-}) *consentmock.ConsentServiceInterfaceMock {
-	m := consentmock.NewConsentServiceInterfaceMock(t)
-	m.On("IsEnabled").Return(false).Maybe()
-	return m
-}
 
 const (
 	testOriginalName    = "original-name"
@@ -139,7 +126,7 @@ func (suite *ResourceServiceTestSuite) SetupTest() {
 	suite.mockOU = new(oumock.OrganizationUnitServiceInterfaceMock)
 	suite.mockTransactioner = &fakeTransactioner{}
 	suite.service, err = newResourceService(
-		suite.mockOU, newDisabledConsentServiceMock(suite.T()), suite.mockStore, suite.mockTransactioner,
+		suite.mockOU, suite.mockStore, suite.mockTransactioner,
 	)
 	suite.NoError(err)
 	// The resource service is its own dependency provider: deletion consults the registry, which
@@ -181,7 +168,7 @@ func (suite *ResourceServiceTestSuite) TestNewResourceService_InvalidDelimiter()
 	mockOU := new(oumock.OrganizationUnitServiceInterfaceMock)
 
 	mockTransactioner := &fakeTransactioner{}
-	service, err := newResourceService(mockOU, newDisabledConsentServiceMock(suite.T()), mockStore, mockTransactioner)
+	service, err := newResourceService(mockOU, mockStore, mockTransactioner)
 
 	suite.Error(err)
 	suite.Nil(service)
@@ -4675,7 +4662,7 @@ func (suite *ResourceServiceTestSuite) TestValidatePermissions() {
 			// Create a fresh service instance with the fresh mocks
 			mockTransactioner := &fakeTransactioner{}
 			svc, err := newResourceService(
-				mockOU, newDisabledConsentServiceMock(suite.T()), mockStore, mockTransactioner,
+				mockOU, mockStore, mockTransactioner,
 			)
 			suite.Require().NoError(err)
 
@@ -5010,144 +4997,6 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierCheckS
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
-func newSyncTestService(t *testing.T, consentSvc consent.ConsentServiceInterface) *resourceService {
-	t.Helper()
-	return &resourceService{
-		logger:         *log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
-		consentService: consentSvc,
-	}
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionCreate_CreatesElementWhenAbsent() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(true)
-	cm.EXPECT().
-		ValidateConsentElements(mock.Anything, "default", []string{"booking:reservations:read"}).
-		Return([]string{}, nil)
-	cm.EXPECT().
-		CreateConsentElements(mock.Anything, "default", []consent.ConsentElementInput{{
-			Name:        "booking:reservations:read",
-			Description: "Read reservations",
-			Namespace:   providers.NamespacePermission,
-		}}).
-		Return([]consent.ConsentElement{{ID: "el-1"}}, nil)
-
-	svc := newSyncTestService(suite.T(), cm)
-	err := svc.syncConsentOnPermissionCreate(
-		context.Background(), "booking:reservations:read", "Read reservations",
-	)
-	require.NoError(suite.T(), err)
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionCreate_SkipsWhenElementExists() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(true)
-	cm.EXPECT().
-		ValidateConsentElements(mock.Anything, "default", []string{"p"}).
-		Return([]string{"p"}, nil)
-
-	svc := newSyncTestService(suite.T(), cm)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionCreate(context.Background(), "p", ""))
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionCreate_NoopWhenConsentDisabled() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(false)
-
-	svc := newSyncTestService(suite.T(), cm)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionCreate(context.Background(), "p", ""))
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionCreate_NoopWhenPermissionEmpty() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.On("IsEnabled").Return(true).Maybe()
-
-	svc := newSyncTestService(suite.T(), cm)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionCreate(context.Background(), "", ""))
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionCreate_WrapsConsentServiceError() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(true)
-	se := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.EXPECT().
-		ValidateConsentElements(mock.Anything, "default", []string{"p"}).
-		Return(nil, se)
-
-	svc := newSyncTestService(suite.T(), cm)
-	err := svc.syncConsentOnPermissionCreate(context.Background(), "p", "")
-	require.Error(suite.T(), err)
-	var ce *consentSyncError
-	require.True(suite.T(), errors.As(err, &ce))
-	require.Equal(suite.T(), se, ce.Underlying)
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionDelete_DeletesExistingElement() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(true)
-	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
-		Return([]consent.ConsentElement{{ID: "el-1", Name: "p"}}, nil)
-	cm.EXPECT().DeleteConsentElement(mock.Anything, "default", "el-1").Return(nil)
-
-	svc := newSyncTestService(suite.T(), cm)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionDelete(context.Background(), "p"))
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionDelete_SuccessWhenElementAssociatedWithPurpose() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(true)
-	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
-		Return([]consent.ConsentElement{{ID: "el-1", Name: "p"}}, nil)
-	cm.EXPECT().DeleteConsentElement(mock.Anything, "default", "el-1").
-		Return(&consent.ErrorDeletingConsentElementWithAssociatedPurpose)
-
-	svc := newSyncTestService(suite.T(), cm)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionDelete(context.Background(), "p"))
-}
-
-func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionDelete_NoopWhenElementMissing() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().IsEnabled().Return(true)
-	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
-		Return([]consent.ConsentElement{}, nil)
-
-	svc := newSyncTestService(suite.T(), cm)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionDelete(context.Background(), "p"))
-}
-
-// Ensure consentService=nil receivers are tolerated (declarative paths or partial setups).
-func (suite *ResourceServiceTestSuite) TestSyncHelpers_TolerateNilConsentService() {
-	svc := newSyncTestService(suite.T(), nil)
-	require.NoError(suite.T(), svc.syncConsentOnPermissionCreate(context.Background(), "p", ""))
-	require.NoError(suite.T(), svc.syncConsentOnPermissionDelete(context.Background(), "p"))
-}
-
-func (suite *ResourceServiceTestSuite) TestWrapConsentServiceError_NilPassthrough() {
-	svc := newSyncTestService(suite.T(), nil)
-	require.Nil(suite.T(), svc.wrapConsentServiceError(context.Background(), nil))
-}
-
-func (suite *ResourceServiceTestSuite) TestConsentSyncError_Error() {
-	empty := &consentSyncError{}
-	require.Equal(suite.T(), "consent sync failed", empty.Error())
-	withUnderlying := &consentSyncError{Underlying: &tidcommon.ServiceError{
-		ErrorDescription: tidcommon.I18nMessage{DefaultValue: "boom"},
-	}}
-	require.Equal(suite.T(), "boom", withUnderlying.Error())
-}
-
-func (suite *ResourceServiceTestSuite) TestConsentSyncError_IsClientError() {
-	clientErr := &consentSyncError{Underlying: &tidcommon.ServiceError{Type: tidcommon.ClientErrorType}}
-	require.True(suite.T(), clientErr.IsClientError())
-	serverErr := &consentSyncError{Underlying: &tidcommon.ServiceError{Type: tidcommon.ServerErrorType}}
-	require.False(suite.T(), serverErr.IsClientError())
-	emptyErr := &consentSyncError{}
-	require.False(suite.T(), emptyErr.IsClientError())
-}
-
 // TestResolveResourceServerOUHandle_OUHandleResolved verifies that when only ou_handle is set,
 // it is resolved to ou_id via the OU service.
 func (suite *ResourceServiceTestSuite) TestResolveResourceServerOUHandle_OUHandleResolved() {
@@ -5223,30 +5072,6 @@ func (suite *ResourceServiceTestSuite) TestResolveResourceServerOUHandle_NilOUSe
 
 // TestResourceServerYAML_OUHandleParsed verifies that ou_handle is parsed off the YAML
 // document into the providers.ResourceServer struct.
-// newEnabledConsentServiceMock returns a consent service mock with IsEnabled returning true.
-func (suite *ResourceServiceTestSuite) newEnabledConsentServiceMock() *consentmock.ConsentServiceInterfaceMock {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.On("IsEnabled").Return(true).Maybe()
-	return cm
-}
-
-// newServiceWithConsent builds a resource service wired to the suite's store, OU, and
-// transactioner mocks but with the supplied consent service.
-func (suite *ResourceServiceTestSuite) newServiceWithConsent(
-	cm consent.ConsentServiceInterface,
-) ResourceServiceInterface {
-	svc := &resourceService{
-		logger:           *log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
-		resourceStore:    suite.mockStore,
-		ouService:        suite.mockOU,
-		consentService:   cm,
-		defaultDelimiter: ":",
-		transactioner:    suite.mockTransactioner,
-	}
-	svc.SetDependencyRegistry(resourcedependency.Initialize(svc))
-	return svc
-}
-
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_IDConflict() {
 	rs := providers.ResourceServer{
 		ID:         "rs-existing",
@@ -5325,113 +5150,6 @@ func (suite *ResourceServiceTestSuite) TestFindResourceServersByPermissions_Stor
 	result, err := suite.service.FindResourceServersByPermissions(context.Background(), perms)
 
 	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
-}
-
-func (suite *ResourceServiceTestSuite) TestCreateResource_ConsentSyncError() {
-	cm := suite.newEnabledConsentServiceMock()
-	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return([]string(nil), serverErr)
-	svc := suite.newServiceWithConsent(cm)
-
-	res := providers.Resource{Name: "test-resource", Handle: "test-handle"}
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").
-		Return(providers.ResourceServer{ID: "rs-123"}, nil)
-	suite.mockStore.On("CheckResourceHandleExists", mock.Anything,
-		"rs-123", "test-handle", (*string)(nil)).Return(false, nil)
-	suite.mockStore.On("CreateResource", mock.Anything,
-		mock.AnythingOfType("string"), "rs-123", (*string)(nil), matchResource(res)).Return(nil)
-
-	result, err := svc.CreateResource(context.Background(), "rs-123", res)
-
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
-}
-
-func (suite *ResourceServiceTestSuite) TestDeleteResource_ConsentSyncError() {
-	cm := suite.newEnabledConsentServiceMock()
-	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ListConsentElements", mock.Anything, "default", providers.NamespacePermission, "perm-x").
-		Return([]consent.ConsentElement(nil), serverErr)
-	svc := suite.newServiceWithConsent(cm)
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").
-		Return(providers.ResourceServer{ID: "rs-123"}, nil)
-	suite.mockStore.On("GetResource", mock.Anything, "res-123", "rs-123").
-		Return(providers.Resource{ID: "res-123", Permission: "perm-x"}, nil)
-	suite.mockStore.On("CheckResourceHasDependencies", mock.Anything, "res-123").
-		Return(false, nil)
-	suite.mockStore.On("DeleteResource", mock.Anything, "res-123", "rs-123").Return(nil)
-
-	err := svc.DeleteResource(context.Background(), "rs-123", "res-123")
-
-	suite.NotNil(err)
-	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
-}
-
-func (suite *ResourceServiceTestSuite) TestCreateAction_ConsentSyncError() {
-	cm := suite.newEnabledConsentServiceMock()
-	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return([]string(nil), serverErr)
-	svc := suite.newServiceWithConsent(cm)
-
-	action := providers.Action{Name: "test-action", Handle: "test-handle"}
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").
-		Return(providers.ResourceServer{ID: "rs-123"}, nil)
-	suite.mockStore.On("CheckActionHandleExists", mock.Anything,
-		"rs-123", (*string)(nil), "test-handle").Return(false, nil)
-	suite.mockStore.On("CreateAction", mock.Anything,
-		mock.AnythingOfType("string"), "rs-123", (*string)(nil), matchAction(action)).Return(nil)
-
-	result, err := svc.CreateAction(context.Background(), "rs-123", nil, action)
-
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
-}
-
-func (suite *ResourceServiceTestSuite) TestDeleteAction_LoadForConsentSyncError() {
-	cm := suite.newEnabledConsentServiceMock()
-	svc := suite.newServiceWithConsent(cm)
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").
-		Return(providers.ResourceServer{ID: "rs-123"}, nil)
-	suite.mockStore.On("IsActionExist", mock.Anything, "action-123", "rs-123", (*string)(nil)).
-		Return(true, nil)
-	suite.mockStore.On("GetAction", mock.Anything, "action-123", "rs-123", (*string)(nil)).
-		Return(providers.Action{}, errors.New("database error"))
-
-	err := svc.DeleteAction(context.Background(), "rs-123", nil, "action-123")
-
-	suite.NotNil(err)
-	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
-}
-
-func (suite *ResourceServiceTestSuite) TestDeleteAction_ConsentSyncError() {
-	cm := suite.newEnabledConsentServiceMock()
-	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ListConsentElements", mock.Anything, "default", providers.NamespacePermission, "perm-x").
-		Return([]consent.ConsentElement(nil), serverErr)
-	svc := suite.newServiceWithConsent(cm)
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").
-		Return(providers.ResourceServer{ID: "rs-123"}, nil)
-	suite.mockStore.On("IsActionExist", mock.Anything, "action-123", "rs-123", (*string)(nil)).
-		Return(true, nil)
-	suite.mockStore.On("GetAction", mock.Anything, "action-123", "rs-123", (*string)(nil)).
-		Return(providers.Action{ID: "action-123", Permission: "perm-x"}, nil)
-	suite.mockStore.On("DeleteAction", mock.Anything, "action-123", "rs-123", (*string)(nil)).
-		Return(nil)
-
-	err := svc.DeleteAction(context.Background(), "rs-123", nil, "action-123")
-
 	suite.NotNil(err)
 	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
 }

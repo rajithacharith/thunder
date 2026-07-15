@@ -32,16 +32,15 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/cert"
-	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	entitytypepkg "github.com/thunder-id/thunderid/internal/entitytype"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	sysconfig "github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/tests/mocks/certmock"
-	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
 	"github.com/thunder-id/thunderid/tests/mocks/design/layoutmock"
 	"github.com/thunder-id/thunderid/tests/mocks/design/thememock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
@@ -63,12 +62,12 @@ func (suite *InboundClientServiceTestSuite) SetupTest() {
 }
 
 func newServiceForTest(store inboundClientStoreInterface) InboundClientServiceInterface {
-	return newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil, nil)
+	return newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil)
 }
 
 func newServiceWithCert(certService cert.CertificateServiceInterface) *inboundClientService {
 	svc := newInboundClientService(
-		nil, transaction.NewNoOpTransactioner(), certService, nil, nil, nil, nil, nil, nil,
+		nil, transaction.NewNoOpTransactioner(), certService, nil, nil, nil, nil, nil,
 	)
 	return svc.(*inboundClientService)
 }
@@ -115,7 +114,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RunsValidati
 	p := validOAuthProfile()
 	p.GrantTypes = []string{"not_a_real_grant"}
 
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), p, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), p, false)
 
 	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidGrantType)
 }
@@ -128,7 +127,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_PersistsBoth
 
 	svc := newServiceForTest(store)
 	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(),
-		validOAuthProfile(), true, "")
+		validOAuthProfile(), true)
 
 	assert.NoError(suite.T(), err)
 }
@@ -139,7 +138,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_PersistsClie
 	store.EXPECT().CreateInboundClient(mock.Anything, mock.Anything).Return(nil)
 
 	svc := newServiceForTest(store)
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false)
 
 	assert.NoError(suite.T(), err)
 }
@@ -154,7 +153,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_CertificateR
 		Certificate:             &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: "{}"},
 	}
 
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), p, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), p, false)
 
 	assert.ErrorIs(suite.T(), err, ErrOAuthCertificateRequiresClientID)
 }
@@ -164,7 +163,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RefusesDecla
 	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(true)
 
 	svc := newServiceForTest(store)
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false)
 
 	assert.ErrorIs(suite.T(), err, ErrCannotModifyDeclarative)
 }
@@ -174,7 +173,7 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_RefusesDecla
 	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(true)
 
 	svc := newServiceForTest(store)
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), nil, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
 
 	assert.ErrorIs(suite.T(), err, ErrCannotModifyDeclarative)
 }
@@ -189,7 +188,7 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_CertificateR
 		Certificate:             &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: "{}"},
 	}
 
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), p, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), p, false, "")
 
 	assert.ErrorIs(suite.T(), err, ErrOAuthCertificateRequiresClientID)
 }
@@ -234,7 +233,7 @@ func (suite *InboundClientServiceTestSuite) TestStorePropagatesErrors() {
 	store.EXPECT().CreateInboundClient(mock.Anything, mock.Anything).Return(storeErr)
 
 	svc := newServiceForTest(store)
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false)
 
 	assert.ErrorIs(suite.T(), err, storeErr)
 }
@@ -532,7 +531,7 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_ValidationFa
 	p := validOAuthProfile()
 	p.GrantTypes = []string{"not_a_real_grant"}
 
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), p, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), p, false, "")
 	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidGrantType)
 }
 
@@ -544,8 +543,8 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_Succeeds() {
 	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "p1").Return(nil, ErrInboundClientNotFound)
 	store.EXPECT().CreateOAuthProfile(mock.Anything, "p1", mock.Anything).Return(nil)
 
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil, nil)
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), validOAuthProfile(), true, "", "")
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil)
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), validOAuthProfile(), true, "")
 	assert.NoError(suite.T(), err)
 }
 
@@ -1648,7 +1647,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_WithoutRecov
 	client := ptrInboundClient()
 	client.RecoveryFlowID = ""
 	client.IsRecoveryFlowEnabled = false
-	err := svc.CreateInboundClient(context.Background(), client, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), client, nil, false)
 
 	assert.NoError(suite.T(), err)
 }
@@ -1662,11 +1661,11 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_WithRecovery
 	})).Return(nil)
 	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "p1").Return(nil, ErrInboundClientNotFound)
 
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil, nil)
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil)
 	client := ptrInboundClient()
 	client.RecoveryFlowID = "recovery-1"
 	client.IsRecoveryFlowEnabled = true
-	err := svc.UpdateInboundClient(context.Background(), client, nil, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), client, nil, false, "")
 
 	assert.NoError(suite.T(), err)
 }
@@ -1691,19 +1690,6 @@ func TestCertOperationError_ErrorAndIsClientError(t *testing.T) {
 	empty := &CertOperationError{}
 	assert.Equal(t, "certificate operation failed", empty.Error())
 	assert.False(t, empty.IsClientError())
-}
-
-func (suite *InboundClientServiceTestSuite) TestConsentSyncError_ErrorAndIsClientError() {
-	e := &ConsentSyncError{Underlying: &tidcommon.ServiceError{
-		Type:             tidcommon.ServerErrorType,
-		ErrorDescription: tidcommon.I18nMessage{DefaultValue: "consent down"},
-	}}
-	assert.Equal(suite.T(), "consent down", e.Error())
-	assert.False(suite.T(), e.IsClientError())
-
-	empty := &ConsentSyncError{}
-	assert.Equal(suite.T(), "consent sync failed", empty.Error())
-	assert.False(suite.T(), empty.IsClientError())
 }
 
 // ----- validateGrantAndResponseTypes branch coverage -----
@@ -1814,82 +1800,6 @@ func (suite *InboundClientServiceTestSuite) TestValidateFKs_AllPassWithEmptyOpti
 	svc := &inboundClientService{}
 	c := &inboundmodel.InboundClient{}
 	assert.NoError(suite.T(), svc.validateFKs(context.Background(), c))
-}
-
-// ----- consent helpers -----
-
-func TestExtractRequestedAttributesFromInbound_AllNil(t *testing.T) {
-	out := extractRequestedAttributesFromInbound(nil, nil)
-	assert.Empty(t, out)
-}
-
-func TestExtractRequestedAttributesFromInbound_FromAssertionOnly(t *testing.T) {
-	c := &inboundmodel.InboundClient{
-		Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "sub"}},
-	}
-	out := extractRequestedAttributesFromInbound(c, nil)
-	assert.Len(t, out, 2)
-	assert.True(t, out["email"])
-	assert.True(t, out["sub"])
-}
-
-func TestExtractRequestedAttributesFromInbound_DedupsAcrossSources(t *testing.T) {
-	c := &inboundmodel.InboundClient{
-		Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email"}},
-	}
-	p := &providers.OAuthProfile{
-		Token: &providers.OAuthTokenConfig{
-			AccessToken: &providers.AccessTokenConfig{
-				UserConfig: &providers.AccessTokenSubConfig{Attributes: []string{"email", "given_name"}},
-			},
-			IDToken: &providers.IDTokenConfig{UserAttributes: []string{"family_name"}},
-		},
-		UserInfo: &providers.UserInfoConfig{UserAttributes: []string{"email", "picture"}},
-	}
-	out := extractRequestedAttributesFromInbound(c, p)
-	assert.Len(t, out, 4)
-	assert.True(t, out["email"])
-	assert.True(t, out["given_name"])
-	assert.True(t, out["family_name"])
-	assert.True(t, out["picture"])
-}
-
-func TestExtractRequestedAttributesFromInbound_NilSubFields(t *testing.T) {
-	p := &providers.OAuthProfile{
-		Token:    &providers.OAuthTokenConfig{},
-		UserInfo: nil,
-	}
-	out := extractRequestedAttributesFromInbound(nil, p)
-	assert.Empty(t, out)
-}
-
-func TestAttributesToPurposeElements_EmptyMap(t *testing.T) {
-	out := attributesToPurposeElements(map[string]bool{})
-	assert.Empty(t, out)
-}
-
-func TestAttributesToPurposeElements_PopulatedMap(t *testing.T) {
-	out := attributesToPurposeElements(map[string]bool{"email": true, "sub": true})
-	assert.Len(t, out, 2)
-	for _, el := range out {
-		assert.False(t, el.IsMandatory)
-	}
-}
-
-// ----- wrapConsentServiceError -----
-
-func TestWrapConsentServiceError_NilReturnsNil(t *testing.T) {
-	s := &inboundClientService{}
-	assert.Nil(t, s.wrapConsentServiceError(nil))
-}
-
-func TestWrapConsentServiceError_WrapsServiceError(t *testing.T) {
-	s := &inboundClientService{}
-	se := &tidcommon.ServiceError{Code: "X", Type: tidcommon.ClientErrorType}
-	wrapped := s.wrapConsentServiceError(se)
-	var ce *ConsentSyncError
-	assert.True(t, errors.As(wrapped, &ce))
-	assert.Equal(t, se, ce.Underlying)
 }
 
 // ----- validateUniqueInboundClientID -----
@@ -2274,13 +2184,13 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RejectsInval
 	us.EXPECT().GetAttributes(mock.Anything, entitytypepkg.TypeCategoryUser, "employee", false, true, false).
 		Return([]entitytypepkg.AttributeInfo{{Attribute: "email"}}, nil)
 
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, us, nil)
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, us)
 
 	c := validInboundClient()
 	c.AllowedUserTypes = []string{"employee"}
 	c.Assertion = &inboundmodel.AssertionConfig{UserAttributes: []string{"not_a_real_attr"}}
 
-	err := svc.CreateInboundClient(context.Background(), &c, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), &c, nil, false)
 	assert.ErrorIs(suite.T(), err, ErrInvalidUserAttribute)
 }
 
@@ -2298,14 +2208,14 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_RejectsInval
 	us.EXPECT().GetAttributes(mock.Anything, entitytypepkg.TypeCategoryUser, "employee", false, true, false).
 		Return([]entitytypepkg.AttributeInfo{{Attribute: "email"}}, nil)
 
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, us, nil)
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, us)
 
 	c := validInboundClient()
 	c.AllowedUserTypes = []string{"employee"}
 	p := validOAuthProfileData()
 	p.UserInfo = &providers.UserInfoConfig{UserAttributes: []string{"ghost"}}
 
-	err := svc.UpdateInboundClient(context.Background(), &c, p, true, "", "")
+	err := svc.UpdateInboundClient(context.Background(), &c, p, true, "")
 	assert.ErrorIs(suite.T(), err, ErrInvalidUserAttribute)
 }
 
@@ -2322,7 +2232,7 @@ func (suite *InboundClientServiceTestSuite) TestValidate_RejectsInvalidUserAttri
 	us.EXPECT().GetAttributes(mock.Anything, entitytypepkg.TypeCategoryUser, "employee", false, true, false).
 		Return([]entitytypepkg.AttributeInfo{{Attribute: "email"}}, nil)
 
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, us, nil)
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, us)
 
 	c := validInboundClient()
 	c.AllowedUserTypes = []string{"employee"}
@@ -2335,102 +2245,6 @@ func (suite *InboundClientServiceTestSuite) TestValidate_RejectsInvalidUserAttri
 
 	err := svc.Validate(context.Background(), &c, p, true)
 	assert.ErrorIs(suite.T(), err, ErrInvalidUserAttribute)
-}
-
-func newInboundClientServiceWithConsent(consentSvc consent.ConsentServiceInterface) *inboundClientService {
-	svc := newInboundClientService(
-		nil, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil, consentSvc,
-	)
-	return svc.(*inboundClientService)
-}
-
-// ----- syncConsentOnUpdate filters to attribute purposes only -----
-
-func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_IgnoresPermissionPurposeWhenSearchingForExisting() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	// ListConsentPurposes returns a permission purpose for the same app — must be filtered out.
-	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{ID: "perm-p", Namespace: providers.NamespacePermission},
-	}, nil)
-	cm.EXPECT().ValidateConsentElements(mock.Anything, "default", []string{"email"}).
-		Return([]string{"email"}, nil)
-	// Since no attribute purpose exists, a NEW one must be created (Create, not Update).
-	cm.EXPECT().CreateConsentPurpose(mock.Anything, "default",
-		mock.MatchedBy(func(input *consent.ConsentPurposeInput) bool {
-			return input.GroupID == "app1" && input.Name == consent.AttributesPurposeName("app1")
-		})).Return(&consent.ConsentPurpose{ID: "attr-new"}, nil)
-
-	svc := newInboundClientServiceWithConsent(cm)
-	client := &inboundmodel.InboundClient{Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email"}}}
-	err := svc.syncConsentOnUpdate(context.Background(), "app1", "App 1", client, nil)
-	assert.NoError(suite.T(), err)
-}
-
-func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_SkipsUpdateWhenAttributeSetUnchanged() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.MatchedBy(func(names []string) bool {
-		if len(names) != 2 {
-			return false
-		}
-		got := map[string]bool{}
-		for _, n := range names {
-			got[n] = true
-		}
-		return got["email"] && got["given_name"]
-	})).Return([]string{"email", "given_name"}, nil)
-	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{
-			ID:        "attr-p",
-			Namespace: providers.NamespaceAttribute,
-			// Elements returned by the consent service do not carry a per-element Namespace.
-			Elements: []consent.PurposeElement{
-				{Name: "email"},
-				{Name: "given_name"},
-			},
-		},
-	}, nil)
-	// Crucially, no UpdateConsentPurpose expectation — the mock would fail if it were called.
-
-	svc := newInboundClientServiceWithConsent(cm)
-	client := &inboundmodel.InboundClient{
-		Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "given_name"}},
-	}
-	err := svc.syncConsentOnUpdate(context.Background(), "app1", "App 1", client, nil)
-	assert.NoError(suite.T(), err)
-}
-
-func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_UpdatesWhenAttributeSetChanged() {
-	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
-	cm.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return([]string{"email", "family_name"}, nil)
-	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{
-			ID:        "attr-p",
-			Namespace: providers.NamespaceAttribute,
-			Elements: []consent.PurposeElement{
-				{Name: "email"},
-				{Name: "given_name"},
-			},
-		},
-	}, nil)
-	cm.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "attr-p",
-		mock.MatchedBy(func(input *consent.ConsentPurposeInput) bool {
-			if input.GroupID != "app1" {
-				return false
-			}
-			names := map[string]bool{}
-			for _, el := range input.Elements {
-				names[el.Name] = true
-			}
-			return len(names) == 2 && names["email"] && names["family_name"]
-		})).Return(&consent.ConsentPurpose{ID: "attr-p"}, nil)
-
-	svc := newInboundClientServiceWithConsent(cm)
-	client := &inboundmodel.InboundClient{
-		Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "family_name"}},
-	}
-	err := svc.syncConsentOnUpdate(context.Background(), "app1", "App 1", client, nil)
-	assert.NoError(suite.T(), err)
 }
 
 // --- GetEntityIDsByThemeID service tests ---
@@ -2471,4 +2285,107 @@ func (suite *InboundClientServiceTestSuite) TestGetEntityIDsByThemeID_Success() 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 2, total)
 	assert.Equal(suite.T(), []string{"app-1", "app-2"}, ids)
+}
+
+// ----- Inbound client attributes -----
+
+func (suite *InboundClientServiceTestSuite) TestExtractConfiguredAttributes() {
+	tests := []struct {
+		name    string
+		client  *providers.InboundClient
+		profile *providers.OAuthProfile
+		want    []string
+	}{
+		{
+			name:    "nil client and profile",
+			client:  nil,
+			profile: nil,
+			want:    []string{},
+		},
+		{
+			name: "assertion attributes only",
+			client: &providers.InboundClient{
+				Assertion: &providers.AssertionConfig{UserAttributes: []string{"email", "name"}},
+			},
+			profile: nil,
+			want:    []string{"email", "name"},
+		},
+		{
+			name:   "attributes merged and deduplicated across all sources",
+			client: &providers.InboundClient{Assertion: &providers.AssertionConfig{UserAttributes: []string{"email"}}},
+			profile: &providers.OAuthProfile{
+				Token: &providers.OAuthTokenConfig{
+					AccessToken: &providers.AccessTokenConfig{
+						UserConfig: &providers.AccessTokenSubConfig{Attributes: []string{"email", "phone"}},
+					},
+					IDToken: &providers.IDTokenConfig{UserAttributes: []string{"name"}},
+				},
+				UserInfo: &providers.UserInfoConfig{UserAttributes: []string{"phone", "address"}},
+			},
+			want: []string{"email", "phone", "name", "address"},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			got := extractConfiguredAttributes(tt.client, tt.profile)
+			assert.ElementsMatch(suite.T(), tt.want, got)
+		})
+	}
+}
+
+func (suite *InboundClientServiceTestSuite) TestGetInboundClientAttributes_MissingClientTreatedAsNoAttributes() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	store.EXPECT().GetInboundClientByEntityID(mock.Anything, "app1").
+		Return(nil, ErrInboundClientNotFound)
+	svc := newServiceForTest(store)
+
+	got, err := svc.GetInboundClientAttributes(context.Background(), "app1")
+
+	suite.Require().NoError(err)
+	suite.Require().NotNil(got)
+	assert.Equal(suite.T(), "app1", got.InboundClientID)
+	assert.Empty(suite.T(), got.Attributes)
+}
+
+func (suite *InboundClientServiceTestSuite) TestGetInboundClientAttributes_MissingProfileTreatedAsNil() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	client := &providers.InboundClient{
+		ID:        "app1",
+		Assertion: &providers.AssertionConfig{UserAttributes: []string{"email"}},
+	}
+	store.EXPECT().GetInboundClientByEntityID(mock.Anything, "app1").Return(client, nil)
+	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "app1").
+		Return(nil, ErrInboundClientNotFound)
+	svc := newServiceForTest(store)
+
+	got, err := svc.GetInboundClientAttributes(context.Background(), "app1")
+
+	suite.Require().NoError(err)
+	suite.Require().NotNil(got)
+	assert.Equal(suite.T(), "app1", got.InboundClientID)
+	assert.ElementsMatch(suite.T(), []string{"email"}, got.Attributes)
+}
+
+func (suite *InboundClientServiceTestSuite) TestListInboundClientAttributes() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	store.EXPECT().GetInboundClientList(mock.Anything, serverconst.MaxCompositeStoreRecords).
+		Return([]providers.InboundClient{
+			{ID: "app1", Assertion: &providers.AssertionConfig{UserAttributes: []string{"email"}}},
+			{ID: "app2"},
+		}, nil)
+	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "app1").
+		Return(&providers.OAuthProfile{UserInfo: &providers.UserInfoConfig{UserAttributes: []string{"name"}}}, nil)
+	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "app2").
+		Return(nil, ErrInboundClientNotFound)
+	svc := newServiceForTest(store)
+
+	got, err := svc.ListInboundClientAttributes(context.Background())
+
+	suite.Require().NoError(err)
+	suite.Require().Len(got, 2)
+	assert.Equal(suite.T(), "app1", got[0].InboundClientID)
+	assert.ElementsMatch(suite.T(), []string{"email", "name"}, got[0].Attributes)
+	assert.Equal(suite.T(), "app2", got[1].InboundClientID)
+	assert.Empty(suite.T(), got[1].Attributes)
 }

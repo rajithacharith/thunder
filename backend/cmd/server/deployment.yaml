@@ -64,10 +64,6 @@ passkey:
   allowed_origins:
     - "https://localhost:8090"
 
-consent:
-  enabled: true
-  base_url: "http://localhost:9090/api/v1"
-
 # This is a sample email client configuration. Update it with real SMTP server details for production use.
 email:
   smtp:

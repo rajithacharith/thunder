@@ -113,11 +113,11 @@ func (suite *AgentServiceTestSuite) setupService() (
 		Maybe().Return(nil)
 	mockInbound.On("Validate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Maybe().Return(nil)
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Maybe().Return(nil)
-	mockInbound.On("UpdateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).
+	mockInbound.On("UpdateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Maybe().Return(nil)
 	mockInbound.On("DeleteInboundClient", mock.Anything, mock.Anything).
 		Maybe().Return(nil)
@@ -462,8 +462,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithInboundAuth_Success() {
 		Return(createdEntity, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(nil)
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	req := &model.Agent{
 		Name:               testAgentName,
@@ -475,8 +475,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithInboundAuth_Success() {
 	suite.Require().Nil(svcErr)
 	suite.Require().NotNil(resp)
 	assert.Equal(suite.T(), "flow-1", resp.AuthFlowID)
-	mockInbound.AssertCalled(suite.T(), "CreateInboundClient", mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything)
+	mockInbound.AssertCalled(suite.T(), "CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (suite *AgentServiceTestSuite) TestCreateAgent_FlowIDResolvedToDefault() {
@@ -488,8 +488,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_FlowIDResolvedToDefault() {
 		Return(createdEntity, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			client := args.Get(1).(*inboundmodel.InboundClient)
 			client.AuthFlowID = "default-flow-id"
@@ -526,8 +526,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithOAuth_Success() {
 		Return(createdEntity, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(nil)
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	req := &model.Agent{
 		Name:               testAgentName,
@@ -576,8 +576,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundCreationFails_Compens
 		Return(createdEntity, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(inboundclient.ErrOAuthInvalidGrantType)
 
 	clearMockCalls(mockEntity, "DeleteEntity")
@@ -1075,8 +1075,8 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_FlowIDResolvedToDefault() {
 		Return(&inboundmodel.InboundClient{}, nil)
 
 	clearMockCalls(mockInbound, "UpdateInboundClient")
-	mockInbound.On("UpdateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).
+	mockInbound.On("UpdateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			client := args.Get(1).(*inboundmodel.InboundClient)
 			client.AuthFlowID = "default-flow-id"
@@ -1503,24 +1503,6 @@ func (suite *AgentServiceTestSuite) TestTranslateCertOperationError() {
 		s.translateCertOperationError(context.Background(), unknownOp).Code)
 }
 
-// --- translateConsentSyncError ---
-
-func (suite *AgentServiceTestSuite) TestTranslateConsentSyncError() {
-	clientErr := &inboundclient.ConsentSyncError{
-		Underlying: &tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: "CONSENT-1234"},
-	}
-	svcErr := translateConsentSyncError(clientErr)
-	suite.Require().NotNil(svcErr)
-	suite.Equal(ErrorConsentSyncFailed.Code, svcErr.Code)
-	suite.Equal("error.agentservice.consent_sync_failed_description", svcErr.ErrorDescription.Key)
-	suite.Contains(svcErr.ErrorDescription.String(), "CONSENT-1234")
-
-	serverErr := &inboundclient.ConsentSyncError{
-		Underlying: &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CONSENT-9000"},
-	}
-	suite.Equal(tidcommon.InternalServerError.Code, translateConsentSyncError(serverErr).Code)
-}
-
 // --- reconcileInboundForUpdate not-found short-circuit ---
 
 // When the update request has no inbound config and the existing inbound client delete returns
@@ -1876,8 +1858,8 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_WantsInbound_NoExisting_Crea
 		Return(&providers.Entity{}, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			client := args.Get(1).(*inboundmodel.InboundClient)
 			client.AuthFlowID = "new-flow-id"
@@ -1891,8 +1873,8 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_WantsInbound_NoExisting_Crea
 	suite.Require().Nil(svcErr)
 	suite.Require().NotNil(resp)
 	assert.Equal(suite.T(), "new-flow-id", resp.AuthFlowID)
-	mockInbound.AssertCalled(suite.T(), "CreateInboundClient", mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything)
+	mockInbound.AssertCalled(suite.T(), "CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (suite *AgentServiceTestSuite) TestUpdateAgent_PopulatesOUHandle_SkipsWhenOUIDEmpty() {
@@ -2479,8 +2461,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundCreationFails_NonTran
 		Return(createdEntity, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("inbound boom"))
 
 	clearMockCalls(mockEntity, "DeleteEntity")
@@ -2508,8 +2490,8 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundFails_CompensationDel
 		Return(createdEntity, nil)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("inbound boom"))
 
 	clearMockCalls(mockEntity, "DeleteEntity")
@@ -2583,8 +2565,8 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_UpdateSystemCredentialsFails
 		Return(errors.New("creds boom"))
 
 	clearMockCalls(mockInbound, "UpdateInboundClient")
-	mockInbound.On("UpdateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockInbound.On("UpdateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	clearMockCalls(mockInbound, "GetInboundClientByEntityID")
 	mockInbound.On("GetInboundClientByEntityID", mock.Anything, testAgentID).
@@ -2621,8 +2603,8 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_ReconcileUpdateInboundFails_
 		Return(&inboundmodel.InboundClient{ID: testAgentID}, nil)
 
 	clearMockCalls(mockInbound, "UpdateInboundClient")
-	mockInbound.On("UpdateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).
+	mockInbound.On("UpdateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("update boom"))
 
 	req := &model.UpdateAgentRequest{
@@ -2648,8 +2630,8 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_ReconcileCreateInboundFails_
 		Return((*inboundmodel.InboundClient)(nil), inboundclient.ErrInboundClientNotFound)
 
 	clearMockCalls(mockInbound, "CreateInboundClient")
-	mockInbound.On("CreateInboundClient", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).
+	mockInbound.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("create boom"))
 
 	req := &model.UpdateAgentRequest{

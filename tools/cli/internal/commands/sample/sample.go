@@ -222,12 +222,10 @@ func runWithResult(
 		return nil, "", "", fmt.Errorf("could not read env file: %w", err)
 	}
 
-	// Stop the product and the consent server (port 9090).
+	// Stop the product.
 	progress("Stopping " + product.Name + "...")
 	setup.KillPort(health.DefaultPort)
-	setup.KillPort(consentServerPort)
 	setup.WaitForPortFree(health.DefaultPort, 15*time.Second)
-	setup.WaitForPortFree(consentServerPort, 15*time.Second)
 
 	// Find ThunderID root and write resource files.
 	thunderRoot, err := setup.FindThunderRoot(installPath)
@@ -470,8 +468,6 @@ func splitYAML(content string) []string {
 	}
 	return docs
 }
-
-const consentServerPort = 9090
 
 // writeFrontendEnv writes frontend/.env with Thunder client config and the
 // VITE_AI_FEATURES_ENABLED flag so the React dev server picks up the right mode.

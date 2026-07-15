@@ -28,7 +28,6 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
-	"github.com/thunder-id/thunderid/internal/consent"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
@@ -135,7 +134,6 @@ type resourceService struct {
 	logger             log.Logger
 	resourceStore      resourceStoreInterface
 	ouService          oupkg.OrganizationUnitServiceInterface
-	consentService     consent.ConsentServiceInterface
 	defaultDelimiter   string
 	transactioner      transaction.Transactioner
 	dependencyRegistry resourcedependency.Registry
@@ -213,7 +211,6 @@ func (rs *resourceService) GetResourceDependencies(
 // newResourceService creates a new instance of ResourceService.
 func newResourceService(
 	ouService oupkg.OrganizationUnitServiceInterface,
-	consentService consent.ConsentServiceInterface,
 	resourceStore resourceStoreInterface,
 	transactionerInstance transaction.Transactioner,
 ) (ResourceServiceInterface, error) {
@@ -227,7 +224,6 @@ func newResourceService(
 		logger:           *log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 		resourceStore:    resourceStore,
 		ouService:        ouService,
-		consentService:   consentService,
 		defaultDelimiter: defaultDelimiter,
 		transactioner:    transactionerInstance,
 	}, nil
@@ -636,13 +632,6 @@ func (rs *resourceService) CreateResource(
 			return err
 		}
 
-		if err := rs.syncConsentOnPermissionCreate(
-			txCtx, resource.Permission, resource.Description,
-		); err != nil {
-			rs.logger.Error(ctx, "Failed to sync consent element for resource", log.Error(err))
-			return err
-		}
-
 		createdResource = &providers.Resource{
 			ID:          id,
 			Name:        resource.Name,
@@ -653,7 +642,7 @@ func (rs *resourceService) CreateResource(
 		}
 		return nil
 	}); err != nil {
-		return nil, translateTxError(err)
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return createdResource, nil
@@ -835,7 +824,7 @@ func (rs *resourceService) UpdateResource(
 		}
 		return nil
 	}); err != nil {
-		return nil, translateTxError(err)
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return updatedResource, nil
@@ -868,8 +857,7 @@ func (rs *resourceService) DeleteResource(
 	}
 
 	// Check resource exists
-	currentResource, err := rs.resourceStore.GetResource(ctx, id, resourceServerID)
-	if err != nil {
+	if _, err := rs.resourceStore.GetResource(ctx, id, resourceServerID); err != nil {
 		if errors.Is(err, errResourceNotFound) {
 			return nil // Idempotent delete
 		}
@@ -889,15 +877,9 @@ func (rs *resourceService) DeleteResource(
 			rs.logger.Error(ctx, "Failed to delete resource", log.Error(err))
 			return err
 		}
-		if err := rs.syncConsentOnPermissionDelete(
-			txCtx, currentResource.Permission,
-		); err != nil {
-			rs.logger.Error(ctx, "Failed to sync consent element for resource delete", log.Error(err))
-			return err
-		}
 		return nil
 	}); err != nil {
-		return translateTxError(err)
+		return &tidcommon.InternalServerError
 	}
 
 	return nil
@@ -983,13 +965,6 @@ func (rs *resourceService) CreateAction(
 			return err
 		}
 
-		if err := rs.syncConsentOnPermissionCreate(
-			txCtx, action.Permission, action.Description,
-		); err != nil {
-			rs.logger.Error(ctx, "Failed to sync consent element for action", log.Error(err))
-			return err
-		}
-
 		createdAction = &providers.Action{
 			ID:          id,
 			Name:        action.Name,
@@ -1000,7 +975,7 @@ func (rs *resourceService) CreateAction(
 		}
 		return nil
 	}); err != nil {
-		return nil, translateTxError(err)
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return createdAction, nil
@@ -1198,7 +1173,7 @@ func (rs *resourceService) UpdateAction(
 		}
 		return nil
 	}); err != nil {
-		return nil, translateTxError(err)
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return updatedAction, nil
@@ -1260,39 +1235,15 @@ func (rs *resourceService) DeleteAction(
 		return nil // Idempotent delete
 	}
 
-	// Fetch the action so its permission string is available for the consent sync inside the
-	// transaction. When the consent service is disabled the lookup is skipped.
-	var permissionToSync string
-	if rs.consentService != nil && rs.consentService.IsEnabled() {
-		act, getErr := rs.resourceStore.GetAction(ctx, id, resourceServerID, resID)
-		switch {
-		case getErr == nil:
-			permissionToSync = act.Permission
-		case errors.Is(getErr, errActionNotFound):
-			// Concurrent delete — nothing to sync.
-		default:
-			// Any other failure must abort: deleting without syncing would leave the consent
-			// element orphaned.
-			rs.logger.Error(ctx, "Failed to load action for consent sync", log.Error(getErr))
-			return &tidcommon.InternalServerError
-		}
-	}
-
 	// Use transaction for write operation
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.DeleteAction(txCtx, id, resourceServerID, resID); err != nil {
 			rs.logger.Error(ctx, "Failed to delete action", log.Error(err))
 			return err
 		}
-		if permissionToSync != "" {
-			if err := rs.syncConsentOnPermissionDelete(txCtx, permissionToSync); err != nil {
-				rs.logger.Error(ctx, "Failed to sync consent element for action delete", log.Error(err))
-				return err
-			}
-		}
 		return nil
 	}); err != nil {
-		return translateTxError(err)
+		return &tidcommon.InternalServerError
 	}
 
 	return nil
@@ -1600,102 +1551,4 @@ func derivePermission(
 		return parentResource.Permission + resourceServer.Delimiter + handle
 	}
 	return handle
-}
-
-// syncConsentOnPermissionCreate creates a consent element for the given permission string.
-// Idempotent: existing elements with the same name are left untouched.
-//
-// This mirrors the attribute-consent sync model used by the inbound-client service
-// (ValidateConsentElements followed by a batch CreateConsentElements for the missing ones), so that
-// resource CRUD operations participate in the same transactional consent lifecycle as the
-// neighboring services. Callers must run this inside the resource CRUD transaction; a failure
-// rolls the transaction back.
-func (rs *resourceService) syncConsentOnPermissionCreate(
-	ctx context.Context, permission, description string,
-) error {
-	if rs.consentService == nil || !rs.consentService.IsEnabled() || permission == "" {
-		return nil
-	}
-	// TODO: Replace with the resource server's actual OU when multi-OU consent is supported.
-	const ouID = "default"
-
-	validNames, err := rs.consentService.ValidateConsentElements(ctx, ouID, []string{permission})
-	if err != nil {
-		return rs.wrapConsentServiceError(ctx, err)
-	}
-	for _, n := range validNames {
-		if n == permission {
-			return nil
-		}
-	}
-
-	if _, createErr := rs.consentService.CreateConsentElements(ctx, ouID, []consent.ConsentElementInput{{
-		Name:        permission,
-		Description: description,
-		Namespace:   providers.NamespacePermission,
-	}}); createErr != nil {
-		return rs.wrapConsentServiceError(ctx, createErr)
-	}
-	return nil
-}
-
-// syncConsentOnPermissionDelete removes the consent element associated with the given permission
-// string. Idempotent: a missing element is treated as success. An element still associated with a
-// consent purpose cannot be deleted; that case is treated as success since the permission may still
-// be referenced by an existing consent record.
-func (rs *resourceService) syncConsentOnPermissionDelete(ctx context.Context, permission string) error {
-	if rs.consentService == nil || !rs.consentService.IsEnabled() || permission == "" {
-		return nil
-	}
-	// TODO: Replace with the resource server's actual OU when multi-OU consent is supported.
-	const ouID = "default"
-
-	existing, err := rs.consentService.ListConsentElements(ctx, ouID, providers.NamespacePermission, permission)
-	if err != nil {
-		return rs.wrapConsentServiceError(ctx, err)
-	}
-	if len(existing) == 0 {
-		return nil
-	}
-
-	// Permission strings are unique within an OU, so at most one element is expected.
-	if delErr := rs.consentService.DeleteConsentElement(ctx, ouID, existing[0].ID); delErr != nil {
-		if delErr.Code == consent.ErrorDeletingConsentElementWithAssociatedPurpose.Code {
-			return nil
-		}
-		return rs.wrapConsentServiceError(ctx, delErr)
-	}
-	return nil
-}
-
-// wrapConsentServiceError wraps a consent service error in a consentSyncError so that callers can
-// distinguish consent-service failures from other store or service errors during resource CRUD.
-// Server-class failures are logged here so operators get a record even when the transaction
-// closure collapses the error to InternalServerError on the way out.
-func (rs *resourceService) wrapConsentServiceError(ctx context.Context, err *tidcommon.ServiceError) error {
-	if err == nil {
-		return nil
-	}
-	if err.Type == tidcommon.ServerErrorType {
-		rs.logger.Error(ctx, "Consent service returned a server-class error during resource sync",
-			log.String("code", err.Code),
-			log.String("description", err.ErrorDescription.DefaultValue))
-	}
-	return &consentSyncError{Underlying: err}
-}
-
-// translateTxError converts a transaction-closure error into the resource service's
-// *tidcommon.ServiceError API surface. A typed *consentSyncError is mapped to
-// ErrorConsentSyncFailed for client-class consent failures (preserving the underlying code in the
-// description) and to InternalServerError otherwise. All other transaction errors collapse to
-// InternalServerError. This mirrors the inboundclient + agent/application translation pattern.
-func translateTxError(err error) *tidcommon.ServiceError {
-	var consentErr *consentSyncError
-	if errors.As(err, &consentErr) {
-		if consentErr.IsClientError() {
-			return ErrorConsentSyncFailed.WithParams(map[string]string{"code": consentErr.Underlying.Code})
-		}
-		return &tidcommon.InternalServerError
-	}
-	return &tidcommon.InternalServerError
 }

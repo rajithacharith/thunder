@@ -395,32 +395,6 @@ configuration:
     allowedOrigins:
       - "https://localhost:8090"
 
-  # Consent configuration
-  consent:
-    enabled: true
-    baseUrl: "http://localhost:9090/api/v1"
-    timeout: 5
-    maxRetries: 3
-    server:
-      port: 9090
-      hostname: "localhost"
-    database:
-      # WARNING: Use sqlite only if you are running a single pod.
-      type: "postgres" # postgres or sqlite
-      # Below two parameters are only required for sqlite
-      sqlitePath: "repository/database/consentdb.db" # Only required for sqlite
-      sqliteOptions: "_pragma=journal_mode(WAL)&_pragma=cache_size(-16000)" # Only required for sqlite
-      # Below parameters are only required for Postgres
-      name: "consentdb"
-      host: "localhost"
-      port: "5432"
-      username: "dbuser"
-      password: "dbpassword"
-      sslmode: "require"
-      max_open_conns: 500
-      max_idle_conns: 100
-      conn_max_lifetime: "3600s"
-
   # OpenID4VP (verifiable presentation / verifier) configuration.
   # Leave signingKeyId empty to keep the verifier signing engine disabled.
   openid4vp:

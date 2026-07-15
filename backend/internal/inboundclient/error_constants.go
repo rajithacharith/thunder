@@ -205,28 +205,3 @@ func (e *CertOperationError) Error() string {
 func (e *CertOperationError) IsClientError() bool {
 	return e.Underlying != nil && e.Underlying.Type == tidcommon.ClientErrorType
 }
-
-// ConsentSyncError wraps an underlying ServiceError from the consent service, allowing callers
-// to translate it into their own error vocabulary.
-type ConsentSyncError struct {
-	Underlying *tidcommon.ServiceError
-}
-
-// Error implements the error interface. Falls back through (description → code → generic) so
-// the returned string is never empty even when the underlying error has no description.
-func (e *ConsentSyncError) Error() string {
-	if e.Underlying != nil {
-		if msg := e.Underlying.ErrorDescription.DefaultValue; msg != "" {
-			return msg
-		}
-		if e.Underlying.Code != "" {
-			return "consent sync failed (code " + e.Underlying.Code + ")"
-		}
-	}
-	return "consent sync failed"
-}
-
-// IsClientError reports whether the underlying error is a client error.
-func (e *ConsentSyncError) IsClientError() bool {
-	return e.Underlying != nil && e.Underlying.Type == tidcommon.ClientErrorType
-}

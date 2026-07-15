@@ -252,14 +252,12 @@ To promote ThunderID to `staging` or `production`:
 | `thunderid-component.oauth.refresh_token_validity` | Refresh token validity in seconds | `86400` |
 | `thunderid-component.crypto.encryption.key` | Crypto encryption key (path or raw value) | `file://config/certs/crypto.key` |
 
-### Cache and Consent
+### Cache
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `thunderid-component.cache.size` | Maximum number of cache entries | `10000` |
 | `thunderid-component.cache.ttl` | Cache entry TTL in seconds | `3600` |
-| `thunderid-component.consent.enabled` | Enable consent server integration | `false` |
-| `thunderid-component.consent.baseUrl` | Consent server base URL | `http://localhost:9090/api/v1` |
 
 ### Resource Controls
 
@@ -341,13 +339,6 @@ Use this to derive the following values when configuring the Component via the U
 | `CONSOLE_CLIENT_BASE` | Base path for the Console frontend |
 | `CONSOLE_CLIENT_ID` | OAuth client ID registered for the Console |
 | `CONSOLE_SCOPES` | JSON array of OAuth scopes the Console requests |
-
-### Consent
-
-| Environment Variable | How to get |
-|---------|------------|
-| `CONSENT_ENABLED` | Set `true` to enable consent server integration |
-| `CONSENT_BASE_URL` | Base URL of the consent server |
 
 ### Database — SQLite (`dbType: sqlite`)
 

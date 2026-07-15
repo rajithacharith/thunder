@@ -1130,9 +1130,9 @@ func (m *ReplModel) killThunder() {
 	if m.proc == nil || m.proc.Process == nil {
 		return
 	}
-	// SIGTERM lets start.sh's cleanup trap kill ThunderID and the consent server
-	// before exiting. SIGKILL would bypass the trap and leave port 9090 occupied,
-	// causing the next invocation to fail.
+	// SIGTERM lets start.sh's cleanup trap stop ThunderID cleanly before exiting.
+	// SIGKILL would bypass the trap and leave the port occupied, causing the next
+	// invocation to fail.
 	m.proc.Process.Signal(syscall.SIGTERM) //nolint:errcheck
 	time.Sleep(time.Second)
 }

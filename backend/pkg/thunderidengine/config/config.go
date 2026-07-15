@@ -232,14 +232,6 @@ type FlowConfig struct {
 	Interceptors []string `yaml:"interceptors"                json:"interceptors"`
 }
 
-// ConsentConfig holds the configuration for the consent service integration.
-type ConsentConfig struct {
-	Enabled    bool   `yaml:"enabled"     json:"enabled"`
-	BaseURL    string `yaml:"base_url"    json:"base_url"`
-	Timeout    int    `yaml:"timeout"     json:"timeout"`     // HTTP request timeout in seconds. Default: 5
-	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
-}
-
 // RequiredClaim defines a claim name and expected value that must be present in the token.
 type RequiredClaim struct {
 	Claim string `yaml:"claim" json:"claim"`

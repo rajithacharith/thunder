@@ -328,8 +328,6 @@ A second `HTTPRoute` is rendered for that hostname and the Console's
 | `runtime.oauth.refreshTokenValidityPeriod` | Refresh token validity in seconds | `86400` |
 | `runtime.cache.size` | Maximum in-memory cache entries | `10000` |
 | `runtime.cache.ttl` | Cache entry TTL in seconds | `3600` |
-| `runtime.consent.enabled` | Enable consent server integration | `false` |
-| `runtime.consent.baseUrl` | Consent server base URL | `http://localhost:9090/api/v1` |
 
 ## Environment Configurations
 

@@ -115,11 +115,6 @@ console:
 # ThunderID's externally accessible URL — used in Gate and Console config.js and server config.
 serverPublicUrl: "<SERVER_PUBLIC_URL>"
 
-# Consent server integration (disabled by default).
-consent:
-  enabled: false
-  baseUrl: "http://localhost:9090/api/v1"
-
 # ── OpenChoreo platform ───────────────────────────────────────────────────────
 # Name of the ClusterDataPlane resource to bind all environments to.
 dataPlane:
