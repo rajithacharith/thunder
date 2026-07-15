@@ -1,5 +1,6 @@
 ---
 title: Protect APIs on Envoy with {{ProductName}}
+docType: guide
 description: Configure Envoy to validate JWTs issued by {{ProductName}}, enforce scope-based authorization, or call the AuthZEN policy decision point.
 sidebar_position: 2
 ---
@@ -254,7 +255,7 @@ envoy -c envoy.yaml
 
 ### Try It Out
 
-**Request without a token — expect `401 Unauthorized`:**
+**Request without a token, expect `401 Unauthorized`:**
 
 ```bash
 curl -i --location 'http://localhost:8080/resources' \
@@ -269,7 +270,7 @@ HTTP/1.1 401 Unauthorized
 Jwt is missing
 ```
 
-**Request with a valid <ProductName /> token — expect `200 OK`:**
+**Request with a valid <ProductName /> token, expect `200 OK`:**
 
 ```bash
 curl -i --location 'http://localhost:8080/resources' \
@@ -300,7 +301,7 @@ Expected response:
 
 JWT authentication confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Envoy accepts any valid <ProductName /> token for the protected route.
 
-Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Envoy then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce scope-based authorization — for example, restricting a read endpoint to tokens with `resource:read` — without changing the upstream service.
+Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Envoy then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce scope-based authorization, for example, restricting a read endpoint to tokens with `resource:read`, without changing the upstream service.
 
 The steps below build on the JWT authentication configuration from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the Envoy configuration to enforce scope validation.
 
@@ -491,7 +492,7 @@ The response confirms the scope is present:
 
 #### Call the Protected API
 
-**With a token that has the required scope — expect `200 OK`:**
+**With a token that has the required scope, expect `200 OK`:**
 
 ```bash
 curl -i --location 'http://localhost:8080/resources' \
@@ -499,7 +500,7 @@ curl -i --location 'http://localhost:8080/resources' \
   --header 'Content-Type: application/json'
 ```
 
-**With a token missing the required scope — expect `403 Forbidden`:**
+**With a token missing the required scope, expect `403 Forbidden`:**
 
 ```bash
 curl -i --location 'http://localhost:8080/resources' \
@@ -1109,7 +1110,7 @@ envoy -c envoy.yaml
 
 Use a user token or client credentials token for a subject that has the `resource:read` permission through the `Resources API Reader` role.
 
-For a [client credentials](../../../protocols/oauth-oidc/client-credentials/) token, request the corresponding scope from <ProductName />:
+For a [client credentials](../../../protocols/oauth-oidc/client-credentials) token, request the corresponding scope from <ProductName />:
 
 ```bash
 curl -kL -X POST 'https://<THUNDER_HOST>:8090/oauth2/token' \

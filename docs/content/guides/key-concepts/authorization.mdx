@@ -1,5 +1,6 @@
 ---
 title: Authorization
+docType: concept
 sidebar_position: 4
 description: Understand how access to resources is controlled through permissions, roles, and audience-restricted tokens.
 ---
@@ -22,7 +23,7 @@ When a client includes the `resource` parameter in an OAuth 2.0 request, <Produc
 
 This mechanism prevents a token issued for one service from being reused at another. A client can target a single resource server or multiple resource servers in the same request. Requested scopes are filtered to only those defined on the targeted resource servers.
 
-See [Resource Indicators](../../guides/resource-indicators) for usage details.
+See [Resource Indicators](../../guides/protocols/oauth-oidc/resource-indicators) for usage details.
 
 ## Scope Filtering
 

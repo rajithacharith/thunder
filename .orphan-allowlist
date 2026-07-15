@@ -32,7 +32,3 @@ sdks/overview   # linked from the SDKs overview nav, not a sidebar page
 use-cases/ai-agents/configure-it-yourself
 use-cases/ai-agents/identity-concepts
 use-cases/ai-agents/mcp-authorization
-use-cases/b2c/configure-it-yourself
-use-cases/b2c/customer-identity
-use-cases/b2c/overview
-use-cases/b2c/solution-patterns

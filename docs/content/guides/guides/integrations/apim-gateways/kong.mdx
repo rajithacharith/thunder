@@ -1,5 +1,6 @@
 ---
 title: Protect APIs on Kong Konnect with {{ProductName}}
+docType: guide
 description: Configure Kong Konnect to validate JWT access tokens issued by {{ProductName}} and enforce scope-based authorization on your upstream APIs.
 sidebar_position: 2
 ---
@@ -15,7 +16,7 @@ This guide explains how to secure your APIs at the [Kong Konnect](https://konghq
 The guide covers two core integration approaches available in Kong Konnect:
 
 - **[Token Validation](#configure-jwt-token-validation-in-kong-konnect):** Configure Kong to validate incoming JWTs issued by <ProductName /> using the [OpenID Connect plugin](https://developer.konghq.com/plugins/openid-connect/), ensuring only authenticated requests access your APIs.
-- **[Scope-Based Authorization](#configure-scope-based-authorization-in-kong-konnect):** Leverage <ProductName />'s [RBAC](../../../../key-concepts/authorization/) capabilities to enforce strict, Kong-driven access control policies on upstream APIs.
+- **[Scope-Based Authorization](#configure-scope-based-authorization-in-kong-konnect):** Leverage <ProductName />'s [RBAC](../../../../key-concepts/authorization) capabilities to enforce strict, Kong-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -71,8 +72,8 @@ The token is a JWT signed with RS256. Its `iss` claim is `https://<THUNDER_HOST>
 2. Open **Gateway Manager** and create a new **Control Plane** (for example, `thunder-demo`).
 3. Konnect displays a `docker run` command, pre-filled with your control plane's cluster endpoints and the generated mTLS certificates, to start a data plane node. Copy that command, and add the following so the data plane can proxy HTTPS traffic and resolve <ProductName />:
 
-   - `-p 8443:8443`, publishes the HTTPS proxy port.
-   - `--add-host=<THUNDER_HOST>:host-gateway`, maps the issuer hostname to the Docker host from inside the data plane container.
+   - `-p 8443:8443`: publishes the HTTPS proxy port.
+   - `--add-host=<THUNDER_HOST>:host-gateway`: maps the issuer hostname to the Docker host from inside the data plane container.
 
    The resulting command looks similar to this (use the exact endpoints and certificate values from Konnect):
 

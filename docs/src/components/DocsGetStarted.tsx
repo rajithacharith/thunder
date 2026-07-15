@@ -47,7 +47,7 @@ const BROWSE_TOPICS = [
   {
     label: 'Guides',
     description: 'Step-by-step how-to guides',
-    href: '/docs/next/guides/getting-started/what-is-thunderid',
+    href: '/docs/next/guides/getting-started/get-thunderid',
     icon: (
       <svg
         width="18"
