@@ -18,9 +18,9 @@
 
 import {renderHook, waitFor} from '@thunderid/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import NotificationSenderQueryKeys from '../../constants/query-keys';
-import type {NotificationSenderListResponse} from '../../models/notification-sender';
-import useNotificationSenders from '../useNotificationSenders';
+import ConnectionQueryKeys from '../../constants/query-keys';
+import type {ConnectionInstance, ConnectionListResponse} from '../../models/connection';
+import useSMSProviders from '../useSMSProviders';
 
 // Mock useConfig
 const mockGetServerUrl = vi.fn(() => 'https://api.example.com');
@@ -46,29 +46,27 @@ vi.mock('@thunderid/react', () => ({
   }),
 }));
 
-describe('useNotificationSenders', () => {
-  const mockNotificationSenders: NotificationSenderListResponse = [
+/** Builds a GET /connections envelope response for the mock HTTP client. */
+const connectionsResponse = (connections: ConnectionInstance[]): {data: ConnectionListResponse} => ({
+  data: {totalResults: connections.length, startIndex: 1, count: connections.length, connections, links: []},
+});
+
+describe('useSMSProviders', () => {
+  const mockSenders: ConnectionInstance[] = [
     {
       id: 'sender-1',
       name: 'Twilio SMS',
       description: 'Twilio SMS sender',
-      provider: 'twilio',
-      properties: [
-        {name: 'accountSid', value: 'AC123'},
-        {name: 'authToken', value: 'token123', isSecret: true},
-      ],
+      type: 'twilio',
+      categories: ['sms-provider'],
     },
-    {
-      id: 'sender-2',
-      name: 'Vonage SMS',
-      provider: 'vonage',
-    },
+    {id: 'sender-2', name: 'Vonage SMS', type: 'vonage', categories: ['sms-provider']},
     {
       id: 'sender-3',
       name: 'Custom Sender',
       description: 'Custom SMS provider',
-      provider: 'custom',
-      properties: [],
+      type: 'custom',
+      categories: ['sms-provider'],
     },
   ];
 
@@ -78,30 +76,29 @@ describe('useNotificationSenders', () => {
 
   describe('Query Configuration', () => {
     it('should use correct query keys', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      // Verify query keys are correct
-      expect(NotificationSenderQueryKeys.NOTIFICATION_SENDERS).toBe('notification-senders');
-      expect(NotificationSenderQueryKeys.MESSAGE_SENDERS).toBe('message-senders');
+      expect(ConnectionQueryKeys.CONNECTIONS).toBe('connections');
+      expect(ConnectionQueryKeys.SMS_PROVIDERS).toBe('sms-providers');
     });
 
-    it('should make HTTP request to correct endpoint', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+    it('should make HTTP request to GET /connections?category=sms-provider', async () => {
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(mockHttpRequest).toHaveBeenCalledWith({
-        url: 'https://api.example.com/notification-senders/message',
+        url: 'https://api.example.com/connections?category=sms-provider',
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -111,9 +108,9 @@ describe('useNotificationSenders', () => {
 
     it('should use server URL from config', async () => {
       mockGetServerUrl.mockReturnValueOnce('https://custom-server.com');
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -122,29 +119,29 @@ describe('useNotificationSenders', () => {
       expect(mockGetServerUrl).toHaveBeenCalled();
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'https://custom-server.com/notification-senders/message',
+          url: 'https://custom-server.com/connections?category=sms-provider',
         }),
       );
     });
   });
 
   describe('Successful Response', () => {
-    it('should return notification senders list on success', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+    it('should return the unwrapped connections array on success', async () => {
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data).toEqual(mockNotificationSenders);
+      expect(result.current.data).toEqual(mockSenders);
     });
 
     it('should return empty array when no senders exist', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: []});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse([]));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -153,34 +150,19 @@ describe('useNotificationSenders', () => {
       expect(result.current.data).toEqual([]);
     });
 
-    it('should return senders with all providers', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+    it('should return senders with all provider types', async () => {
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      const providers = result.current.data?.map((sender) => sender.provider);
-      expect(providers).toContain('twilio');
-      expect(providers).toContain('vonage');
-      expect(providers).toContain('custom');
-    });
-
-    it('should return senders with properties', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
-
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      const twilioSender = result.current.data?.find((s) => s.id === 'sender-1');
-      expect(twilioSender?.properties).toHaveLength(2);
-      expect(twilioSender?.properties?.[0]).toEqual({name: 'accountSid', value: 'AC123'});
-      expect(twilioSender?.properties?.[1]).toEqual({name: 'authToken', value: 'token123', isSecret: true});
+      const types = result.current.data?.map((sender) => sender.type);
+      expect(types).toContain('twilio');
+      expect(types).toContain('vonage');
+      expect(types).toContain('custom');
     });
   });
 
@@ -188,16 +170,16 @@ describe('useNotificationSenders', () => {
     it('should be loading initially', () => {
       mockHttpRequest.mockImplementation(() => new Promise(() => null)); // Never resolves
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
     });
 
     it('should not be loading after data is fetched', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
@@ -209,7 +191,7 @@ describe('useNotificationSenders', () => {
     it('should handle network errors', async () => {
       mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -221,7 +203,7 @@ describe('useNotificationSenders', () => {
     it('should handle server errors', async () => {
       mockHttpRequest.mockRejectedValueOnce(new Error('Internal Server Error'));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -231,7 +213,7 @@ describe('useNotificationSenders', () => {
     it('should handle 401 unauthorized errors', async () => {
       mockHttpRequest.mockRejectedValueOnce(new Error('Unauthorized'));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -241,9 +223,9 @@ describe('useNotificationSenders', () => {
 
   describe('Return Type', () => {
     it('should return UseQueryResult type', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -259,9 +241,9 @@ describe('useNotificationSenders', () => {
     });
 
     it('should have refetch function', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -273,9 +255,9 @@ describe('useNotificationSenders', () => {
 
   describe('Data Structure', () => {
     it('should return senders with required fields', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -284,14 +266,15 @@ describe('useNotificationSenders', () => {
       result.current.data?.forEach((sender) => {
         expect(sender).toHaveProperty('id');
         expect(sender).toHaveProperty('name');
-        expect(sender).toHaveProperty('provider');
+        expect(sender).toHaveProperty('type');
+        expect(sender).toHaveProperty('categories');
       });
     });
 
     it('should return senders with optional description', async () => {
-      mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
+      mockHttpRequest.mockResolvedValueOnce(connectionsResponse(mockSenders));
 
-      const {result} = renderHook(() => useNotificationSenders());
+      const {result} = renderHook(() => useSMSProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);

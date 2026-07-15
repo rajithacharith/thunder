@@ -19,7 +19,7 @@
 import {CollisionPriority} from '@dnd-kit/abstract';
 import {move} from '@dnd-kit/helpers';
 import {DragDropProvider, DragOverlay, type DragDropEventHandlers} from '@dnd-kit/react';
-import {useIdentityProviders} from '@thunderid/configure-connections';
+import {useIdentityProviders, useSMSProviders} from '@thunderid/configure-connections';
 import {Box, Button, Card, CardContent, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {ArrowLeft, Save} from '@wso2/oxygen-ui-icons-react';
 import {
@@ -80,7 +80,6 @@ import Droppable from '../dnd/Droppable';
 import ResourcePanel from '../resource-panel/ResourcePanel';
 import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPanel';
 import ValidationPanel from '../validation-panel/ValidationPanel';
-import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
 
 /**
  * Props interface of {@link DecoratedVisualFlow}
@@ -206,11 +205,11 @@ function DecoratedVisualFlow({
 
   const hasErrors = errorCount > 0;
 
-  // Fetch identity providers and notification senders to compute executor connections
+  // Fetch identity providers and SMS providers to compute executor connections
   const {data: identityProviders} = useIdentityProviders();
-  const {data: notificationSenders} = useNotificationSenders();
+  const {data: smsProviders} = useSMSProviders();
   const computedMetadata: MetadataInterface | undefined = useMemo(() => {
-    const executorConnections = computeExecutorConnections({identityProviders, notificationSenders});
+    const executorConnections = computeExecutorConnections({identityProviders, smsProviders});
 
     if (executorConnections.length === 0 && !metadata) {
       return undefined;
@@ -220,7 +219,7 @@ function DecoratedVisualFlow({
       ...metadata,
       executorConnections: executorConnections.length > 0 ? executorConnections : (metadata?.executorConnections ?? []),
     } as MetadataInterface;
-  }, [identityProviders, notificationSenders, metadata]);
+  }, [identityProviders, smsProviders, metadata]);
 
   const [isContainerDialogOpen, setIsContainerDialogOpen] = useState<boolean>(false);
   const [dropScenario, setDropScenario] = useState<
