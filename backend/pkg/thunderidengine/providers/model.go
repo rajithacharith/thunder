@@ -579,6 +579,16 @@ type OAuthTokenConfig struct {
 	AccessToken  *AccessTokenConfig  `json:"accessToken,omitempty"  yaml:"accessToken,omitempty"  jsonschema:"Access token configuration."`
 	IDToken      *IDTokenConfig      `json:"idToken,omitempty"      yaml:"idToken,omitempty"      jsonschema:"ID token configuration."`
 	RefreshToken *RefreshTokenConfig `json:"refreshToken,omitempty" yaml:"refreshToken,omitempty" jsonschema:"Refresh token configuration."`
+	IDJAG        *IDJAGConfig        `json:"idJag,omitempty"        yaml:"idJag,omitempty"        jsonschema:"Identity Assertion Authorization Grant (ID-JAG) configuration."`
+}
+
+// IDJAGConfig is the Identity Assertion Authorization Grant (ID-JAG) configuration. Enabled must be
+// true and AllowedAudiences must be non-empty for the application to request ID-JAGs via token
+// exchange.
+type IDJAGConfig struct {
+	Enabled          bool     `json:"enabled"                    yaml:"enabled"                    jsonschema:"Enable ID-JAG issuance for this application."`
+	AllowedAudiences []string `json:"allowedAudiences,omitempty" yaml:"allowedAudiences,omitempty" jsonschema:"Resource authorization server identifiers for which this application may request ID-JAGs."`
+	ValidityPeriod   int64    `json:"validityPeriod,omitempty"   yaml:"validityPeriod,omitempty"   jsonschema:"Validity period of an issued ID-JAG in seconds. Defaults to 300 when unset."`
 }
 
 // AccessTokenConfig is the access token configuration, split by token subject: an end user
