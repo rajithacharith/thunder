@@ -85,8 +85,12 @@ value:
 
 ### Start <ProductName />
 
+`--bootstrap-and-serve` requires an admin password. Provide one with the
+`--admin-password` flag (or the `ADMIN_PASSWORD` environment variable), or startup
+fails. The `--admin-username` flag is optional and defaults to `admin`.
+
 ```bash
-./start.sh --bootstrap-and-serve
+./start.sh --bootstrap-and-serve --admin-password <your-admin-password>
 ```
 
 <ProductName /> is now running and reachable at `<PUBLIC_URL>`.
