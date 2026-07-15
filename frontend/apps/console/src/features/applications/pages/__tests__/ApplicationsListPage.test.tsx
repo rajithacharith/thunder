@@ -109,7 +109,7 @@ describe('ApplicationsListPage', () => {
       const createButton = screen.getByRole('button', {name: /Create Application/i});
       await user.click(createButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/applications/create');
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/types');
     });
 
     it('should handle navigation errors gracefully', async () => {
@@ -123,7 +123,7 @@ describe('ApplicationsListPage', () => {
       const createButton = screen.getByRole('button', {name: /Create Application/i});
       await user.click(createButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/applications/create');
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/types');
 
       // Logger should log the error
       expect(consoleErrorSpy).toHaveBeenCalled();
@@ -390,7 +390,7 @@ describe('ApplicationsListPage', () => {
 
       await user.keyboard('{Enter}');
 
-      expect(mockNavigate).toHaveBeenCalledWith('/applications/create');
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/types');
     });
   });
 });

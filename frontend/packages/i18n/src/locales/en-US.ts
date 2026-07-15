@@ -2048,8 +2048,13 @@ const translations = {
     'onboarding.configure.approach.native.title': 'Embedded sign-in/sign-up components in your app',
     'onboarding.configure.approach.native.description':
       'Users will sign in or sign up through your app using the UI components or APIs provided by {{product}}. You can customize and brand the flows using the designer or through code.',
-    'onboarding.configure.stack.title': 'Choose a template',
-    'onboarding.configure.stack.subtitle': 'Select the template that best matches your application.',
+    'onboarding.configure.stack.title': 'Choose a type',
+    'onboarding.configure.stack.subtitle': 'Select the type that best matches your application.',
+    'onboarding.templateSelect.subtitle':
+      'Pick the technology that best matches your application, selecting one starts the setup.',
+    'onboarding.templateSelect.searchPlaceholder': 'Search types by name',
+    'onboarding.templateSelect.count_one': 'Showing {{count}} type',
+    'onboarding.templateSelect.count_other': 'Showing {{count}} types',
     'onboarding.configure.stack.categoriesLabel': 'Categories',
     'onboarding.configure.stack.comingSoon': 'Coming Soon',
     'onboarding.configure.stack.category.all': 'All',
