@@ -1071,6 +1071,23 @@ components:
           description: Per-user-type attribute mapping profiles.
           items:
             $ref: '#/components/schemas/UserTypeAttributeMapping'
+        accountLinking:
+          $ref: '#/components/schemas/AccountLinking'
+
+    AccountLinking:
+      type: object
+      description: >
+        Configures how an incoming federated identity is resolved to an existing local user when the
+        subject identifier does not resolve one. All configured attributes that have a value are
+        combined into a single lookup filter.
+      properties:
+        attributes:
+          type: array
+          description: External attribute names used together to resolve the local user.
+          items:
+            type: string
+          example:
+            - "email"
 
     UserTypeResolution:
       type: object
@@ -1080,8 +1097,21 @@ components:
       properties:
         default:
           type: string
-          description: Default local user type for federated just-in-time provisioning.
+          description: >
+            Fallback local user type, used when claim-driven resolution is not configured or the
+            external attribute's value does not match a mapping.
           example: "Person"
+        externalAttribute:
+          type: string
+          description: External claim whose value selects the local user type.
+          example: "user_type"
+        valueMapping:
+          type: object
+          description: Maps an external attribute value to a local user type.
+          additionalProperties:
+            type: string
+          example:
+            staff: "Employee"
 
     UserTypeAttributeMapping:
       type: object

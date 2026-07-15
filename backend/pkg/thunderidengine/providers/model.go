@@ -718,11 +718,14 @@ type AttributeMapping struct {
 	LocalAttribute    string `json:"localAttribute"    yaml:"local_attribute"`
 }
 
-// UserTypeResolution resolves which local user type an incoming identity maps to. This iteration
-// supports only Default (a fixed user type); claim-driven resolution is added later as additional
-// fields without a breaking change.
+// UserTypeResolution resolves which local user type an incoming identity maps to. Default is the
+// fixed user type applied when claim-driven resolution is not configured or does not match. When
+// ExternalAttribute and ValueMapping are set, the user type is derived from the value of the external
+// attribute (ValueMapping maps an external value to a local user type), falling back to Default.
 type UserTypeResolution struct {
-	Default string `json:"default,omitempty" yaml:"default,omitempty"`
+	Default           string            `json:"default,omitempty"           yaml:"default,omitempty"`
+	ExternalAttribute string            `json:"externalAttribute,omitempty" yaml:"externalAttribute,omitempty"`
+	ValueMapping      map[string]string `json:"valueMapping,omitempty"      yaml:"valueMapping,omitempty"`
 }
 
 // UserTypeAttributeMapping holds the external-to-local attribute mappings for a single local user type.
