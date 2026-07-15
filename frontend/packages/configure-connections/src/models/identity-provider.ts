@@ -154,16 +154,15 @@ export interface BasicIdentityProvider {
  *
  * @public
  * @remarks
- * This model is returned by:
- * - GET /identity-providers/:id (get by ID)
- * - POST /identity-providers (create)
- * - PUT /identity-providers/:id (update)
+ * This model mirrors the legacy properties-bag shape. The current identity-provider
+ * connection endpoints (GET/POST/PUT /connections/{vendor}[/:id]) return a typed,
+ * vendor-scoped body instead — see {@link ConnectionInstance} in `../models/connection`.
  *
  * Secret property values are masked in responses (shown as '******').
  *
  * @example
  * ```typescript
- * // Example response from GET /identity-providers/:id
+ * // Example legacy-shaped response
  * const googleIdp: IdentityProvider = {
  *   id: 'ec08e7c1-8f9c-4a89-b40c-886a938f7707',
  *   name: 'Google',

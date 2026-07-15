@@ -2,7 +2,6 @@
 # - SAMPLE_APP_GOOGLE_CLIENT_ID
 # - SAMPLE_APP_GOOGLE_CLIENT_SECRET
 # - SAMPLE_APP_GOOGLE_REDIRECT_URI
-# - SAMPLE_APP_GOOGLE_SCOPES
 # - SAMPLE_APP_GITHUB_CLIENT_ID
 # - SAMPLE_APP_GITHUB_CLIENT_SECRET
 # - SAMPLE_APP_GITHUB_REDIRECT_URI
@@ -65,36 +64,28 @@ schema: {
   }
 
 ---
-resource_type: identity_provider
+resource_type: connection
 id: 019e201d-5634-7533-a971-538b66914721
 name: Sample Vanilla Google
 description: Google identity provider for the sample vanilla flows
-type: GOOGLE
-properties:
-  - name: client_id
-    value: "{{.SAMPLE_APP_GOOGLE_CLIENT_ID}}"
-  - name: client_secret
-    value: "{{.SAMPLE_APP_GOOGLE_CLIENT_SECRET}}"
-    isSecret: true
-  - name: redirect_uri
-    value: "{{.SAMPLE_APP_GOOGLE_REDIRECT_URI}}"
-  - name: scopes
-    value: "{{.SAMPLE_APP_GOOGLE_SCOPES}}"
+type: google
+clientId: "{{.SAMPLE_APP_GOOGLE_CLIENT_ID}}"
+clientSecret: "{{.SAMPLE_APP_GOOGLE_CLIENT_SECRET}}"
+redirectUri: "{{.SAMPLE_APP_GOOGLE_REDIRECT_URI}}"
+scopes:
+  - openid
+  - email
+  - profile
 
 ---
-resource_type: identity_provider
+resource_type: connection
 id: 019e3a5e-2ff3-7bfb-ae19-27aada871b80
 name: Sample Vanilla GitHub
 description: GitHub identity provider for the sample vanilla flows
-type: GITHUB
-properties:
-  - name: client_id
-    value: "{{.SAMPLE_APP_GITHUB_CLIENT_ID}}"
-  - name: client_secret
-    value: "{{.SAMPLE_APP_GITHUB_CLIENT_SECRET}}"
-    isSecret: true
-  - name: redirect_uri
-    value: "{{.SAMPLE_APP_GITHUB_REDIRECT_URI}}"
+type: github
+clientId: "{{.SAMPLE_APP_GITHUB_CLIENT_ID}}"
+clientSecret: "{{.SAMPLE_APP_GITHUB_CLIENT_SECRET}}"
+redirectUri: "{{.SAMPLE_APP_GITHUB_REDIRECT_URI}}"
 
 ---
 resource_type: flow

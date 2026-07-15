@@ -860,6 +860,142 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_SecretPropertyValueUnreada
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
 }
 
+func (s *IDPUtilsTestSuite) TestResolveEndpointDefaults_EmptyBase_ReturnsInputUnchanged() {
+	defaults := map[string]string{PropAuthorizationEndpoint: googleAuthorizationEndpoint}
+
+	result := resolveEndpointDefaults(defaults, "")
+
+	s.Equal(defaults[PropAuthorizationEndpoint], result[PropAuthorizationEndpoint])
+}
+
+func (s *IDPUtilsTestSuite) TestResolveEndpointDefaults_RewritesSchemeAndHostOnly() {
+	defaults := map[string]string{
+		PropAuthorizationEndpoint: googleAuthorizationEndpoint,
+		PropTokenEndpoint:         googleTokenEndpoint,
+	}
+
+	result := resolveEndpointDefaults(defaults, "http://localhost:8093")
+
+	s.Equal("http://localhost:8093/o/oauth2/v2/auth", result[PropAuthorizationEndpoint])
+	s.Equal("http://localhost:8093/token", result[PropTokenEndpoint])
+	// Original map must not be mutated.
+	s.Equal(googleAuthorizationEndpoint, defaults[PropAuthorizationEndpoint])
+}
+
+func (s *IDPUtilsTestSuite) TestResolveEndpointDefaults_InvalidBase_ReturnsInputUnchanged() {
+	defaults := map[string]string{PropAuthorizationEndpoint: googleAuthorizationEndpoint}
+
+	result := resolveEndpointDefaults(defaults, "://not-a-valid-url")
+
+	s.Equal(defaults[PropAuthorizationEndpoint], result[PropAuthorizationEndpoint])
+}
+
+func (s *IDPUtilsTestSuite) TestResolveEndpointDefaults_HostlessBase_ReturnsInputUnchanged() {
+	defaults := map[string]string{PropAuthorizationEndpoint: googleAuthorizationEndpoint}
+
+	result := resolveEndpointDefaults(defaults, "/mock")
+
+	s.Equal(defaults[PropAuthorizationEndpoint], result[PropAuthorizationEndpoint])
+}
+
+func (s *IDPUtilsTestSuite) TestResolveEndpointDefaults_NonHTTPBase_ReturnsInputUnchanged() {
+	defaults := map[string]string{PropAuthorizationEndpoint: googleAuthorizationEndpoint}
+
+	result := resolveEndpointDefaults(defaults, "localhost:8093")
+
+	s.Equal(defaults[PropAuthorizationEndpoint], result[PropAuthorizationEndpoint])
+}
+
+func (s *IDPUtilsTestSuite) TestResolveEndpointDefaults_InvalidValue_KeepsOriginal() {
+	defaults := map[string]string{PropAuthorizationEndpoint: "http://exa\nmple.com"}
+
+	result := resolveEndpointDefaults(defaults, "http://localhost:8093")
+
+	s.Equal(defaults[PropAuthorizationEndpoint], result[PropAuthorizationEndpoint])
+}
+
+func (s *IDPUtilsTestSuite) TestEndpointBaseURLOverride_GitHub_ReturnsConfiguredValue() {
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			GitHubBaseURL: "http://localhost:8092",
+		},
+	})
+	defer config.ResetServerRuntime()
+
+	result := endpointBaseURLOverride(providers.IDPTypeGitHub)
+
+	s.Equal("http://localhost:8092", result)
+}
+
+func (s *IDPUtilsTestSuite) TestEndpointBaseURLOverride_NilRuntime_ReturnsEmpty() {
+	config.ResetServerRuntime()
+
+	result := endpointBaseURLOverride(providers.IDPTypeGoogle)
+
+	s.Empty(result)
+}
+
+func (s *IDPUtilsTestSuite) TestEndpointBaseURLOverride_NonGoogleGitHubType_ReturnsEmpty() {
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			GoogleBaseURL: "http://localhost:8093",
+			GitHubBaseURL: "http://localhost:8092",
+		},
+	})
+	defer config.ResetServerRuntime()
+
+	result := endpointBaseURLOverride(providers.IDPTypeOAuth)
+
+	s.Empty(result)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_AppliesEndpointOverride_WhenConfigured() {
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", &config.Config{
+		Crypto: config.CryptoConfig{
+			Encryption: engineconfig.EncryptionConfig{Key: testCryptoKey},
+		},
+		IdentityProvider: config.IdentityProviderConfig{
+			GoogleBaseURL: "http://localhost:8093",
+		},
+	})
+	defer config.ResetServerRuntime()
+
+	prop1, _ := cmodels.NewProperty(PropClientID, "client-id", false)
+	prop2, _ := cmodels.NewProperty(PropClientSecret, "client-secret", true)
+	prop3, _ := cmodels.NewProperty(PropRedirectURI, "https://app/callback", false)
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeGoogle, properties, s.logger)
+
+	s.Nil(err)
+	s.Equal("http://localhost:8093/o/oauth2/v2/auth", GetPropertyValue(result, PropAuthorizationEndpoint))
+	s.Equal("http://localhost:8093/token", GetPropertyValue(result, PropTokenEndpoint))
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_NoEndpointOverride_UsesRealEndpoints() {
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", &config.Config{
+		Crypto: config.CryptoConfig{
+			Encryption: engineconfig.EncryptionConfig{Key: testCryptoKey},
+		},
+	})
+	defer config.ResetServerRuntime()
+
+	prop1, _ := cmodels.NewProperty(PropClientID, "client-id", false)
+	prop2, _ := cmodels.NewProperty(PropClientSecret, "client-secret", true)
+	prop3, _ := cmodels.NewProperty(PropRedirectURI, "https://app/callback", false)
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeGoogle, properties, s.logger)
+
+	s.Nil(err)
+	s.Equal(googleAuthorizationEndpoint, GetPropertyValue(result, PropAuthorizationEndpoint))
+	s.Equal(googleTokenEndpoint, GetPropertyValue(result, PropTokenEndpoint))
+}
+
 func (s *IDPUtilsTestSuite) TestApplyAttributeMappings_NilMappings_NoOp() {
 	attrs := map[string]interface{}{"email": "user@example.com"}
 	result := ApplyAttributeMappings(attrs, nil)

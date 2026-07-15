@@ -64,6 +64,17 @@ func (s *service) listByType(ctx context.Context, idpType providers.IDPType) ([]
 	return instances, nil
 }
 
+// smsVendorName returns the connection vendor name for a message provider, or false when the
+// provider has no registered vendor (such instances are not exposed by /connections).
+func smsVendorName(provider ncommon.MessageProviderType) (string, bool) {
+	for _, vendor := range smsBackedVendors {
+		if vendor.provider == provider {
+			return vendor.name, true
+		}
+	}
+	return "", false
+}
+
 // idpVendorName returns the connection vendor name for an identity-provider type, or false
 // when the type has no registered vendor (such instances are not exposed by /connections).
 func idpVendorName(idpType providers.IDPType) (string, bool) {
@@ -130,11 +141,15 @@ func (s *service) listInstances(ctx context.Context, category connectionCategory
 			return nil, svcErr
 		}
 		for _, sender := range senders {
+			vendor, ok := smsVendorName(sender.Provider)
+			if !ok {
+				continue
+			}
 			instances = append(instances, connectionInstance{
 				ID:          sender.ID,
 				Name:        sender.Name,
 				Description: sender.Description,
-				Type:        string(sender.Provider),
+				Type:        vendor,
 				Categories:  []connectionCategory{categorySMSProvider},
 			})
 		}

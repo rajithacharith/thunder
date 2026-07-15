@@ -122,7 +122,7 @@ describe('buildConnectionCards', () => {
 
   it('ignores instances whose type has no vendor meta', () => {
     const instances: ConnectionInstance[] = [
-      {id: 's1', name: 'Custom Gateway', type: 'custom', categories: ['sms-provider']},
+      {id: 's1', name: 'Custom Gateway', type: 'sms-gateway', categories: ['sms-provider']},
     ];
     const cards = buildConnectionCards(instances, VENDORS);
     expect(cards.some((c) => c.displayName === 'Custom Gateway')).toBe(false);

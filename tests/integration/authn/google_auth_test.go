@@ -27,15 +27,15 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 )
 
 const (
 	testServerURL    = testutils.TestServerURL
 	googleAuthStart  = "/auth/oauth/google/start"
 	googleAuthFinish = "/auth/oauth/google/finish"
-	mockGooglePort   = 8090
+	mockGooglePort   = 8093
 )
 
 var googleAuthTestOU = testutils.OrganizationUnit{
@@ -148,26 +148,6 @@ func (suite *GoogleAuthTestSuite) SetupSuite() {
 				Name:     "client_secret",
 				Value:    "test-google-secret",
 				IsSecret: true,
-			},
-			{
-				Name:     "authorization_endpoint",
-				Value:    suite.mockGoogleServer.GetURL() + "/o/oauth2/v2/auth",
-				IsSecret: false,
-			},
-			{
-				Name:     "token_endpoint",
-				Value:    suite.mockGoogleServer.GetURL() + "/token",
-				IsSecret: false,
-			},
-			{
-				Name:     "userinfo_endpoint",
-				Value:    suite.mockGoogleServer.GetURL() + "/v1/userinfo",
-				IsSecret: false,
-			},
-			{
-				Name:     "jwks_endpoint",
-				Value:    suite.mockGoogleServer.GetURL() + "/oauth2/v3/certs",
-				IsSecret: false,
 			},
 			{
 				Name:     "scopes",

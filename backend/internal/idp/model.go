@@ -19,7 +19,6 @@
 package idp
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
@@ -31,42 +30,4 @@ type BasicIDPDTO struct {
 	Type         providers.IDPType
 	IsReadOnly   bool
 	IDJagEnabled *bool
-}
-
-// idpRequest represents the request payload for creating or updating an identity provider.
-type idpRequest struct {
-	Name                   string                            `json:"name"`
-	Description            string                            `json:"description,omitempty"`
-	Type                   string                            `json:"type"`
-	Properties             []cmodels.PropertyDTO             `json:"properties,omitempty"`
-	AttributeConfiguration *providers.AttributeConfiguration `json:"attributeConfiguration,omitempty"`
-}
-
-// idpResponse represents the response payload for an identity provider.
-type idpResponse struct {
-	ID                     string                            `json:"id"`
-	Name                   string                            `json:"name"`
-	Description            string                            `json:"description,omitempty"`
-	Type                   string                            `json:"type"`
-	Properties             []cmodels.PropertyDTO             `json:"properties,omitempty"`
-	AttributeConfiguration *providers.AttributeConfiguration `json:"attributeConfiguration,omitempty"`
-}
-
-// basicIDPResponse represents a basic response payload for an identity provider.
-type basicIDPResponse struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type"`
-	IsReadOnly  bool   `json:"isReadOnly"`
-}
-
-// idpRequestWithID represents the request payload for creating an identity provider from file-based config.
-type idpRequestWithID struct {
-	ID                     string                            `yaml:"id"`
-	Name                   string                            `yaml:"name"`
-	Description            string                            `yaml:"description,omitempty"`
-	Type                   string                            `yaml:"type"`
-	Properties             []cmodels.PropertyDTO             `yaml:"properties,omitempty"`
-	AttributeConfiguration *providers.AttributeConfiguration `yaml:"attribute_configuration,omitempty"`
 }

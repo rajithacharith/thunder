@@ -20,8 +20,8 @@ package export
 
 // ExportRequest represents the request structure for exporting resources.
 type ExportRequest struct {
-	Applications      []string `json:"applications,omitempty"`
-	IdentityProviders []string `json:"identityProviders,omitempty"`
+	Applications []string `json:"applications,omitempty"`
+	Connections  []string `json:"connections,omitempty"`
 }
 
 // ExportResponse represents the response structure for exporting resources.

@@ -200,13 +200,13 @@ After the import, update `deployment.yaml` with three additions and restart the 
 
 ThunderID can deliver notifications, including CIBA upgrade approvals, via SMS in addition to email. To use SMS:
 
-1. Register an SMS notification sender via the ThunderID API:
+1. Register an SMS notification sender via the ThunderID Connections API:
 
    ```bash
-   POST https://localhost:8090/notification-senders/message
+   POST https://localhost:8090/connections/{vendor}
    ```
 
-   Pass your SMS provider credentials in the request body. Copy the returned sender `id` into `thunderid-config/thunderid.env`:
+   Where `{vendor}` is `twilio`, `vonage`, or `sms-gateway` (custom webhook). Pass your SMS provider credentials in the request body. Copy the returned sender `id` into `thunderid-config/thunderid.env`:
 
    ```env
    SMS_SENDER_ID=<sender-id-from-api>

@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	mockGoogleRuntimeDataPort       = 8096
+	mockGoogleRuntimeDataPort       = 8093
 	mockNotificationRuntimeDataPort = 8097
 	mockHTTPRuntimeDataPort         = 9092
 )
@@ -385,26 +385,6 @@ func (ts *HTTPRequestRuntimeDataRegistrationFlowTestSuite) SetupSuite() {
 			{
 				Name:     "scopes",
 				Value:    "openid email profile",
-				IsSecret: false,
-			},
-			{
-				Name:     "authorization_endpoint",
-				Value:    ts.mockGoogleServer.GetURL() + "/o/oauth2/v2/auth",
-				IsSecret: false,
-			},
-			{
-				Name:     "token_endpoint",
-				Value:    ts.mockGoogleServer.GetURL() + "/token",
-				IsSecret: false,
-			},
-			{
-				Name:     "userinfo_endpoint",
-				Value:    ts.mockGoogleServer.GetURL() + "/v1/userinfo",
-				IsSecret: false,
-			},
-			{
-				Name:     "jwks_endpoint",
-				Value:    ts.mockGoogleServer.GetURL() + "/oauth2/v3/certs",
 				IsSecret: false,
 			},
 		},

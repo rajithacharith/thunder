@@ -94,7 +94,8 @@ func (s *InitTestSuite) SetupTest() {
 	s.mockIDP = idpmock.NewIDPServiceInterfaceMock(s.T())
 	s.mockNotif = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(s.T())
 	s.mux = http.NewServeMux()
-	Initialize(s.mux, s.mockIDP, s.mockNotif)
+	_, err := Initialize(s.mux, s.mockIDP, s.mockNotif)
+	s.Require().NoError(err)
 }
 
 func (s *InitTestSuite) TearDownTest() {
@@ -121,8 +122,9 @@ func (s *InitTestSuite) TestRouteTable() {
 	}
 	s.mockNotif.On("ListSendersByType", mock.Anything, ncommon.NotificationSenderTypeMessage).
 		Return([]ncommon.NotificationSenderDTO{*twilioDTO}, (*tidcommon.ServiceError)(nil))
-	s.mockNotif.On("CreateSender", mock.Anything, mock.Anything).
-		Return(twilioDTO, (*tidcommon.ServiceError)(nil))
+	s.mockNotif.On("CreateSender", mock.Anything, mock.MatchedBy(func(dto ncommon.NotificationSenderDTO) bool {
+		return dto.Provider == ncommon.MessageProviderTypeTwilio
+	})).Return(twilioDTO, (*tidcommon.ServiceError)(nil))
 	s.mockNotif.On("GetSender", mock.Anything, "tw-1").
 		Return(twilioDTO, (*tidcommon.ServiceError)(nil))
 	s.mockNotif.On("UpdateSender", mock.Anything, "tw-1", mock.Anything).
@@ -130,11 +132,28 @@ func (s *InitTestSuite) TestRouteTable() {
 	s.mockNotif.On("DeleteSender", mock.Anything, "tw-1").
 		Return((*tidcommon.ServiceError)(nil))
 
+	smsGatewayDTO := &ncommon.NotificationSenderDTO{
+		ID: "sg-1", Name: "SG", Type: ncommon.NotificationSenderTypeMessage,
+		Provider: ncommon.MessageProviderTypeCustom,
+	}
+	s.mockNotif.On("CreateSender", mock.Anything, mock.MatchedBy(func(dto ncommon.NotificationSenderDTO) bool {
+		return dto.Provider == ncommon.MessageProviderTypeCustom
+	})).Return(smsGatewayDTO, (*tidcommon.ServiceError)(nil))
+	s.mockNotif.On("GetSender", mock.Anything, "sg-1").
+		Return(smsGatewayDTO, (*tidcommon.ServiceError)(nil))
+	s.mockNotif.On("UpdateSender", mock.Anything, "sg-1", mock.Anything).
+		Return(smsGatewayDTO, (*tidcommon.ServiceError)(nil))
+	s.mockNotif.On("DeleteSender", mock.Anything, "sg-1").
+		Return((*tidcommon.ServiceError)(nil))
+
 	body, _ := json.Marshal(githubConnectionRequest{
 		Name: "GH", ClientID: "c", ClientSecret: "s", RedirectURI: "https://app/cb",
 	})
 	twilioBody, _ := json.Marshal(twilioConnectionRequest{
 		Name: "TW", AccountSID: "AC00000000000000000000000000000000", AuthToken: "tok", SenderID: "+15005550006",
+	})
+	smsGatewayBody, _ := json.Marshal(smsGatewayConnectionRequest{
+		Name: "SG", URL: "https://sms.example.com/send", HTTPMethod: "POST",
 	})
 
 	cases := []struct {
@@ -158,6 +177,13 @@ func (s *InitTestSuite) TestRouteTable() {
 		{http.MethodPut, "/connections/twilio/tw-1", twilioBody, http.StatusOK},
 		{http.MethodDelete, "/connections/twilio/tw-1", nil, http.StatusNoContent},
 		{http.MethodOptions, "/connections/twilio/tw-1", nil, http.StatusNoContent},
+		{http.MethodPost, "/connections/sms-gateway", smsGatewayBody, http.StatusCreated},
+		{http.MethodGet, "/connections/sms-gateway", nil, http.StatusOK},
+		{http.MethodOptions, "/connections/sms-gateway", nil, http.StatusNoContent},
+		{http.MethodGet, "/connections/sms-gateway/sg-1", nil, http.StatusOK},
+		{http.MethodPut, "/connections/sms-gateway/sg-1", smsGatewayBody, http.StatusOK},
+		{http.MethodDelete, "/connections/sms-gateway/sg-1", nil, http.StatusNoContent},
+		{http.MethodOptions, "/connections/sms-gateway/sg-1", nil, http.StatusNoContent},
 	}
 	for _, tc := range cases {
 		req := httptest.NewRequest(tc.method, tc.path, bytes.NewReader(tc.body))

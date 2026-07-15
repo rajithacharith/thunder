@@ -59,10 +59,10 @@ export type ConnectionInstanceCategory =
   (typeof ConnectionInstanceCategories)[keyof typeof ConnectionInstanceCategories];
 
 /**
- * Instance vendor type — ConnectionType plus 'custom' (custom SMS gateway senders, which
- * have no /connections CRUD vendor yet but appear in the flat listing).
+ * Instance vendor type — ConnectionType plus 'sms-gateway' (the generic HTTP webhook SMS
+ * sender vendor).
  */
-export type ConnectionInstanceType = ConnectionType | 'custom';
+export type ConnectionInstanceType = ConnectionType | 'sms-gateway';
 
 /**
  * One entry of GET /connections — a configured connection instance.

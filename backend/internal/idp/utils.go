@@ -20,6 +20,8 @@ package idp
 
 import (
 	"context"
+	"errors"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -27,6 +29,7 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
+	sysconfig "github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -231,6 +234,61 @@ func validateIDP(ctx context.Context, idp *providers.IDPDTO, logger *log.Logger)
 	return nil
 }
 
+// ValidateIDP validates and normalizes dto in place (required properties, type defaults, openid
+// scope), mirroring the checks the live /connections create and update APIs run. For use by the
+// declarative connection loader, which otherwise writes straight to the file store without
+// running this validation.
+func ValidateIDP(dto *providers.IDPDTO) error {
+	if svcErr := validateIDP(context.Background(), dto, log.GetLogger()); svcErr != nil {
+		return errors.New(svcErr.Error.DefaultValue)
+	}
+	return nil
+}
+
+// endpointBaseURLOverride returns the configured mock base URL for the given IDP type
+// (google/github only), or "" when no override is configured or the runtime is uninitialized.
+// Production config leaves this empty, so the real Google/GitHub endpoints are used unchanged.
+func endpointBaseURLOverride(idpType providers.IDPType) string {
+	if !sysconfig.IsServerRuntimeInitialized() {
+		return ""
+	}
+	runtime := sysconfig.GetServerRuntime()
+	switch idpType {
+	case providers.IDPTypeGoogle:
+		return runtime.Config.IdentityProvider.GoogleBaseURL
+	case providers.IDPTypeGitHub:
+		return runtime.Config.IdentityProvider.GitHubBaseURL
+	default:
+		return ""
+	}
+}
+
+// resolveEndpointDefaults returns a new map in which each endpoint value's scheme and host are
+// replaced by those of base (path and query preserved). When base is empty, isn't a valid http(s)
+// URL with a host, or a value fails to parse as a URL, that value is kept unchanged. The input map
+// is never mutated.
+func resolveEndpointDefaults(defaults map[string]string, base string) map[string]string {
+	if base == "" {
+		return defaults
+	}
+	baseURL, err := url.Parse(base)
+	if err != nil || baseURL.Host == "" || (baseURL.Scheme != "http" && baseURL.Scheme != "https") {
+		return defaults
+	}
+	resolved := make(map[string]string, len(defaults))
+	for propName, value := range defaults {
+		valueURL, err := url.Parse(value)
+		if err != nil {
+			resolved[propName] = value
+			continue
+		}
+		valueURL.Scheme = baseURL.Scheme
+		valueURL.Host = baseURL.Host
+		resolved[propName] = valueURL.String()
+	}
+	return resolved
+}
+
 // validateIDPProperties validates the properties of the identity provider based on its type.
 func validateIDPProperties(ctx context.Context, idpType providers.IDPType, properties []cmodels.Property,
 	logger *log.Logger) ([]cmodels.Property, *tidcommon.ServiceError) {
@@ -322,7 +380,8 @@ func validateIDPProperties(ctx context.Context, idpType providers.IDPType, prope
 	}
 
 	// Apply default properties
-	for propName, defaultValue := range config.Defaults {
+	effectiveDefaults := resolveEndpointDefaults(config.Defaults, endpointBaseURLOverride(idpType))
+	for propName, defaultValue := range effectiveDefaults {
 		if _, exists := filteredPropsMap[propName]; !exists {
 			err := createAndAppendProperty(ctx, filteredPropsMap, propName, defaultValue, false, logger)
 			if err != nil {

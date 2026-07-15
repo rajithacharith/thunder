@@ -391,7 +391,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Custom SMS Sender\",\n    \"description\": \"Sender for sending SMS messages using Webhook.io\",\n    \"provider\": \"custom\",\n    \"properties\": [\n        {\n            \"name\": \"content_type\",\n            \"value\": \"JSON\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"http_method\",\n            \"value\": \"POST\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"url\",\n            \"value\": \"{{MESSAGE_NOTIFICATION_SENDER_URL}}\",\n            \"isSecret\": false\n        }\n    ]\n}",
+              "raw": "{\n    \"name\": \"Custom SMS Sender\",\n    \"description\": \"Sender for sending SMS messages using Webhook.io\",\n    \"contentType\": \"JSON\",\n    \"httpMethod\": \"POST\",\n    \"url\": \"{{MESSAGE_NOTIFICATION_SENDER_URL}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -399,15 +399,15 @@
               }
             },
             "url": {
-              "raw": "https://localhost:8090/notification-senders/message",
+              "raw": "https://localhost:8090/connections/sms-gateway",
               "protocol": "https",
               "host": [
                 "localhost"
               ],
               "port": "8090",
               "path": [
-                "notification-senders",
-                "message"
+                "connections",
+                "sms-gateway"
               ]
             }
           },
@@ -460,7 +460,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Google\",\n    \"description\": \"Login with Google\",\n    \"type\": \"GOOGLE\",\n    \"properties\": [\n        {\n            \"name\": \"client_id\",\n            \"value\": \"{{GOOGLE_CLIENT_ID}}\",\n            \"isSecret\": true\n        },\n        {\n            \"name\": \"client_secret\",\n            \"value\": \"{{GOOGLE_CLIENT_SECRET}}\",\n            \"isSecret\": true\n        },\n        {\n            \"name\": \"redirect_uri\",\n            \"value\": \"{{FED_IDP_REDIRECT_URI}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"prompt\",\n            \"value\": \"select_account\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"scopes\",\n            \"value\": \"openid,email,profile\",\n            \"isSecret\": false\n        }\n    ]\n}",
+              "raw": "{\n    \"name\": \"Google\",\n    \"description\": \"Login with Google\",\n    \"clientId\": \"{{GOOGLE_CLIENT_ID}}\",\n    \"clientSecret\": \"{{GOOGLE_CLIENT_SECRET}}\",\n    \"redirectUri\": \"{{FED_IDP_REDIRECT_URI}}\",\n    \"prompt\": \"select_account\",\n    \"scopes\": [\"openid\", \"email\", \"profile\"]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -468,12 +468,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/identity-providers",
+              "raw": "{{baseUrl}}/connections/google",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "identity-providers"
+                "connections",
+                "google"
               ]
             }
           },
@@ -526,7 +527,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"GitHub\",\n    \"description\": \"Login with GitHub\",\n    \"type\": \"GITHUB\",\n    \"properties\": [\n    {\n      \"name\": \"client_id\",\n      \"value\": \"{{GITHUB_CLIENT_ID}}\",\n      \"isSecret\": true\n    },\n    {\n      \"name\": \"client_secret\",\n      \"value\": \"{{GITHUB_CLIENT_SECRET}}\",\n      \"isSecret\": true\n    },\n    {\n      \"name\": \"redirect_uri\",\n      \"value\": \"{{FED_IDP_REDIRECT_URI}}\",\n      \"isSecret\": false\n    },\n    {\n      \"name\": \"scopes\",\n      \"value\": \"user:email,read:user\",\n      \"isSecret\": false\n    },\n    {\n      \"name\": \"prompt\",\n      \"value\": \"select_account\",\n      \"isSecret\": false\n    }\n  ]\n}",
+              "raw": "{\n    \"name\": \"GitHub\",\n    \"description\": \"Login with GitHub\",\n    \"clientId\": \"{{GITHUB_CLIENT_ID}}\",\n    \"clientSecret\": \"{{GITHUB_CLIENT_SECRET}}\",\n    \"redirectUri\": \"{{FED_IDP_REDIRECT_URI}}\",\n    \"scopes\": [\"user:email\", \"read:user\"],\n    \"prompt\": \"select_account\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -534,12 +535,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/identity-providers",
+              "raw": "{{baseUrl}}/connections/github",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "identity-providers"
+                "connections",
+                "github"
               ]
             }
           },
@@ -592,7 +594,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Asgardeo Prod\",\n    \"description\": \"Login with Asgardeo\",\n    \"type\": \"OAUTH\",\n    \"properties\": [\n        {\n            \"name\": \"client_id\",\n            \"value\": \"{{ASGARDEO_CLIENT_ID}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"client_secret\",\n            \"value\": \"{{ASGARDEO_CLIENT_SECRET}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"redirect_uri\",\n            \"value\": \"{{FED_IDP_REDIRECT_URI}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"scopes\",\n            \"value\": \"openid,custom,email,groups,profile\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"authorization_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oauth2/authorize\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"token_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oauth2/token\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"userinfo_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oauth2/userinfo\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"logout_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oidc/logout\",\n            \"isSecret\": false\n        }\n    ]\n}",
+              "raw": "{\n    \"name\": \"Asgardeo Prod\",\n    \"description\": \"Login with Asgardeo\",\n    \"clientId\": \"{{ASGARDEO_CLIENT_ID}}\",\n    \"clientSecret\": \"{{ASGARDEO_CLIENT_SECRET}}\",\n    \"redirectUri\": \"{{FED_IDP_REDIRECT_URI}}\",\n    \"scopes\": [\"openid\", \"custom\", \"email\", \"groups\", \"profile\"],\n    \"authorizationEndpoint\": \"{{THUNDERID_BASE_URI}}/oauth2/authorize\",\n    \"tokenEndpoint\": \"{{THUNDERID_BASE_URI}}/oauth2/token\",\n    \"userInfoEndpoint\": \"{{THUNDERID_BASE_URI}}/oauth2/userinfo\",\n    \"logoutEndpoint\": \"{{THUNDERID_BASE_URI}}/oidc/logout\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -600,12 +602,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/identity-providers",
+              "raw": "{{baseUrl}}/connections/oauth",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "identity-providers"
+                "connections",
+                "oauth"
               ]
             }
           },

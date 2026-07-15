@@ -526,7 +526,7 @@ With environment variable substitution:
 Each document in the file must declare its type with a `resource_type: <type>` field. Supported types:
 
 ```text
-application, flow, group, identity_provider, layout, notification_sender,
+application, connection, flow, group, layout,
 organization_unit, resource_server, role, theme, translation, user, user_schema
 ```
 
@@ -614,7 +614,7 @@ declarativeResources:
     name: declarative-resources
     items:
       # Format 1: string shorthand; key and path are the same
-      - "identity_providers/google.yaml"
+      - "connections/google.yaml"
       # Format 2: explicit key/path mapping
       - key: app1
         path: applications/application1.yaml
