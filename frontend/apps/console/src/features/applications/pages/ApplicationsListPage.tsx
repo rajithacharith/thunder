@@ -42,7 +42,7 @@ export default function ApplicationsListPage(): JSX.Element {
             startIcon={<Plus size={18} />}
             onClick={() => {
               (async () => {
-                await navigate('/applications/create');
+                await navigate('/applications/types');
               })().catch((error: unknown) => {
                 logger.error('Failed to navigate to create application page', {error});
               });
