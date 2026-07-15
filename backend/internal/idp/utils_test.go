@@ -708,6 +708,119 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OIDCWithoutTokenExchange_M
 	s.Contains(err.ErrorDescription.String(), PropClientSecret)
 }
 
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_IDJagEnabledTrue_OIDC_Succeeds() {
+	// OIDC IDP with id_jag_enabled=true and no client credentials should succeed;
+	// issuer and jwks_endpoint alone are sufficient for trust-only connections.
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop3, _ := cmodels.NewProperty(PropIDJagEnabled, "true", false)
+	prop4, _ := cmodels.NewProperty(PropTokenExchangeEnabled, "false", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3, *prop4}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.Nil(err)
+	s.NotNil(result)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_IDJagEnabledFalse_OIDC_Succeeds() {
+	// OIDC IDP with id_jag_enabled=false (still present) should succeed without client credentials,
+	// since the mere presence of id_jag_enabled identifies a trust-only connection.
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop3, _ := cmodels.NewProperty(PropIDJagEnabled, "false", false)
+	prop4, _ := cmodels.NewProperty(PropTokenExchangeEnabled, "false", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3, *prop4}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.Nil(err)
+	s.NotNil(result)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_IDJagEnabled_MissingIssuer_Fails() {
+	// OIDC IDP with id_jag_enabled present but missing issuer should fail.
+	prop1, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop2, _ := cmodels.NewProperty(PropIDJagEnabled, "true", false)
+
+	properties := []cmodels.Property{*prop1, *prop2}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.String(), PropIssuer)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_IDJagEnabled_MissingJWKS_Fails() {
+	// OIDC IDP with id_jag_enabled present but missing jwks_endpoint should fail.
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropIDJagEnabled, "true", false)
+
+	properties := []cmodels.Property{*prop1, *prop2}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.String(), PropJwksEndpoint)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_IDJagEnabled_NonBooleanValue_Fails() {
+	// OIDC IDP with id_jag_enabled set to a non-boolean value should fail validation.
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop3, _ := cmodels.NewProperty(PropIDJagEnabled, "x", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.String(), PropIDJagEnabled)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeEnabled_NonBooleanValue_Fails() {
+	// OIDC IDP with token_exchange_enabled set to a non-boolean value should fail validation.
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop3, _ := cmodels.NewProperty(PropTokenExchangeEnabled, "yes", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.String(), PropTokenExchangeEnabled)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_PlainOIDCWithoutIDJagOrTokenExchange_StillFails() {
+	// Plain OIDC IDP without id_jag_enabled or token_exchange_enabled and without client
+	// credentials must still fail (regression guard for the full required set).
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+
+	properties := []cmodels.Property{*prop1, *prop2}
+
+	result, err := validateIDPProperties(context.Background(), providers.IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.String(), PropClientID)
+}
+
 func (s *IDPUtilsTestSuite) TestValidateIDP_PropertyValidationFailure() {
 	prop, _ := cmodels.NewProperty("", "value", false)
 	idp := &providers.IDPDTO{
@@ -962,4 +1075,37 @@ func (s *IDPUtilsTestSuite) TestGetMappedUserType_DynamicResolutionNestedClaim()
 	}}
 	claims := map[string]interface{}{"profile": map[string]interface{}{"role": "admin"}}
 	s.Equal("employee", GetMappedUserType(idpDTO, claims))
+}
+
+func (s *IDPUtilsTestSuite) TestIDJagEnabledFromProperties_True() {
+	prop, err := cmodels.NewProperty(PropIDJagEnabled, "true", false)
+	s.NoError(err)
+
+	got := idJagEnabledFromProperties([]cmodels.Property{*prop})
+	s.Require().NotNil(got)
+	s.True(*got)
+}
+
+func (s *IDPUtilsTestSuite) TestIDJagEnabledFromProperties_False() {
+	prop, err := cmodels.NewProperty(PropIDJagEnabled, "false", false)
+	s.NoError(err)
+
+	got := idJagEnabledFromProperties([]cmodels.Property{*prop})
+	s.Require().NotNil(got)
+	s.False(*got)
+}
+
+func (s *IDPUtilsTestSuite) TestIDJagEnabledFromProperties_Absent() {
+	prop, err := cmodels.NewProperty("client_id", "abc", false)
+	s.NoError(err)
+
+	s.Nil(idJagEnabledFromProperties([]cmodels.Property{*prop}))
+	s.Nil(idJagEnabledFromProperties(nil))
+}
+
+func (s *IDPUtilsTestSuite) TestIDJagEnabledFromProperties_InvalidValue() {
+	prop, err := cmodels.NewProperty(PropIDJagEnabled, "not-a-bool", false)
+	s.NoError(err)
+
+	s.Nil(idJagEnabledFromProperties([]cmodels.Property{*prop}))
 }

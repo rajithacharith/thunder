@@ -101,4 +101,49 @@ describe('ConnectionCreateWizardPage', () => {
 
     expect(navigateMock).toHaveBeenCalledWith('/connections/oidc/conn-1');
   });
+
+  it('renders a custom configure step instead of the generic ConnectionForm for a type with a slot', () => {
+    render(<ConnectionCreateWizardPage customConfigureSteps={{'trusted-idp': <div data-testid="custom-step" />}} />);
+
+    fireEvent.click(screen.getByTestId('connection-type-option-trusted-idp'));
+    fireEvent.click(screen.getByTestId('wizard-continue'));
+
+    expect(screen.getByTestId('custom-step')).toBeInTheDocument();
+    expect(screen.queryByTestId('stub-connection-form')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('wizard-create')).not.toBeInTheDocument();
+  });
+
+  it('returns to the type step when Back is clicked from a custom configure step', () => {
+    render(<ConnectionCreateWizardPage customConfigureSteps={{'trusted-idp': <div data-testid="custom-step" />}} />);
+
+    fireEvent.click(screen.getByTestId('connection-type-option-trusted-idp'));
+    fireEvent.click(screen.getByTestId('wizard-continue'));
+    fireEvent.click(screen.getByRole('button', {name: /back/i}));
+
+    expect(screen.getByText('What kind of connection do you want to add?')).toBeInTheDocument();
+  });
+
+  it('renders the generic ConnectionForm for a type with no custom configure step', () => {
+    render(<ConnectionCreateWizardPage customConfigureSteps={{'trusted-idp': <div data-testid="custom-step" />}} />);
+
+    fireEvent.click(screen.getByTestId('connection-type-option-oidc'));
+    fireEvent.click(screen.getByTestId('wizard-continue'));
+
+    expect(screen.getByTestId('stub-connection-form')).toBeInTheDocument();
+    expect(screen.queryByTestId('custom-step')).not.toBeInTheDocument();
+  });
+
+  it('shows three type cards and no trusted-idp card without customConfigureSteps', () => {
+    render(<ConnectionCreateWizardPage />);
+
+    expect(screen.getAllByTestId(/^connection-type-option-/)).toHaveLength(3);
+    expect(screen.queryByTestId('connection-type-option-trusted-idp')).not.toBeInTheDocument();
+  });
+
+  it('shows four type cards including trusted-idp when its customConfigureSteps slot is wired', () => {
+    render(<ConnectionCreateWizardPage customConfigureSteps={{'trusted-idp': <div data-testid="custom-step" />}} />);
+
+    expect(screen.getAllByTestId(/^connection-type-option-/)).toHaveLength(4);
+    expect(screen.getByTestId('connection-type-option-trusted-idp')).toBeInTheDocument();
+  });
 });

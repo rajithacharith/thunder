@@ -19,13 +19,15 @@
 import {useConfig} from '@thunderid/contexts';
 import {AppBreadcrumbs, Box, Button, Paper, Stack, Typography} from '@wso2/oxygen-ui';
 import {ChevronLeft} from '@wso2/oxygen-ui-icons-react';
-import {type JSX, useMemo, useState} from 'react';
+import {type JSX, type ReactNode, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useCreateConnection from '../api/useCreateConnection';
 import ConnectionForm from '../components/ConnectionForm';
 import ConnectionFullPageLayout from '../components/ConnectionFullPageLayout';
-import SelectConnectionType from '../components/create-connection/SelectConnectionType';
+import SelectConnectionType, {
+  type SelectableConnectionType,
+} from '../components/create-connection/SelectConnectionType';
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
 import {type ConnectionResponse, type ConnectionType, ConnectionTypes} from '../models/connection';
@@ -41,23 +43,42 @@ const Step = {TYPE: 'TYPE', CONFIGURE: 'CONFIGURE'} as const;
 type Step = (typeof Step)[keyof typeof Step];
 const ALL_STEPS: Step[] = [Step.TYPE, Step.CONFIGURE];
 
+interface ConnectionCreateWizardPageProps {
+  /**
+   * Renders a fully custom configure step (step 2) for the given selectable-type key instead of
+   * the generic `ConnectionForm` + create button — e.g. a UI-only pseudo-type like
+   * `'trusted-idp'` that has no backend /connections vendor route of its own. The supplied node
+   * owns its own submit action; the wizard still provides the chrome (breadcrumb, progress,
+   * Back, and the X close button).
+   */
+  customConfigureSteps?: Record<string, ReactNode>;
+}
+
 /**
  * Two-step full-screen wizard for adding a custom connection: pick the type, then enter the
- * credentials/endpoints (with a connection name) and create it.
+ * credentials/endpoints (with a connection name) and create it. A type can opt out of the
+ * generic configure step via `customConfigureSteps`.
  */
-export default function ConnectionCreateWizardPage(): JSX.Element {
+export default function ConnectionCreateWizardPage({
+  customConfigureSteps = undefined,
+}: ConnectionCreateWizardPageProps): JSX.Element {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
   const {getServerUrl} = useConfig();
 
   const [step, setStep] = useState<Step>(Step.TYPE);
-  const [selectedType, setSelectedType] = useState<ConnectionType | null>(null);
+  const [selectedType, setSelectedType] = useState<SelectableConnectionType | null>(null);
   const [editedValues, setEditedValues] = useState<ConnectionFormValues>({});
   const [nameError, setNameError] = useState<string | null>(null);
 
+  const customStep: ReactNode | undefined = selectedType ? customConfigureSteps?.[selectedType] : undefined;
+  const customTypes: string[] = useMemo(() => Object.keys(customConfigureSteps ?? {}), [customConfigureSteps]);
+
   // Defaults to OIDC before the user picks a type on the first step; the SMS placeholder is
-  // disabled and unselectable, so once chosen selectedType is always a wired connection type.
-  const activeType: ConnectionType = selectedType ?? ConnectionTypes.OIDC;
+  // disabled and unselectable, and pseudo-types render via `customStep` instead, so this is only
+  // read when rendering the generic configure step.
+  const activeType: ConnectionType =
+    selectedType && selectedType !== 'trusted-idp' ? selectedType : ConnectionTypes.OIDC;
   const createMutation = useCreateConnection(activeType);
   const meta = VENDOR_META_BY_TYPE[activeType];
   const fields = CONNECTION_FORM_FIELDS[activeType];
@@ -105,7 +126,7 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
     >
       {step === Step.TYPE && (
         <>
-          <SelectConnectionType selectedType={selectedType} onSelect={setSelectedType} />
+          <SelectConnectionType selectedType={selectedType} onSelect={setSelectedType} customTypes={customTypes} />
           <Box sx={{mt: 4, display: 'flex', justifyContent: 'flex-end'}}>
             <Button
               variant="contained"
@@ -119,7 +140,19 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
         </>
       )}
 
-      {step === Step.CONFIGURE && (
+      {step === Step.CONFIGURE && customStep && (
+        <Stack direction="column" spacing={3}>
+          {customStep}
+
+          <Box sx={{display: 'flex', justifyContent: 'flex-start'}}>
+            <Button variant="outlined" startIcon={<ChevronLeft size={16} />} onClick={() => setStep(Step.TYPE)}>
+              {t('common:actions.back')}
+            </Button>
+          </Box>
+        </Stack>
+      )}
+
+      {step === Step.CONFIGURE && !customStep && (
         <Stack direction="column" spacing={3}>
           <Stack direction="column" spacing={1}>
             <Typography variant="h4" fontWeight={700}>

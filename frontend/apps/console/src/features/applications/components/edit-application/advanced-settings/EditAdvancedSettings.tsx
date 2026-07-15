@@ -19,12 +19,13 @@
 import {Stack} from '@wso2/oxygen-ui';
 import AttestationSection from './AttestationSection';
 import CertificateSection from './CertificateSection';
+import IdentityAssertionsSection from './IdentityAssertionsSection';
 import MetadataSection from './MetadataSection';
 import OAuth2ConfigSection from './OAuth2ConfigSection';
 import type {Application} from '../../../models/application';
 import type {ApplicationTemplate} from '../../../models/application-templates';
 import type {InboundAuthConfig} from '../../../models/inbound-auth';
-import type {AttestationConfig, OAuth2Config} from '../../../models/oauth';
+import type {AttestationConfig, OAuth2Config, OAuth2Token} from '../../../models/oauth';
 
 /**
  * Props for the {@link EditAdvancedSettings} component.
@@ -62,6 +63,11 @@ interface EditAdvancedSettingsProps {
    * capability, so it appears only for templates that support it (e.g. mobile).
    */
   showAttestation?: boolean;
+  /**
+   * Callback to report whether the identity assertions (ID-JAG) section currently has
+   * validation errors (feeds the Save bar).
+   */
+  onValidationChange?: (hasErrors: boolean) => void;
 }
 
 type OAuthCertificate = {type: string; value?: string} | null;
@@ -85,6 +91,7 @@ export default function EditAdvancedSettings({
   onFieldChange,
   allowedGrantTypes = undefined,
   showAttestation = false,
+  onValidationChange = undefined,
 }: EditAdvancedSettingsProps) {
   const handleOAuth2ConfigChange = (updates: Partial<OAuth2Config>) => {
     const currentInboundAuth: InboundAuthConfig[] = editedApp.inboundAuthConfig ?? application.inboundAuthConfig ?? [];
@@ -109,6 +116,23 @@ export default function EditAdvancedSettings({
   // the user clearing attestation. Only fall back to the stored value when the field is untouched.
   const currentAttestation = 'attestation' in editedApp ? editedApp.attestation : application.attestation;
 
+  const handleTokenConfigChange = (tokenUpdates: Partial<OAuth2Token>, oauth2Updates: Partial<OAuth2Config> = {}) => {
+    const currentInboundAuth: InboundAuthConfig[] = editedApp.inboundAuthConfig ?? application.inboundAuthConfig ?? [];
+    const updatedInboundAuth = currentInboundAuth.map((auth) =>
+      auth.type === 'oauth2'
+        ? {
+            ...auth,
+            config: {
+              ...auth.config,
+              ...oauth2Updates,
+              token: {...auth.config?.token, ...tokenUpdates},
+            },
+          }
+        : auth,
+    );
+    onFieldChange('inboundAuthConfig', updatedInboundAuth);
+  };
+
   return (
     <Stack spacing={3}>
       <OAuth2ConfigSection
@@ -118,6 +142,14 @@ export default function EditAdvancedSettings({
         disabled={application.isReadOnly}
         allowedGrantTypes={allowedGrantTypes}
       />
+      {oauth2Config && (
+        <IdentityAssertionsSection
+          oauth2Config={oauth2Config}
+          onTokenConfigChange={handleTokenConfigChange}
+          disabled={application.isReadOnly}
+          onValidationChange={onValidationChange}
+        />
+      )}
       <CertificateSection
         certificate={oauth2Config?.certificate}
         onCertificateChange={handleCertificateChange}

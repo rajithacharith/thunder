@@ -24,7 +24,7 @@ import {UserCreateProvider} from '@thunderid/configure-users';
 import {ToastProvider} from '@thunderid/contexts';
 import {ProtectedRoute} from '@thunderid/react-router';
 import {lazy, Suspense, type JSX} from 'react';
-import {BrowserRouter, Outlet, Route, Routes} from 'react-router';
+import {BrowserRouter, Navigate, Outlet, Route, Routes} from 'react-router';
 import AgentCreateProvider from './features/agents/contexts/AgentCreate/AgentCreateProvider';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 import LayoutBuilderProvider from './features/design/contexts/LayoutBuilder/LayoutBuilderProvider';
@@ -120,14 +120,13 @@ const ConnectionDetailPage = lazy(() =>
 const ConnectionConfigureWizardPage = lazy(() =>
   import('@thunderid/configure-connections').then((m) => ({default: m.ConnectionConfigureWizardPage})),
 );
-const ConnectionCreateWizardPage = lazy(() =>
-  import('@thunderid/configure-connections').then((m) => ({default: m.ConnectionCreateWizardPage})),
-);
+const ConnectionCreateWizardRoute = lazy(() => import('./features/connections/pages/ConnectionCreateWizardRoute'));
 const LoginFlowBuilderPage = lazy(() => import('./features/login-flow/pages/LoginFlowPage'));
 const CreateRolePage = lazy(() => import('./features/roles/pages/CreateRolePage'));
 const RoleEditPage = lazy(() => import('./features/roles/pages/RoleEditPage'));
 const RolesListPage = lazy(() => import('./features/roles/pages/RolesListPage'));
 const SettingsPage = lazy(() => import('./features/settings/pages/SettingsPage'));
+const TrustedIssuerDetailPage = lazy(() => import('./features/trusted-issuers/pages/TrustedIssuerDetailPage'));
 const VerifiablePresentationsListPage = lazy(
   () => import('./features/verifiable-presentations/pages/VerifiablePresentationsListPage'),
 );
@@ -183,6 +182,8 @@ export default function App(): JSX.Element {
               <Route path="connections" element={<ConnectionsListPage />} />
               <Route path="connections/:type" element={<ConnectionDetailPage />} />
               <Route path="connections/:type/:id" element={<ConnectionDetailPage />} />
+              <Route path="trusted-issuers" element={<Navigate to="/connections" replace />} />
+              <Route path="trusted-issuers/:id" element={<TrustedIssuerDetailPage />} />
               <Route path="groups" element={<GroupsListPage />} />
               <Route path="groups/:groupId" element={<GroupEditPage />} />
               <Route path="roles" element={<RolesListPage />} />
@@ -361,7 +362,7 @@ export default function App(): JSX.Element {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<ConnectionCreateWizardPage />} />
+              <Route index element={<ConnectionCreateWizardRoute />} />
             </Route>
             <Route
               path="/connections/:type/configure"

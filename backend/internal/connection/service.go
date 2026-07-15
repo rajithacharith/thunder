@@ -114,11 +114,12 @@ func (s *service) listInstances(ctx context.Context, category connectionCategory
 				continue
 			}
 			instances = append(instances, connectionInstance{
-				ID:          instance.ID,
-				Name:        instance.Name,
-				Description: instance.Description,
-				Type:        vendor,
-				Categories:  []connectionCategory{categoryIdentityProvider},
+				ID:           instance.ID,
+				Name:         instance.Name,
+				Description:  instance.Description,
+				Type:         vendor,
+				Categories:   []connectionCategory{categoryIdentityProvider},
+				IDJagEnabled: instance.IDJagEnabled,
 			})
 		}
 	}

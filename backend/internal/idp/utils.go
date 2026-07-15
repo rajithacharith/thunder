@@ -21,6 +21,7 @@ package idp
 import (
 	"context"
 	"slices"
+	"strconv"
 	"strings"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
@@ -47,6 +48,28 @@ func GetPropertyValue(properties []cmodels.Property, name string) string {
 		}
 	}
 	return ""
+}
+
+// idJagEnabledFromProperties returns a pointer to the parsed id_jag_enabled property value, or nil
+// when the property is absent (or its value cannot be parsed as a boolean). This lets basic IDP
+// listings distinguish trusted-issuer OIDC connections from plain federation ones without
+// exposing full property details.
+func idJagEnabledFromProperties(properties []cmodels.Property) *bool {
+	for i := range properties {
+		if properties[i].GetName() != PropIDJagEnabled {
+			continue
+		}
+		val, err := properties[i].GetValue()
+		if err != nil {
+			return nil
+		}
+		enabled, err := strconv.ParseBool(val)
+		if err != nil {
+			return nil
+		}
+		return &enabled
+	}
+	return nil
 }
 
 // GetMappedUserType returns the resolved local user type for the IDP's attribute mapping, or an
@@ -256,18 +279,35 @@ func validateIDPProperties(ctx context.Context, idpType providers.IDPType, prope
 				Params:       map[string]string{"property": propName},
 			})
 		}
+		if propName == PropIDJagEnabled || propName == PropTokenExchangeEnabled {
+			if propertyValue != "true" && propertyValue != "false" {
+				return nil, tidcommon.CustomServiceError(ErrorInvalidIDPProperty, tidcommon.I18nMessage{
+					Key: "error.idpservice.property_value_not_boolean_description",
+					DefaultValue: "value for property '{{param(property)}}' must be either " +
+						"'true' or 'false'",
+					Params: map[string]string{"property": propName},
+				})
+			}
+		}
 
 		filteredPropsMap[propName] = prop
 		filteredPropKeys = append(filteredPropKeys, propName)
 	}
 
 	// Check for required properties, using the token-exchange override when applicable.
+	// The reduced required set also applies when id_jag_enabled is present, since that property
+	// is only ever sent for trust-only connections which carry no OAuth client credentials.
 	requiredProps := config.Required
 	if teProps, ok := tokenExchangeRequiredProps[idpType]; ok {
+		_, idJagEnabledPresent := filteredPropsMap[PropIDJagEnabled]
+		tokenExchangeEnabled := false
 		if prop, exists := filteredPropsMap[PropTokenExchangeEnabled]; exists {
 			if val, err := prop.GetValue(); err == nil && val == "true" {
-				requiredProps = teProps
+				tokenExchangeEnabled = true
 			}
+		}
+		if tokenExchangeEnabled || idJagEnabledPresent {
+			requiredProps = teProps
 		}
 	}
 	for _, requiredProp := range requiredProps {

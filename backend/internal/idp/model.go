@@ -25,11 +25,12 @@ import (
 
 // BasicIDPDTO represents a basic data transfer object for an identity provider.
 type BasicIDPDTO struct {
-	ID          string
-	Name        string
-	Description string
-	Type        providers.IDPType
-	IsReadOnly  bool
+	ID           string
+	Name         string
+	Description  string
+	Type         providers.IDPType
+	IsReadOnly   bool
+	IDJagEnabled *bool
 }
 
 // idpRequest represents the request payload for creating or updating an identity provider.

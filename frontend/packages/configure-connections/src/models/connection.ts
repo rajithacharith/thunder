@@ -34,6 +34,8 @@ export type ConnectionType = (typeof ConnectionTypes)[keyof typeof ConnectionTyp
 
 /**
  * Presentation categories owned entirely by the frontend (drive filter chips + card tags).
+ * `trusted-idp` is synthesized directly from connection instances (not a vendor catalog entry)
+ * — see `buildConnectionCards`.
  */
 export type ConnectionCategory =
   | 'social-login'
@@ -42,7 +44,8 @@ export type ConnectionCategory =
   | 'email'
   | 'identity-verification'
   | 'crm'
-  | 'data-store';
+  | 'data-store'
+  | 'trusted-idp';
 
 /**
  * Functional categories served by the backend /connections?category= filter.
@@ -70,6 +73,12 @@ export interface ConnectionInstance {
   description?: string;
   type: ConnectionInstanceType;
   categories: ConnectionInstanceCategory[];
+  /**
+   * Present only for trust-only OIDC instances (trusted issuers); absent for plain federation
+   * OIDC connections. See `buildConnectionCards`, which uses this to render trusted issuers as
+   * their own card variant.
+   */
+  idJagEnabled?: boolean;
 }
 
 /**
@@ -197,6 +206,8 @@ export interface OIDCConnectionRequest extends OAuthConnectionRequest {
   issuer?: string;
   tokenExchangeEnabled?: boolean;
   trustedTokenAudience?: string;
+  /** Whether this connection is exposed as an ID-JAG issuer. Managed by the Trusted Issuers feature. */
+  idJagEnabled?: boolean;
 }
 
 /**

@@ -16,13 +16,35 @@
  * under the License.
  */
 
-import type {ConnectionCardModel, ConnectionInstance, ConnectionVendorMeta} from '../models/connection';
+import {ShieldCheck} from '@wso2/oxygen-ui-icons-react';
+import {
+  ConnectionTypes,
+  type ConnectionCardModel,
+  type ConnectionInstance,
+  type ConnectionVendorMeta,
+} from '../models/connection';
+
+/** i18n key for the trusted issuer card's description, resolved by the rendering component. */
+const TRUSTED_IDP_DESCRIPTION_KEY = 'connections:vendor.trustedIdp.description';
+
+/**
+ * Whether a connection instance is a trusted issuer — a trust-only OIDC instance used for ID-JAG
+ * identity assertion consumption — rather than a plain federation OIDC connection. Trusted
+ * issuers always carry `idJagEnabled` (`true` or `false`); plain federation OIDC connections
+ * leave it `undefined`.
+ */
+function isTrustedIdpInstance(instance: ConnectionInstance): boolean {
+  return instance.type === ConnectionTypes.OIDC && instance.idJagEnabled !== undefined;
+}
 
 /**
  * Merge the flat GET /connections instance list with the FE vendor-meta catalog into the list
  * of cards the listing grid renders.
  *
- * - every configured instance → one card titled by the instance name (each opens its own
+ * - OIDC instances that are trusted issuers (`idJagEnabled` present) are pulled out first and
+ *   rendered as their own card variant, before the normal per-vendor grouping below — each opens
+ *   the trusted issuer detail page rather than the generic connection detail page.
+ * - every other configured instance → one card titled by the instance name (each opens its own
  *   detail page), for branded and custom vendors alike.
  * - branded vendors with no instances → one unconfigured card that opens the configure wizard.
  * - custom vendors with no instances → no card (creation goes through the custom-connection
@@ -37,12 +59,29 @@ export default function buildConnectionCards(
   instances: ConnectionInstance[],
   vendorMetas: ConnectionVendorMeta[],
 ): ConnectionCardModel[] {
+  const trustedIdpCards: ConnectionCardModel[] = instances.filter(isTrustedIdpInstance).map(
+    (instance): ConnectionCardModel => ({
+      id: `trusted-idp:${instance.id}`,
+      vendorKey: 'trusted-idp',
+      backendType: ConnectionTypes.OIDC,
+      displayName: instance.name,
+      descriptionKey: TRUSTED_IDP_DESCRIPTION_KEY,
+      logo: <ShieldCheck />,
+      categories: ['trusted-idp'],
+      status: 'configured',
+      comingSoon: false,
+      navTarget: `/trusted-issuers/${instance.id}`,
+    }),
+  );
+
+  const remainingInstances: ConnectionInstance[] = instances.filter((instance) => !isTrustedIdpInstance(instance));
+
   const instancesByType: Record<string, ConnectionInstance[]> = {};
-  for (const instance of instances) {
+  for (const instance of remainingInstances) {
     (instancesByType[instance.type] ??= []).push(instance);
   }
 
-  const cards: ConnectionCardModel[] = [];
+  const cards: ConnectionCardModel[] = [...trustedIdpCards];
 
   for (const meta of vendorMetas) {
     if ((meta.presentation === 'branded' || meta.presentation === 'custom') && meta.backendType) {

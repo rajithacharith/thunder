@@ -18,7 +18,7 @@
 
 import {type ConnectionType, ConnectionTypes} from '../models/connection';
 
-export type ConnectionFieldKind = 'text' | 'url' | 'secret' | 'scopes' | 'readonly-copy';
+export type ConnectionFieldKind = 'text' | 'url' | 'secret' | 'scopes' | 'readonly-copy' | 'switch';
 
 export interface ConnectionFieldDef {
   /** Request payload property this field maps to. */
@@ -36,6 +36,12 @@ export interface ConnectionFieldDef {
   pattern?: RegExp;
   /** i18n key for the error shown when {@link pattern} does not match. */
   patternErrorKey?: string;
+  /** i18n key for a group sub-heading rendered above this field. */
+  section?: string;
+  /** Renders only when the named switch field's value is truthy. */
+  revealedBy?: string;
+  /** Becomes required when the named switch field's value is truthy. */
+  requiredWhen?: string;
 }
 
 const NAME_FIELD = (placeholder: string): ConnectionFieldDef => ({
@@ -81,6 +87,14 @@ const oauthFields = (namePlaceholder: string, clientIdPlaceholder: string): Conn
   },
 ];
 
+const TOKEN_EXCHANGE_ENABLED_FIELD: ConnectionFieldDef = {
+  name: 'tokenExchangeEnabled',
+  labelKey: 'connections:form.fields.tokenExchangeEnabled.label',
+  hintKey: 'connections:form.fields.tokenExchangeEnabled.hint',
+  kind: 'switch',
+  section: 'connections:form.sections.federation',
+};
+
 const TRUSTED_TOKEN_AUDIENCE_FIELD: ConnectionFieldDef = {
   name: 'trustedTokenAudience',
   labelKey: 'connections:form.fields.trustedTokenAudience.label',
@@ -88,6 +102,7 @@ const TRUSTED_TOKEN_AUDIENCE_FIELD: ConnectionFieldDef = {
   kind: 'text',
   optional: true,
   placeholder: 'my-external-client-id',
+  revealedBy: 'tokenExchangeEnabled',
 };
 
 /**
@@ -136,6 +151,7 @@ export const CONNECTION_FORM_FIELDS: Record<ConnectionType, ConnectionFieldDef[]
       hintKey: 'connections:form.fields.issuer.hint',
       kind: 'url',
       placeholder: 'https://idp.example.com',
+      requiredWhen: 'tokenExchangeEnabled',
     },
     {
       name: 'userInfoEndpoint',
@@ -152,6 +168,7 @@ export const CONNECTION_FORM_FIELDS: Record<ConnectionType, ConnectionFieldDef[]
       kind: 'url',
       optional: true,
       placeholder: 'https://idp.example.com/.well-known/jwks.json',
+      requiredWhen: 'tokenExchangeEnabled',
     },
     {
       name: 'redirectUri',
@@ -168,6 +185,7 @@ export const CONNECTION_FORM_FIELDS: Record<ConnectionType, ConnectionFieldDef[]
       kind: 'scopes',
       placeholder: 'openid email profile',
     },
+    TOKEN_EXCHANGE_ENABLED_FIELD,
     TRUSTED_TOKEN_AUDIENCE_FIELD,
   ],
   [ConnectionTypes.OAUTH]: [
