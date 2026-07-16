@@ -634,6 +634,7 @@ const translations = {
     'categories.system': 'System',
     'pages.importConfiguration': 'Import Configuration',
     'pages.openProject': 'Import Configuration',
+    'pages.importExport': 'Import / Export',
     'pages.home': 'Home',
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
@@ -2633,6 +2634,13 @@ const translations = {
   // Import / Export - Project import-export feature translations
   // ============================================================================
   importExport: {
+    'landing.title': 'Import / Export',
+    'landing.subtitle': 'Choose whether to import a configuration file or export your current one.',
+    'landing.type.import.label': 'Import',
+    'landing.type.import.description': 'Bring in an existing ThunderID configuration file.',
+    'landing.type.export.label': 'Export',
+    'landing.type.export.description': 'Download your current configuration as a file.',
+
     'export.page.title': 'Export Configuration',
     'export.page.loading': 'Loading export configuration...',
     'export.page.loadError': 'Failed to load export configuration: {{message}}',

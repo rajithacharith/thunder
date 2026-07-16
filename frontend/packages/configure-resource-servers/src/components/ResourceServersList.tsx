@@ -25,7 +25,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ResourceServerDeleteDialog from './ResourceServerDeleteDialog';
 import useGetResourceServers from '../api/useGetResourceServers';
-import {getResourceServerTypeIcon, getResourceServerTypeLabel} from '../config/resource-server-types';
+import {getResourceServerTypeLabel} from '../config/resource-server-types';
 import type {ResourceServer} from '../models/resource-server';
 
 export default function ResourceServersList(): JSX.Element {
@@ -71,15 +71,11 @@ export default function ResourceServersList(): JSX.Element {
         minWidth: 120,
         renderCell: (params: DataGrid.GridRenderCellParams<ResourceServer>) => (
           <Chip
-            icon={
-              <Box sx={{display: 'flex', alignItems: 'center', '& > *': {width: 16, height: 16}}}>
-                {getResourceServerTypeIcon(params.row.type)}
-              </Box>
-            }
             label={getResourceServerTypeLabel(params.row.type, t)}
             size="small"
+            color="primary"
             variant="outlined"
-            sx={{px: 0.5, fontSize: '0.75rem'}}
+            sx={{fontSize: '0.7rem'}}
           />
         ),
       },

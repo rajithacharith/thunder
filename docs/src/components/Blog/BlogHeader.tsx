@@ -18,8 +18,8 @@
 
 import {Box, Typography} from '@wso2/oxygen-ui';
 import {JSX} from 'react';
-import ProductName from '@site/src/components/ProductName';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
+import ProductName from '@site/src/components/ProductName';
 
 export default function BlogHeader(): JSX.Element {
   const isDark = useIsDarkMode();

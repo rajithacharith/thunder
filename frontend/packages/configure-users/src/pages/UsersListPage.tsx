@@ -40,7 +40,7 @@ export default function UsersListPage() {
             startIcon={<Plus size={20} />}
             onClick={() => {
               (async () => {
-                await navigate('/users/invite');
+                await navigate('/users/add');
               })().catch((error: unknown) => {
                 logger.error('Failed to navigate to add user page', {error});
               });

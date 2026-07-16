@@ -42,7 +42,7 @@ import useUpdateResourceServer from '../api/useUpdateResourceServer';
 import AdvancedTab from '../components/resource-server-detail/AdvancedTab';
 import ResourceTree from '../components/resource-tree/ResourceTree';
 import ResourceServerDeleteDialog from '../components/ResourceServerDeleteDialog';
-import {getResourceServerTypeIcon, getResourceServerTypeLabel} from '../config/resource-server-types';
+import {getResourceServerTypeLabel} from '../config/resource-server-types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -293,12 +293,9 @@ export default function ResourceServerEditPage(): JSX.Element {
             <Chip
               label={getResourceServerTypeLabel(resourceServer.type, t)}
               size="small"
+              color="primary"
               variant="outlined"
-              icon={
-                <Box sx={{display: 'flex', alignItems: 'center', '& > *': {width: 16, height: 16}}}>
-                  {getResourceServerTypeIcon(resourceServer.type)}
-                </Box>
-              }
+              sx={{fontSize: '0.7rem'}}
             />
             {resourceServer.isReadOnly && (
               <Chip label={t('resourceServers:edit.systemResourceServer', 'System')} size="small" color="default" />
