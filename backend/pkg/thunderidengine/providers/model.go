@@ -648,6 +648,7 @@ type Certificate struct {
 // identity of a mobile client when it initiates a flow directly over HTTP.
 type AttestationConfig struct {
 	Android *AndroidAttestationConfig `json:"android,omitempty" yaml:"android,omitempty" jsonschema:"Google Play Integrity attestation configuration for Android clients."`
+	Apple   *AppleAttestationConfig   `json:"apple,omitempty"   yaml:"apple,omitempty"   jsonschema:"Apple App Attest attestation configuration for iOS clients."`
 }
 
 // AndroidAttestationConfig holds the Google Play Integrity settings for an Android application.
@@ -655,6 +656,12 @@ type AndroidAttestationConfig struct {
 	PackageName               string   `json:"packageName,omitempty"               yaml:"packageName,omitempty"               jsonschema:"Android application package name that must match the attested app."`
 	CertificateSha256Digests  []string `json:"certificateSha256Digests,omitempty"  yaml:"certificateSha256Digests,omitempty"  jsonschema:"Allowed SHA-256 digests of the app signing certificate. The attested app must match one of these."`
 	ServiceAccountCredentials string   `json:"serviceAccountCredentials,omitempty" yaml:"serviceAccountCredentials,omitempty" jsonschema:"Google Cloud service account credentials (JSON) used to call the Play Integrity API. Write-only; never returned in responses."`
+}
+
+// AppleAttestationConfig holds the Apple App Attest settings for an iOS application.
+type AppleAttestationConfig struct {
+	TeamID   string `json:"teamId,omitempty"   yaml:"teamId,omitempty"   jsonschema:"Apple Developer Team ID."`
+	BundleID string `json:"bundleId,omitempty" yaml:"bundleId,omitempty" jsonschema:"iOS application bundle identifier that must match the attested app."`
 }
 
 // WithoutCredentials returns a deep copy of the attestation config with all write-only secrets
@@ -669,6 +676,10 @@ func (c *AttestationConfig) WithoutCredentials() *AttestationConfig {
 		android.ServiceAccountCredentials = ""
 		android.CertificateSha256Digests = append([]string(nil), c.Android.CertificateSha256Digests...)
 		sanitized.Android = &android
+	}
+	if c.Apple != nil {
+		apple := *c.Apple
+		sanitized.Apple = &apple
 	}
 	return sanitized
 }

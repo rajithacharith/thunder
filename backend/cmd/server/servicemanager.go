@@ -471,7 +471,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		serverConfigService,
 	)
 
-	attestationProvider := attestation.Initialize(runtimeCryptoSvc)
+	attestationProvider := initAttestationProvider(ctx, logger, runtimeCryptoSvc)
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
 		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, attestationProvider,
 		graphBuilder, runtimeStoreProvider, transactioner, flowConfig)
@@ -499,6 +499,17 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	services.NewHealthCheckService(mux, healthSvc)
 
 	return jwtService, runtimeCryptoSvc, importService
+}
+
+// initAttestationProvider initializes the platform attestation provider, terminating server startup
+// on failure rather than running with a non-functional verifier.
+func initAttestationProvider(ctx context.Context, logger *log.Logger,
+	cryptoSvc kmprovider.RuntimeCryptoProvider) providers.AttestationProvider {
+	attestationProvider, err := attestation.Initialize(cryptoSvc)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize attestation provider", log.Error(err))
+	}
+	return attestationProvider
 }
 
 // dependencyConsumers groups the services that check the dependency registry before deleting their
