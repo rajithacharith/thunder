@@ -18,7 +18,7 @@
 
 import {renderWithProviders, screen} from '@thunderid/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type {ResourceServerListResponse} from '../../models/resource-server';
+import type {DefaultResourceServerConfigResponse, ResourceServerListResponse} from '../../models/resource-server';
 import ResourceServersList from '../ResourceServersList';
 
 vi.mock('@thunderid/react', () => ({
@@ -61,6 +61,12 @@ vi.mock('../../api/useGetResourceServers', () => ({
     },
 }));
 
+const mockUseGetDefaultResourceServer = vi.fn();
+
+vi.mock('../../api/useGetDefaultResourceServer', () => ({
+  default: () => mockUseGetDefaultResourceServer() as {data: DefaultResourceServerConfigResponse | undefined},
+}));
+
 const twoRowsResponse: ResourceServerListResponse = {
   totalResults: 2,
   startIndex: 0,
@@ -94,6 +100,9 @@ describe('ResourceServersList', () => {
       isLoading: false,
       error: null,
     });
+    mockUseGetDefaultResourceServer.mockReturnValue({
+      data: {readOnly: {}, writable: {}, merged: {resourceServerId: 'rs-1'}},
+    });
   });
 
   it('renders the type chip label for a normal row', () => {
@@ -126,5 +135,19 @@ describe('ResourceServersList', () => {
 
     const deleteButtons = screen.queryAllByRole('button', {name: 'Delete'});
     expect(deleteButtons).toHaveLength(1);
+  });
+
+  it('shows a Default badge on the current default row', () => {
+    renderWithProviders(<ResourceServersList />);
+
+    expect(screen.getByText('Default')).toBeInTheDocument();
+  });
+
+  it('does not show a Default badge when no default is set', () => {
+    mockUseGetDefaultResourceServer.mockReturnValue({data: {readOnly: {}, writable: {}, merged: {}}});
+
+    renderWithProviders(<ResourceServersList />);
+
+    expect(screen.queryByText('Default')).not.toBeInTheDocument();
   });
 });
