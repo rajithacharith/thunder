@@ -17,6 +17,7 @@
  */
 
 import {Stack} from '@wso2/oxygen-ui';
+import {useEffect, useState} from 'react';
 import AttestationSection from './AttestationSection';
 import CertificateSection from './CertificateSection';
 import IdentityAssertionsSection from './IdentityAssertionsSection';
@@ -64,8 +65,8 @@ interface EditAdvancedSettingsProps {
    */
   showAttestation?: boolean;
   /**
-   * Callback to report whether the identity assertions (ID-JAG) section currently has
-   * validation errors (feeds the Save bar).
+   * Callback to report whether any child section (identity assertions / ID-JAG, or platform
+   * attestation) currently has validation errors (feeds the page's Save bar).
    */
   onValidationChange?: (hasErrors: boolean) => void;
 }
@@ -93,6 +94,16 @@ export default function EditAdvancedSettings({
   showAttestation = false,
   onValidationChange = undefined,
 }: EditAdvancedSettingsProps) {
+  // Identity assertions and attestation validate independently; each is tracked separately so one
+  // resolving doesn't clobber the other's still-invalid state when both report to the single
+  // upward onValidationChange prop.
+  const [identityAssertionsInvalid, setIdentityAssertionsInvalid] = useState(false);
+  const [attestationInvalid, setAttestationInvalid] = useState(false);
+
+  useEffect(() => {
+    onValidationChange?.(identityAssertionsInvalid || attestationInvalid);
+  }, [identityAssertionsInvalid, attestationInvalid, onValidationChange]);
+
   const handleOAuth2ConfigChange = (updates: Partial<OAuth2Config>) => {
     const currentInboundAuth: InboundAuthConfig[] = editedApp.inboundAuthConfig ?? application.inboundAuthConfig ?? [];
     const updatedInboundAuth = currentInboundAuth.map((auth) =>
@@ -147,7 +158,7 @@ export default function EditAdvancedSettings({
           oauth2Config={oauth2Config}
           onTokenConfigChange={handleTokenConfigChange}
           disabled={application.isReadOnly}
-          onValidationChange={onValidationChange}
+          onValidationChange={setIdentityAssertionsInvalid}
         />
       )}
       <CertificateSection
@@ -161,6 +172,7 @@ export default function EditAdvancedSettings({
           attestation={currentAttestation}
           onAttestationChange={handleAttestationChange}
           disabled={application.isReadOnly}
+          onValidationChange={setAttestationInvalid}
         />
       )}
       <MetadataSection application={application} />

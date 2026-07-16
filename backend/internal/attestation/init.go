@@ -23,7 +23,17 @@ import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-// Initialize creates the platform attestation provider backed by the Google Play Integrity API.
-func Initialize(cryptoSvc kmprovider.RuntimeCryptoProvider) providers.AttestationProvider {
-	return newPlayIntegrityVerifier(newGooglePlayIntegrityDecoder(), cryptoSvc)
+// Initialize creates the platform attestation provider, dispatching to Google Play Integrity for
+// Android clients and Apple App Attest for iOS clients based on the application's configuration. It
+// returns an error if a platform verifier cannot be constructed, so the caller can fail server
+// startup rather than run with a non-functional verifier.
+func Initialize(cryptoSvc kmprovider.RuntimeCryptoProvider) (providers.AttestationProvider, error) {
+	appAttestVsvc, err := newAppAttestVerifier()
+	if err != nil {
+		return nil, err
+	}
+	return newCompositeVerifier(
+		newPlayIntegrityVerifier(newGooglePlayIntegrityDecoder(), cryptoSvc),
+		appAttestVsvc,
+	), nil
 }

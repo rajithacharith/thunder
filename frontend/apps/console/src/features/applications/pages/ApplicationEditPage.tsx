@@ -100,6 +100,7 @@ export default function ApplicationEditPage() {
   const [tempDescription, setTempDescription] = useState('');
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
   const [mcpAccessInvalid, setMcpAccessInvalid] = useState(false);
+  const [advancedSettingsInvalid, setAdvancedSettingsInvalid] = useState(false);
 
   const handleBack = async () => {
     await navigate('/applications');
@@ -277,7 +278,7 @@ export default function ApplicationEditPage() {
                 oauth2Constraints={isMcpM2mOnly ? undefined : oauth2Constraints}
                 onFieldChange={handleFieldChange}
                 allowedGrantTypes={[...TemplateConstants.MCP_CLIENT_ALLOWED_GRANT_TYPES]}
-                onValidationChange={setHasValidationErrors}
+                onValidationChange={setAdvancedSettingsInvalid}
               />
             ),
           },
@@ -560,7 +561,7 @@ export default function ApplicationEditPage() {
                 oauth2Constraints={oauth2Constraints}
                 onFieldChange={handleFieldChange}
                 showAttestation={supportsAttestation}
-                onValidationChange={setHasValidationErrors}
+                onValidationChange={setAdvancedSettingsInvalid}
               />
             </TabPanel>
           </>
@@ -575,7 +576,9 @@ export default function ApplicationEditPage() {
           saveLabel={t('applications:edit.page.save')}
           savingLabel={t('applications:edit.page.saving')}
           isSaving={updateApplication.isPending}
-          saveDisabled={hasValidationErrors || mcpAccessInvalid || application.isReadOnly === true}
+          saveDisabled={
+            hasValidationErrors || mcpAccessInvalid || advancedSettingsInvalid || application.isReadOnly === true
+          }
           onReset={() => setEditedApp({})}
           onSave={() => {
             handleSave().catch(() => null);

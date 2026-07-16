@@ -2468,9 +2468,13 @@ const translations = {
     'edit.advanced.certificate.type.none': 'None',
     'edit.advanced.certificate.type.jwks': 'JWKS (Inline JSON Web Key Set)',
     'edit.advanced.certificate.type.jwksUri': 'JWKS URI (URL to JWKS endpoint)',
-    'edit.advanced.labels.attestation': 'Play Integrity Attestation (Android)',
+    'edit.advanced.labels.attestation': 'Platform Attestation',
     'edit.advanced.attestation.intro':
-      'Verify the binary identity of an Android mobile client with Google Play Integrity when it initiates a flow directly.',
+      'Verify the binary identity of a mobile client when it initiates a flow directly. Choose the platform the application is built for.',
+    'edit.advanced.attestation.labels.platform': 'Platform',
+    'edit.advanced.attestation.platform.none': 'None',
+    'edit.advanced.attestation.platform.android': 'Android (Play Integrity)',
+    'edit.advanced.attestation.platform.apple': 'iOS (App Attest)',
     'edit.advanced.attestation.labels.packageName': 'Package Name',
     'edit.advanced.attestation.labels.certificateSha256Digests': 'Signing Certificate SHA-256 Digests',
     'edit.advanced.attestation.labels.serviceAccountCredentials': 'Service Account Credentials',
@@ -2484,6 +2488,13 @@ const translations = {
     'edit.advanced.attestation.hint.serviceAccountCredentials':
       'Write-only. Used to call the Play Integrity API. Leave blank to keep the existing credentials.',
     'edit.advanced.attestation.addDigest': 'Add Digest',
+    'edit.advanced.attestation.labels.teamId': 'Team ID',
+    'edit.advanced.attestation.labels.bundleId': 'Bundle ID',
+    'edit.advanced.attestation.placeholder.teamId': 'ABCDE12345',
+    'edit.advanced.attestation.placeholder.bundleId': 'com.example.myapp',
+    'edit.advanced.attestation.hint.teamId': 'The Apple Developer Team ID.',
+    'edit.advanced.attestation.hint.bundleId': 'The iOS bundle identifier that must match the attested app.',
+    'edit.advanced.attestation.error.appleIncomplete': 'Both Team ID and Bundle ID are required together.',
 
     /* -------------------- Edit page -------------------- */
     // Common
