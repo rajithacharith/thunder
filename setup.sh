@@ -44,7 +44,6 @@ DEBUG_PORT=${DEBUG_PORT:-2345}
 DEBUG_MODE=${DEBUG_MODE:-false}
 VERBOSE_MODE=${VERBOSE_MODE:-false}
 SILENT_MODE=true
-WITH_CONSENT=${WITH_CONSENT:-true}
 ADMIN_USERNAME_PROVIDED=false
 ADMIN_PASSWORD_PROVIDED=false
 if [[ -n "${ADMIN_USERNAME:-}" ]]; then
@@ -117,7 +116,6 @@ print_help() {
     echo "  --verbose                Enable detailed setup output"
     echo "  --debug                  Enable debug mode with remote debugging"
     echo "  --debug-port PORT        Set debug port (default: 2345)"
-    echo "  --without-consent        Disable the bundled consent server"
     echo "  --admin-username VALUE   Username for the default admin user (default: admin)"
     echo "                           Falls back to ADMIN_USERNAME env var if flag not set"
     echo "  --admin-password VALUE   Password for the default admin user"
@@ -154,10 +152,6 @@ while [[ $# -gt 0 ]]; do
         --debug-port)
             DEBUG_PORT="$2"
             shift 2
-            ;;
-        --without-consent)
-            WITH_CONSENT=false
-            shift
             ;;
         --admin-username)
             if [[ -z "${2:-}" || "${2:-}" == --* ]]; then
@@ -473,70 +467,13 @@ if [ "$DEBUG_MODE" = "true" ] && ! command -v dlv &> /dev/null; then
 fi
 
 # ============================================================================
-# Start Consent Server (if enabled)
-# ============================================================================
-
-CONSENT_PID=""
-
-# Cleanup function — stops the consent server started below.
-cleanup() {
-    if [ -n "$CONSENT_PID" ]; then
-        if [ "$VERBOSE_MODE" = "true" ]; then
-            echo ""
-            echo -e "${CYAN}🛑 Stopping consent server...${NC}"
-        fi
-        pkill -P $CONSENT_PID 2>/dev/null || true
-        kill $CONSENT_PID 2>/dev/null || true
-        wait $CONSENT_PID 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT INT TERM
-
-CONSENT_SERVER_PORT="${CONSENT_SERVER_PORT:-9090}"
-if [ "$WITH_CONSENT" = "true" ]; then
-    CONSENT_SCRIPT="$(dirname "$0")/consent/start.sh"
-    if [ ! -x "$CONSENT_SCRIPT" ]; then
-        log_error "Consent server is enabled but consent/start.sh is missing or not executable"
-        exit 1
-    fi
-    if [ "$VERBOSE_MODE" = "true" ]; then
-        echo -e "${CYAN}Starting Consent Server...${NC}"
-        (cd "$(dirname "$0")/consent" && ./start.sh) &
-    else
-        (cd "$(dirname "$0")/consent" && ./start.sh >/dev/null 2>&1) &
-    fi
-    CONSENT_PID=$!
-    CONSENT_TIMEOUT=30
-    CONSENT_ELAPSED=0
-    while [ $CONSENT_ELAPSED -lt $CONSENT_TIMEOUT ]; do
-        if ! kill -0 "$CONSENT_PID" 2>/dev/null; then
-            log_error "Consent server process exited unexpectedly"
-            exit 1
-        fi
-        if curl -s -f "http://localhost:${CONSENT_SERVER_PORT}/health/readiness" > /dev/null 2>&1; then
-            if [ "$VERBOSE_MODE" = "true" ]; then
-                echo -e "${GREEN}✓ Consent server is ready${NC}"
-            fi
-            break
-        fi
-        sleep 1
-        CONSENT_ELAPSED=$((CONSENT_ELAPSED + 1))
-    done
-    if [ $CONSENT_ELAPSED -ge $CONSENT_TIMEOUT ]; then
-        log_error "Consent server failed to become ready within ${CONSENT_TIMEOUT}s"
-        exit 1
-    fi
-fi
-
-# ============================================================================
 # Create Default Resources (in-process bootstrap)
 # ============================================================================
 #
 # Delegates to start.sh --bootstrap, which runs the binary's in-process bootstrap
 # one-shot (create the default resources through the service layer, then exit).
-# The consent server, if enabled, was already started above, so --without-consent
-# is passed to avoid starting a second one. Admin credentials and the public URL
-# are exported so the bootstrap subcommand picks them up.
+# Admin credentials and the public URL are exported so the bootstrap subcommand
+# picks them up.
 
 export PUBLIC_URL="${PUBLIC_URL}"
 export ADMIN_USERNAME
@@ -553,7 +490,7 @@ if [ "$VERBOSE_MODE" = "true" ]; then
 fi
 
 BOOTSTRAP_LOG="$(mktemp)"
-if "$START_SCRIPT" --bootstrap --without-consent >"$BOOTSTRAP_LOG" 2>&1; then
+if "$START_SCRIPT" --bootstrap >"$BOOTSTRAP_LOG" 2>&1; then
     [ "$VERBOSE_MODE" = "true" ] && cat "$BOOTSTRAP_LOG"
     rm -f "$BOOTSTRAP_LOG"
     log_success "Default resources created"

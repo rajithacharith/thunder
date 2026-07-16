@@ -189,11 +189,9 @@ helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 CREATE DATABASE configdb;
 CREATE DATABASE runtimedb;
 CREATE DATABASE userdb;
-CREATE DATABASE consentdb;
 GRANT ALL PRIVILEGES ON DATABASE configdb TO dbuser;
 GRANT ALL PRIVILEGES ON DATABASE runtimedb TO dbuser;
 GRANT ALL PRIVILEGES ON DATABASE userdb TO dbuser;
-GRANT ALL PRIVILEGES ON DATABASE consentdb TO dbuser;
 SQL
 )
 ```
@@ -213,8 +211,6 @@ for db in configdb runtimedb userdb; do
   kubectl exec {{productSlug}}-dbinit -- cat /opt/{{productSlug}}/dbscripts/$db/postgres.sql | \
     kubectl exec -i postgresql-0 -- env PGPASSWORD=dbpassword psql -U dbuser -d $db
 done
-kubectl exec {{productSlug}}-dbinit -- cat /opt/{{productSlug}}/consent/dbscripts/db_schema_postgres.sql | \
-  kubectl exec -i postgresql-0 -- env PGPASSWORD=dbpassword psql -U dbuser -d consentdb
 kubectl delete pod {{productSlug}}-dbinit
 ```
 
@@ -230,8 +226,6 @@ helm install {{productSlug}} oci://ghcr.io/thunder-id/helm-charts/{{productSlug}
   --set configuration.database.runtime.postgres.sslmode=disable \
   --set configuration.database.user.postgres.hostname=postgresql \
   --set configuration.database.user.postgres.sslmode=disable \
-  --set configuration.consent.database.host=postgresql \
-  --set configuration.consent.database.sslmode=disable \
   --set configuration.server.publicUrl=https://localhost:8090 \
   --set configuration.gateClient.hostname=localhost \
   --set configuration.gateClient.port=8090

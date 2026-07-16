@@ -56,7 +56,6 @@ $BOOTSTRAP_FAIL_FAST = if ($env:BOOTSTRAP_FAIL_FAST -eq "false") { $false } else
 $BOOTSTRAP_SKIP_PATTERN = if ($env:BOOTSTRAP_SKIP_PATTERN) { $env:BOOTSTRAP_SKIP_PATTERN } else { "" }
 $BOOTSTRAP_ONLY_PATTERN = if ($env:BOOTSTRAP_ONLY_PATTERN) { $env:BOOTSTRAP_ONLY_PATTERN } else { "" }
 $BOOTSTRAP_DIR = if ($env:BOOTSTRAP_DIR) { $env:BOOTSTRAP_DIR } else { ".\bootstrap" }
-$WITH_CONSENT = if ($env:WITH_CONSENT -eq 'false') { $false } else { $true }
 $ADMIN_USERNAME = if ($env:ADMIN_USERNAME) { $env:ADMIN_USERNAME } else { "admin" }
 # Left empty when not supplied: Set-AdminPassword (below) generates a random password
 # in that case, rather than falling back to a fixed, predictable value.
@@ -121,7 +120,6 @@ function Show-Help {
     Write-Host "  --verbose                Enable detailed setup output"
     Write-Host "  --debug                  Enable debug mode with remote debugging"
     Write-Host "  --debug-port PORT        Set debug port (default: 2345)"
-    Write-Host "  --without-consent        Disable the bundled consent server"
     Write-Host "  --direct-auth-secret VALUE Secret gating the Direct API endpoints"
     Write-Host "                           Falls back to DIRECT_AUTH_SECRET env var; generated if unset"
     Write-Host "  --help                   Show this help message"
@@ -164,11 +162,6 @@ while ($i -lt $args.Count) {
                 Write-Host "Missing value for --debug-port" -ForegroundColor Red
                 exit 1
             }
-            break
-        }
-        '--without-consent' {
-            $WITH_CONSENT = $false
-            $i++
             break
         }
         '--direct-auth-secret' {
@@ -489,74 +482,10 @@ if ($DEBUG_MODE -and -not (Get-Command dlv -ErrorAction SilentlyContinue)) {
 # Create Default Resources (in-process bootstrap)
 # ============================================================================
 
-# Resolve the script directory (used to locate the consent server and start.ps1).
+# Resolve the script directory (used to locate start.ps1).
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Start Consent Server (if enabled)
-$consentProc = $null
-$consentDir = Join-Path $scriptDir 'consent'
-$serverStdOutLog = $null
-$serverStdErrLog = $null
-$consentStdOutLog = $null
-$consentStdErrLog = $null
-if ($WITH_CONSENT) {
-    if (-not (Test-Path $consentDir)) {
-        Log-Error "Consent server is enabled but consent directory not found: $consentDir"
-        exit 1
-    }
-    if ($VERBOSE_MODE) {
-        Write-Host "[INFO] Starting Consent Server..." -ForegroundColor Cyan
-    }
-    $consentPort = if ($env:CONSENT_SERVER_PORT) { $env:CONSENT_SERVER_PORT } else { "9090" }
-    $consentBinary = @(
-        (Join-Path $consentDir 'consent-server.exe'),
-        (Join-Path $consentDir 'consent-server')
-    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-    if (-not $consentBinary) {
-        Log-Error "Consent server is enabled but consent-server binary not found in: $consentDir"
-        exit 1
-    }
-    $consentProcessArgs = @{
-        FilePath = $consentBinary
-        WorkingDirectory = $consentDir
-        NoNewWindow = $true
-        PassThru = $true
-    }
-    if ($SILENT_MODE) {
-        $consentStdOutLog = [System.IO.Path]::GetTempFileName()
-        $consentStdErrLog = [System.IO.Path]::GetTempFileName()
-        $consentProcessArgs["RedirectStandardOutput"] = $consentStdOutLog
-        $consentProcessArgs["RedirectStandardError"] = $consentStdErrLog
-    }
-    $consentProc = Start-Process @consentProcessArgs
-    $consentTimeout = 30
-    $consentElapsed = 0
-    while ($consentElapsed -lt $consentTimeout) {
-        if ($consentProc.HasExited) {
-            Log-Error "Consent server process exited unexpectedly (code $($consentProc.ExitCode))"
-            exit 1
-        }
-        try {
-            $resp = Invoke-WebRequest -Uri "http://localhost:${consentPort}/health/readiness" -UseBasicParsing -ErrorAction Stop
-            if ($resp.StatusCode -eq 200) {
-                if ($VERBOSE_MODE) {
-                    Write-Host "[INFO] Consent server is ready" -ForegroundColor Cyan
-                }
-                break
-            }
-        } catch { }
-        Start-Sleep -Seconds 1
-        $consentElapsed++
-    }
-    if ($consentElapsed -ge $consentTimeout) {
-        Log-Error "Consent server failed to become ready within ${consentTimeout}s"
-        exit 1
-    }
-}
-
-# Create the default resources by delegating to start.ps1 -Bootstrap. The consent
-# server (if enabled) was already started above, so --without-consent is passed so
-# start.ps1 does not start a second one. The public URL and admin credentials are
+# Create the default resources by delegating to start.ps1 -Bootstrap. The public URL and admin credentials are
 # exported so the bootstrap subcommand picks them up.
 $env:PUBLIC_URL = $PUBLIC_URL
 $env:ADMIN_USERNAME = $ADMIN_USERNAME
@@ -568,59 +497,46 @@ if (-not (Test-Path $startScript)) {
     exit 1
 }
 
-try {
-    if ($VERBOSE_MODE) {
-        Write-Host "[WAIT] Creating default resources..." -ForegroundColor Blue
-    }
-
-    & $startScript --bootstrap --without-consent
-    if ($LASTEXITCODE -ne 0) {
-        Log-Error "Failed to create default resources"
-        exit 1
-    }
-    Log-Success "Default resources created"
-
-    # ========================================================================
-    # Setup Completed
-    # ========================================================================
-
-    Write-Host ""
-    Write-Host ""
-    if ($SILENT_MODE) {
-        Write-Host "========================================="
-        Write-Host "Setup completed successfully!"
-        Write-Host "========================================="
-        Write-Host ""
-        Write-Host "Console URL: ${PUBLIC_URL}/console"
-        Write-Host ""
-        Show-AdminCredentialsNotice
-        Show-DirectAuthSecretNotice
-        Write-Host "Run .\start.ps1 to start ${PRODUCT_NAME}."
-        Write-Host ""
-    }
-    else {
-        Write-Host "========================================="
-        Write-Host "[OK] Setup completed successfully!" -ForegroundColor Green
-        Write-Host "========================================="
-        Write-Host ""
-        Show-AdminCredentialsNotice
-        Show-DirectAuthSecretNotice
-        Write-Host "[INFO] Next steps:"
-        Write-Host "   1. Start the server: .\start.ps1" -ForegroundColor Cyan
-        Write-Host "   2. Access $PRODUCT_NAME at: $BASE_URL" -ForegroundColor Cyan
-        Write-Host ""
-    }
+if ($VERBOSE_MODE) {
+    Write-Host "[WAIT] Creating default resources..." -ForegroundColor Blue
 }
-finally {
-    # Stop the consent server started above and clean up its temp logs.
-    if ($consentProc -and -not $consentProc.HasExited) {
-        try { Stop-Process -Id $consentProc.Id -Force -ErrorAction SilentlyContinue } catch { }
-    }
-    foreach ($tempLog in @($consentStdOutLog, $consentStdErrLog)) {
-        if ($tempLog -and (Test-Path $tempLog)) {
-            Remove-Item $tempLog -Force -ErrorAction SilentlyContinue
-        }
-    }
+
+& $startScript --bootstrap
+if ($LASTEXITCODE -ne 0) {
+    Log-Error "Failed to create default resources"
+    exit 1
+}
+Log-Success "Default resources created"
+
+# ========================================================================
+# Setup Completed
+# ========================================================================
+
+Write-Host ""
+Write-Host ""
+if ($SILENT_MODE) {
+    Write-Host "========================================="
+    Write-Host "Setup completed successfully!"
+    Write-Host "========================================="
+    Write-Host ""
+    Write-Host "Console URL: ${PUBLIC_URL}/console"
+    Write-Host ""
+    Show-AdminCredentialsNotice
+    Show-DirectAuthSecretNotice
+    Write-Host "Run .\start.ps1 to start ${PRODUCT_NAME}."
+    Write-Host ""
+}
+else {
+    Write-Host "========================================="
+    Write-Host "[OK] Setup completed successfully!" -ForegroundColor Green
+    Write-Host "========================================="
+    Write-Host ""
+    Show-AdminCredentialsNotice
+    Show-DirectAuthSecretNotice
+    Write-Host "[INFO] Next steps:"
+    Write-Host "   1. Start the server: .\start.ps1" -ForegroundColor Cyan
+    Write-Host "   2. Access $PRODUCT_NAME at: $BASE_URL" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 exit 0

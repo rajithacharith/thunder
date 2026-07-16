@@ -314,20 +314,6 @@ var (
 			DefaultValue: "A resource server with the specified ID already exists",
 		},
 	}
-	// ErrorConsentSyncFailed is returned when resource permission changes fail to sync with the consent service.
-	ErrorConsentSyncFailed = tidcommon.ServiceError{
-		Type: tidcommon.ClientErrorType,
-		Code: "RES-1024",
-		Error: tidcommon.I18nMessage{
-			Key:          "error.resourceservice.consent_sync_failed",
-			DefaultValue: "Consent sync failed",
-		},
-		ErrorDescription: tidcommon.I18nMessage{
-			Key: "error.resourceservice.consent_sync_failed_description",
-			DefaultValue: "Failed to sync resource permission changes with the consent " +
-				"service : code - {{param(code)}}",
-		},
-	}
 )
 
 // Internal error constants.
@@ -355,28 +341,3 @@ var (
 	// errDefaultResourceServerLookupFailed is returned when resource server lookup fails.
 	errDefaultResourceServerLookupFailed = errors.New("failed to resolve default resource server")
 )
-
-// consentSyncError wraps an underlying ServiceError from the consent service, allowing callers
-// to translate consent-service failures encountered during resource CRUD into their own error vocabulary.
-type consentSyncError struct {
-	Underlying *tidcommon.ServiceError
-}
-
-// Error implements the error interface. Falls back through (description → code → generic) so
-// the returned string is never empty even when the underlying error has no description.
-func (e *consentSyncError) Error() string {
-	if e.Underlying != nil {
-		if msg := e.Underlying.ErrorDescription.DefaultValue; msg != "" {
-			return msg
-		}
-		if e.Underlying.Code != "" {
-			return "consent sync failed (code " + e.Underlying.Code + ")"
-		}
-	}
-	return "consent sync failed"
-}
-
-// IsClientError reports whether the underlying error is a client error.
-func (e *consentSyncError) IsClientError() bool {
-	return e.Underlying != nil && e.Underlying.Type == tidcommon.ClientErrorType
-}

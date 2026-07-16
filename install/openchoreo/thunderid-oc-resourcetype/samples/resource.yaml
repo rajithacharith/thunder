@@ -123,9 +123,6 @@ spec:
     #   cache:
     #     size: 10000                      # maximum in-memory cache entries
     #     ttl: 3600                        # seconds
-    #   consent:
-    #     enabled: false
-    #     baseUrl: "http://localhost:9090/api/v1"
     #
     #   # Store mode per service: "" inherits the global mode (declarative
     #   # when declarativeResourcesEnabled, mutable otherwise); or set

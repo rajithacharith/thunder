@@ -59,10 +59,7 @@ RUN if [ -n "$CERT_FILE" ] && [ -n "$KEY_FILE" ] && [ -f "$CERT_FILE" ] && [ -f 
 
 # Build both frontend and backend for the target architecture
 ARG TARGETARCH
-ARG WITH_CONSENT=true
-RUN WITHOUT_CONSENT=$([ "$WITH_CONSENT" = "false" ] && echo "true" || echo "false") && \
-    export WITHOUT_CONSENT && \
-    if [ "$TARGETARCH" = "amd64" ]; then \
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
         ./build.sh build linux amd64; \
     else \
         ./build.sh build linux arm64; \
@@ -107,7 +104,6 @@ RUN cd /tmp/dist && \
 # Set ownership and permissions
 RUN chown -R thunderid:thunderid /opt/thunderid && \
     chmod +x thunderid start.sh setup.sh scripts/init_script.sh && \
-    (find consent -name "consent-server" -o -name "start.sh" 2>/dev/null | xargs -r chmod +x) && \
     (find bootstrap -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true)
 
 # Expose the default port
@@ -118,8 +114,6 @@ USER thunderid
 
 # Set environment variables
 ENV BACKEND_PORT=8090
-ARG WITH_CONSENT=true
-ENV WITH_CONSENT=${WITH_CONSENT}
 
 # Start the application
 CMD ["./start.sh"]

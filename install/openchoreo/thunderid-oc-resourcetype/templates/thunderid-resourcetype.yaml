@@ -219,12 +219,6 @@ spec:
               properties:
                 size: { type: integer, default: 10000 }
                 ttl: { type: integer, default: 3600 }
-            consent:
-              type: object
-              default: {}
-              properties:
-                enabled: { type: boolean, default: false }
-                baseUrl: { type: string, default: "http://localhost:9090/api/v1" }
             # Storage mode per service:
             #   ""          — inherit: declarative when declarativeResourcesEnabled,
             #                 mutable otherwise (default)
@@ -465,10 +459,6 @@ spec:
               auto_infer_registration: true
               store: "${parameters.runtime.stores.flow}"
 
-            consent:
-              enabled: ${parameters.runtime.consent.enabled}
-              base_url: "${parameters.runtime.consent.baseUrl}"
-
             declarative_resources:
               enabled: ${parameters.runtime.declarativeResourcesEnabled}
 
@@ -591,10 +581,6 @@ spec:
               max_version_history: 3
               auto_infer_registration: true
               store: "${parameters.runtime.stores.flow}"
-
-            consent:
-              enabled: ${parameters.runtime.consent.enabled}
-              base_url: "${parameters.runtime.consent.baseUrl}"
 
             declarative_resources:
               enabled: ${parameters.runtime.declarativeResourcesEnabled}

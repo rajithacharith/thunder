@@ -167,7 +167,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 
 	// Create config (with compensation if it fails).
 	if err := as.inboundClientService.CreateInboundClient(ctx, &inboundClient, oauthProfile,
-		clientSecret != "", app.Name); err != nil {
+		clientSecret != ""); err != nil {
 		// Compensate: delete entity since config creation failed.
 		as.deleteEntityCompensation(ctx, appID)
 		if svcErr := as.translateInboundClientError(ctx, err); svcErr != nil {
@@ -403,7 +403,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	// Update config first, while entity attributes still hold the previous client_id so the
 	// inbound client service can clean up the old OAuth-app cert.
 	if err := as.inboundClientService.UpdateInboundClient(
-		ctx, &inboundClient, oauthProfile, oauthSecretSupplied, newOAuthClientID, app.Name,
+		ctx, &inboundClient, oauthProfile, oauthSecretSupplied, newOAuthClientID,
 	); err != nil {
 		if svcErr := as.translateInboundClientError(ctx, err); svcErr != nil {
 			return nil, svcErr
@@ -1216,10 +1216,6 @@ func (as *applicationService) translateInboundClientError(ctx context.Context, e
 	if errors.As(err, &opErr) {
 		return as.translateCertOperationError(ctx, opErr)
 	}
-	var consentErr *inboundclient.ConsentSyncError
-	if errors.As(err, &consentErr) {
-		return translateConsentSyncError(consentErr)
-	}
 	return nil
 }
 
@@ -1524,20 +1520,6 @@ func (as *applicationService) translateCertOperationError(ctx context.Context,
 		Key:          key,
 		DefaultValue: prefix + err.Underlying.ErrorDescription.DefaultValue,
 	})
-}
-
-// translateConsentSyncError maps a typed consent sync error from the inbound-client layer into
-// an application-service ServiceError. Client-side failures are wrapped in ErrorConsentSyncFailed;
-// server-side failures collapse to InternalServerError.
-func translateConsentSyncError(err *inboundclient.ConsentSyncError) *tidcommon.ServiceError {
-	if err.IsClientError() {
-		return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
-			Key:          "error.applicationservice.consent_sync_failed_description",
-			DefaultValue: "Failed to synchronize consent configurations for the application : code - {{param(code)}}",
-			Params:       map[string]string{"code": err.Underlying.Code},
-		})
-	}
-	return &tidcommon.InternalServerError
 }
 
 func (as *applicationService) processInboundAuthConfig(ctx context.Context, app *model.ApplicationDTO,

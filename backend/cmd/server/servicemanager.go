@@ -186,12 +186,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize HashService", log.Error(err))
 	}
 
-	// Initialize consent service
-	consentService := consent.Initialize()
-
 	// Initialize user type service
 	entityTypeService, entityTypeExporter, err := entitytype.Initialize(
-		mux, mcpServer, cacheManager, ouService, ouAuthzService, consentService)
+		mux, mcpServer, cacheManager, ouService, ouAuthzService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize EntityTypeService", log.Error(err))
 	}
@@ -222,7 +219,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, groupExporter)
 
-	resourceService, resourceExporter, err := resource.Initialize(mux, ouService, consentService)
+	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize Resource Service", log.Error(err))
 	}
@@ -303,7 +300,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()
-	consentEnforcer := authnConsent.Initialize(consentService, jwtService)
+	consentEnforcer := authnConsent.Initialize(jwtService)
 
 	authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen, passkeyService,
 		otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService, oidcAuthnService,
@@ -396,10 +393,15 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	inboundClientService, err := inboundclient.Initialize(
 		cacheManager, certservice, entityProvider,
-		themeMgtService, layoutMgtService, flowMgtService, entityTypeService, consentService)
+		themeMgtService, layoutMgtService, flowMgtService, entityTypeService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize InboundClientService", log.Error(err))
 	}
+
+	// Inject the consent service into the consent enforcer. It is wired here rather than at enforcer
+	// construction because it depends on the inbound client service, which is only available after the
+	// flow services (which themselves depend on the enforcer) are initialized.
+	consentEnforcer.SetConsentService(initConsentService(ctx, logger, inboundClientService))
 
 	// TODO: Remove entityService dependency after finalizing declarative resource loading pattern
 	applicationService, applicationExporter, err := application.Initialize(
@@ -559,6 +561,17 @@ func readSessionConfig(ctx context.Context, svc serverconfig.ServerConfigService
 	}
 	cfg, _ := merged.(flowsession.Config)
 	return cfg
+}
+
+// initConsentService initializes the consent service backed by the inbound client service, which
+// satisfies consent.InboundClientProvider directly.
+func initConsentService(ctx context.Context, logger *log.Logger,
+	inboundClientService inboundclient.InboundClientServiceInterface) consent.ConsentServiceInterface {
+	consentService, err := consent.Initialize(inboundClientService)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize consent service", log.Error(err))
+	}
+	return consentService
 }
 
 // initEmailClient initializes the email client, returning nil if not configured.
