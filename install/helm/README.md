@@ -84,7 +84,8 @@ If you want to install ThunderID with SQLite databases, use the following comman
 helm install my-thunderid oci://ghcr.io/thunder-id/helm-charts/thunderid \
   --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite \
-  --set configuration.database.user.type=sqlite
+  --set configuration.database.user.type=sqlite \
+  --set configuration.database.operation.type=sqlite
 ```
 
 **Note:** When using SQLite:
@@ -297,12 +298,13 @@ helm install my-thunderid oci://ghcr.io/thunder-id/helm-charts/thunderid \
   --set configuration.database.config.postgres.password=mypass1 \
   --set configuration.database.runtime.postgres.password=mypass2 \
   --set configuration.database.runtime.redis.password=myredispass \
-  --set configuration.database.user.postgres.password=mypass3
+  --set configuration.database.user.postgres.password=mypass3 \
+  --set configuration.database.operation.postgres.password=mypass4
 ```
 
 Helm automatically:
 - Creates `<release-name>-db-credentials` Secret as a pre-install/pre-upgrade hook
-- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_RUNTIME_REDIS_PASSWORD`, `DB_USER_PASSWORD`) into pods
+- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_RUNTIME_REDIS_PASSWORD`, `DB_USER_PASSWORD`, `DB_OPERATION_PASSWORD`) into pods
 - Updates pods when passwords change (via checksum annotations)
 
 #### Pattern 2: External Secret (For Production - Recommended)
@@ -314,7 +316,8 @@ Reference a pre-existing Kubernetes Secret (created manually or by external-secr
 kubectl create secret generic my-db-secrets \
   --from-literal=config-password=secret1 \
   --from-literal=runtime-password=secret2 \
-  --from-literal=user-password=secret3
+  --from-literal=user-password=secret3 \
+  --from-literal=operation-password=secret4
 ```
 
 **Step 2:** Configure Helm to reference the external Secret:
@@ -340,6 +343,11 @@ configuration:
         passwordRef:
           name: "my-db-secrets"
           key: "user-password"
+    operation:
+      postgres:
+        passwordRef:
+          name: "my-db-secrets"
+          key: "operation-password"
 ```
 
 When `passwordRef.key` is set, the `password` field is ignored and Helm uses your external Secret.
@@ -354,7 +362,7 @@ when ThunderID reads configuration directly via its application config loader (e
 They are not resolved when the value is first converted into a Kubernetes Secret by this chart.
 
 #### Password Field Options
-Password fields are available in `configuration.database.config.postgres`, `configuration.database.runtime.postgres`, `configuration.database.runtime.redis`, and `configuration.database.user.postgres`:
+Password fields are available in `configuration.database.config.postgres`, `configuration.database.runtime.postgres`, `configuration.database.runtime.redis`, `configuration.database.user.postgres`, and `configuration.database.operation.postgres`:
 
 | Field                  | Description                                                                                                                                    | Example                      |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
@@ -451,6 +459,23 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.database.user.postgres.max_open_conns`      | Maximum number of open connections to the database                                                                                                      | `500`                        |
 | `configuration.database.user.postgres.max_idle_conns`      | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
 | `configuration.database.user.postgres.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.operation.type`           | Operation database type (postgres or sqlite). Stores SSO sessions, revoked tokens, and consent records.                                                 | `postgres`                   |
+| `configuration.database.operation.sqlite.path`     | SQLite database path (for SQLite only)                                                                                                                  | `database/operationdb.db` |
+| `configuration.database.operation.sqlite.options`  | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.operation.sqlite.max_open_conns` | Maximum number of open connections for SQLite                                                                                                     | `500`                        |
+| `configuration.database.operation.sqlite.max_idle_conns` | Maximum number of idle SQLite connections                                                                                                         | `100`                        |
+| `configuration.database.operation.sqlite.conn_max_lifetime` | Maximum SQLite connection lifetime in seconds                                                                                                  | `3600`                       |
+| `configuration.database.operation.postgres.name`           | Postgres database name (for postgres only)                                                                                                              | `operationdb`                |
+| `configuration.database.operation.postgres.hostname`       | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
+| `configuration.database.operation.postgres.port`           | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
+| `configuration.database.operation.postgres.username`       | Postgres username (for postgres only)                                                                                                                   | `dbuser`                   |
+| `configuration.database.operation.postgres.password`       | Operation Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.         | `dbpassword`        |
+| `configuration.database.operation.postgres.passwordRef.name` | Kubernetes Secret name for operation Postgres password                                                                                                | `""`    |
+| `configuration.database.operation.postgres.passwordRef.key`  | Kubernetes Secret key for operation Postgres password                                                                                                 | `""`    |
+| `configuration.database.operation.postgres.sslmode`        | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.operation.postgres.max_open_conns` | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.operation.postgres.max_idle_conns` | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.operation.postgres.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                          | `3600`                       |
 | `configuration.cache.disabled`                    | Disable cache                                                                                                                                           | `true`                       |
 | `configuration.cache.type`                        | Cache type                                                                                                                                              | `inmemory`                   |
 | `configuration.cache.size`                        | Cache size                                                                                                                                              | `1000`                       |

@@ -130,7 +130,7 @@ This is the <ProductName /> **application log** (the `INFO`/`WARN`/`ERROR` lines
 
 ## Database Configuration
 
-<ProductName /> uses three separate databases for different purposes. Each database can be configured independently.
+<ProductName /> uses four separate databases for different purposes. Each database can be configured independently.
 
 Connection parameters are grouped under a type-specific sub-key (`postgres`, `sqlite`, or `redis`). Only `type` is a top-level field; all other settings belong under the matching sub-key.
 
@@ -281,6 +281,44 @@ Stores user profiles and credentials.
 | `database.user.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
 | `database.user.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
 | `database.user.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+
+### Operation Database
+
+Stores SSO sessions, revoked tokens, and consent records. This database is required. <ProductName /> fails to start when `database.operation` is not configured.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.operation.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
+
+**`database.operation.postgres.*`** is only read when `database.operation.type: postgres`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.operation.postgres.hostname` | `""` | Database server hostname |
+| `database.operation.postgres.port` | `0` | Database server port |
+| `database.operation.postgres.name` | `""` | Database name |
+| `database.operation.postgres.username` | `""` | Database username |
+| `database.operation.postgres.password` | `""` | Database password |
+| `database.operation.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.operation.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.operation.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.operation.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.operation.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.operation.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.operation.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+
+**`database.operation.sqlite.*`** is only read when `database.operation.type: sqlite`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.operation.sqlite.path` | `database/operationdb.db` | SQLite database file path |
+| `database.operation.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.operation.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.operation.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.operation.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.operation.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.operation.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.operation.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 ## Cache Configuration
 
