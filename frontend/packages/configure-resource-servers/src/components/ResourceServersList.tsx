@@ -24,6 +24,7 @@ import {useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ResourceServerDeleteDialog from './ResourceServerDeleteDialog';
+import useGetDefaultResourceServer from '../api/useGetDefaultResourceServer';
 import useGetResourceServers from '../api/useGetResourceServers';
 import {getResourceServerTypeLabel} from '../config/resource-server-types';
 import type {ResourceServer} from '../models/resource-server';
@@ -41,6 +42,8 @@ export default function ResourceServersList(): JSX.Element {
     limit: paginationModel.pageSize,
     offset: paginationModel.page * paginationModel.pageSize,
   });
+  const {data: defaultConfig} = useGetDefaultResourceServer();
+  const defaultId = defaultConfig?.merged?.resourceServerId;
 
   const columns: DataGrid.GridColDef<ResourceServer>[] = useMemo(
     () => [
@@ -51,9 +54,20 @@ export default function ResourceServersList(): JSX.Element {
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<ResourceServer>) => (
           <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-            <Typography variant="body2" fontWeight={500}>
-              {params.row.name}
-            </Typography>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+              <Typography variant="body2" fontWeight={500}>
+                {params.row.name}
+              </Typography>
+              {params.row.id === defaultId && (
+                <Chip
+                  label={t('resourceServers:listing.default', 'Default')}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{height: 20, fontSize: '0.65rem'}}
+                />
+              )}
+            </Box>
             {params.row.isReadOnly && (
               <Chip
                 label={t('resourceServers:listing.systemResourceServer', 'System resource server')}
@@ -147,7 +161,7 @@ export default function ResourceServersList(): JSX.Element {
         ),
       },
     ],
-    [t, navigate, logger],
+    [t, navigate, logger, defaultId],
   );
 
   if (error) {

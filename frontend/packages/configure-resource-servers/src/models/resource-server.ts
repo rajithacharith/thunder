@@ -119,3 +119,15 @@ export interface ResourcePermissions {
   resourceServerId: string;
   permissions: string[];
 }
+
+export interface DefaultResourceServerValue {
+  resourceServerId?: string;
+}
+
+export interface ServerConfigLayers<T> {
+  readOnly: T;
+  writable: T;
+  merged: T;
+}
+
+export type DefaultResourceServerConfigResponse = ServerConfigLayers<DefaultResourceServerValue>;
