@@ -312,9 +312,23 @@ const sidebars: SidebarsConfig = {
                       key: 'mcp-authorization-walkthroughs',
                       items: [
                         {
-                          type: 'doc',
-                          id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
+                          type: 'category',
                           label: 'MCP Authorization',
+                          collapsible: true,
+                          collapsed: true,
+                          key: 'mcp-authorization-walkthroughs-mcp-authorization',
+                          items: [
+                            {
+                              type: 'doc',
+                              id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
+                              label: 'Scope-Based',
+                            },
+                            {
+                              type: 'doc',
+                              id: 'use-cases/ai-agents/mcp-authorization/try-it-out/authzen-authorization',
+                              label: 'AuthZEN-Based',
+                            },
+                          ],
                         },
                       ],
                     },
