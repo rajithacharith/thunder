@@ -141,6 +141,7 @@ vi.mock('@/components/GatePreview/GatePreview', () => ({
 
 const createSimulation = (overrides: Partial<FlowSimulation> = {}): FlowSimulation => ({
   isSimulating: true,
+  startAt: vi.fn(),
   pathNodeIds: ['view-1'],
   pathEdges: [],
   currentNodeId: 'view-1',

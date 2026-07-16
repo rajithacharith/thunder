@@ -106,6 +106,7 @@ function BaseEdge({
   deletable,
   markerEnd,
   markerStart,
+  selected,
 }: BaseEdgePropsInterface): ReactElement {
   const {deleteElements, getNodes} = useReactFlow();
   const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -188,7 +189,9 @@ function BaseEdge({
             {label}
           </Box>
         )}
-        {isHovered && deletable !== false && (
+        {/* Clicking an edge selects it, keeping the delete button visible without
+            hover precision; Delete/Backspace also removes the selected edge. */}
+        {(isHovered || selected) && deletable !== false && (
           <Box
             className="nodrag nopan"
             onClick={handleDelete}
@@ -205,8 +208,8 @@ function BaseEdge({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '24px',
-              height: '24px',
+              width: '28px',
+              height: '28px',
               backgroundColor: 'error.main',
               borderRadius: '50%',
               cursor: 'pointer',

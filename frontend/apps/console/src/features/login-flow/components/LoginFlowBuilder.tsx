@@ -146,7 +146,7 @@ function LoginFlowBuilder() {
                 data: {
                   ...node.data,
                   properties: {
-                    ...((stepData?.properties as Record<string, unknown>) ?? {}),
+                    ...(stepData?.properties ?? {}),
                     senderId: smsProviders[0].id,
                   },
                 },
@@ -170,7 +170,7 @@ function LoginFlowBuilder() {
           ...node,
           data: {
             ...node.data,
-            properties: {...((stepData?.properties as Record<string, unknown>) ?? {}), idpId: matching[0].id},
+            properties: {...(stepData?.properties ?? {}), idpId: matching[0].id},
           },
         };
       });

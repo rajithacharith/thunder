@@ -3580,10 +3580,15 @@ const translations = {
     'core.resourcePanel.executors.title': 'Executors',
     'core.resourcePanel.executors.description': 'Backend actions like verifying credentials or sending OTPs',
 
+    // Steps (shared)
+    'core.steps.renameTooltip': 'Double-click to edit the step ID',
+    'core.steps.stepId': 'Step ID',
+
     // View step
     'core.steps.view.addComponent': 'Add Component',
     'core.steps.view.addField': 'Add Field',
     'core.steps.view.configure': 'Configure',
+    'core.steps.view.preview': 'Preview this screen',
     'core.steps.view.remove': 'Remove',
     'core.steps.view.noComponentsAvailable': 'No components available',
 

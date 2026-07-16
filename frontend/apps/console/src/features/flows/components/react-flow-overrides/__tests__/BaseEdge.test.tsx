@@ -273,6 +273,22 @@ describe('BaseEdge', () => {
   });
 
   describe('Delete Functionality', () => {
+    it('should show the delete button while the edge is selected, without hover', () => {
+      render(<BaseEdge {...defaultProps} selected />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(screen.getByRole('button', {name: 'Delete edge'})).toBeInTheDocument();
+    });
+
+    it('should not show the delete button when neither hovered nor selected', () => {
+      render(<BaseEdge {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(screen.queryByRole('button', {name: 'Delete edge'})).not.toBeInTheDocument();
+    });
+
     it('should call deleteElements when delete button is clicked', () => {
       const {container} = render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),

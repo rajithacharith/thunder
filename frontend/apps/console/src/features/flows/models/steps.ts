@@ -67,6 +67,11 @@ export interface StepAction {
 export interface StepData {
   components?: Element[];
   action?: StepAction;
+  /**
+   * Node-specific properties persisted in the flow definition
+   * (e.g. a user-set `displayName`, executor options).
+   */
+  properties?: Record<string, unknown>;
   [key: string]: unknown;
 }
 

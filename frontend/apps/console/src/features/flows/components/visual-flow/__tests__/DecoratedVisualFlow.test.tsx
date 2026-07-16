@@ -30,6 +30,8 @@ vi.mock('../../../hooks/useUIPanelState', () => ({
   default: () => ({
     isResourcePanelOpen: true,
     isResourcePropertiesPanelOpen: false,
+    setIsResourcePanelOpen: vi.fn(),
+    setIsOpenResourcePropertiesPanel: vi.fn(),
   }),
 }));
 

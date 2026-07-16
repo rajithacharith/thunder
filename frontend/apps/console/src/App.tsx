@@ -378,7 +378,7 @@ export default function App(): JSX.Element {
               path="/flows/signin"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                  <DashboardLayout collapseSidebar />
                 </ProtectedRoute>
               }
             >
@@ -388,7 +388,7 @@ export default function App(): JSX.Element {
               path="/flows/signin/:flowId"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                  <DashboardLayout collapseSidebar />
                 </ProtectedRoute>
               }
             >
@@ -398,7 +398,7 @@ export default function App(): JSX.Element {
               path="/flows/registration"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                  <DashboardLayout collapseSidebar />
                 </ProtectedRoute>
               }
             >
@@ -408,7 +408,7 @@ export default function App(): JSX.Element {
               path="/flows/registration/:flowId"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                  <DashboardLayout collapseSidebar />
                 </ProtectedRoute>
               }
             >
@@ -418,7 +418,7 @@ export default function App(): JSX.Element {
               path="/flows/recovery"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                  <DashboardLayout collapseSidebar />
                 </ProtectedRoute>
               }
             >
@@ -428,7 +428,7 @@ export default function App(): JSX.Element {
               path="/flows/recovery/:flowId"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                  <DashboardLayout collapseSidebar />
                 </ProtectedRoute>
               }
             >

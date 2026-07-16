@@ -79,6 +79,11 @@ export interface FlowSimulation {
    */
   start: () => void;
   /**
+   * Starts (or restarts) the simulation focused directly at the given node,
+   * e.g. to preview a single screen. No-op when the node does not exist.
+   */
+  startAt: (nodeId: string) => void;
+  /**
    * Follows a transition to its target node.
    */
   choose: (option: SimulationOption) => void;
@@ -169,6 +174,20 @@ function useFlowSimulation(nodes: Node[], edges: Edge[]): FlowSimulation {
     focusNode(startNode.id);
   }, [focusNode]);
 
+  const startAt = useCallback(
+    (nodeId: string): void => {
+      if (!nodesRef.current.some((node: Node) => node.id === nodeId)) {
+        return;
+      }
+      setIsSimulating(true);
+      setPathNodeIds([nodeId]);
+      setPathEdges([]);
+      setPreviewedOption(null);
+      focusNode(nodeId);
+    },
+    [focusNode],
+  );
+
   const choose = useCallback(
     (option: SimulationOption): void => {
       setPathNodeIds((prev: string[]) => [...prev, option.targetNodeId]);
@@ -242,6 +261,7 @@ function useFlowSimulation(nodes: Node[], edges: Edge[]): FlowSimulation {
       followCamera,
       toggleFollowCamera,
       start,
+      startAt,
       choose,
       back,
       preview,
@@ -257,6 +277,7 @@ function useFlowSimulation(nodes: Node[], edges: Edge[]): FlowSimulation {
       followCamera,
       toggleFollowCamera,
       start,
+      startAt,
       choose,
       back,
       preview,
