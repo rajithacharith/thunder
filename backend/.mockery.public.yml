@@ -531,6 +531,15 @@ packages:
       pkgname: resourcemock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/thunder-id/thunderid/internal/serverconfig:
+    interfaces:
+      ServerConfigService:
+        config:
+          dir: tests/mocks/serverconfigmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: serverconfigmock
+          filename: "{{.InterfaceName}}_mock.go"
+
   github.com/thunder-id/thunderid/internal/entityprovider:
     config:
       all: true
@@ -576,6 +585,24 @@ packages:
           dir: tests/mocks/observabilityprovidermock
           structname: '{{.InterfaceName}}Mock'
           pkgname: observabilityprovidermock
+          filename: "{{.InterfaceName}}_mock.go"
+      CaptchaValidationProvider:
+        config:
+          dir: tests/mocks/captchamock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: captchamock
+          filename: "{{.InterfaceName}}_mock.go"
+      Executor:
+        config:
+          dir: tests/mocks/flow/coremock
+          structname: ExecutorInterfaceMock
+          pkgname: coremock
+          filename: "ExecutorInterface_mock.go"
+      AttestationProvider:
+        config:
+          dir: tests/mocks/attestationprovidermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: attestationprovidermock
           filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/authnprovider/provider:

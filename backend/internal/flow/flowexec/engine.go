@@ -805,6 +805,13 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 		flowStep.SSOFlowID = ssoFlowID(ctx)
 	}
 
+	// Carry a session-termination signal onto the flow step so the transport layer clears the
+	// per-flow cookie. The session sign-out node raises it on the engine-only EngineData channel once
+	// it has ended the session.
+	if cleared := nodeResp.EngineData[common.RuntimeKeySSOSessionCleared]; cleared != "" {
+		flowStep.SSOClearFlowID = ssoFlowID(ctx)
+	}
+
 	switch nodeResp.Status {
 	case common.NodeStatusComplete:
 		if fe.isDisplayOnlyPromptNode(ctx.CurrentNode) {
@@ -1627,7 +1634,16 @@ func processNodeResponseErrorForEventPublish(nodeResp *common.NodeResponse) map[
 // ssoFlowID returns the current flow's ID (used as the SSO group key), or "" if no graph
 // is set on the context.
 func ssoFlowID(ctx *EngineContext) string {
-	if ctx == nil || ctx.Graph == nil {
+	if ctx == nil {
+		return ""
+	}
+	// A sign-out flow operates on a different flow's session than the one it runs; SessionFlowID
+	// carries that flow (the login flow) so the inbound cookie, SSO inputs, and cookie clear all
+	// resolve under it. Other flows fall back to the running flow's own id.
+	if ctx.SessionFlowID != "" {
+		return ctx.SessionFlowID
+	}
+	if ctx.Graph == nil {
 		return ""
 	}
 	return ctx.Graph.GetID()

@@ -315,6 +315,16 @@ type IdentityProviderConfig struct {
 	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
 	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
 	Store string `yaml:"store" json:"store"`
+
+	// GoogleBaseURL overrides the scheme+host of Google's OAuth/OIDC endpoints (path preserved).
+	// Empty (the default) means the real Google endpoints are used. Intended for test
+	// environments that redirect the flow to a local mock server; leave empty in production.
+	GoogleBaseURL string `yaml:"google_base_url" json:"google_base_url"`
+
+	// GitHubBaseURL overrides the scheme+host of GitHub's OAuth endpoints (path preserved).
+	// Empty (the default) means the real GitHub endpoints are used. Intended for test
+	// environments that redirect the flow to a local mock server; leave empty in production.
+	GitHubBaseURL string `yaml:"github_base_url" json:"github_base_url"`
 }
 
 // ApplicationConfig holds the application service configuration.
@@ -572,7 +582,6 @@ type Config struct {
 	Translation          TranslationConfig                `yaml:"translation"           json:"translation"`
 	Email                EmailConfig                      `yaml:"email"                 json:"email"`
 	Notification         NotificationConfig               `yaml:"notification"          json:"notification"`
-	Consent              engineconfig.ConsentConfig       `yaml:"consent"               json:"consent"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
@@ -638,6 +647,9 @@ func LoadConfig(configPath string, defaultPath string, serverHome string) (*Conf
 	if cfg.GateClient.Path != "" {
 		if cfg.GateClient.LoginPath == "" {
 			cfg.GateClient.LoginPath = urlpath.Join(cfg.GateClient.Path, "signin")
+		}
+		if cfg.GateClient.SignOutPath == "" {
+			cfg.GateClient.SignOutPath = urlpath.Join(cfg.GateClient.Path, "signout")
 		}
 		if cfg.GateClient.ErrorPath == "" {
 			cfg.GateClient.ErrorPath = urlpath.Join(cfg.GateClient.Path, "error")

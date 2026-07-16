@@ -68,13 +68,15 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 	challengeToken := sysutils.SanitizeString(flowR.ChallengeToken)
 	flowSecret := sysutils.SanitizeString(r.Header.Get(serverconst.FlowSecretHeaderName))
+	attestationToken := sysutils.SanitizeString(r.Header.Get(serverconst.AttestationTokenHeaderName))
 
 	// Read the inbound SSO transport inputs (per-flow handle cookies) and make
 	// them available to the flow service, which selects the handle once the flow is known.
 	ctx := session.WithInbound(r.Context(), h.ssoTransport.Read(r))
 
 	flowStep, flowErr := h.flowExecService.Execute(
-		ctx, appID, executionID, flowTypeStr, verbose, action, inputs, challengeToken, flowSecret)
+		ctx, appID, executionID, flowTypeStr, verbose, action, inputs, challengeToken,
+		flowSecret, attestationToken)
 
 	if flowErr != nil {
 		handleFlowError(r.Context(), w, flowErr)
@@ -95,6 +97,11 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 		// lifetime.
 		h.ssoTransport.Write(w, session.CookieName(flowStep.SSOFlowID), flowStep.SSOHandleOut,
 			h.ssoHandleTTL)
+	}
+
+	// Clear the per-flow SSO cookie when the flow terminated the session (sign-out).
+	if flowStep.SSOClearFlowID != "" {
+		h.ssoTransport.Clear(w, session.CookieName(flowStep.SSOClearFlowID))
 	}
 
 	flowResp := FlowResponse{
@@ -127,7 +134,8 @@ func handleFlowError(ctx context.Context, w http.ResponseWriter, flowErr *tidcom
 		switch flowErr.Code {
 		case ErrorDirectFlowInitiationNotPermitted.Code:
 			statusCode = http.StatusForbidden
-		case ErrorFlowSecretRequired.Code, ErrorFlowSecretInvalid.Code:
+		case ErrorFlowSecretRequired.Code, ErrorFlowSecretInvalid.Code,
+			ErrorAttestationRequired.Code, ErrorAttestationInvalid.Code:
 			statusCode = http.StatusUnauthorized
 		default:
 			statusCode = http.StatusBadRequest

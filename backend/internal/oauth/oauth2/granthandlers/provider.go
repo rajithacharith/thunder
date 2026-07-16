@@ -26,6 +26,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -42,6 +43,7 @@ type GrantHandlerProvider struct {
 	refreshTokenGrantHandler      GrantHandlerInterface
 	tokenExchangeGrantHandler     GrantHandlerInterface
 	cibaGrantHandler              GrantHandlerInterface
+	jwtBearerGrantHandler         GrantHandlerInterface
 }
 
 // newGrantHandlerProvider creates a new instance of GrantHandlerProvider.
@@ -55,21 +57,24 @@ func newGrantHandlerProvider(
 	rbacAuthzService providers.AuthorizationProvider,
 	actorProvider providers.ActorProvider,
 	resourceService providers.ResourceServerProvider,
+	serverConfigService serverconfig.ServerConfigService,
 	cibaService ciba.CIBAServiceInterface,
 	refreshTokenRevoker revocation.RefreshTokenRevokerInterface,
 	cfg oauthconfig.Config,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
 		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(
-			tokenBuilder, ouService, rbacAuthzService, actorProvider, resourceService),
+			tokenBuilder, ouService, rbacAuthzService, actorProvider, resourceService, serverConfigService),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
-			authzService, tokenBuilder, attrCacheService, resourceService),
+			authzService, tokenBuilder, attrCacheService, resourceService, serverConfigService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(
 			jwtService, tokenBuilder, tokenValidator, attrCacheService, resourceService,
-			refreshTokenRevoker, cfg),
+			serverConfigService, refreshTokenRevoker, cfg),
 		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(
-			tokenBuilder, tokenValidator, resourceService),
+			tokenBuilder, tokenValidator, rbacAuthzService, actorProvider, resourceService, serverConfigService),
 		cibaGrantHandler: newCIBAGrantHandler(cibaService, tokenBuilder, attrCacheService),
+		jwtBearerGrantHandler: newJWTBearerGrantHandler(
+			tokenBuilder, tokenValidator, resourceService, serverConfigService),
 	}
 }
 
@@ -86,6 +91,8 @@ func (p *GrantHandlerProvider) GetGrantHandler(grantType providers.GrantType) (G
 		return p.tokenExchangeGrantHandler, nil
 	case providers.GrantTypeCIBA:
 		return p.cibaGrantHandler, nil
+	case providers.GrantTypeJWTBearer:
+		return p.jwtBearerGrantHandler, nil
 	default:
 		return nil, constants.UnSupportedGrantTypeError
 	}

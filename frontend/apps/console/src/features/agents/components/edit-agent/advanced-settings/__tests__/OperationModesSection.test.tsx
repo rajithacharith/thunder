@@ -68,7 +68,7 @@ describe('OperationModesSection', () => {
 
       const listbox = await screen.findByRole('listbox');
       expect(within(listbox).getByText('client_credentials')).toBeInTheDocument();
-      expect(within(listbox).getByText('urn:ietf:params:oauth:grant-type:token-exchange')).toBeInTheDocument();
+      expect(within(listbox).getByText('Token Exchange')).toBeInTheDocument();
       expect(within(listbox).getByText('authorization_code')).toBeInTheDocument();
       expect(within(listbox).getByText('CIBA (Client-Initiated Backchannel Authentication)')).toBeInTheDocument();
       expect(within(listbox).getByText('refresh_token')).toBeInTheDocument();
@@ -111,7 +111,7 @@ describe('OperationModesSection', () => {
 
       await user.click(document.getElementById('agent-grant-types')!);
       const listbox = await screen.findByRole('listbox');
-      await user.click(within(listbox).getByText('urn:ietf:params:oauth:grant-type:token-exchange'));
+      await user.click(within(listbox).getByText('Token Exchange'));
 
       expect(onOAuth2ConfigChange).toHaveBeenCalledWith(
         expect.objectContaining({

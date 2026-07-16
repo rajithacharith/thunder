@@ -140,6 +140,7 @@ type GateClientConfig struct {
 	Scheme       string `yaml:"scheme"        json:"scheme"`
 	Path         string `yaml:"path"          json:"path"`
 	LoginPath    string `yaml:"login_path"    json:"login_path"`
+	SignOutPath  string `yaml:"signout_path"   json:"signout_path"`
 	ErrorPath    string `yaml:"error_path"    json:"error_path"`
 	CallbackPath string `yaml:"callback_path" json:"callback_path"`
 }
@@ -230,14 +231,6 @@ type FlowConfig struct {
 	// When empty, all built-in interceptors are registered. When set, only listed interceptors
 	// are available; omit only interceptors you intentionally disable on this node.
 	Interceptors []string `yaml:"interceptors"                json:"interceptors"`
-}
-
-// ConsentConfig holds the configuration for the consent service integration.
-type ConsentConfig struct {
-	Enabled    bool   `yaml:"enabled"     json:"enabled"`
-	BaseURL    string `yaml:"base_url"    json:"base_url"`
-	Timeout    int    `yaml:"timeout"     json:"timeout"`     // HTTP request timeout in seconds. Default: 5
-	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
 }
 
 // RequiredClaim defines a claim name and expected value that must be present in the token.

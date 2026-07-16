@@ -41,9 +41,6 @@ passkey:
     - "https://localhost:8095"
     - "http://localhost:8095"
 
-consent:
-  enabled: false
-
 oauth:
   allow_wildcard_redirect_uri: true
   auth_class:

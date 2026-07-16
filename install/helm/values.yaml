@@ -343,6 +343,35 @@ configuration:
         max_retries: 3
         min_retry_backoff_ms: 50
         max_retry_backoff_ms: 2000
+    # Operation database configuration. Stores SSO sessions, revoked tokens, and consent records.
+    operation:
+      # WARNING: Use sqlite only if you are running a single pod.
+      type: "postgres" # postgres or sqlite
+      postgres:
+        hostname: "localhost"
+        port: "5432"
+        name: "operationdb"
+        username: "dbuser"
+        password: "dbpassword"
+        passwordRef:
+          name: ""
+          key: ""
+        sslmode: "require"
+        max_open_conns: 500
+        max_idle_conns: 100
+        conn_max_lifetime: 3600
+        max_retries: 3
+        min_retry_backoff_ms: 50
+        max_retry_backoff_ms: 2000
+      sqlite:
+        path: "database/operationdb.db"
+        options: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
+        max_open_conns: 500
+        max_idle_conns: 100
+        conn_max_lifetime: 3600
+        max_retries: 3
+        min_retry_backoff_ms: 50
+        max_retry_backoff_ms: 2000
 
   # Cache configuration
   cache:
@@ -395,32 +424,6 @@ configuration:
     allowedOrigins:
       - "https://localhost:8090"
 
-  # Consent configuration
-  consent:
-    enabled: true
-    baseUrl: "http://localhost:9090/api/v1"
-    timeout: 5
-    maxRetries: 3
-    server:
-      port: 9090
-      hostname: "localhost"
-    database:
-      # WARNING: Use sqlite only if you are running a single pod.
-      type: "postgres" # postgres or sqlite
-      # Below two parameters are only required for sqlite
-      sqlitePath: "repository/database/consentdb.db" # Only required for sqlite
-      sqliteOptions: "_pragma=journal_mode(WAL)&_pragma=cache_size(-16000)" # Only required for sqlite
-      # Below parameters are only required for Postgres
-      name: "consentdb"
-      host: "localhost"
-      port: "5432"
-      username: "dbuser"
-      password: "dbpassword"
-      sslmode: "require"
-      max_open_conns: 500
-      max_idle_conns: 100
-      conn_max_lifetime: "3600s"
-
   # OpenID4VP (verifiable presentation / verifier) configuration.
   # Leave signingKeyId empty to keep the verifier signing engine disabled.
   openid4vp:
@@ -471,6 +474,27 @@ persistence:
   size: 1Gi
   annotations: {}
 
+# Storage for the cryptographic material (TLS, JWT signing, and AES encryption keys) that the setup
+# job generates. This generation is a quickstart/evaluation convenience: nothing is baked into the
+# image, and every install gets its own unique keys on this dedicated PVC, which the server reads.
+# Only used when setup.enabled=true.
+#
+# Treat this PVC as persistent — losing it invalidates all issued tokens and previously-encrypted
+# data. For production, do not rely on the auto-generated self-signed TLS certificate; terminate TLS
+# with a CA-issued certificate at your ingress/gateway (see ingress.tlsSecretsName / gateway.tls) and
+# review the production deployment guide.
+#
+# accessMode defaults to ReadWriteOnce, which fits a single-node or single-replica install. If
+# deployment.replicaCount > 1 and the replicas can be scheduled onto different nodes, set accessMode
+# to ReadWriteMany (needs a storage class that supports it) so every replica can read the material,
+# or provide your own key material and set setup.enabled=false.
+certs:
+  persistence:
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 16Mi
+    annotations: {}
+
 # Declarative resources mount configuration.
 # Mounts files under ThunderID's config/resources directory.
 declarativeResources:
@@ -509,8 +533,8 @@ declarativeResources:
     #     path: applications/my-web-app.yaml
     #     mountPath: /opt/thunderid/config/resources/applications/my-web-app.yaml
     #   - key: google-idp
-    #     path: identity_providers/google.yaml
-    #     mountPath: /opt/thunderid/config/resources/identity_providers/google.yaml
+    #     path: connections/google.yaml
+    #     mountPath: /opt/thunderid/config/resources/connections/google.yaml
     #   - key: default-org
     #     path: organization_units/default.yaml
     #     mountPath: /opt/thunderid/config/resources/organization_units/default.yaml
@@ -527,8 +551,8 @@ declarativeResources:
     #     path: applications/my-app.yaml
     #     mountPath: /opt/thunderid/config/resources/applications/my-app.yaml
     #   - key: google-idp
-    #     path: identity_providers/google.yaml
-    #     mountPath: /opt/thunderid/config/resources/identity_providers/google.yaml
+    #     path: connections/google.yaml
+    #     mountPath: /opt/thunderid/config/resources/connections/google.yaml
 
 # Setup Job configuration
 # Runs setup.sh as a one-time initialization job during Helm install

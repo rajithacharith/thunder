@@ -23,13 +23,16 @@ export const AUTH_CONFIG = {
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === "true";
 
-export const SCOPES = [
+export const BOOKING_SCOPES = [
   "openid",
   "profile",
   "email",
   "ou",
-  "wayfinder:booking:read",
-  "wayfinder:booking:create",
-  "wayfinder:booking:cancel",
-  ...(AI_FEATURES_ENABLED ? ["agent:access"] : []),
+  "booking:read",
+  "booking:create",
+  "booking:cancel",
 ];
+
+export const CHAT_SCOPES = AI_FEATURES_ENABLED ? ["agent:access"] : [];
+
+export const SCOPES = BOOKING_SCOPES;

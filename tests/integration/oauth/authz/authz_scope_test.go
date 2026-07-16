@@ -204,7 +204,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 	resourceServer := testutils.ResourceServer{
 		Name:        "OAuth Document Management System",
 		Description: "System for managing documents via OAuth",
-		Identifier:  "oauth-document-mgmt",
+		Identifier:  "https://oauth-document-mgmt.example.com",
 		OUID:        scopeTestOUID,
 	}
 	actions := []testutils.Action{
@@ -324,17 +324,63 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopesWithR
 	ts.testOAuthAuthzFlow_WithAuthorizedScopes("oauth_authorized_group_user")
 }
 
+// obtainTokenWithResource runs the password authorization-code flow binding the token to the given
+// resource server via the RFC 8707 resource parameter at the authorize step (inherited by the token step).
+func (ts *OAuthAuthzScopeTestSuite) obtainTokenWithResource(clientID, clientSecret, scope, username,
+	resource string) (*testutils.TokenResponse, error) {
+	resp, err := testutils.InitiateAuthorizationFlowWithResource(clientID, scopeTestRedirectURI, "code",
+		scope, "test-state", resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initiate authorization: %w", err)
+	}
+	defer resp.Body.Close()
+
+	authID, executionID, err := testutils.ExtractAuthData(resp.Header.Get("Location"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract auth data: %w", err)
+	}
+
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionID, map[string]string{
+		"username": username,
+		"password": "SecurePass123!",
+	}, "action_001")
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute authentication flow: %w", err)
+	}
+
+	authzResp, err := testutils.CompleteAuthorization(authID, flowStep.Assertion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete authorization: %w", err)
+	}
+
+	code, err := testutils.ExtractAuthorizationCode(authzResp.RedirectURI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract authorization code: %w", err)
+	}
+
+	tokenResult, err := testutils.RequestTokenWithResourceAndClientCredentialsInBody(
+		clientID, clientSecret, code, scopeTestRedirectURI, "authorization_code", resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to request token: %w", err)
+	}
+	if tokenResult.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("token request failed with status %d: %s", tokenResult.StatusCode,
+			string(tokenResult.Body))
+	}
+
+	return tokenResult.Token, nil
+}
+
 // testOAuthAuthzFlow_WithAuthorizedScopes tests complete OAuth flow with authorized scopes
 func (ts *OAuthAuthzScopeTestSuite) testOAuthAuthzFlow_WithAuthorizedScopes(username string) {
-	// Step 1: Execute full OAuth flow and obtain token for authorized user
-	tokenResp, err := testutils.ObtainAccessTokenWithPassword(
+	// Step 1: Execute full OAuth flow and obtain token for authorized user. Bind the token to the
+	// suite's resource server so the read/write permissions defined there survive downscoping.
+	tokenResp, err := ts.obtainTokenWithResource(
 		scopeTestClientID,
-		scopeTestRedirectURI,
+		scopeTestClientSecret,
 		"openid read write",
 		username,
-		"SecurePass123!",
-		false,
-		scopeTestClientSecret,
+		"https://oauth-document-mgmt.example.com",
 	)
 	ts.Require().NoError(err, "Failed to obtain access token")
 	ts.Require().NotNil(tokenResp, "Token response should not be nil")
@@ -361,15 +407,14 @@ func (ts *OAuthAuthzScopeTestSuite) testOAuthAuthzFlow_WithAuthorizedScopes(user
 
 // TestOAuthAuthzFlow_WithNoAuthorizedScopes tests OAuth flow when user has no custom scopes
 func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithNoAuthorizedScopes() {
-	// Step 1: Execute full OAuth flow and obtain token for user without role assignments
-	tokenResp, err := testutils.ObtainAccessTokenWithPassword(
+	// Step 1: Execute full OAuth flow and obtain token for user without role assignments. Bind the
+	// token to the suite's resource server; read/write downscope away since the user lacks the grant.
+	tokenResp, err := ts.obtainTokenWithResource(
 		scopeTestClientID,
-		scopeTestRedirectURI,
+		scopeTestClientSecret,
 		"openid read write",
 		"oauth_unauthorized_user",
-		"SecurePass123!",
-		false,
-		scopeTestClientSecret,
+		"https://oauth-document-mgmt.example.com",
 	)
 	ts.Require().NoError(err, "Failed to obtain access token")
 	ts.Require().NotNil(tokenResp, "Token response should not be nil")
@@ -444,14 +489,12 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_FiltersOIDCScopesByApplic
 	ts.Require().ElementsMatch([]string{"profile"}, persistedScopes,
 		"Application should persist only the active OIDC scope used by this test")
 
-	tokenResp, err := testutils.ObtainAccessTokenWithPassword(
+	tokenResp, err := ts.obtainTokenWithResource(
 		clientID,
-		scopeTestRedirectURI,
+		clientSecret,
 		"openid email profile",
 		"oauth_authorized_user",
-		"SecurePass123!",
-		false,
-		clientSecret,
+		"https://oauth-document-mgmt.example.com",
 	)
 	ts.Require().NoError(err, "Failed to obtain access token")
 	ts.Require().NotNil(tokenResp, "Token response should not be nil")
@@ -839,9 +882,10 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	ts.Require().NoError(err, "Failed to extract authorization code")
 	ts.Require().NotEmpty(code, "Authorization code should not be empty")
 
-	tokenResult, err := testutils.RequestToken(
+	tokenResult, err := testutils.RequestTokenWithResource(
 		"required_attrs_test_client", "required_attrs_test_secret",
 		code, scopeTestRedirectURI, "authorization_code",
+		"https://oauth-document-mgmt.example.com",
 	)
 	ts.Require().NoError(err, "Failed to request access token")
 	ts.Require().Equal(http.StatusOK, tokenResult.StatusCode, "Token request should succeed")

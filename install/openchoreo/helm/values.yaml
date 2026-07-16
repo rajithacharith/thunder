@@ -130,10 +130,6 @@ thunderid-component:
 
   serverPublicUrl: "<SERVER_PUBLIC_URL>"  # ThunderID's externally accessible URL
 
-  consent:
-    enabled: false
-    baseUrl: "http://localhost:9090/api/v1"
-
   # ── OpenChoreo platform ──────────────────────────────────────────────────────
   dataPlane:
     name: default             # Name of the ClusterDataPlane to bind all environments to

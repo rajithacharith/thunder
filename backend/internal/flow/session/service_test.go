@@ -349,3 +349,64 @@ func (suite *ServiceTestSuite) TestLoadCheckpoint_ParticipantErrorIsNonFatal() {
 	suite.NotNil(sess)
 	suite.NotNil(sc)
 }
+
+// --- Terminate ---
+
+func (suite *ServiceTestSuite) TestTerminate_DeletesSessionAndPurges() {
+	svc, m := suite.newService()
+	m.store.EXPECT().GetByHandle(mock.Anything, "handle-abc").Return(liveStoreSession(), nil)
+	runTx(m)
+	m.store.EXPECT().DeleteSession(mock.Anything, "sess-1").Return(nil)
+	m.store.EXPECT().Delete(mock.Anything, "sess-1").Return(nil)
+	m.store.EXPECT().DeleteBySessionID(mock.Anything, "sess-1").Return(nil)
+
+	got, err := svc.Terminate(context.Background(), "handle-abc", "flow-1")
+
+	suite.Require().NoError(err)
+	suite.Require().NotNil(got)
+	suite.Equal("sess-1", got.SessionID, "the terminated session is returned")
+}
+
+func (suite *ServiceTestSuite) TestTerminate_NoHandle() {
+	svc, _ := suite.newService()
+
+	got, err := svc.Terminate(context.Background(), "", "flow-1")
+
+	suite.Require().NoError(err)
+	suite.Nil(got)
+}
+
+func (suite *ServiceTestSuite) TestTerminate_MissingSessionIsNoOp() {
+	svc, m := suite.newService()
+	m.store.EXPECT().GetByHandle(mock.Anything, "handle-abc").Return(nil, nil)
+
+	got, err := svc.Terminate(context.Background(), "handle-abc", "flow-1")
+
+	suite.Require().NoError(err, "terminating an absent session must be an idempotent no-op")
+	suite.Nil(got)
+}
+
+func (suite *ServiceTestSuite) TestTerminate_DifferentFlowErrors() {
+	svc, m := suite.newService()
+	s := liveStoreSession()
+	s.FlowID = "other-flow"
+	m.store.EXPECT().GetByHandle(mock.Anything, "handle-abc").Return(s, nil)
+
+	got, err := svc.Terminate(context.Background(), "handle-abc", "flow-1")
+
+	suite.Require().Error(err, "a handle grouped under a different flow must be an error")
+	suite.Contains(err.Error(), "belongs to flow")
+	suite.Nil(got)
+}
+
+func (suite *ServiceTestSuite) TestTerminate_DeleteError() {
+	svc, m := suite.newService()
+	m.store.EXPECT().GetByHandle(mock.Anything, "handle-abc").Return(liveStoreSession(), nil)
+	runTx(m)
+	m.store.EXPECT().DeleteSession(mock.Anything, mock.Anything).Return(errors.New("store down"))
+
+	_, err := svc.Terminate(context.Background(), "handle-abc", "flow-1")
+
+	suite.Require().Error(err)
+	suite.Contains(err.Error(), "failed to terminate session")
+}

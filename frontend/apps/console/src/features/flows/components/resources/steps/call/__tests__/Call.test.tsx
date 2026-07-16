@@ -239,6 +239,17 @@ describe('Call', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/flows/recovery/flow-rec');
     });
 
+    it('does not offer opening a referenced SIGNOUT flow', () => {
+      // Sign-out flows cannot be call targets, so there is no route to open one.
+      mockUseGetFlows.mockReturnValue({
+        data: {flows: [{id: 'flow-so', name: 'Sign Out', flowType: 'SIGNOUT'}]},
+        isLoading: false,
+        error: null,
+      });
+      renderCall({flow: {ref: 'flow-so'}});
+      expect(screen.getByTestId('call-open-referenced-flow')).toBeDisabled();
+    });
+
     it('does not navigate when the user cancels the confirmation dialog', () => {
       mockUseGetFlows.mockReturnValue({
         data: {flows: [{id: 'flow-a', name: 'Flow A', flowType: 'AUTHENTICATION'}]},

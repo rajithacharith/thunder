@@ -34,12 +34,14 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/granthandlers"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/introspect"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
+	oauth2logout "github.com/thunder-id/thunderid/internal/oauth/oauth2/logout"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/par"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/token"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/userinfo"
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	syshttp "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
@@ -61,9 +63,11 @@ func Initialize(
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService providers.AuthorizationProvider,
 	resourceService providers.ResourceServerProvider,
+	serverConfigService serverconfig.ServerConfigService,
 	i18nService providers.I18nProvider,
 	idpService providers.IDPProvider,
 	dpopVerifier dpop.VerifierInterface,
+	runtimeStore providers.RuntimeStoreProvider,
 	cfg oauthconfig.Config,
 ) error {
 	jwks.Initialize(mux, runtimeCrypto)
@@ -90,8 +94,8 @@ func Initialize(
 	}
 	grantHandlerProvider := granthandlers.Initialize(
 		jwtService, oauth2AuthzService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService,
-		refreshTokenRevoker, cfg)
+		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, serverConfigService,
+		cibaService, refreshTokenRevoker, cfg)
 	token.Initialize(mux, jwtService, actorProvider, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, dpopVerifier, cfg)
 	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService, tokenValidator)
@@ -99,5 +103,6 @@ func Initialize(
 		tokenValidator, actorProvider, attributeCacheSvc,
 		discoveryService, dpopVerifier, cfg)
 	callback.Initialize(mux, oauth2AuthzService, cibaService, cfg)
+	oauth2logout.Initialize(mux, jwtService, actorProvider, flowExecService, runtimeStore, cfg)
 	return nil
 }

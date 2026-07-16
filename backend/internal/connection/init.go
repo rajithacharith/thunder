@@ -24,17 +24,26 @@ import (
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/notification"
 	ncommon "github.com/thunder-id/thunderid/internal/notification/common"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // Initialize wires the connection service over the identity-provider and notification-sender
-// services and registers the /connections routes.
+// services, registers the /connections routes, loads declarative connection resources, and
+// returns the connection exporter for the export API.
 func Initialize(mux *http.ServeMux, idpService idp.IDPServiceInterface,
-	notificationService notification.NotificationSenderMgtSvcInterface) {
+	notificationService notification.NotificationSenderMgtSvcInterface) (
+	declarativeresource.ResourceExporter, error) {
 	svc := newService(idpService, notificationService)
 	h := newHandler(svc)
 	registerRoutes(mux, h)
+
+	if err := loadDeclarativeResources(); err != nil {
+		return nil, err
+	}
+
+	return newConnectionExporter(idpService, notificationService), nil
 }
 
 func noContent(w http.ResponseWriter, _ *http.Request) {
@@ -82,6 +91,11 @@ func registerRoutes(mux *http.ServeMux, h *handler) {
 		getHandler(h, providers.IDPTypeOIDC, oidcFromIDPDTO),
 		updateHandler(h, providers.IDPTypeOIDC, oidcToIDPDTO, oidcFromIDPDTO),
 		collectionOpts, itemOpts)
+	registerVendorRoutes(mux, h, "/connections/oauth", providers.IDPTypeOAuth,
+		createHandler(h, oauthToIDPDTO, oauthFromIDPDTO),
+		getHandler(h, providers.IDPTypeOAuth, oauthFromIDPDTO),
+		updateHandler(h, providers.IDPTypeOAuth, oauthToIDPDTO, oauthFromIDPDTO),
+		collectionOpts, itemOpts)
 
 	// SMS-backed vendors.
 	registerSMSVendorRoutes(mux, h, "/connections/twilio", ncommon.MessageProviderTypeTwilio,
@@ -93,6 +107,11 @@ func registerRoutes(mux *http.ServeMux, h *handler) {
 		createSMSHandler(h, vonageToSenderDTO, vonageFromSenderDTO),
 		getSMSHandler(h, ncommon.MessageProviderTypeVonage, vonageFromSenderDTO),
 		updateSMSHandler(h, ncommon.MessageProviderTypeVonage, vonageToSenderDTO, vonageFromSenderDTO),
+		collectionOpts, itemOpts)
+	registerSMSVendorRoutes(mux, h, "/connections/"+smsGatewayVendorName, ncommon.MessageProviderTypeCustom,
+		createSMSHandler(h, smsGatewayToSenderDTO, smsGatewayFromSenderDTO),
+		getSMSHandler(h, ncommon.MessageProviderTypeCustom, smsGatewayFromSenderDTO),
+		updateSMSHandler(h, ncommon.MessageProviderTypeCustom, smsGatewayToSenderDTO, smsGatewayFromSenderDTO),
 		collectionOpts, itemOpts)
 }
 

@@ -99,7 +99,13 @@ func newOAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, name))
 
 	base := flowFactory.CreateExecutor(name, providers.ExecutorTypeAuthentication,
-		defaultInputs, prerequisites)
+		defaultInputs, prerequisites, &providers.ExecutorMeta{
+			SupportedProperties: []providers.ExecutorSupportedProperties{
+				{Property: "idpId", IsRequired: true},
+				{Property: common.NodePropertyAllowAuthenticationWithoutLocalUser},
+				{Property: common.NodePropertyAllowRegistrationWithExistingUser},
+			},
+		})
 
 	return &oAuthExecutor{
 		Executor:      base,
@@ -274,6 +280,8 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *providers.NodeContext,
 			execResp.RuntimeData[key] = systemutils.ConvertInterfaceValueToString(value)
 		}
 	}
+
+	setFederatedEntityState(execResp)
 
 	switch ctx.FlowType {
 	case providers.FlowTypeAuthentication:

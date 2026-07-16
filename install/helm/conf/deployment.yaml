@@ -181,6 +181,33 @@ database:
       min_retry_backoff_ms: {{ .Values.configuration.database.user.postgres.min_retry_backoff_ms }}
       max_retry_backoff_ms: {{ .Values.configuration.database.user.postgres.max_retry_backoff_ms }}
     {{- end }}
+  operation:
+    type: {{ .Values.configuration.database.operation.type | quote }}
+    {{- if eq .Values.configuration.database.operation.type "sqlite" }}
+    sqlite:
+      path: {{ .Values.configuration.database.operation.sqlite.path | quote }}
+      options: {{ .Values.configuration.database.operation.sqlite.options | quote }}
+      max_open_conns: {{ .Values.configuration.database.operation.sqlite.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.operation.sqlite.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.operation.sqlite.conn_max_lifetime }}
+      max_retries: {{ .Values.configuration.database.operation.sqlite.max_retries }}
+      min_retry_backoff_ms: {{ .Values.configuration.database.operation.sqlite.min_retry_backoff_ms }}
+      max_retry_backoff_ms: {{ .Values.configuration.database.operation.sqlite.max_retry_backoff_ms }}
+    {{- else }}
+    postgres:
+      hostname: {{ .Values.configuration.database.operation.postgres.hostname | quote }}
+      port: {{ .Values.configuration.database.operation.postgres.port }}
+      name: {{ .Values.configuration.database.operation.postgres.name | quote }}
+      username: {{ .Values.configuration.database.operation.postgres.username | quote }}
+      password: {{ "{{.DB_OPERATION_PASSWORD}}" | quote }}
+      sslmode: {{ .Values.configuration.database.operation.postgres.sslmode | quote }}
+      max_open_conns: {{ .Values.configuration.database.operation.postgres.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.operation.postgres.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.operation.postgres.conn_max_lifetime }}
+      max_retries: {{ .Values.configuration.database.operation.postgres.max_retries }}
+      min_retry_backoff_ms: {{ .Values.configuration.database.operation.postgres.min_retry_backoff_ms }}
+      max_retry_backoff_ms: {{ .Values.configuration.database.operation.postgres.max_retry_backoff_ms }}
+    {{- end }}
 
 cache:
   disabled: {{ .Values.configuration.cache.disabled }}
@@ -236,12 +263,6 @@ passkey:
   {{- range .Values.configuration.passkey.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
-
-consent:
-  enabled: {{ .Values.configuration.consent.enabled }}
-  base_url: {{ .Values.configuration.consent.baseUrl | quote }}
-  timeout: {{ .Values.configuration.consent.timeout }}
-  max_retries: {{ .Values.configuration.consent.maxRetries }}
 
 openid4vp:
   client_id: {{ .Values.configuration.openid4vp.clientId | quote }}

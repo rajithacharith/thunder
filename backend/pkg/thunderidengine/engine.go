@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/thunder-id/thunderid/internal/attestation"
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
@@ -138,9 +139,14 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	engineCtx.graphBuilder = graphbuilder.Initialize(engineCtx.flowFactory, engineCtx.execRegistry,
 		engineCtx.interceptorRegistry, graphCache)
 
+	attestationProvider, err := attestation.Initialize(engineCtx.runtimeCryptoSvc)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize attestation provider", log.Error(err))
+	}
 	flowExecService, err := flowexec.Initialize(mux, engineCtx.flowProvider, engineCtx.actorProvider,
 		engineCtx.execRegistry, engineCtx.interceptorRegistry, engineCtx.observabilitySvc,
-		engineCtx.runtimeCryptoSvc, engineCtx.graphBuilder, runtimeStoreProvider, transactioner, flowConfig)
+		engineCtx.runtimeCryptoSvc, attestationProvider, engineCtx.graphBuilder, runtimeStoreProvider,
+		transactioner, flowConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}
@@ -153,10 +159,13 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		OAuth:         engineCtx.oauthConfig,
 		GateClient:    engineCtx.gateClientConfig,
 	}
+	// The embedded engine has no server-config store, so no default resource server is available.
+	// Implicit no-resource requests that carry permission scopes are rejected; OIDC-only or
+	// scopeless requests do not need resource-server binding.
 	err = oauth.Initialize(mux, engineCtx.actorProvider, engineCtx.authnProvider, engineCtx.jwtService,
 		engineCtx.jweService, flowExecService, engineCtx.observabilitySvc, engineCtx.runtimeCryptoSvc,
 		engineCtx.ouProvider, attributeCacheService, engineCtx.authzProvider, engineCtx.resourceProvider,
-		engineCtx.i18nProvider, engineCtx.idpProvider, nil, oauthConfig)
+		nil, engineCtx.i18nProvider, engineCtx.idpProvider, nil, runtimeStoreProvider, oauthConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
 	}

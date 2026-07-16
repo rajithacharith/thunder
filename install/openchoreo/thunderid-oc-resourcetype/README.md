@@ -11,8 +11,7 @@ Provisioning is **fully declarative**: all ThunderID resources
 from a single resources YAML supplied at Resource creation time. Nothing is
 bootstrapped or seeded into the database. Sensitive values live in the
 platform secret store and are materialized onto the data plane by External
-Secrets Operator. They never touch the control plane, and no Kubernetes
-Secrets are created by hand.
+Secrets Operator. They never touch the control plane.
 
 ## How It Works
 
@@ -329,8 +328,6 @@ A second `HTTPRoute` is rendered for that hostname and the Console's
 | `runtime.oauth.refreshTokenValidityPeriod` | Refresh token validity in seconds | `86400` |
 | `runtime.cache.size` | Maximum in-memory cache entries | `10000` |
 | `runtime.cache.ttl` | Cache entry TTL in seconds | `3600` |
-| `runtime.consent.enabled` | Enable consent server integration | `false` |
-| `runtime.consent.baseUrl` | Consent server base URL | `http://localhost:9090/api/v1` |
 
 ## Environment Configurations
 

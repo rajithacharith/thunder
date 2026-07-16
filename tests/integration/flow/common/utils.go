@@ -332,29 +332,15 @@ func UpdateAppConfig(appID, authFlowID, registrationFlowID string) error {
 	return nil
 }
 
-// CreateNotificationSender creates a custom notification sender with a specified URL and name
+// CreateNotificationSender creates a custom SMS sender with a specified URL and name via
+// /connections/sms-gateway.
 func CreateNotificationSender(senderURL, senderName string) (string, error) {
 	senderRequest := map[string]interface{}{
 		"name":        senderName,
 		"description": "Custom SMS sender for integration tests",
-		"provider":    "custom",
-		"properties": []map[string]interface{}{
-			{
-				"name":      "url",
-				"value":     senderURL,
-				"is_secret": false,
-			},
-			{
-				"name":      "http_method",
-				"value":     "POST",
-				"is_secret": false,
-			},
-			{
-				"name":      "content_type",
-				"value":     "JSON",
-				"is_secret": false,
-			},
-		},
+		"url":         senderURL,
+		"httpMethod":  "POST",
+		"contentType": "JSON",
 	}
 
 	jsonPayload, err := json.Marshal(senderRequest)
@@ -364,7 +350,7 @@ func CreateNotificationSender(senderURL, senderName string) (string, error) {
 
 	client := testutils.GetHTTPClient()
 
-	req, err := http.NewRequest("POST", testServerURL+"/notification-senders/message", bytes.NewBuffer(jsonPayload))
+	req, err := http.NewRequest("POST", testServerURL+"/connections/sms-gateway", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return "", fmt.Errorf("failed to create sender request: %w", err)
 	}
@@ -400,7 +386,7 @@ func CreateNotificationSender(senderURL, senderName string) (string, error) {
 func DeleteNotificationSender(senderID string) error {
 	client := testutils.GetHTTPClient()
 
-	req, err := http.NewRequest("DELETE", testServerURL+"/notification-senders/message/"+senderID, nil)
+	req, err := http.NewRequest("DELETE", testServerURL+"/connections/sms-gateway/"+senderID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}

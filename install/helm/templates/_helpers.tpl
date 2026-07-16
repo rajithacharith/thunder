@@ -95,16 +95,16 @@ This is used to trigger pod restarts when auto-generated Secrets change.
 {{- $runtimePostgres := default dict $runtime.postgres -}}
 {{- $runtimeRedis := default dict $runtime.redis -}}
 {{- $userPostgres := default dict $user.postgres -}}
-{{- $consent := default dict $configuration.consent -}}
-{{- $consentDb := default dict $consent.database -}}
+{{- $operation := default dict $database.operation -}}
+{{- $operationPostgres := default dict $operation.postgres -}}
 {{- $cache := default dict $configuration.cache -}}
 {{- $redis := default dict $cache.redis -}}
-{{- if or (and $configPostgres.password (not (default dict $configPostgres.passwordRef).key)) (and $runtimePostgres.password (not (default dict $runtimePostgres.passwordRef).key)) (and $runtimeRedis.password (not (default dict $runtimeRedis.passwordRef).key)) (and $userPostgres.password (not (default dict $userPostgres.passwordRef).key)) (and $consent.enabled $consentDb.password (not (default dict $consentDb.passwordRef).key)) (and $redis.password (eq $cache.type "redis") (not (default dict $redis.passwordRef).key)) }}true{{- end }}
+{{- if or (and $configPostgres.password (not (default dict $configPostgres.passwordRef).key)) (and $runtimePostgres.password (not (default dict $runtimePostgres.passwordRef).key)) (and $runtimeRedis.password (not (default dict $runtimeRedis.passwordRef).key)) (and $userPostgres.password (not (default dict $userPostgres.passwordRef).key)) (and $operationPostgres.password (not (default dict $operationPostgres.passwordRef).key)) (and $redis.password (eq $cache.type "redis") (not (default dict $redis.passwordRef).key)) }}true{{- end }}
 {{- end }}
 
 {{/*
 Generate database password environment variable definitions for both deployment and setup job.
-Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from either auto-generated or external Secrets.
+Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, DB_USER_PASSWORD, and DB_OPERATION_PASSWORD from either auto-generated or external Secrets.
 */}}
 {{- define "thunderid.databasePasswordEnvVars" -}}
 {{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunderid.fullname" .) -}}
@@ -113,17 +113,17 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
 {{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
+{{- $operation := default dict $database.operation -}}
 {{- $configPostgres := default dict $config.postgres -}}
 {{- $runtimePostgres := default dict $runtime.postgres -}}
 {{- $runtimeRedis := default dict $runtime.redis -}}
 {{- $userPostgres := default dict $user.postgres -}}
-{{- $consent := default dict $configuration.consent -}}
-{{- $consentDb := default dict $consent.database -}}
+{{- $operationPostgres := default dict $operation.postgres -}}
 {{- $configPasswordRef := default dict $configPostgres.passwordRef -}}
 {{- $runtimePasswordRef := default dict $runtimePostgres.passwordRef -}}
 {{- $runtimeRedisPasswordRef := default dict $runtimeRedis.passwordRef -}}
 {{- $userPasswordRef := default dict $userPostgres.passwordRef -}}
-{{- $consentPasswordRef := default dict $consentDb.passwordRef -}}
+{{- $operationPasswordRef := default dict $operationPostgres.passwordRef -}}
 {{- if or $configPostgres.password $configPasswordRef.key }}
 - name: DB_CONFIG_PASSWORD
   valueFrom:
@@ -152,12 +152,12 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
       name: {{ if $userPasswordRef.key }}{{ $userPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
       key: {{ $userPasswordRef.key | default "user-db-password" }}
 {{- end }}
-{{- if and $consent.enabled (or $consentDb.password $consentPasswordRef.key) }}
-- name: DB_CONSENT_PASSWORD
+{{- if or $operationPostgres.password $operationPasswordRef.key }}
+- name: DB_OPERATION_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ if $consentPasswordRef.key }}{{ $consentPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
-      key: {{ $consentPasswordRef.key | default "consent-db-password" }}
+      name: {{ if $operationPasswordRef.key }}{{ $operationPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
+      key: {{ $operationPasswordRef.key | default "operation-db-password" }}
 {{- end }}
 {{- end }}
 

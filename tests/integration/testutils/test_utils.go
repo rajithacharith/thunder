@@ -42,6 +42,13 @@ const (
 	DefaultConfigJSONPath       = "../../backend/cmd/server/config/default.json"
 	TestDatabaseSchemaDirectory = "resources/dbscripts"
 	DatabaseFileBasePath        = "database/"
+
+	// GoogleMockBaseURL and GitHubMockBaseURL point the /connections/google and
+	// /connections/github vendors at the local mock OAuth servers (mock_google_oidc_server.go,
+	// mock_github_oauth_server.go) instead of the real accounts.google.com/github.com endpoints.
+	// Must match the mock port constants used by the flow/authn integration suites.
+	GoogleMockBaseURL = "http://localhost:8093"
+	GitHubMockBaseURL = "http://localhost:8092"
 )
 
 // ServerBinary is the name of the server binary, platform-dependent.
@@ -416,8 +423,8 @@ func CopyDeclarativeResources(zipFilePattern string) error {
 	resourceDirs := []string{
 		"agents",
 		"applications",
+		"connections",
 		"flows",
-		"identity_providers",
 		"layouts",
 		"organization_units",
 		"resource_servers",
@@ -657,6 +664,9 @@ func StartServer(port string, _ string) error {
 func startServerInternal(port string, extraArgs ...string) error {
 	if err := ensureDirectAuthSecretInDeploymentConfig(); err != nil {
 		return fmt.Errorf("failed to ensure Direct Auth secret in deployment.yaml: %w", err)
+	}
+	if err := ensureIdentityProviderMockEndpointsInDeploymentConfig(); err != nil {
+		return fmt.Errorf("failed to ensure IdP mock endpoints in deployment.yaml: %w", err)
 	}
 
 	serverPath := filepath.Join(extractedProductHome, ServerBinary)
@@ -959,6 +969,52 @@ func ensureDirectAuthSecretInDeploymentConfig() error {
 	return nil
 }
 
+// ensureIdentityProviderMockEndpointsInDeploymentConfig guarantees identity_provider.google_base_url
+// and identity_provider.github_base_url are set to the mock server URLs in the extracted product's
+// deployment.yaml, so /connections/google and /connections/github point at the local mock OAuth
+// servers instead of the real accounts.google.com/github.com endpoints. Reapplying before every
+// server start keeps the override in place regardless of prior config churn (e.g. suites that
+// rewrite deployment.yaml via UpdateDeploymentConfig), the same way ensureDirectAuthSecretInDeploymentConfig
+// reapplies the Direct Auth secret. These URLs are test-only and never appear in committed server config.
+func ensureIdentityProviderMockEndpointsInDeploymentConfig() error {
+	configPath := filepath.Join(extractedProductHome, "deployment.yaml")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read deployment.yaml: %w", err)
+	}
+
+	var cfg map[string]interface{}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("failed to parse deployment.yaml: %w", err)
+	}
+	if cfg == nil {
+		cfg = make(map[string]interface{})
+	}
+
+	identityProvider, ok := cfg["identity_provider"].(map[string]interface{})
+	if !ok {
+		identityProvider = make(map[string]interface{})
+	}
+	if identityProvider["google_base_url"] == GoogleMockBaseURL &&
+		identityProvider["github_base_url"] == GitHubMockBaseURL {
+		return nil
+	}
+	identityProvider["google_base_url"] = GoogleMockBaseURL
+	identityProvider["github_base_url"] = GitHubMockBaseURL
+	cfg["identity_provider"] = identityProvider
+
+	out, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated deployment.yaml: %w", err)
+	}
+	if err := os.WriteFile(configPath, out, 0644); err != nil {
+		return fmt.Errorf("failed to write updated deployment.yaml: %w", err)
+	}
+
+	return nil
+}
+
 // ReadDeploymentConfigKey returns a top-level key from the deployment.yaml, or nil if missing.
 func ReadDeploymentConfigKey(key string) (interface{}, error) {
 	ensureInitialized()
@@ -1003,9 +1059,13 @@ func RunSetupScript() error {
 	cmd.Dir = absProductHome // Run from product directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	// Pin the Direct Auth Secret so every setup run (main and re-runs) writes the same value the test
-	// clients send, instead of generating a fresh random secret each time.
-	cmd.Env = append(os.Environ(), "DIRECT_AUTH_SECRET="+DirectAuthHeaderValue)
+	// Pin the Direct Auth Secret and admin credentials so every setup run (main and re-runs) seeds
+	// the same values the test clients use, instead of generating fresh ones each time.
+	cmd.Env = append(os.Environ(),
+		"DIRECT_AUTH_SECRET="+DirectAuthHeaderValue,
+		"ADMIN_USERNAME="+AdminUsername,
+		"ADMIN_PASSWORD="+AdminPassword,
+	)
 
 	log.Println("Setup script will start server, run bootstrap, and stop server automatically")
 

@@ -260,8 +260,8 @@ const USER_CONTEXT_TOOLS = new Set<string>([
 ]);
 
 const OBO_SCOPES =
-  "openid wayfinder:booking:read wayfinder:booking:create " +
-  "wayfinder:booking:cancel wayfinder:booking:upgrade";
+  "openid booking:read booking:create " +
+  "booking:cancel booking:upgrade";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -364,6 +364,7 @@ function buildAuthorizeUrl(
     client_id: agentConfig.agentID,
     redirect_uri: AGENT_REDIRECT_URI,
     scope,
+    resource: MCP_SERVER_URL,
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
@@ -382,6 +383,7 @@ async function exchangeCodeForUserToken(
     redirect_uri: AGENT_REDIRECT_URI,
     client_id: agentConfig.agentID,
     code_verifier: codeVerifier,
+    resource: MCP_SERVER_URL,
   });
 
   const basicAuth = Buffer.from(
@@ -453,7 +455,7 @@ async function initiateCiba(
     const hintParam = CIBA_HINT_TYPE === "id_token_hint" ? "id_token_hint" : "login_hint";
     const body = new URLSearchParams({
         [hintParam]: hint,
-        scope: `openid wayfinder:upgrade:process`,
+        scope: `openid upgrade:process`,
         binding_message: bindingMessage,
     });
 
@@ -731,8 +733,8 @@ let mcpTokenFingerprint = "";
 async function fetchAgentToken(): Promise<TokenState> {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
-    scope:
-      "wayfinder:booking:recommend wayfinder:upgrade:search",
+    scope: "booking:recommend upgrade:search",
+    resource: MCP_SERVER_URL,
   });
   const basicAuth = Buffer.from(
     `${agentConfig.agentID}:${agentConfig.agentSecret}`,
@@ -788,7 +790,7 @@ async function getOrRefreshAgentToken(): Promise<string> {
 
 // ---------------------------------------------------------------------------
 // Upgrade agent M2M token — separate from the main agent token.
-// Uses upgradeAgentConfig credentials with wayfinder:upgrade:read scope so the
+// Uses upgradeAgentConfig credentials with upgrade:read scope so the
 // scheduler can call get_pending_upgrade without the main agent's token.
 // ---------------------------------------------------------------------------
 
@@ -797,8 +799,8 @@ let upgradeAgentTokenState: TokenState | null = null;
 async function fetchUpgradeAgentToken(): Promise<TokenState> {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
-    scope:
-      "wayfinder:upgrade:read wayfinder:upgrade:search",
+    scope: "upgrade:read upgrade:search",
+    resource: MCP_SERVER_URL,
   });
   const basicAuth = Buffer.from(
     `${upgradeAgentConfig.agentID}:${upgradeAgentConfig.agentSecret}`,
@@ -1169,9 +1171,9 @@ async function handleConsent(
 // ---------------------------------------------------------------------------
 
 async function processOneUpgrade(): Promise<boolean> {
-  // Use the upgrade agent's own M2M token (wayfinder:upgrade:read scope) to call
+  // Use the upgrade agent's own M2M token (upgrade:read scope) to call
   // get_pending_upgrade. This is separate from the main agent's mcpBaseTools which use
-  // wayfinder:booking:recommend scope.
+  // booking:recommend scope.
   const upgradeM2MToken = await getOrRefreshUpgradeAgentToken();
 
   const upgradeM2MClient = new MultiServerMCPClient({

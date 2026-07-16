@@ -34,6 +34,7 @@ import (
 	"github.com/thunder-id/thunderid/tools/cli/internal/services/release"
 	"github.com/thunder-id/thunderid/tools/cli/internal/services/setup"
 	"github.com/thunder-id/thunderid/tools/cli/internal/ui/spinner"
+	"github.com/thunder-id/thunderid/tools/cli/internal/utils"
 )
 
 // Options carries use-case-specific configuration collected by the CLI before the sample starts.
@@ -66,19 +67,18 @@ var knownSamples = map[string]struct {
 
 // typeToDir mirrors the awk mapping in start.sh's setup_declarative_resources.
 var typeToDir = map[string]string{
-	"application":         "applications",
-	"flow":                "flows",
-	"group":               "groups",
-	"identity_provider":   "identity_providers",
-	"layout":              "layouts",
-	"notification_sender": "notification_senders",
-	"organization_unit":   "organization_units",
-	"resource_server":     "resource_servers",
-	"role":                "roles",
-	"theme":               "themes",
-	"translation":         "translations",
-	"user":                "users",
-	"user_schema":         "user_schemas",
+	"application":       "applications",
+	"connection":        "connections",
+	"flow":              "flows",
+	"group":             "groups",
+	"layout":            "layouts",
+	"organization_unit": "organization_units",
+	"resource_server":   "resource_servers",
+	"role":              "roles",
+	"theme":             "themes",
+	"translation":       "translations",
+	"user":              "users",
+	"user_schema":       "user_schemas",
 }
 
 // ProgressEvent is a single update from RunAsync's progress channel.
@@ -182,6 +182,10 @@ func runWithResult(
 		return nil, "", "", fmt.Errorf("unknown sample %q — available: %s", sampleName, availableList())
 	}
 
+	if err := checkNodeVersion(); err != nil {
+		return nil, "", "", err
+	}
+
 	// Fetch latest version.
 	version, err := release.FetchLatestVersion()
 	if err != nil {
@@ -217,12 +221,10 @@ func runWithResult(
 		return nil, "", "", fmt.Errorf("could not read env file: %w", err)
 	}
 
-	// Stop the product and the consent server (port 9090).
+	// Stop the product.
 	progress("Stopping " + product.Name + "...")
 	setup.KillPort(health.DefaultPort)
-	setup.KillPort(consentServerPort)
 	setup.WaitForPortFree(health.DefaultPort, 15*time.Second)
-	setup.WaitForPortFree(consentServerPort, 15*time.Second)
 
 	// Find ThunderID root and write resource files.
 	thunderRoot, err := setup.FindThunderRoot(installPath)
@@ -466,8 +468,6 @@ func splitYAML(content string) []string {
 	return docs
 }
 
-const consentServerPort = 9090
-
 // writeFrontendEnv writes frontend/.env with Thunder client config and the
 // VITE_AI_FEATURES_ENABLED flag so the React dev server picks up the right mode.
 func writeFrontendEnv(sampleDir, thunderURL string, aiEnabled bool) error {
@@ -619,6 +619,22 @@ func readCachedSampleVersion(dir string) string {
 
 func writeCachedSampleVersion(dir, version string) error {
 	return os.WriteFile(filepath.Join(dir, ".version"), []byte(version+"\n"), 0o644)
+}
+
+// checkNodeVersion returns an error if Node.js is missing or older than
+// utils.MinNodeVersion. Sample apps are installed and run via npm, so an
+// unsupported Node.js version must stop the command before it downloads or
+// touches anything.
+func checkNodeVersion() error {
+	version, err := utils.DetectNodeVersion()
+	if err != nil {
+		return err
+	}
+	if !utils.MeetsMinNodeVersion(version) {
+		return fmt.Errorf("node.js v%s detected — v%s or later is required to run sample apps.\n%s",
+			version, utils.MinNodeVersion, utils.NodeUpgradeHint())
+	}
+	return nil
 }
 
 func availableList() string {

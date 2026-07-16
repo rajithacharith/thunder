@@ -349,3 +349,77 @@ func (_c *ServiceMock_SaveCheckpoint_Call) RunAndReturn(run func(ctx context.Con
 	_c.Call.Return(run)
 	return _c
 }
+
+// Terminate provides a mock function for the type ServiceMock
+func (_mock *ServiceMock) Terminate(ctx context.Context, handle string, flowID string) (*Session, error) {
+	ret := _mock.Called(ctx, handle, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Terminate")
+	}
+
+	var r0 *Session
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*Session, error)); ok {
+		return returnFunc(ctx, handle, flowID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *Session); ok {
+		r0 = returnFunc(ctx, handle, flowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Session)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, handle, flowID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ServiceMock_Terminate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Terminate'
+type ServiceMock_Terminate_Call struct {
+	*mock.Call
+}
+
+// Terminate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - handle string
+//   - flowID string
+func (_e *ServiceMock_Expecter) Terminate(ctx interface{}, handle interface{}, flowID interface{}) *ServiceMock_Terminate_Call {
+	return &ServiceMock_Terminate_Call{Call: _e.mock.On("Terminate", ctx, handle, flowID)}
+}
+
+func (_c *ServiceMock_Terminate_Call) Run(run func(ctx context.Context, handle string, flowID string)) *ServiceMock_Terminate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *ServiceMock_Terminate_Call) Return(session *Session, err error) *ServiceMock_Terminate_Call {
+	_c.Call.Return(session, err)
+	return _c
+}
+
+func (_c *ServiceMock_Terminate_Call) RunAndReturn(run func(ctx context.Context, handle string, flowID string) (*Session, error)) *ServiceMock_Terminate_Call {
+	_c.Call.Return(run)
+	return _c
+}

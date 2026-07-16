@@ -192,8 +192,7 @@ type ResourceServer struct {
 	ID          string             `yaml:"id"                    json:"-"`
 	Name        string             `yaml:"name"                  json:"name"`
 	Description string             `yaml:"description,omitempty" json:"description,omitempty"`
-	Handle      string             `yaml:"handle"                json:"handle"`
-	Identifier  string             `yaml:"identifier,omitempty"  json:"identifier,omitempty"`
+	Identifier  string             `yaml:"identifier"            json:"identifier"`
 	Type        ResourceServerType `yaml:"type,omitempty"        json:"type,omitempty"`
 	OUID        string             `yaml:"ouId,omitempty"        json:"ouId"`
 	OUHandle    string             `yaml:"ouHandle,omitempty"    json:"-"`
@@ -558,6 +557,7 @@ type OAuthClient struct {
 	OUID                               string                  `yaml:"ouId,omitempty"`
 	ClientID                           string                  `yaml:"clientId,omitempty"`
 	RedirectURIs                       []string                `yaml:"redirectUris,omitempty"`
+	PostLogoutRedirectURIs             []string                `yaml:"postLogoutRedirectUris,omitempty"`
 	GrantTypes                         []GrantType             `yaml:"grantTypes,omitempty"`
 	ResponseTypes                      []ResponseType          `yaml:"responseTypes,omitempty"`
 	TokenEndpointAuthMethod            TokenEndpointAuthMethod `yaml:"tokenEndpointAuthMethod,omitempty"`
@@ -580,6 +580,16 @@ type OAuthTokenConfig struct {
 	AccessToken  *AccessTokenConfig  `json:"accessToken,omitempty"  yaml:"accessToken,omitempty"  jsonschema:"Access token configuration."`
 	IDToken      *IDTokenConfig      `json:"idToken,omitempty"      yaml:"idToken,omitempty"      jsonschema:"ID token configuration."`
 	RefreshToken *RefreshTokenConfig `json:"refreshToken,omitempty" yaml:"refreshToken,omitempty" jsonschema:"Refresh token configuration."`
+	IDJAG        *IDJAGConfig        `json:"idJag,omitempty"        yaml:"idJag,omitempty"        jsonschema:"Identity Assertion Authorization Grant (ID-JAG) configuration."`
+}
+
+// IDJAGConfig is the Identity Assertion Authorization Grant (ID-JAG) configuration. Enabled must be
+// true and AllowedAudiences must be non-empty for the application to request ID-JAGs via token
+// exchange.
+type IDJAGConfig struct {
+	Enabled          bool     `json:"enabled"                    yaml:"enabled"                    jsonschema:"Enable ID-JAG issuance for this application."`
+	AllowedAudiences []string `json:"allowedAudiences,omitempty" yaml:"allowedAudiences,omitempty" jsonschema:"Resource authorization server identifiers for which this application may request ID-JAGs."`
+	ValidityPeriod   int64    `json:"validityPeriod,omitempty"   yaml:"validityPeriod,omitempty"   jsonschema:"Validity period of an issued ID-JAG in seconds. Defaults to 300 when unset."`
 }
 
 // AccessTokenConfig is the access token configuration, split by token subject: an end user
@@ -634,9 +644,50 @@ type Certificate struct {
 	Value string          `json:"value,omitempty" yaml:"value,omitempty" jsonschema:"Certificate value in the format specified by type."`
 }
 
+// AttestationConfig holds per-application platform attestation settings used to verify the binary
+// identity of a mobile client when it initiates a flow directly over HTTP.
+type AttestationConfig struct {
+	Android *AndroidAttestationConfig `json:"android,omitempty" yaml:"android,omitempty" jsonschema:"Google Play Integrity attestation configuration for Android clients."`
+	Apple   *AppleAttestationConfig   `json:"apple,omitempty"   yaml:"apple,omitempty"   jsonschema:"Apple App Attest attestation configuration for iOS clients."`
+}
+
+// AndroidAttestationConfig holds the Google Play Integrity settings for an Android application.
+type AndroidAttestationConfig struct {
+	PackageName               string   `json:"packageName,omitempty"               yaml:"packageName,omitempty"               jsonschema:"Android application package name that must match the attested app."`
+	CertificateSha256Digests  []string `json:"certificateSha256Digests,omitempty"  yaml:"certificateSha256Digests,omitempty"  jsonschema:"Allowed SHA-256 digests of the app signing certificate. The attested app must match one of these."`
+	ServiceAccountCredentials string   `json:"serviceAccountCredentials,omitempty" yaml:"serviceAccountCredentials,omitempty" jsonschema:"Google Cloud service account credentials (JSON) used to call the Play Integrity API. Write-only; never returned in responses."`
+}
+
+// AppleAttestationConfig holds the Apple App Attest settings for an iOS application.
+type AppleAttestationConfig struct {
+	TeamID   string `json:"teamId,omitempty"   yaml:"teamId,omitempty"   jsonschema:"Apple Developer Team ID."`
+	BundleID string `json:"bundleId,omitempty" yaml:"bundleId,omitempty" jsonschema:"iOS application bundle identifier that must match the attested app."`
+}
+
+// WithoutCredentials returns a deep copy of the attestation config with all write-only secrets
+// removed, safe to include in API responses. Returns nil for a nil receiver.
+func (c *AttestationConfig) WithoutCredentials() *AttestationConfig {
+	if c == nil {
+		return nil
+	}
+	sanitized := &AttestationConfig{}
+	if c.Android != nil {
+		android := *c.Android
+		android.ServiceAccountCredentials = ""
+		android.CertificateSha256Digests = append([]string(nil), c.Android.CertificateSha256Digests...)
+		sanitized.Android = &android
+	}
+	if c.Apple != nil {
+		apple := *c.Apple
+		sanitized.Apple = &apple
+	}
+	return sanitized
+}
+
 // OAuthProfile is the persistence shape (OAUTH_PROFILE JSONB column).
 type OAuthProfile struct {
 	RedirectURIs                       []string            `json:"redirectUris"`
+	PostLogoutRedirectURIs             []string            `json:"postLogoutRedirectUris,omitempty"`
 	GrantTypes                         []string            `json:"grantTypes"`
 	ResponseTypes                      []string            `json:"responseTypes"`
 	TokenEndpointAuthMethod            string              `json:"tokenEndpointAuthMethod"`
@@ -661,13 +712,18 @@ type InboundClient struct {
 	IsRegistrationFlowEnabled bool
 	RecoveryFlowID            string
 	IsRecoveryFlowEnabled     bool
+	SignOutFlowID             string
+	IsSignOutFlowEnabled      bool
 	ThemeID                   string
 	LayoutID                  string
 	Assertion                 *AssertionConfig
 	LoginConsent              *LoginConsentConfig
 	AllowedUserTypes          []string
-	Properties                map[string]interface{}
-	IsReadOnly                bool
+	// Attestation holds the optional platform attestation config that lets a mobile client prove
+	// its binary identity to initiate a flow directly, independent of any protocol profile.
+	Attestation *AttestationConfig
+	Properties  map[string]interface{}
+	IsReadOnly  bool
 }
 
 // AssertionConfig is the entity-level assertion config; token configs fall back to it.
@@ -719,11 +775,14 @@ type AttributeMapping struct {
 	LocalAttribute    string `json:"localAttribute"    yaml:"local_attribute"`
 }
 
-// UserTypeResolution resolves which local user type an incoming identity maps to. This iteration
-// supports only Default (a fixed user type); claim-driven resolution is added later as additional
-// fields without a breaking change.
+// UserTypeResolution resolves which local user type an incoming identity maps to. Default is the
+// fixed user type applied when claim-driven resolution is not configured or does not match. When
+// ExternalAttribute and ValueMapping are set, the user type is derived from the value of the external
+// attribute (ValueMapping maps an external value to a local user type), falling back to Default.
 type UserTypeResolution struct {
-	Default string `json:"default,omitempty" yaml:"default,omitempty"`
+	Default           string            `json:"default,omitempty"           yaml:"default,omitempty"`
+	ExternalAttribute string            `json:"externalAttribute,omitempty" yaml:"externalAttribute,omitempty"`
+	ValueMapping      map[string]string `json:"valueMapping,omitempty"      yaml:"valueMapping,omitempty"`
 }
 
 // UserTypeAttributeMapping holds the external-to-local attribute mappings for a single local user type.
@@ -861,6 +920,27 @@ type Consent struct {
 	UpdatedTime int64
 }
 
+// ExecutorSupportedProperties describes the properties that an executor supports, including whether each property is required.
+type ExecutorSupportedProperties struct {
+	// Property is the name of the property that the executor supports.
+	Property string `json:"property"`
+	// IsRequired indicates whether the property is required for the executor to function correctly.
+	IsRequired bool `json:"isRequired"`
+}
+
+// ExecutorMeta describes the static capabilities of an executor.
+type ExecutorMeta struct {
+	// DefaultMode is used when the node does not specify a mode.
+	// If empty and SupportedModes is non-empty, mode is required in the node definition.
+	DefaultMode string `json:"defaultMode"`
+	// SupportedModes lists valid executor modes. Empty means all modes are permitted.
+	SupportedModes []string `json:"supportedModes"`
+	// SupportedFlowTypes lists flow types this executor may be used in. Empty means all.
+	SupportedFlowTypes []FlowType `json:"supportedFlowTypes"`
+	// SupportedProperties lists NodeDefinition.Properties keys that must be non-empty.
+	SupportedProperties []ExecutorSupportedProperties `json:"supportedProperties"`
+}
+
 // ExecutorResponse represents the response from an executor
 type ExecutorResponse struct {
 	Status         ExecutorStatus         `json:"status"`
@@ -946,11 +1026,15 @@ type InboundAuthProfile struct {
 	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"         yaml:"recoveryFlowId,omitempty"         jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
 	RecoveryFlowHandle        string              `json:"recoveryFlowHandle,omitempty"     yaml:"recoveryFlowHandle,omitempty"     jsonschema:"Recovery flow handle. Optional. Alternative to recoveryFlowId — resolved to an ID at import time."`
 	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"            yaml:"isRecoveryFlowEnabled"            jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId or recoveryFlowHandle to be set."`
+	SignOutFlowID             string              `json:"signOutFlowId,omitempty"           yaml:"signOutFlowId,omitempty"           jsonschema:"Sign-out flow ID. Optional. Specifies the flow that terminates the SSO session established by the authentication flow."`
+	SignOutFlowHandle         string              `json:"signOutFlowHandle,omitempty"       yaml:"signOutFlowHandle,omitempty"       jsonschema:"Sign-out flow handle. Optional. Alternative to signOutFlowId — resolved to an ID at import time."`
+	IsSignOutFlowEnabled      bool                `json:"isSignOutFlowEnabled"              yaml:"isSignOutFlowEnabled"              jsonschema:"Enable sign-out. Set to true to allow terminating the SSO session for this application. Requires signOutFlowId or signOutFlowHandle to be set."`
 	ThemeID                   string              `json:"themeId,omitempty"                yaml:"themeId,omitempty"                jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
 	LayoutID                  string              `json:"layoutId,omitempty"               yaml:"layoutId,omitempty"               jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"              yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
 	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"           yaml:"loginConsent,omitempty"           jsonschema:"Login consent configuration settings."`
 	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"       yaml:"allowedUserTypes,omitempty"       jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
+	Attestation               *AttestationConfig  `json:"attestation,omitempty"            yaml:"attestation,omitempty"            jsonschema:"Platform attestation configuration. Optional. Enables a mobile client to initiate flows directly by proving its binary identity (e.g. Google Play Integrity), regardless of protocol. The service account credentials are write-only and never returned in responses."`
 }
 
 // OAuthConfigWithSecret is the wire input shape and the create/update echo response shape.
@@ -959,6 +1043,7 @@ type OAuthConfigWithSecret struct {
 	ClientID                           string                  `json:"clientId,omitempty"                 yaml:"clientId,omitempty"                 jsonschema:"OAuth client ID (auto-generated if not provided)"`
 	ClientSecret                       string                  `json:"clientSecret,omitempty"             yaml:"clientSecret,omitempty"             jsonschema:"OAuth client secret (auto-generated if not provided)"`
 	RedirectURIs                       []string                `json:"redirectUris,omitempty"             yaml:"redirectUris,omitempty"             jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
+	PostLogoutRedirectURIs             []string                `json:"postLogoutRedirectUris,omitempty"   yaml:"postLogoutRedirectUris,omitempty"   jsonschema:"Allowed post-logout redirect URIs. Optional. A post_logout_redirect_uri supplied to the logout endpoint must match one of these."`
 	GrantTypes                         []GrantType             `json:"grantTypes,omitempty"               yaml:"grantTypes,omitempty"               jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
 	ResponseTypes                      []ResponseType          `json:"responseTypes,omitempty"            yaml:"responseTypes,omitempty"            jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
 	TokenEndpointAuthMethod            TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"  yaml:"tokenEndpointAuthMethod,omitempty"  jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
@@ -1088,7 +1173,7 @@ type Subject struct {
 
 // AccessEvaluationResourceServer identifies the resource server for an access evaluation.
 type AccessEvaluationResourceServer struct {
-	Handle     string                 `json:"handle"`
+	ID         string                 `json:"id,omitempty"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
@@ -1207,4 +1292,10 @@ func (e *Event) Validate() error {
 	}
 
 	return nil
+}
+
+// CaptchaVerificationResult holds the outcome of a captcha token verification.
+type CaptchaVerificationResult struct {
+	// Success reports whether the provider accepted the token as valid.
+	Success bool
 }

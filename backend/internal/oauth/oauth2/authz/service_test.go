@@ -2085,3 +2085,19 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Ac
 func noopAuthnMgr() *managermock.AuthnProviderManagerMock {
 	return &managermock.AuthnProviderManagerMock{}
 }
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_MultipleResources_InvalidTarget() {
+	app := suite.testApp()
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
+	// The single-resource guard runs before request validation, so no validator call is expected.
+
+	msg := suite.testMsg()
+	msg.Resources = []string{"https://a.example.com", "https://b.example.com"}
+
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorInvalidTarget, authErr.Code)
+}

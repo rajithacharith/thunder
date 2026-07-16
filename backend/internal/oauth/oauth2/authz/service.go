@@ -214,6 +214,14 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 	codeChallengeMethod := msg.RequestQueryParams[oauth2const.RequestParamCodeChallengeMethod]
 
 	resources := msg.Resources
+	// A token is bound to exactly one resource server, so an authorization request may target at
+	// most one resource (RFC 8707 allows repetition, but multi-resource codes are not supported).
+	if len(resources) > 1 {
+		return nil, &AuthorizationError{
+			Code:    oauth2const.ErrorInvalidTarget,
+			Message: "Only a single resource parameter is supported",
+		}
+	}
 
 	// Extract claims parameter.
 	claimsParam := msg.RequestQueryParams[oauth2const.RequestParamClaims]

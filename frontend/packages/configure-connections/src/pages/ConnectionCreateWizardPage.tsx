@@ -19,17 +19,18 @@
 import {useConfig} from '@thunderid/contexts';
 import {AppBreadcrumbs, Box, Button, Paper, Stack, Typography} from '@wso2/oxygen-ui';
 import {ChevronLeft} from '@wso2/oxygen-ui-icons-react';
-import {type JSX, useMemo, useState} from 'react';
+import {type JSX, type ReactNode, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useCreateConnection from '../api/useCreateConnection';
 import ConnectionForm from '../components/ConnectionForm';
 import ConnectionFullPageLayout from '../components/ConnectionFullPageLayout';
-import ConnectionAttributeMappingStep from '../components/create-connection/ConnectionAttributeMappingStep';
-import SelectConnectionType from '../components/create-connection/SelectConnectionType';
+import SelectConnectionType, {
+  type SelectableConnectionType,
+} from '../components/create-connection/SelectConnectionType';
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
-import {type AttributeConfiguration, type ConnectionType, ConnectionTypes} from '../models/connection';
+import {type ConnectionResponse, type ConnectionType, ConnectionTypes} from '../models/connection';
 import {
   type ConnectionFormValues,
   emptyFormValues,
@@ -38,31 +39,49 @@ import {
 } from '../utils/connectionFormMapping';
 import isConflictError from '../utils/isConflictError';
 
-const Step = {TYPE: 'TYPE', CONFIGURE: 'CONFIGURE', ATTRIBUTES: 'ATTRIBUTES'} as const;
+const Step = {TYPE: 'TYPE', CONFIGURE: 'CONFIGURE'} as const;
 type Step = (typeof Step)[keyof typeof Step];
-const ALL_STEPS: Step[] = [Step.TYPE, Step.CONFIGURE, Step.ATTRIBUTES];
+const ALL_STEPS: Step[] = [Step.TYPE, Step.CONFIGURE];
+
+interface ConnectionCreateWizardPageProps {
+  /**
+   * Renders a fully custom configure step (step 2) for the given selectable-type key instead of
+   * the generic `ConnectionForm` + create button — e.g. a UI-only pseudo-type like
+   * `'trusted-idp'` that has no backend /connections vendor route of its own. The supplied node
+   * owns its own submit action; the wizard still provides the chrome (breadcrumb, progress,
+   * Back, and the X close button).
+   */
+  customConfigureSteps?: Record<string, ReactNode>;
+}
 
 /**
- * Three-step full-screen wizard for adding a custom connection: pick the type, enter the
- * credentials/endpoints (with a connection name), then the optional attribute mapping. Only
- * Custom OIDC is wired today; the wizard always configures the oidc type.
+ * Two-step full-screen wizard for adding a custom connection: pick the type, then enter the
+ * credentials/endpoints (with a connection name) and create it. A type can opt out of the
+ * generic configure step via `customConfigureSteps`.
  */
-export default function ConnectionCreateWizardPage(): JSX.Element {
+export default function ConnectionCreateWizardPage({
+  customConfigureSteps = undefined,
+}: ConnectionCreateWizardPageProps): JSX.Element {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
   const {getServerUrl} = useConfig();
 
   const [step, setStep] = useState<Step>(Step.TYPE);
-  const [selectedType, setSelectedType] = useState<ConnectionType | null>(null);
+  const [selectedType, setSelectedType] = useState<SelectableConnectionType | null>(null);
   const [editedValues, setEditedValues] = useState<ConnectionFormValues>({});
-  const [attrConfig, setAttrConfig] = useState<AttributeConfiguration | undefined>(undefined);
-  const [attrValid, setAttrValid] = useState(true);
   const [nameError, setNameError] = useState<string | null>(null);
 
-  // Only Custom OIDC is wired today; the wizard always configures the oidc type.
-  const createMutation = useCreateConnection(ConnectionTypes.OIDC);
-  const meta = VENDOR_META_BY_TYPE[ConnectionTypes.OIDC];
-  const fields = CONNECTION_FORM_FIELDS[ConnectionTypes.OIDC];
+  const customStep: ReactNode | undefined = selectedType ? customConfigureSteps?.[selectedType] : undefined;
+  const customTypes: string[] = useMemo(() => Object.keys(customConfigureSteps ?? {}), [customConfigureSteps]);
+
+  // Defaults to OIDC before the user picks a type on the first step; the SMS placeholder is
+  // disabled and unselectable, and pseudo-types render via `customStep` instead, so this is only
+  // read when rendering the generic configure step.
+  const activeType: ConnectionType =
+    selectedType && selectedType !== 'trusted-idp' ? selectedType : ConnectionTypes.OIDC;
+  const createMutation = useCreateConnection(activeType);
+  const meta = VENDOR_META_BY_TYPE[activeType];
+  const fields = CONNECTION_FORM_FIELDS[activeType];
   const redirectUri = `${getServerUrl()}/gate/callback`;
   const emptyValues = useMemo(() => emptyFormValues(fields, redirectUri), [fields, redirectUri]);
 
@@ -76,16 +95,13 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
   const progress: number = ((ALL_STEPS.indexOf(step) + 1) / ALL_STEPS.length) * 100;
 
   const handleCreate = (): void => {
-    if (!formValid || !attrValid) {
+    if (!formValid) {
       return;
     }
     setNameError(null);
-    const payload = {
-      ...formValuesToRequest(values, fields, {mode: 'create', secretReplaced: true}),
-      attributeConfiguration: attrConfig,
-    };
+    const payload = formValuesToRequest(values, fields, {mode: 'create', secretReplaced: true});
     createMutation.mutate(payload, {
-      onSuccess: () => close(),
+      onSuccess: (created: ConnectionResponse) => void navigate(`/connections/${activeType}/${created.id}`),
       onError: (error: Error) => {
         if (isConflictError(error)) {
           setNameError(t('error.duplicateName'));
@@ -99,12 +115,6 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
     {key: 'add', label: t('wizard.title'), onClick: () => setStep(Step.TYPE)},
     ...(step === Step.TYPE ? [{key: 'type', label: t('wizard.steps.type')}] : []),
     ...(step === Step.CONFIGURE ? [{key: 'configure', label: t('form.chrome.configure')}] : []),
-    ...(step === Step.ATTRIBUTES
-      ? [
-          {key: 'configure', label: t('form.chrome.configure'), onClick: () => setStep(Step.CONFIGURE)},
-          {key: 'attributes', label: t('wizard.steps.attributeMapping')},
-        ]
-      : []),
   ];
 
   return (
@@ -116,7 +126,7 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
     >
       {step === Step.TYPE && (
         <>
-          <SelectConnectionType selectedType={selectedType} onSelect={setSelectedType} />
+          <SelectConnectionType selectedType={selectedType} onSelect={setSelectedType} customTypes={customTypes} />
           <Box sx={{mt: 4, display: 'flex', justifyContent: 'flex-end'}}>
             <Button
               variant="contained"
@@ -130,7 +140,19 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
         </>
       )}
 
-      {step === Step.CONFIGURE && (
+      {step === Step.CONFIGURE && customStep && (
+        <Stack direction="column" spacing={3}>
+          {customStep}
+
+          <Box sx={{display: 'flex', justifyContent: 'flex-start'}}>
+            <Button variant="outlined" startIcon={<ChevronLeft size={16} />} onClick={() => setStep(Step.TYPE)}>
+              {t('common:actions.back')}
+            </Button>
+          </Box>
+        </Stack>
+      )}
+
+      {step === Step.CONFIGURE && !customStep && (
         <Stack direction="column" spacing={3}>
           <Stack direction="column" spacing={1}>
             <Typography variant="h4" fontWeight={700}>
@@ -143,7 +165,7 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
 
           <Paper variant="outlined" sx={{p: 3}}>
             <ConnectionForm
-              type={ConnectionTypes.OIDC}
+              type={activeType}
               mode="create"
               values={values}
               secretReplacing={false}
@@ -161,28 +183,14 @@ export default function ConnectionCreateWizardPage(): JSX.Element {
             </Button>
             <Button
               variant="contained"
-              disabled={!formValid}
-              onClick={() => setStep(Step.ATTRIBUTES)}
-              data-testid="wizard-configure-continue"
+              disabled={!formValid || createMutation.isPending}
+              onClick={handleCreate}
+              data-testid="wizard-create"
             >
-              {t('common:actions.continue')}
+              {t('form.actions.create')}
             </Button>
           </Box>
         </Stack>
-      )}
-
-      {step === Step.ATTRIBUTES && (
-        <ConnectionAttributeMappingStep
-          vendorDisplayName={meta.displayName}
-          onChange={(config, valid) => {
-            setAttrConfig(config);
-            setAttrValid(valid);
-          }}
-          onBack={() => setStep(Step.CONFIGURE)}
-          onCreate={handleCreate}
-          isPending={createMutation.isPending}
-          createDisabled={!formValid || !attrValid}
-        />
       )}
     </ConnectionFullPageLayout>
   );

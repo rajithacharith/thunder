@@ -127,6 +127,15 @@ func isCrossOUProvisioningAllowed(ctx *providers.NodeContext) bool {
 	return false
 }
 
+// setFederatedEntityState records whether federated authentication resolved a concrete local user
+// (via account linking) into the entityState runtime key.
+func setFederatedEntityState(execResp *providers.ExecutorResponse) {
+	execResp.RuntimeData[common.RuntimeKeyEntityState] = entityStateNotExists
+	if execResp.AuthUser.EntityReference() != nil {
+		execResp.RuntimeData[common.RuntimeKeyEntityState] = entityStateExists
+	}
+}
+
 // isAllowAuthenticationWithoutLocalUserRuntimeFlagSet checks if the runtime flag for allowing authentication without
 // a local user is set in the context.
 func isAllowRegistrationWithExistingUserRuntimeFlagSet(ctx *providers.NodeContext) bool {

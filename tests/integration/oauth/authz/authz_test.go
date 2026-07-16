@@ -37,10 +37,11 @@ import (
 )
 
 const (
-	clientID     = "authz_test_client_123"
-	clientSecret = "authz_test_secret_123"
-	appName      = "AuthzTestApp"
-	redirectURI  = "https://localhost:3000"
+	clientID                             = "authz_test_client_123"
+	clientSecret                         = "authz_test_secret_123"
+	appName                              = "AuthzTestApp"
+	redirectURI                          = "https://localhost:3000"
+	authzDefaultResourceServerIdentifier = "https://authz-default.example.com"
 )
 
 // TestCase represents a test case for authorization tests
@@ -172,10 +173,11 @@ var (
 
 type AuthzTestSuite struct {
 	suite.Suite
-	applicationID string
-	entityTypeID  string
-	authFlowID    string
-	client        *http.Client
+	applicationID    string
+	entityTypeID     string
+	authFlowID       string
+	resourceServerID string
+	client           *http.Client
 }
 
 func TestAuthzTestSuite(t *testing.T) {
@@ -204,6 +206,15 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(testAuthFlow)
 	ts.Require().NoError(err, "Failed to create authorization test flow")
 	ts.authFlowID = flowID
+
+	resourceServerID, err := testutils.CreateResourceServerWithActions(testutils.ResourceServer{
+		Name:        "Authz Default Resource Server",
+		Description: "Resource server for authorization code integration tests",
+		Identifier:  authzDefaultResourceServerIdentifier,
+		OUID:        testOUID,
+	}, []testutils.Action{})
+	ts.Require().NoError(err, "Failed to create resource server")
+	ts.resourceServerID = resourceServerID
 
 	app := map[string]interface{}{
 		"name":                      appName,
@@ -293,6 +304,12 @@ func (ts *AuthzTestSuite) TearDownSuite() {
 	if ts.authFlowID != "" {
 		if err := testutils.DeleteFlow(ts.authFlowID); err != nil {
 			ts.T().Errorf("Failed to delete test authentication flow: %v", err)
+		}
+	}
+
+	if ts.resourceServerID != "" {
+		if err := testutils.DeleteResourceServer(ts.resourceServerID); err != nil {
+			ts.T().Errorf("Failed to delete resource server: %v", err)
 		}
 	}
 
@@ -586,7 +603,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 
 	for _, tc := range testCases {
 		ts.Run(tc.Name, func() {
-			result, err := testutils.RequestToken(tc.ClientID, tc.ClientSecret, tc.Code, tc.RedirectURI, tc.GrantType)
+			result, err := testutils.RequestTokenWithResource(tc.ClientID, tc.ClientSecret, tc.Code,
+				tc.RedirectURI, tc.GrantType, authzDefaultResourceServerIdentifier)
 			ts.NoError(err, "Token request should not error at transport level")
 			ts.Equal(tc.ExpectedStatus, result.StatusCode, "Expected status code")
 
@@ -608,7 +626,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 				err = json.Unmarshal(payloadBytes, &claims)
 				ts.NoError(err, "Failed to unmarshal JWT claims")
 
-				ts.Equal(tc.ClientID, claims["aud"], "Audience claim should match client_id")
+				ts.Equal(authzDefaultResourceServerIdentifier, claims["aud"],
+					"Audience claim should match requested resource server")
 				ts.Equal("openid", claims["scope"], "Scope claim should match requested scope")
 				ts.Equal(userID, claims["sub"], "Subject claim should match authenticated user ID")
 			} else if tc.ExpectedError != "" {
@@ -862,8 +881,8 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 			ts.NotEmpty(authzCode, "Authorization code should be present")
 
 			// Exchange authorization code for access token
-			result, err := testutils.RequestToken(clientID, clientSecret, authzCode, tc.RedirectURI,
-				"authorization_code")
+			result, err := testutils.RequestTokenWithResource(clientID, clientSecret, authzCode, tc.RedirectURI,
+				"authorization_code", authzDefaultResourceServerIdentifier)
 			ts.NoError(err, "Failed to exchange code for token")
 			ts.Equal(http.StatusOK, result.StatusCode, "Token request should succeed")
 			tokenResponse := result.Token
@@ -883,7 +902,8 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 			err = json.Unmarshal(payloadBytes, &claims)
 			ts.NoError(err, "Failed to unmarshal JWT claims")
 
-			ts.Equal(tc.ClientID, claims["aud"], "Audience claim should match client_id")
+			ts.Equal(authzDefaultResourceServerIdentifier, claims["aud"],
+				"Audience claim should match requested resource server")
 			ts.Equal(tc.Scope, claims["scope"], "Scope claim should match requested scope")
 			ts.Equal(userID, claims["sub"], "Subject claim should match authenticated user ID")
 		})
@@ -968,12 +988,14 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 			ts.NoError(err, "Failed to extract authorization code")
 
 			if tc.Name == "Reused Authorization Code" {
-				result, err := testutils.RequestToken(clientID, clientSecret, authzCode, tc.RedirectURI, "authorization_code")
+				result, err := testutils.RequestTokenWithResource(clientID, clientSecret, authzCode, tc.RedirectURI,
+					"authorization_code", authzDefaultResourceServerIdentifier)
 				ts.NoError(err, "First token exchange should succeed")
 				ts.Equal(http.StatusOK, result.StatusCode, "First token exchange should succeed")
 
 				// Second attempt should fail with invalid_grant
-				result2, err := testutils.RequestToken(clientID, clientSecret, authzCode, tc.RedirectURI, "authorization_code")
+				result2, err := testutils.RequestTokenWithResource(clientID, clientSecret, authzCode, tc.RedirectURI,
+					"authorization_code", authzDefaultResourceServerIdentifier)
 				ts.NoError(err, "Second token exchange should not error at transport level")
 				ts.Equal(http.StatusBadRequest, result2.StatusCode, "Second token exchange should fail with bad request")
 
@@ -995,7 +1017,6 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	// Create a Resource Server with the matching identifier so the resource parameter is valid
 	rs := testutils.ResourceServer{
 		Name:       "MCP Resource Server",
-		Handle:     "mcp-server",
 		Identifier: resourceURL,
 		OUID:       testOUID,
 	}
@@ -1190,7 +1211,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
 	ts.NotEmpty(authzCode, "Authorization code should be present")
 
 	// Exchange authorization code for access token
-	result, err := testutils.RequestToken(clientID, clientSecret, authzCode, redirectURI, "authorization_code")
+	result, err := testutils.RequestTokenWithResource(clientID, clientSecret, authzCode, redirectURI,
+		"authorization_code", authzDefaultResourceServerIdentifier)
 	ts.NoError(err, "Failed to exchange code for token")
 	ts.Equal(http.StatusOK, result.StatusCode, "Token request should succeed")
 
@@ -1211,7 +1233,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
 	err = json.Unmarshal(payloadBytes, &claims)
 	ts.NoError(err, "Failed to unmarshal JWT claims")
 
-	ts.Equal(clientID, claims["aud"], "Audience claim should match client_id")
+	ts.Equal(authzDefaultResourceServerIdentifier, claims["aud"],
+		"Audience claim should match requested resource server")
 	ts.Equal("openid", claims["scope"], "Scope claim should match requested scope")
 	ts.Equal(userID, claims["sub"], "Subject claim should match authenticated user ID")
 	ts.Equal(claimsLocales, claims["claims_locales"], "claims_locales claim should match requested value")
@@ -1280,12 +1303,13 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithNonce() {
 	ts.NoError(err)
 
 	// Exchange code for token
-	result, err := testutils.RequestToken(
+	result, err := testutils.RequestTokenWithResource(
 		clientID,
 		clientSecret,
 		authzCode,
 		redirectURI,
 		"authorization_code",
+		authzDefaultResourceServerIdentifier,
 	)
 	ts.NoError(err)
 	ts.Equal(http.StatusOK, result.StatusCode)
@@ -1370,12 +1394,13 @@ func (ts *AuthzTestSuite) TestNonceIgnoredWithoutOpenIDScope() {
 	ts.NoError(err)
 
 	// Exchange code for token
-	result, err := testutils.RequestToken(
+	result, err := testutils.RequestTokenWithResource(
 		clientID,
 		clientSecret,
 		authzCode,
 		redirectURI,
 		"authorization_code",
+		authzDefaultResourceServerIdentifier,
 	)
 	ts.NoError(err)
 	ts.Equal(http.StatusOK, result.StatusCode)
@@ -1525,7 +1550,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlow_IDToken_JWE() {
 	authzCode, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
 	ts.Require().NoError(err)
 
-	result, err := testutils.RequestToken(jweClientID, jweClientSecret, authzCode, redirectURI, "authorization_code")
+	result, err := testutils.RequestTokenWithResource(jweClientID, jweClientSecret, authzCode, redirectURI,
+		"authorization_code", authzDefaultResourceServerIdentifier)
 	ts.Require().NoError(err)
 	ts.Require().Equal(http.StatusOK, result.StatusCode)
 

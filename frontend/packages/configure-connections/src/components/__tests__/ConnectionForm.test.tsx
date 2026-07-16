@@ -33,6 +33,11 @@ function getConnectionField(id: string): HTMLElement {
   return field;
 }
 
+function isFieldMarkedRequired(id: string): boolean {
+  const label = document.querySelector(`label[for="connection-field-${id}"]`);
+  return Boolean(label?.querySelector('.MuiFormLabel-asterisk'));
+}
+
 describe('ConnectionForm', () => {
   const baseProps = {
     type: 'google' as const,
@@ -83,5 +88,76 @@ describe('ConnectionForm', () => {
     fireEvent.change(input, {target: {value: 'https://gate.example.com/gate/callback'}});
 
     expect(onFieldChange).toHaveBeenCalledWith('redirectUri', 'https://gate.example.com/gate/callback');
+  });
+
+  describe('OIDC federation fields', () => {
+    const oidcProps = {
+      ...baseProps,
+      type: 'oidc' as const,
+      values: {
+        name: '',
+        clientId: '',
+        clientSecret: '',
+        authorizationEndpoint: '',
+        tokenEndpoint: '',
+        issuer: '',
+        userInfoEndpoint: '',
+        jwksEndpoint: '',
+        redirectUri: 'https://id.acme.io/oauth/callback/oidc',
+        scopes: '',
+        tokenExchangeEnabled: 'false',
+        trustedTokenAudience: '',
+      },
+    };
+
+    it('renders the Federation section heading above the tokenExchangeEnabled field', () => {
+      render(<ConnectionForm {...oidcProps} />);
+
+      expect(screen.getByRole('heading', {name: 'Federation'})).toBeInTheDocument();
+    });
+
+    it('renders a switch for the tokenExchangeEnabled field', () => {
+      render(<ConnectionForm {...oidcProps} />);
+
+      const toggle = screen.getByRole('switch', {name: 'Enable token exchange'});
+      expect(toggle).toBeInTheDocument();
+      expect(toggle).not.toBeChecked();
+    });
+
+    it('reports the switch toggle through onFieldChange as a "true"/"false" string', () => {
+      const onFieldChange = vi.fn();
+      render(<ConnectionForm {...oidcProps} onFieldChange={onFieldChange} />);
+
+      const toggle = screen.getByRole('switch', {name: 'Enable token exchange'});
+      fireEvent.click(toggle);
+
+      expect(onFieldChange).toHaveBeenCalledWith('tokenExchangeEnabled', 'true');
+    });
+
+    it('hides trustedTokenAudience when tokenExchangeEnabled is off', () => {
+      render(<ConnectionForm {...oidcProps} />);
+
+      expect(document.getElementById('connection-field-trustedTokenAudience')).not.toBeInTheDocument();
+    });
+
+    it('shows trustedTokenAudience when tokenExchangeEnabled is on', () => {
+      render(<ConnectionForm {...oidcProps} values={{...oidcProps.values, tokenExchangeEnabled: 'true'}} />);
+
+      expect(document.getElementById('connection-field-trustedTokenAudience')).toBeInTheDocument();
+    });
+
+    it('does not mark issuer/jwksEndpoint required when tokenExchangeEnabled is off', () => {
+      render(<ConnectionForm {...oidcProps} />);
+
+      expect(isFieldMarkedRequired('issuer')).toBe(false);
+      expect(isFieldMarkedRequired('jwksEndpoint')).toBe(false);
+    });
+
+    it('marks issuer/jwksEndpoint required when tokenExchangeEnabled is on', () => {
+      render(<ConnectionForm {...oidcProps} values={{...oidcProps.values, tokenExchangeEnabled: 'true'}} />);
+
+      expect(isFieldMarkedRequired('issuer')).toBe(true);
+      expect(isFieldMarkedRequired('jwksEndpoint')).toBe(true);
+    });
   });
 });

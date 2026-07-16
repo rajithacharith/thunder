@@ -41,6 +41,7 @@ func Initialize(
 	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	observabilitySvc providers.ObservabilityProvider,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
+	attestationVerifier providers.AttestationProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
 	storeProvider providers.RuntimeStoreProvider,
 	transactioner transaction.Transactioner,
@@ -51,7 +52,8 @@ func Initialize(
 	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc,
 		flowProvider, graphBuilder)
 	flowExecService := newFlowExecService(flowProvider, flowStore, flowEngine,
-		actorProvider, observabilitySvc, transactioner, cryptoSvc, graphBuilder, cfg)
+		actorProvider, observabilitySvc, transactioner, cryptoSvc, attestationVerifier,
+		graphBuilder, cfg)
 
 	// Mark the SSO cookie Secure unless the deployment is configured to serve over plain HTTP, and
 	// bound its lifetime to the session's configured absolute timeout (same fallback as the session

@@ -634,6 +634,7 @@ const translations = {
     'categories.system': 'System',
     'pages.importConfiguration': 'Import Configuration',
     'pages.openProject': 'Import Configuration',
+    'pages.importExport': 'Import / Export',
     'pages.home': 'Home',
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
@@ -1631,6 +1632,7 @@ const translations = {
     'categories.identity-verification': 'Identity Verification',
     'categories.crm': 'CRM',
     'categories.data-store': 'Data store',
+    'categories.trusted-idp': 'Trusted Token Issuer',
 
     // Card
     'card.configured': 'Configured',
@@ -1643,24 +1645,32 @@ const translations = {
     'vendor.google.description': 'Let users sign in with their Google account.',
     'vendor.github.description': 'Let users sign in with their GitHub account.',
     'vendor.oidc.description': 'Connect any OpenID Connect identity provider.',
+    'vendor.oauth.description': 'Connect any OAuth 2.0 identity provider.',
     'vendor.twilio.description': 'Send SMS one-time passcodes via Twilio.',
     'vendor.vonage.description': 'Deliver SMS and email passcodes through Vonage.',
     'vendor.custom-sms.description': 'Route SMS through your own HTTP gateway.',
+    'vendor.trustedIdp.description': 'Trusted token issuer for token exchange and ID-JAG.',
 
     // Add custom connection wizard
     'wizard.title': 'Add custom connection',
     'wizard.steps.type': 'Connection type',
     'wizard.steps.configure': 'Configure',
-    'wizard.steps.attributeMapping': 'Attribute mapping',
     'wizard.type.heading': 'What kind of connection do you want to add?',
     'wizard.type.subheading':
-      'Custom connections aren’t in the vendor catalog — pick the type of integration you want to wire up.',
-    'wizard.type.oidc.label': 'Custom OIDC',
+      "Custom connections aren't in the vendor catalog. Pick the type of integration you want to wire up.",
+    'wizard.type.oidc.label': 'OpenID Connect Provider',
     'wizard.type.oidc.description': 'Connect any OpenID Connect identity provider.',
     'wizard.type.oidc.tag': 'Login provider · Enterprise',
-    'wizard.type.sms.label': 'Custom SMS gateway',
+    'wizard.type.oauth.label': 'OAuth 2.0 Provider',
+    'wizard.type.oauth.description': 'Connect any OAuth 2.0 identity provider.',
+    'wizard.type.oauth.tag': 'Login provider · Enterprise',
+    'wizard.type.sms.label': 'SMS gateway',
     'wizard.type.sms.description': 'Route SMS through your own HTTP gateway.',
     'wizard.type.sms.tag': 'Message sender · SMS',
+    'wizard.type.trustedIdp.label': 'Trusted Token Issuer',
+    'wizard.type.trustedIdp.description':
+      "Trust an external IdP's identity assertions and exchange them for access tokens.",
+    'wizard.type.trustedIdp.tag': 'Token exchange · ID-JAG',
     'wizard.configure.heading': 'Configure your connection',
     'wizard.configure.subheading':
       'Enter the credentials and endpoints for your custom connection. Secrets are stored write-only.',
@@ -1673,16 +1683,13 @@ const translations = {
     'detail.backToConnections': 'Back to Connections',
     'detail.subtitle': '{{name}} connection',
     'detail.tabs.general': 'General',
-    'detail.tabs.attributeMapping': 'Attribute Mapping',
+    'detail.tabs.attributeMapping': 'Attribute Configuration',
     'detail.quickCopy.title': 'Quick copy',
     'detail.quickCopy.description': 'Copy connection identifiers for use in your integration.',
     'detail.connectionId': 'Connection ID',
     'detail.connectionId.hint': 'Unique identifier for this connection.',
     'detail.credentials.title': 'Credentials',
     'detail.credentials.description': 'Credentials and endpoints for this connection. Secrets are stored write-only.',
-    'detail.provisioning.title': 'User provisioning',
-    'detail.provisioning.description':
-      'Choose the default user type and map the attributes this provider returns onto your local user schema.',
     'detail.dangerZone.title': 'Danger zone',
     'detail.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
     'detail.dangerZone.delete.title': 'Delete connection',
@@ -1723,6 +1730,8 @@ const translations = {
     'form.fields.issuer.label': 'Issuer',
     'form.fields.issuer.hint': 'Issuer identifier expected in tokens from this provider.',
     'form.fields.tokenExchangeEnabled.label': 'Enable token exchange',
+    'form.fields.tokenExchangeEnabled.hint':
+      "Let backend services exchange this provider's tokens for ThunderID access tokens.",
     'form.fields.trustedTokenAudience.label': 'Trusted token audience',
     'form.fields.trustedTokenAudience.hint': 'Accepted audience value for external tokens during token exchange.',
     'form.fields.accountSid.label': 'Account SID',
@@ -1735,6 +1744,7 @@ const translations = {
     'form.fields.apiSecret.hint': 'Vonage API secret used to authenticate API requests.',
     'form.fields.senderId.label': 'Sender ID',
     'form.fields.senderId.hint': 'Phone number or alphanumeric sender ID messages are sent from.',
+    'form.sections.federation': 'Federation',
     'form.optional': 'Optional',
     'form.secret.update': 'Update',
     'form.secret.keepHelp': 'Leave unchanged to keep the stored secret.',
@@ -1745,25 +1755,46 @@ const translations = {
     'form.actions.delete': 'Delete connection',
 
     // Attribute mapping (authentication providers)
-    'attributeMapping.title': 'Attribute mapping',
-    'attributeMapping.cardDescription': 'Map the attributes this provider returns onto your local user schema.',
-    'attributeMapping.cardOptionalNote': 'Optional — defaults work for most providers.',
-    'attributeMapping.stepTitle': 'Map provider attributes to your users',
-    'attributeMapping.stepSubtitle':
-      'Choose the default user type and map the attributes {{vendor}} returns onto your local user schema. This step is optional.',
-    'attributeMapping.userType.label': 'Default user type',
+    'attributeMapping.userType.label': 'Default User Type',
     'attributeMapping.userType.placeholder': 'Select a user type',
-    'attributeMapping.userType.helper': 'New users signing in through this connection are provisioned as this type.',
-    'attributeMapping.userTypeRequired': 'Select a user type for the attribute mappings.',
-    'attributeMapping.add': 'Add mapping',
-    'attributeMapping.skipAndCreate': 'Skip and Create connection',
-    'attributeMapping.empty.title': 'No custom mappings',
-    'attributeMapping.empty.description':
-      "The provider's standard attributes are applied automatically. Add a mapping only to override how a specific attribute lands on your user schema.",
-    'attributeMapping.externalAttribute.label': 'External attribute',
+    'attributeMapping.userTypeRequired': 'Select a default user type.',
+    'attributeMapping.add': 'Add Mapping',
+    'attributeMapping.externalAttribute.label': 'External Attribute',
     'attributeMapping.externalAttribute.placeholder': 'e.g. given_name',
-    'attributeMapping.localAttribute.label': 'Local attribute',
+    'attributeMapping.localAttribute.label': 'Local Attribute',
     'attributeMapping.localAttribute.placeholder': 'e.g. firstName',
+    // Section 1 — user type resolution
+    'attributeMapping.resolution.title': 'User type resolution',
+    'attributeMapping.resolution.description':
+      'Select which local user type an external identity resolves to, choosing the attribute-mapping profile applied to it.',
+    'attributeMapping.resolution.dynamic.label': 'Resolve user type from an attribute',
+    'attributeMapping.resolution.externalAttribute.placeholder': 'e.g. user_type',
+    'attributeMapping.resolution.externalAttribute.helper': 'The attribute whose value decides the user type.',
+    'attributeMapping.resolution.valueMapping.title': 'Value Mapping',
+    'attributeMapping.resolution.valueMapping.enable': 'Enable value mapping',
+    'attributeMapping.resolution.valueMapping.hint': 'Map each attribute value to a user type.',
+    'attributeMapping.resolution.valueMapping.externalValue': 'External Value',
+    'attributeMapping.resolution.valueMapping.localUserType': 'Local User Type',
+    'attributeMapping.resolution.valueMapping.valuePlaceholder': 'e.g. employee',
+    'attributeMapping.resolution.addValue': 'Add Value',
+    'attributeMapping.resolution.default.helperFallback':
+      "Used when the attribute is missing or its value isn't mapped.",
+    // Section 2 — attribute mappings by user type
+    'attributeMapping.mappings.title': 'Attribute Mappings',
+    'attributeMapping.mappings.description':
+      'Map the attributes this provider returns onto your local user schema. Define a separate mapping set for each user type.',
+    'attributeMapping.mappings.userType': 'User Type',
+    'attributeMapping.mappings.userTypeRequired': 'Select a user type for this mapping set.',
+    'attributeMapping.mappings.addUserType': 'Add User Type',
+    'attributeMapping.mappings.remove': 'Remove',
+    // Section 3 — account linking
+    'attributeMapping.linking.title': 'Account Linking',
+    'attributeMapping.linking.description': 'The attributes used to find the associated local user.',
+    'attributeMapping.linking.label': 'External Attribute',
+    'attributeMapping.linking.labelCombo': 'External Attributes',
+    'attributeMapping.linking.placeholder': 'e.g. email',
+    'attributeMapping.linking.addAttribute': 'Add Attribute',
+    'attributeMapping.linking.and': 'AND',
 
     // Delete dialog
     'delete.title': 'Delete connection',
@@ -1786,6 +1817,70 @@ const translations = {
     'validation.required': 'This field is required.',
     'validation.url': 'Enter a valid URL.',
     'validation.accountSid': 'Enter a valid Account SID: “AC” followed by 32 hexadecimal characters.',
+  },
+
+  // ============================================================================
+  // Trusted issuers namespace - Trusted issuer (trust-only OIDC connection) feature translations
+  // ============================================================================
+  trustedIssuers: {
+    // Validation
+    'validation.required': 'This field is required.',
+    'validation.url': 'Enter a valid https:// URL.',
+
+    // Create form
+    'create.title': 'Add trusted issuer',
+    'create.subtitle':
+      'Register an external identity provider whose identity assertions ThunderID can exchange for access tokens.',
+    'create.duplicateName': 'A trusted issuer with this name already exists.',
+    'create.submit': 'Add trusted issuer',
+    'create.form.name.label': 'Name',
+    'create.form.issuer.label': 'Issuer URI',
+    'create.form.issuer.hint': "The issuer URI from the external IdP's OpenID Connect discovery document.",
+    'create.form.clientId.label': 'Client ID',
+    'create.form.clientId.hint':
+      "ThunderID's client ID registered at this identity provider. Used for audience validation in incoming assertions.",
+    'create.form.jwksEndpoint.label': 'JWKS endpoint',
+    'create.form.jwksEndpoint.hint':
+      'The JWKS endpoint used to validate the signature of incoming identity assertions.',
+    'create.form.tokenExchangeEnabled.label': 'Enable token exchange',
+    'create.form.tokenExchangeEnabled.hint': 'Exchange subject tokens from this issuer for access tokens.',
+    'create.form.idJagEnabled.label': 'Enable Identity Assertion JWT Authorization Grant (ID-JAG)',
+    'create.form.idJagEnabled.hint':
+      'Accept and exchange signed identity assertions from this issuer for access tokens.',
+
+    // Detail page
+    'detail.back': 'Back to connections',
+    'detail.loadError': 'Failed to load trusted issuer.',
+    'detail.duplicateName': 'A trusted issuer with this name already exists.',
+    'detail.general.title': 'General',
+    'detail.general.description': 'Core identity of this trusted issuer.',
+    'detail.tokenExchange.title': 'Token Exchange',
+    'detail.tokenExchange.description': 'Exchange subject tokens from this issuer for access tokens.',
+    'detail.tokenExchange.audience.label': 'Trusted token audience',
+    'detail.tokenExchange.audience.hint': 'The audience value ThunderID expects in subject tokens from this issuer.',
+    'detail.consumption.title': 'Identity Assertion JWT Authorization Grant (ID-JAG)',
+    'detail.idJag.description': 'Accept and exchange signed identity assertions from this issuer for access tokens.',
+    'detail.idJag.enabledNote': 'Identity assertions from this issuer are accepted via the ID-JAG protocol.',
+    'detail.dangerZone.title': 'Danger zone',
+    'detail.dangerZone.delete.title': 'Delete trusted issuer',
+    'detail.dangerZone.delete.description':
+      'Applications relying on assertions from this issuer will stop receiving tokens. This cannot be undone.',
+    'detail.saveBar.unsaved': 'You have unsaved changes',
+    'detail.saveBar.discard': 'Discard',
+    'detail.saveBar.save': 'Save changes',
+
+    // Delete dialog
+    'delete.title': 'Delete trusted issuer',
+    'delete.message':
+      'Delete "{{name}}"? Applications relying on assertions from this issuer will stop receiving tokens. This cannot be undone.',
+
+    // Toasts
+    'create.success': 'Trusted issuer created successfully.',
+    'create.error': 'Failed to create trusted issuer. Please try again.',
+    'update.success': 'Trusted issuer updated successfully.',
+    'update.error': 'Failed to update trusted issuer. Please try again.',
+    'delete.success': 'Trusted issuer deleted successfully.',
+    'delete.error': 'Failed to delete trusted issuer. Please try again.',
   },
 
   // ============================================================================
@@ -2052,8 +2147,13 @@ const translations = {
     'onboarding.configure.approach.native.title': 'Embedded sign-in/sign-up components in your app',
     'onboarding.configure.approach.native.description':
       'Users will sign in or sign up through your app using the UI components or APIs provided by {{product}}. You can customize and brand the flows using the designer or through code.',
-    'onboarding.configure.stack.title': 'Choose a template',
-    'onboarding.configure.stack.subtitle': 'Select the template that best matches your application.',
+    'onboarding.configure.stack.title': 'Choose a type',
+    'onboarding.configure.stack.subtitle': 'Select the type that best matches your application.',
+    'onboarding.templateSelect.subtitle':
+      'Pick the technology that best matches your application, selecting one starts the setup.',
+    'onboarding.templateSelect.searchPlaceholder': 'Search types by name',
+    'onboarding.templateSelect.count_one': 'Showing {{count}} type',
+    'onboarding.templateSelect.count_other': 'Showing {{count}} types',
     'onboarding.configure.stack.categoriesLabel': 'Categories',
     'onboarding.configure.stack.comingSoon': 'Coming Soon',
     'onboarding.configure.stack.category.all': 'All',
@@ -2260,7 +2360,6 @@ const translations = {
     'export.table.status': 'Status',
     'export.table.dependencies': 'Dependencies',
     'export.table.applications': 'Applications',
-    'export.table.integrations': 'Integrations',
     'export.table.flows': 'Flows',
     'export.table.branding': 'Branding',
     'export.table.dependencyCount': '{{count}} items',
@@ -2368,6 +2467,33 @@ const translations = {
     'edit.advanced.certificate.type.none': 'None',
     'edit.advanced.certificate.type.jwks': 'JWKS (Inline JSON Web Key Set)',
     'edit.advanced.certificate.type.jwksUri': 'JWKS URI (URL to JWKS endpoint)',
+    'edit.advanced.labels.attestation': 'Platform Attestation',
+    'edit.advanced.attestation.intro':
+      'Verify the binary identity of a mobile client when it initiates a flow directly. Choose the platform the application is built for.',
+    'edit.advanced.attestation.labels.platform': 'Platform',
+    'edit.advanced.attestation.platform.none': 'None',
+    'edit.advanced.attestation.platform.android': 'Android (Play Integrity)',
+    'edit.advanced.attestation.platform.apple': 'iOS (App Attest)',
+    'edit.advanced.attestation.labels.packageName': 'Package Name',
+    'edit.advanced.attestation.labels.certificateSha256Digests': 'Signing Certificate SHA-256 Digests',
+    'edit.advanced.attestation.labels.serviceAccountCredentials': 'Service Account Credentials',
+    'edit.advanced.attestation.placeholder.packageName': 'com.example.myapp',
+    'edit.advanced.attestation.placeholder.certificateSha256Digest': 'URL-safe base64 SHA-256 digest',
+    'edit.advanced.attestation.placeholder.serviceAccountCredentials': 'Paste the Google Cloud service account JSON',
+    'edit.advanced.attestation.hint.packageName':
+      'The Android application package name that must match the attested app.',
+    'edit.advanced.attestation.hint.certificateSha256Digests':
+      'Allowed signing certificate digests, in the URL-safe base64 form reported by Play Integrity. The attested app must match one of these.',
+    'edit.advanced.attestation.hint.serviceAccountCredentials':
+      'Write-only. Used to call the Play Integrity API. Leave blank to keep the existing credentials.',
+    'edit.advanced.attestation.addDigest': 'Add Digest',
+    'edit.advanced.attestation.labels.teamId': 'Team ID',
+    'edit.advanced.attestation.labels.bundleId': 'Bundle ID',
+    'edit.advanced.attestation.placeholder.teamId': 'ABCDE12345',
+    'edit.advanced.attestation.placeholder.bundleId': 'com.example.myapp',
+    'edit.advanced.attestation.hint.teamId': 'The Apple Developer Team ID.',
+    'edit.advanced.attestation.hint.bundleId': 'The iOS bundle identifier that must match the attested app.',
+    'edit.advanced.attestation.error.appleIncomplete': 'Both Team ID and Bundle ID are required together.',
 
     /* -------------------- Edit page -------------------- */
     // Common
@@ -2426,6 +2552,11 @@ const translations = {
     'edit.general.redirectUris.addUri': 'Add URI',
     'edit.general.redirectUris.error.empty': 'Invalid Redirect: URI must not be empty.',
     'edit.general.redirectUris.error.invalid': 'Invalid Redirect: Please enter a valid URL.',
+    'edit.general.postLogoutRedirectUris.title': 'Post-Logout Redirect URIs',
+    'edit.general.postLogoutRedirectUris.description':
+      'Allowed URIs to redirect to after logout. A post_logout_redirect_uri passed to the logout endpoint must match one of these.',
+    'edit.general.postLogoutRedirectUris.addUri': 'Add URI',
+    'edit.general.postLogoutRedirectUris.error.invalid': 'Invalid Redirect: Please enter a valid URL.',
     'edit.general.allowedUserTypes.placeholder': 'Select user types',
     'edit.general.allowedUserTypes.hint': 'Users of these types can authenticate with this application',
     'edit.general.applicationUrl.hint': 'The homepage URL of your application',
@@ -2462,6 +2593,12 @@ const translations = {
     'edit.flows.recoveryFlow.placeholder': 'Select a recovery flow',
     'edit.flows.recoveryFlow.hint': 'Select the flow that handles account recovery for this {{entity}}.',
     'edit.flows.recoveryFlow.alert':
+      'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
+    'edit.flows.labels.signOutFlow': 'Sign Out Flow',
+    'edit.flows.labels.signOutFlow.description': 'Confirm and terminate the SSO session when people sign out.',
+    'edit.flows.signOutFlow.placeholder': 'Select a sign-out flow',
+    'edit.flows.signOutFlow.hint': 'Select the flow that runs when a user signs out of this {{entity}}.',
+    'edit.flows.signOutFlow.alert':
       'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
     'edit.flows.editFlow': 'Edit flow',
 
@@ -2560,6 +2697,23 @@ const translations = {
     'edit.advanced.acrValues.placeholder': 'Select ACR values',
     'edit.advanced.acrValues.hint':
       'When acr_values is included in the authorization request, only values configured here are accepted.',
+    'edit.advanced.grantTypes.labels.ciba': 'CIBA (Client-Initiated Backchannel Authentication)',
+    'edit.advanced.grantTypes.labels.tokenExchange': 'Token Exchange',
+    'edit.advanced.grantTypes.labels.jwtBearer': 'JWT Bearer',
+    'edit.advanced.idJag.title': 'Identity Assertions (ID-JAG)',
+    'edit.advanced.idJag.description':
+      "Issue signed assertions of the signed-in user's identity that external services accept for token issuance.",
+    'edit.advanced.idJag.publicClientGuard':
+      'Identity assertions require a confidential client. Turn off Public Client to enable.',
+    'edit.advanced.idJag.labels.allowedAudiences': 'Allowed audiences',
+    'edit.advanced.idJag.allowedAudiences.placeholder': 'Type an audience and press Enter',
+    'edit.advanced.idJag.allowedAudiences.error': 'Add at least one audience.',
+    'edit.advanced.idJag.allowedAudiences.hint': 'Each assertion targets exactly one of these audiences.',
+    'edit.advanced.idJag.labels.validityPeriod': 'Assertion validity',
+    'edit.advanced.idJag.labels.seconds': 'seconds',
+    'edit.advanced.idJag.validityPeriod.error': 'Enter a value of at least 1 second.',
+    'edit.advanced.idJag.validityPeriod.hint': 'How long an issued assertion stays valid. Default 300.',
+    'edit.advanced.idJag.grantTypeHint': 'The token exchange grant type is enabled together with this feature.',
     'create.success': 'Application created successfully.',
     'create.error': 'Failed to create application. Please try again.',
     'update.success': 'Application updated successfully.',
@@ -2607,6 +2761,13 @@ const translations = {
   // Import / Export - Project import-export feature translations
   // ============================================================================
   importExport: {
+    'landing.title': 'Import / Export',
+    'landing.subtitle': 'Choose whether to import a configuration file or export your current one.',
+    'landing.type.import.label': 'Import',
+    'landing.type.import.description': 'Bring in an existing ThunderID configuration file.',
+    'landing.type.export.label': 'Export',
+    'landing.type.export.description': 'Download your current configuration as a file.',
+
     'export.page.title': 'Export Configuration',
     'export.page.loading': 'Loading export configuration...',
     'export.page.loadError': 'Failed to load export configuration: {{message}}',
@@ -2671,14 +2832,14 @@ const translations = {
     'templateVariable.valueMissing': 'value is missing',
 
     'configureExport.nextSteps.startWithConfig': '{{productName}} will start with your exported configuration',
-    'configureExport.nextSteps.resourcesAvailable': 'All applications, flows, and identity providers will be available',
+    'configureExport.nextSteps.resourcesAvailable': 'All applications, flows, and connections will be available',
     'configureExport.nextSteps.testFlows': 'You can test your authentication flows immediately',
     'configureExport.actions.showLess': 'Show less',
     'configureExport.actions.more': '+ {{count}} more',
     'configureExport.labels.themes': 'Themes',
     'configureExport.labels.users': 'Users',
     'configureExport.labels.organizationUnits': 'Organization Units',
-    'configureExport.labels.notificationSenders': 'Notification Senders',
+    'configureExport.labels.connections': 'Connections',
     'configureExport.labels.userTypes': 'User Types',
     'configureExport.labels.translations': 'Translations',
     'configureExport.labels.layouts': 'Layouts',
@@ -2691,7 +2852,6 @@ const translations = {
     'configureExport.fallback.unnamedFlow': 'Unnamed Flow',
     'configureExport.fallback.unnamedTheme': 'Unnamed Theme',
     'configureExport.fallback.unnamedOrganization': 'Unnamed Organization',
-    'configureExport.fallback.unnamedSender': 'Unnamed Sender',
     'configureExport.fallback.unnamedSchema': 'Unnamed Schema',
     'configureExport.fallback.unnamedTranslation': 'Unnamed Translation',
     'configureExport.fallback.unnamedLayout': 'Unnamed Layout',
@@ -2723,7 +2883,6 @@ const translations = {
     'summary.projectDetails': 'Project Details',
     'summary.totalResources': 'Total Resources',
     'summary.preImportValidation': 'Pre-Import Validation',
-    'summary.labels.identityProviders': 'Identity Providers',
     'summary.labels.presentationDefinitions': 'Presentation Definitions',
     'summary.labels.credentialConfigurations': 'Credential Configurations',
     'summary.actions.reuploadEnv': 'Re-upload .env file',
@@ -2880,7 +3039,6 @@ const translations = {
     'listing.addFlow': 'Create New Flow',
     'listing.columns.name': 'Name',
     'listing.columns.flowType': 'Type',
-    'listing.columns.version': 'Version',
     'listing.columns.updatedAt': 'Last Updated',
     'listing.columns.actions': 'Actions',
     'listing.error.title': 'Failed to load flows',
@@ -3366,9 +3524,41 @@ const translations = {
     'core.headerPanel.saveTitle': 'Save flow name',
     'core.headerPanel.cancelEdit': 'Cancel',
     'core.headerPanel.edgeStyleTooltip': 'Change edge style',
+    'core.headerPanel.simulate': 'Preview',
+    'core.headerPanel.stopSimulation': 'Stop preview',
+    'core.headerPanel.saveDisabledDuringPreview': 'Stop the preview before saving',
     'core.headerPanel.edgeStyles.bezier': 'Bezier',
     'core.headerPanel.edgeStyles.smoothStep': 'Smooth Step',
     'core.headerPanel.edgeStyles.step': 'Step',
+
+    // Flow simulation (preview mode)
+    'core.simulation.stepCount_one': 'Step {{count}}',
+    'core.simulation.stepCount_other': 'Step {{count}}',
+    'core.simulation.chooseNext': 'Choose how the user proceeds from this step',
+    'core.simulation.screenHint': 'Select an option on the preview screen to continue',
+    'core.simulation.screenHintOr': 'or select an option on the preview screen',
+    'core.simulation.complete': 'Flow complete — no outgoing transitions',
+    'core.simulation.back': 'Go back one step',
+    'core.simulation.staticView': 'Switch to a static canvas view',
+    'core.simulation.followSteps': 'Follow steps on the canvas',
+    'core.simulation.restart': 'Restart preview',
+    'core.simulation.exit': 'Exit preview',
+    'core.simulation.kinds.action': 'Continue',
+    'core.simulation.kinds.success': 'On success',
+    'core.simulation.kinds.incomplete': 'On incomplete',
+    'core.simulation.kinds.failure': 'On failure',
+    'core.simulation.preview.title': 'End-user preview',
+    'core.simulation.preview.noScreen': 'No screen is shown for this step',
+    'core.simulation.preview.noScreenHint': 'This step runs in the background before the flow continues',
+    'core.simulation.preview.applicationLabel': 'Preview as application',
+    'core.simulation.preview.devices.mobile': 'Mobile',
+    'core.simulation.preview.devices.tablet': 'Tablet',
+    'core.simulation.preview.devices.desktop': 'Desktop',
+    'core.simulation.preview.consentEssentialPlaceholder': 'Attributes requested by the application',
+    'core.simulation.preview.consentOptionalPlaceholder': 'Optional attributes the user can toggle',
+    'core.simulation.preview.dynamicFieldsHint': 'Input fields resolved at runtime',
+    'core.simulation.preview.darkMode': 'Switch to dark preview',
+    'core.simulation.preview.lightMode': 'Switch to light preview',
 
     // Resource panel
     'core.resourcePanel.title': 'Resources',
@@ -3377,17 +3567,22 @@ const translations = {
     'core.resourcePanel.starterTemplates.title': 'Starter Templates',
     'core.resourcePanel.starterTemplates.description':
       'Choose one of these templates to start building registration experience',
+    'core.resourcePanel.search.placeholder': 'Search (e.g. MFA, social, consent)',
+    'core.resourcePanel.search.clear': 'Clear search',
+    'core.resourcePanel.search.noResults': 'No matching resources',
+    'core.resourcePanel.search.noResultsHint': 'Try a different keyword, such as "OTP", "Google", or "passkey"',
     'core.resourcePanel.widgets.title': 'Widgets',
-    'core.resourcePanel.widgets.description': 'Use these widgets to build up the flow using pre-created flow blocks',
+    'core.resourcePanel.widgets.description': 'Ready-made blocks like social login, OTP, and passkey',
     'core.resourcePanel.steps.title': 'Steps',
-    'core.resourcePanel.steps.description': 'Use these as steps in your flow',
+    'core.resourcePanel.steps.description': 'Screens and logic that shape your flow',
     'core.resourcePanel.components.title': 'Components',
-    'core.resourcePanel.components.description': 'Use these components to build up your views',
+    'core.resourcePanel.components.description': 'Form fields, buttons, and display elements',
     'core.resourcePanel.executors.title': 'Executors',
-    'core.resourcePanel.executors.description': 'Add authentication executors to your flow',
+    'core.resourcePanel.executors.description': 'Backend actions like verifying credentials or sending OTPs',
 
     // View step
     'core.steps.view.addComponent': 'Add Component',
+    'core.steps.view.addField': 'Add Field',
     'core.steps.view.configure': 'Configure',
     'core.steps.view.remove': 'Remove',
     'core.steps.view.noComponentsAvailable': 'No components available',
@@ -3892,10 +4087,18 @@ const translations = {
     'listing.columns.name': 'Name',
     'listing.columns.type': 'Type',
     'listing.columns.identifier': 'Identifier',
-    'listing.columns.handle': 'Handle',
     'listing.columns.actions': 'Actions',
     'listing.systemResourceServer': 'System resource server',
+    'listing.default': 'Default',
     'listing.error': 'Failed to load resource servers.',
+    'actions.setAsDefault': 'Set as default',
+    'setDefault.title': 'Set default resource server',
+    'setDefault.message':
+      'will become the default resource server. Requests without a resource parameter will fall back to it.',
+    'setDefault.confirm': 'Set as default',
+    'setDefault.setting': 'Setting…',
+    'setDefault.success': '{{name}} is now the default resource server.',
+    'setDefault.error': 'Failed to set the default resource server.',
     'delete.title': 'Delete resource server',
     'delete.message': 'Are you sure you want to delete this resource server? This action cannot be undone.',
     'delete.disclaimer':
@@ -3970,12 +4173,13 @@ const translations = {
     'create.name.nameLabelMcp': 'MCP Server Name',
     'create.name.namePlaceholder': 'e.g. Payments API',
     'create.name.suggestions': 'Need inspiration? Pick one:',
-    'create.name.handleLabel': 'Handle (Optional)',
-    'create.name.handlePlaceholder': 'e.g. payments-api',
-    'create.name.handleHint':
-      'The handle prefixes every permission in this resource server. It cannot be changed after creation.',
-    'create.name.handleHintMcp':
-      'The handle prefixes every permission in this MCP server. It cannot be changed after creation.',
+    'create.name.identifierLabel': 'Identifier',
+    'create.name.identifierPlaceholder': 'https://api.example.com',
+    'create.name.identifierPlaceholderMcp': 'https://mcp.example.com',
+    'create.name.identifierHint':
+      'A unique identifier for this resource server. When set as an absolute URI, it becomes the token audience for RFC 8707 resource indicators.',
+    'create.name.identifierHintMcp':
+      'A unique identifier for this MCP server. When set as an absolute URI, it becomes the token audience for RFC 8707 resource indicators.',
     'create.separator.title': 'Choose your permission delimiter',
     'create.separator.subtitle':
       'The delimiter character joins parts of a permission string. This cannot be changed after creation.',
@@ -3995,7 +4199,10 @@ const translations = {
     'create.submitMcp': 'Create MCP server',
     'edit.tab.resources': 'Resources',
     'edit.tab.advanced': 'Advanced Settings',
+    'edit.defaultBadge': 'Default resource server',
+    'edit.defaultBadgeManaged': 'Managed by server configuration.',
     'edit.back': 'Back to resource servers',
+    'edit.identifierRequired': 'Identifier is required.',
     'edit.notFound': 'Resource server not found.',
     'edit.systemResourceServer': 'System',
     'edit.tabs': 'Resource server settings',
@@ -4021,6 +4228,7 @@ const translations = {
     'edit.dangerZone.deleteServer': 'Delete resource server',
     'edit.dangerZone.deleteServerMcp': 'Delete MCP server',
     'tree.title': 'Resource Hierarchy',
+    'detail.identifierRequired': 'Identifier is required.',
     'tree.add': 'Add',
     'tree.addResource': 'Add resource',
     'tree.addServerAction': 'Add server-level action',

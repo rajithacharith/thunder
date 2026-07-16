@@ -625,6 +625,77 @@ func deleteApplication(appID string) error {
 	return nil
 }
 
+// updateApplication sends a PUT /applications/{id} request and returns any error.
+func updateApplication(appID string, app Application) error {
+	appJSON, err := json.Marshal(app)
+	if err != nil {
+		return fmt.Errorf("failed to marshal application for update: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, testServerURL+"/applications/"+appID, bytes.NewReader(appJSON))
+	if err != nil {
+		return fmt.Errorf("failed to create PUT request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send PUT request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// TestLoginConsentValidityPeriodPersisted verifies that a non-zero login consent validity period
+// set on application creation round-trips correctly on retrieval.
+func (ts *ApplicationAPITestSuite) TestLoginConsentValidityPeriodPersisted() {
+	app := Application{
+		OUID:               testOUID,
+		Name:               "Login Consent Validity Test App",
+		Description:        "App to test login_consent validity period persistence",
+		AuthFlowID:         defaultAuthFlowID,
+		RegistrationFlowID: defaultRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			ValidityPeriod: 7200,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "login_consent_validity_test_client",
+					ClientSecret:            "login_consent_validity_test_secret",
+					RedirectURIs:            []string{"http://localhost/login-consent-validity/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application with login_consent")
+	defer func() {
+		if err := deleteApplication(appID); err != nil {
+			ts.T().Logf("teardown: failed to delete application %s: %v", appID, err)
+		}
+	}()
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err, "failed to retrieve application")
+	ts.Require().NotNil(retrieved.LoginConsent, "login_consent should be present in response")
+	ts.Assert().Equal(int64(7200), retrieved.LoginConsent.ValidityPeriod,
+		"login_consent.validity_period should be 7200")
+}
+
 // TestApplicationCreationWithDefaults tests that applications created without grant_types, response_types, or token_endpoint_auth_method get proper defaults
 func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 	appWithDefaults := Application{
@@ -1038,6 +1109,62 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 			ts.Assert().Empty(oauthConfig.ClientSecret, "private_key_jwt app should not have a client secret")
 		})
 	}
+}
+
+// TestCreateApplicationWithAttestation verifies that a mobile application's Google Play Integrity
+// attestation configuration round-trips (package name and signing digests are returned), while the
+// write-only service account credentials are never returned in responses.
+func (ts *ApplicationAPITestSuite) TestCreateApplicationWithAttestation() {
+	const testClientID = "attestation_test_oauth_client"
+
+	app := Application{
+		OUID:                      testOUID,
+		Name:                      "Attestation Test App",
+		Description:               "Mobile app configured with Play Integrity attestation",
+		AuthFlowID:                defaultAuthFlowID,
+		RegistrationFlowID:        defaultRegistrationFlowID,
+		IsRegistrationFlowEnabled: false,
+		// Attestation is a client-level setting, configured at the top level of the application
+		// independent of the OAuth2 protocol config.
+		Attestation: &AttestationConfig{
+			Android: &AndroidAttestationConfig{
+				PackageName:               "com.example.myapp",
+				CertificateSha256Digests:  []string{"AA:BB:CC", "DD:EE:FF"},
+				ServiceAccountCredentials: `{"type":"service_account","project_id":"demo"}`,
+			},
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"myapp://callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "none",
+					PKCERequired:            true,
+					PublicClient:            true,
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "expected application creation to succeed")
+	ts.Require().NotEmpty(appID)
+	defer func() {
+		ts.Require().NoError(deleteApplication(appID), "expected application deletion to succeed")
+	}()
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err, "expected application retrieval to succeed")
+	ts.Require().NotNil(retrieved.Attestation, "attestation config should be returned")
+	ts.Require().NotNil(retrieved.Attestation.Android, "android attestation config should be returned")
+	ts.Assert().Equal("com.example.myapp", retrieved.Attestation.Android.PackageName)
+	ts.Assert().Equal([]string{"AA:BB:CC", "DD:EE:FF"}, retrieved.Attestation.Android.CertificateSha256Digests)
+	// The write-only service account credentials must never be returned.
+	ts.Assert().Empty(retrieved.Attestation.Android.ServiceAccountCredentials,
+		"service account credentials must not be returned in GET responses")
 }
 
 // TestCreateApplicationCertLifecycle verifies that a certificate created with an

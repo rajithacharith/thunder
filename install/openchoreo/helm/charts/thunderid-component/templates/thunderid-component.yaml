@@ -63,10 +63,6 @@ spec:
         value: {{ .Values.cache.size | quote }}
       - key: CACHE_TTL
         value: {{ .Values.cache.ttl | quote }}
-      - key: CONSENT_ENABLED
-        value: {{ .Values.consent.enabled | quote }}
-      - key: CONSENT_BASE_URL
-        value: {{ .Values.consent.baseUrl | quote }}
       - key: GATE_CLIENT_BASE
         value: {{ .Values.gate.clientBase | quote }}
       - key: CONSOLE_CLIENT_BASE

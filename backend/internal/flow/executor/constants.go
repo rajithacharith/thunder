@@ -48,6 +48,7 @@ const (
 	ExecutorNameFederatedAuthResolver        = "FederatedAuthResolverExecutor"
 	ExecutorNameSSOCheck                     = "SSOCheckExecutor"
 	ExecutorNameSession                      = "SessionExecutor"
+	ExecutorNameSessionSignOut               = "SessionSignOutExecutor"
 	ExecutorNameOTPExecutor                  = "OTPExecutor"
 )
 

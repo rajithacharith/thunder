@@ -36,6 +36,7 @@ type Application struct {
 	LogoURL                   string              `json:"logoUrl,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"`
+	Attestation               *AttestationConfig  `json:"attestation,omitempty"`
 	TosURI                    string              `json:"tosUri,omitempty"`
 	PolicyURI                 string              `json:"policyUri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
@@ -72,6 +73,18 @@ type OAuthAppConfig struct {
 	UserInfo                *UserInfoConfig     `json:"userInfo,omitempty"`
 	Certificate             *ApplicationCert    `json:"certificate,omitempty"`
 	AcrValues               []string            `json:"acrValues,omitempty"`
+}
+
+// AttestationConfig represents the platform attestation configuration in the OAuth config.
+type AttestationConfig struct {
+	Android *AndroidAttestationConfig `json:"android,omitempty"`
+}
+
+// AndroidAttestationConfig represents the Google Play Integrity attestation configuration.
+type AndroidAttestationConfig struct {
+	PackageName               string   `json:"packageName,omitempty"`
+	CertificateSha256Digests  []string `json:"certificateSha256Digests,omitempty"`
+	ServiceAccountCredentials string   `json:"serviceAccountCredentials,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.
@@ -204,6 +217,26 @@ func (app *Application) equals(expectedApp Application) bool {
 	} else if (app.Assertion == nil && expectedApp.Assertion != nil) ||
 		(app.Assertion != nil && expectedApp.Assertion == nil) {
 		return false
+	}
+
+	// Attestation config. Service account credentials are write-only and never returned, so they
+	// are excluded from the comparison.
+	if (app.Attestation == nil) != (expectedApp.Attestation == nil) {
+		return false
+	}
+	if app.Attestation != nil && expectedApp.Attestation != nil {
+		if (app.Attestation.Android == nil) != (expectedApp.Attestation.Android == nil) {
+			return false
+		}
+		if app.Attestation.Android != nil && expectedApp.Attestation.Android != nil {
+			if app.Attestation.Android.PackageName != expectedApp.Attestation.Android.PackageName {
+				return false
+			}
+			if !compareStringSlices(app.Attestation.Android.CertificateSha256Digests,
+				expectedApp.Attestation.Android.CertificateSha256Digests) {
+				return false
+			}
+		}
 	}
 
 	// LoginConsent config

@@ -145,9 +145,7 @@ spec:
                   imagePullPolicy: "${parameters.runtime.imagePullPolicy}"
                   command: ["sh", "-c", "./setup.sh && touch /opt/thunderid/database/.setup-complete"]
                   env: |
-                    ${configurations.configs.envs.map(e, {"name": e.name, "value": e.value}) + [
-                      {"name": "WITH_CONSENT", "value": "false"}
-                    ]}
+                    ${configurations.configs.envs.map(e, {"name": e.name, "value": e.value})}
                   volumeMounts:
                     - name: thunderid-config
                       mountPath: /opt/thunderid/deployment.yaml
@@ -220,10 +218,6 @@ spec:
             flow:
               max_version_history: 3
               auto_infer_registration: true
-
-            consent:
-              enabled: {{ "{{.CONSENT_ENABLED}}" }}
-              base_url: "{{ "{{.CONSENT_BASE_URL}}" }}"
 
     - id: thunderid-config-pg
       includeWhen: "${parameters.runtime.dbType == 'postgres'}"
@@ -298,10 +292,6 @@ spec:
             flow:
               max_version_history: 3
               auto_infer_registration: true
-
-            consent:
-              enabled: {{ "{{.CONSENT_ENABLED}}" }}
-              base_url: "{{ "{{.CONSENT_BASE_URL}}" }}"
 
     - id: gate-config
       template:

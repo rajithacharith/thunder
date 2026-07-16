@@ -51,6 +51,7 @@ import {McpClientTypes} from '../models/mcp-client';
 import type {OAuth2Config} from '../models/oauth';
 import deriveMcpClientType from '../utils/deriveMcpClientType';
 import {getIntegrationGuideForTemplate} from '../utils/getIntegrationGuidesForTemplate';
+import getTemplateCapabilities from '../utils/getTemplateCapabilities';
 import getTemplateFieldConstraints from '../utils/getTemplateFieldConstraints';
 import getTemplateMetadata from '../utils/getTemplateMetadata';
 
@@ -99,6 +100,7 @@ export default function ApplicationEditPage() {
   const [tempDescription, setTempDescription] = useState('');
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
   const [mcpAccessInvalid, setMcpAccessInvalid] = useState(false);
+  const [advancedSettingsInvalid, setAdvancedSettingsInvalid] = useState(false);
 
   const handleBack = async () => {
     await navigate('/applications');
@@ -128,6 +130,12 @@ export default function ApplicationEditPage() {
 
   const oauth2Constraints = useMemo(
     () => getTemplateFieldConstraints(application?.template)?.oauth2,
+    [application?.template],
+  );
+
+  // Attestation is offered only for templates that declare the capability (e.g. mobile).
+  const supportsAttestation = useMemo(
+    () => Boolean(getTemplateCapabilities(application?.template)?.attestation),
     [application?.template],
   );
 
@@ -270,6 +278,7 @@ export default function ApplicationEditPage() {
                 oauth2Constraints={isMcpM2mOnly ? undefined : oauth2Constraints}
                 onFieldChange={handleFieldChange}
                 allowedGrantTypes={[...TemplateConstants.MCP_CLIENT_ALLOWED_GRANT_TYPES]}
+                onValidationChange={setAdvancedSettingsInvalid}
               />
             ),
           },
@@ -415,14 +424,11 @@ export default function ApplicationEditPage() {
               return templateMetadata ? (
                 <Box sx={{mt: 1}}>
                   <Chip
-                    icon={
-                      <Box sx={{display: 'flex', alignItems: 'center', '& > *': {width: 16, height: 16}}}>
-                        {templateMetadata.icon}
-                      </Box>
-                    }
                     label={templateMetadata.displayName}
                     size="small"
-                    sx={{px: 0.5}}
+                    color="primary"
+                    variant="outlined"
+                    sx={{fontSize: '0.7rem'}}
                   />
                 </Box>
               ) : null;
@@ -554,6 +560,8 @@ export default function ApplicationEditPage() {
                 oauth2Config={oauth2Config}
                 oauth2Constraints={oauth2Constraints}
                 onFieldChange={handleFieldChange}
+                showAttestation={supportsAttestation}
+                onValidationChange={setAdvancedSettingsInvalid}
               />
             </TabPanel>
           </>
@@ -568,7 +576,9 @@ export default function ApplicationEditPage() {
           saveLabel={t('applications:edit.page.save')}
           savingLabel={t('applications:edit.page.saving')}
           isSaving={updateApplication.isPending}
-          saveDisabled={hasValidationErrors || mcpAccessInvalid || application.isReadOnly === true}
+          saveDisabled={
+            hasValidationErrors || mcpAccessInvalid || advancedSettingsInvalid || application.isReadOnly === true
+          }
           onReset={() => setEditedApp({})}
           onSave={() => {
             handleSave().catch(() => null);

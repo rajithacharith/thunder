@@ -17,30 +17,51 @@
  */
 
 import {Box, Card, CardActionArea, CardContent, Chip, Stack, Typography} from '@wso2/oxygen-ui';
-import {CircleCheck, LogIn, Send, ShieldCheck, Webhook} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeftRight, CircleCheck, KeyRound, LogIn, Send, ShieldCheck, Webhook} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {type ConnectionType, ConnectionTypes} from '../../models/connection';
 
+/**
+ * Selectable option in the "Add custom connection" wizard's type step. `'trusted-idp'` is a
+ * UI-only pseudo-type (not a backend /connections vendor route) for configuring a trust-only
+ * OIDC connection through the dedicated trusted-issuer form rather than the generic
+ * `ConnectionForm`.
+ */
+export type SelectableConnectionType = ConnectionType | 'trusted-idp';
+
 interface SelectConnectionTypeProps {
-  selectedType: ConnectionType | null;
-  onSelect: (type: ConnectionType) => void;
+  selectedType: SelectableConnectionType | null;
+  onSelect: (type: SelectableConnectionType) => void;
+  /**
+   * Keys with a wired `customConfigureSteps` slot on the parent wizard (see
+   * `ConnectionCreateWizardPage`). Options that require a custom configure step (e.g.
+   * `'trusted-idp'`) are only rendered when their key is present here — the package can't let a
+   * consumer select a type it has no way to complete.
+   */
+  customTypes?: string[];
 }
 
 interface TypeOption {
-  type: ConnectionType;
+  type: SelectableConnectionType;
   labelKey: string;
   descriptionKey: string;
   tagKey: string;
   icon: JSX.Element;
   tagIcon: JSX.Element;
   comingSoon: boolean;
+  /** Whether this option only works when the consumer supplies a matching `customConfigureSteps` entry. */
+  requiresCustomStep?: boolean;
 }
 
-export default function SelectConnectionType({selectedType, onSelect}: SelectConnectionTypeProps): JSX.Element {
+export default function SelectConnectionType({
+  selectedType,
+  onSelect,
+  customTypes = [],
+}: SelectConnectionTypeProps): JSX.Element {
   const {t} = useTranslation('connections');
 
-  const options: TypeOption[] = [
+  const allOptions: TypeOption[] = [
     {
       type: ConnectionTypes.OIDC,
       labelKey: 'wizard.type.oidc.label',
@@ -51,7 +72,27 @@ export default function SelectConnectionType({selectedType, onSelect}: SelectCon
       comingSoon: false,
     },
     {
-      // FE-only placeholder; the backend message-sender API is not wired yet.
+      type: ConnectionTypes.OAUTH,
+      labelKey: 'wizard.type.oauth.label',
+      descriptionKey: 'wizard.type.oauth.description',
+      tagKey: 'wizard.type.oauth.tag',
+      icon: <KeyRound size={28} />,
+      tagIcon: <LogIn size={14} />,
+      comingSoon: false,
+    },
+    {
+      type: 'trusted-idp',
+      labelKey: 'wizard.type.trustedIdp.label',
+      descriptionKey: 'wizard.type.trustedIdp.description',
+      tagKey: 'wizard.type.trustedIdp.tag',
+      icon: <ShieldCheck size={28} />,
+      tagIcon: <ArrowLeftRight size={14} />,
+      comingSoon: false,
+      requiresCustomStep: true,
+    },
+    {
+      // Backend support (/connections/sms-gateway) is wired; the console wizard for this
+      // card is a follow-up, so it stays comingSoon here.
       type: 'custom-sms' as ConnectionType,
       labelKey: 'wizard.type.sms.label',
       descriptionKey: 'wizard.type.sms.description',
@@ -61,6 +102,9 @@ export default function SelectConnectionType({selectedType, onSelect}: SelectCon
       comingSoon: true,
     },
   ];
+  const options: TypeOption[] = allOptions.filter(
+    (option) => !option.requiresCustomStep || customTypes.includes(option.type),
+  );
 
   return (
     <Stack direction="column" spacing={1} data-testid="select-connection-type">

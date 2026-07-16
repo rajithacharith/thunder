@@ -44,6 +44,8 @@ type sessionStore interface {
 	GetByCheckpoint(ctx context.Context, sessionID, checkpointID string) (*SessionContext, error)
 	// Delete removes all of a session's checkpoint contexts.
 	Delete(ctx context.Context, sessionID string) error
+	// DeleteSession removes the session row itself.
+	DeleteSession(ctx context.Context, sessionID string) error
 	// ListCheckpointIDs returns the checkpoint ids a session has saved, without loading any context
 	// payload — the existence check the SSO-Check node uses to decide checkpoint availability.
 	ListCheckpointIDs(ctx context.Context, sessionID string) ([]string, error)
