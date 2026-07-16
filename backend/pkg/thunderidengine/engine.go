@@ -153,10 +153,13 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		OAuth:         engineCtx.oauthConfig,
 		GateClient:    engineCtx.gateClientConfig,
 	}
+	// The embedded engine has no server-config store, so no default resource server is available.
+	// Implicit no-resource requests that carry permission scopes are rejected; OIDC-only or
+	// scopeless requests do not need resource-server binding.
 	err = oauth.Initialize(mux, engineCtx.actorProvider, engineCtx.authnProvider, engineCtx.jwtService,
 		engineCtx.jweService, flowExecService, engineCtx.observabilitySvc, engineCtx.runtimeCryptoSvc,
 		engineCtx.ouProvider, attributeCacheService, engineCtx.authzProvider, engineCtx.resourceProvider,
-		engineCtx.i18nProvider, engineCtx.idpProvider, nil, oauthConfig)
+		nil, engineCtx.i18nProvider, engineCtx.idpProvider, nil, oauthConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
 	}

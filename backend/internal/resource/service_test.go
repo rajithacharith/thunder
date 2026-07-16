@@ -5142,18 +5142,6 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_CheckNameError()
 	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
-func (suite *ResourceServiceTestSuite) TestFindResourceServersByPermissions_StoreError() {
-	perms := []string{"booking:read"}
-	suite.mockStore.On("FindResourceServersByPermissions", mock.Anything, perms).
-		Return([]providers.ResourceServer(nil), errors.New("database error"))
-
-	result, err := suite.service.FindResourceServersByPermissions(context.Background(), perms)
-
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
-}
-
 func TestResourceServerYAML_OUHandleParsed(t *testing.T) {
 	yamlData := []byte(`
 id: rs1

@@ -21,7 +21,7 @@ See [Manage Resource Servers](../../guides/resource-servers) for setup instructi
 
 When a client includes the `resource` parameter in an OAuth 2.0 request, <ProductName /> issues an access token whose `aud` (audience) claim targets the specified resource server. The receiving resource server verifies the `aud` claim to confirm the token was intended for it.
 
-This mechanism prevents a token issued for one service from being reused at another. A client can target a single resource server or multiple resource servers in the same request. Requested scopes are filtered to only those defined on the targeted resource servers.
+This mechanism prevents a token issued for one service from being reused at another. Each non-CIBA access token targets exactly one resource server. Requested scopes are filtered to only those defined on the targeted resource server, and app or agent tokens are further limited to permissions assigned to the issuing app or agent.
 
 See [Resource Indicators](../../guides/protocols/oauth-oidc/resource-indicators) for usage details.
 

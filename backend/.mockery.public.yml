@@ -531,6 +531,15 @@ packages:
       pkgname: resourcemock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/thunder-id/thunderid/internal/serverconfig:
+    interfaces:
+      ServerConfigService:
+        config:
+          dir: tests/mocks/serverconfigmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: serverconfigmock
+          filename: "{{.InterfaceName}}_mock.go"
+
   github.com/thunder-id/thunderid/internal/entityprovider:
     config:
       all: true

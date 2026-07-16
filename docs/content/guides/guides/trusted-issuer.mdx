@@ -1,7 +1,7 @@
 ---
-title: Secure ThunderID Using a Third-Party Identity Provider
+title: Secure {{ProductName}} Using a Third-Party Identity Provider
 docType: guide
-description: Learn about Secure ThunderID Using a Third-Party Identity Provider and how to apply it in configuration, integration, and operational workflows.
+description: Learn about Secure {{ProductName}} Using a Third-Party Identity Provider and how to apply it in configuration, integration, and operational workflows.
 ---
 
 # Secure <ProductName /> Using a Third-Party Identity Provider
@@ -168,7 +168,7 @@ configuration:
 |---------|--------------|-----|
 | Console sign-in redirect hangs or token exchange fails with a CORS error | <ProductName />'s origin is not in the external authorization server's CORS allowed-origins list | Add the <ProductName /> instance's origin to the authorization server's CORS configuration. |
 | Tokens rejected with "issuer mismatch" | `trusted_issuer.issuer` does not exactly match the `iss` claim on incoming tokens | Set `trusted_issuer.issuer` to match exactly, including scheme, host, port, and trailing slash. |
-| Tokens rejected with "audience mismatch" | The authorization server is not receiving a `resource` parameter, so `aud` defaults to the client ID instead of <ProductName />'s URL | Either set `trusted_issuer.audience` to the client ID, or configure the client to send `resource=<server-url>` in the authorization request. |
+| Tokens rejected with "audience mismatch" | The authorization server is not receiving a `resource` parameter and falls back to a default resource server whose identifier does not match <ProductName />'s expected audience | Configure the client to send `resource=<server-url>` in the authorization request, or set `defaultResourceServer` to the expected resource server. |
 | Tokens rejected with "required claim missing" | A claim listed under `required_claims` is absent from the token or its value does not match | Remove the entry from `required_claims`, or configure the authorization server to include the claim with the expected value. |
 | JWKS fetch fails | `trusted_issuer.jwks_url` is unreachable, or the authorization server uses a certificate that <ProductName /> does not trust | Verify network connectivity to the URL, and install the authorization server's CA certificate on the <ProductName /> instance if needed. |
 | Console does not redirect to the external authorization server | `consoleClient.trustedIssuer` is not set, or `publicUrl`/`hostname` still point at the local <ProductName /> instance | Verify the `consoleClient.trustedIssuer` block and re-render the Helm chart. |

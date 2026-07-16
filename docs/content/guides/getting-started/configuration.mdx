@@ -814,6 +814,34 @@ Anchor every regex with `^` and `$` and escape literal dots. Unanchored patterns
 The `null` origin is shared by sandboxed iframes, `file://` and `data:` documents, and some redirects, so allowing `"null"` cannot identify the caller. List it only when you intend to trust those contexts. With credentialed responses, it lets any such page make authenticated requests.
 :::
 
+## Default Resource Server
+
+Sets the resource server that access tokens are bound to when a token request omits the `resource` parameter. It is stored in the server-config `defaultResourceServer` section, not in `deployment.yaml`. When no default is configured and the request omits `resource`, token issuance fails with `invalid_target`.
+
+| Field | Description |
+|-------|-------------|
+| `resourceServerId` | The ID of a registered resource server. It must reference an existing resource server, otherwise the update is rejected with `invalid_target`. |
+
+Set it in either of these ways:
+
+- **Declarative** - create `config/resources/server_configs/defaultResourceServer.yaml`, then restart:
+  ```yaml
+  name: defaultResourceServer
+  value:
+    resourceServerId: "<resource-server-id>"
+  ```
+- **Runtime** - send the new value to `PUT /server-config/defaultResourceServer`; it is applied immediately:
+  ```http
+  PUT /server-config/defaultResourceServer
+  Content-Type: application/json
+
+  { "resourceServerId": "<resource-server-id>" }
+  ```
+
+:::note
+A declarative default takes precedence and locks the setting: while `defaultResourceServer.yaml` sets a value, runtime `PUT /server-config/defaultResourceServer` requests are rejected. Remove the declarative value to manage the default at runtime.
+:::
+
 ## Passkey Configuration
 
 WebAuthn/Passkey settings (typically defined in `deployment.yaml`).

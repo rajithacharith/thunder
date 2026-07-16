@@ -392,49 +392,6 @@ var (
 		          AND a.DEPLOYMENT_ID = $4`,
 	}
 
-	// queryFindResourceServersByPermissions returns distinct resource servers that define at least
-	// one of the supplied permissions (as a RESOURCE.PERMISSION or ACTION.PERMISSION). Results are
-	// ordered by IDENTIFIER for deterministic output. Parameter $2 must be a JSON array string.
-	queryFindResourceServersByPermissions = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-35",
-		PostgresQuery: `SELECT DISTINCT rs.ID, rs.OU_ID, rs.NAME, rs.DESCRIPTION,
-		               rs.IDENTIFIER, rs.TYPE, rs.PROPERTIES
-		        FROM "RESOURCE_SERVER" rs
-		        WHERE rs.DEPLOYMENT_ID = $1
-		          AND rs.IDENTIFIER IS NOT NULL
-		          AND (
-		              EXISTS (
-		                  SELECT 1 FROM "RESOURCE" r
-		                  JOIN json_array_elements_text($2::json) AS p ON r.PERMISSION = p.value::text
-		                  WHERE r.RESOURCE_SERVER_ID = rs.ID AND r.DEPLOYMENT_ID = $1
-		              )
-		              OR EXISTS (
-		                  SELECT 1 FROM "ACTION" a
-		                  JOIN json_array_elements_text($2::json) AS p ON a.PERMISSION = p.value::text
-		                  WHERE a.RESOURCE_SERVER_ID = rs.ID AND a.DEPLOYMENT_ID = $1
-		              )
-		          )
-		        ORDER BY rs.IDENTIFIER`,
-		SQLiteQuery: `SELECT DISTINCT rs.ID, rs.OU_ID, rs.NAME, rs.DESCRIPTION,
-		              rs.IDENTIFIER, rs.TYPE, rs.PROPERTIES
-		        FROM "RESOURCE_SERVER" rs
-		        WHERE rs.DEPLOYMENT_ID = $1
-		          AND rs.IDENTIFIER IS NOT NULL
-		          AND (
-		              EXISTS (
-		                  SELECT 1 FROM "RESOURCE" r
-		                  JOIN json_each($2) AS p ON r.PERMISSION = p.value
-		                  WHERE r.RESOURCE_SERVER_ID = rs.ID AND r.DEPLOYMENT_ID = $1
-		              )
-		              OR EXISTS (
-		                  SELECT 1 FROM "ACTION" a
-		                  JOIN json_each($2) AS p ON a.PERMISSION = p.value
-		                  WHERE a.RESOURCE_SERVER_ID = rs.ID AND a.DEPLOYMENT_ID = $1
-		              )
-		          )
-		        ORDER BY rs.IDENTIFIER`,
-	}
-
 	// queryValidatePermissions validates if permissions exist for a resource server.
 	// Returns only the INVALID permissions (those not found in the database).
 	// Parameter $3 must be a JSON array string (e.g., ["read", "write", "admin"]).

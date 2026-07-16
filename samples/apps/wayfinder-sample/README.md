@@ -23,7 +23,7 @@ graph LR
     ThunderID["ThunderID<br/>(Identity Provider)"]
 
     UI -- "user token<br/>(WAYFINDER app)<br/>→ /api/*" --> Wayfinder
-    Chat -- "POST /chat<br/>+ user token<br/>(agent:access)" --> Agent
+    Chat -- "POST /chat<br/>+ chat token<br/>(agent:access)" --> Agent
     Agent -- "M2M token<br/>(client_credentials)<br/>→ /mcp" --> Wayfinder
     Agent -. "OBO token<br/>(authorization_code + PKCE)<br/>→ /mcp" .-> Wayfinder
 
@@ -39,7 +39,8 @@ The core chat and booking flow uses two OAuth clients and three token types when
 
 | Token | OAuth Client | Grant | Purpose |
 |-------|-------------|-------|---------|
-| **User token** | `WAYFINDER` | `authorization_code` | Frontend sign-in, API calls, chat API auth (`agent:access` scope) |
+| **User token** | `WAYFINDER` | `authorization_code` | Frontend sign-in and booking API calls (`booking:*` scopes) |
+| **Chat token** | `WAYFINDER` | `authorization_code` | Chat API auth (`agent:access` scope) |
 | **M2M token** | `WAYFINDER-CONCIERGE` | `client_credentials` | Agent's own identity for browsing tools (search flights, hotels) via MCP |
 | **OBO token** | `WAYFINDER-CONCIERGE` | `authorization_code` + PKCE | Implicit on-behalf-of user-context token for mutating tools (booking, cancellation) via MCP. Because the client is an agent, the issued token automatically carries an `act` claim identifying the agent. No separate token exchange is needed. |
 
@@ -47,8 +48,8 @@ AuthZEN mode uses the server-level Direct Auth Secret for the backend-to-PDP cal
 
 **How it works:**
 
-1. The user signs in to the Wayfinder web app via the `WAYFINDER` OAuth application. The issued token carries `agent:access` (from the Chat User role).
-2. When the user sends a chat message, the frontend calls `POST /chat` on the AI Agent API with the user's access token in the `Authorization` header. The AI Agent validates the token has the `agent:access` scope before processing the message.
+1. The user signs in to the Wayfinder web app via the `WAYFINDER` OAuth application. The issued token is bound to the booking API audience and carries the user's `booking:*` permissions.
+2. When the user sends a chat message, the frontend obtains a second `WAYFINDER` token for `resource=http://localhost:8790/chat` with the `agent:access` scope, then calls `POST /chat` on the AI Agent API. The AI Agent validates that token before processing the message.
 3. For browsing tools (search flights, search hotels), the AI Agent uses its own M2M token (obtained via `client_credentials` with the `WAYFINDER-CONCIERGE` credentials) to call the Wayfinder server's `/mcp` endpoint.
 4. For mutating tools (create booking, cancel booking), the AI Agent returns a `need_user_consent` response. The frontend opens a consent popup, the user signs in and picks which booking permissions to grant (`booking:read`, `booking:create`, `booking:cancel`), and the authorization code is submitted to `POST /chat/consent`. The agent exchanges it for a user-context token, and the frontend retries the original message. Because `WAYFINDER-CONCIERGE` is a ThunderID *agent*, the issued user-context token automatically includes an `act` claim with the agent's entity ID. This creates an implicit on-behalf-of token. The Wayfinder server logs this delegation (`sub` = the user, `act.sub` = the agent) without any explicit token-exchange step.
 5. The Wayfinder server validates the JWT on every request. REST endpoints always enforce token scopes. MCP tools enforce token scopes in the default `scope` mode or send the current user or agent and required permission to the ThunderID PDP in `authzen` mode.
@@ -121,7 +122,7 @@ The import creates:
 |----------|------|-----------------|
 | `Customer` | User type | Consumer schema (`username`, `email`, `password`, `given_name`, `family_name`, `mobile_number`, `sub`) with self-registration enabled |
 | `Staff` | User type | Internal team schema (`username`, `email`, `password`, `displayName`) |
-| `wayfinder-agent` | Resource server | `agent:access` permission |
+| `wayfinder-agent` | Resource server | `agent:access` permission. Identifier: `http://localhost:8790/chat` |
 | `wayfinder` | Resource server | Booking and upgrade permissions, such as `booking:read` and `upgrade:process`. Protects both `/api/*` (REST) and `/mcp` (MCP tools) on the Wayfinder server. |
 | `WAYFINDER` | Application | Public OAuth app (PKCE, redirect to `http://localhost:5173`) with registration and recovery flows enabled |
 | `WAYFINDER-CONCIERGE` | Agent | Confidential OAuth client with `client_credentials` + `authorization_code` grants |
@@ -228,6 +229,8 @@ The only placeholder you must replace is in `ai-agent/.env`:
 - `ANTHROPIC_API_KEY=` (or `GOOGLE_API_KEY=`), your LLM API key.
 
 The agent secret defaults to `wayfinder-agent-secret` (matching `thunderid.env`). Everything else in the examples is local development defaults that match the run instructions below.
+
+The imported ThunderID bundle configures `defaultResourceServer` to `wayfinder-booking-rs`. That lets the Wayfinder web app obtain its normal sign-in token without sending a `resource` parameter; the resulting access token is bound to the booking API audience (`http://localhost:8787/mcp`) and can carry `booking:*` permissions. The chat widget obtains a separate token with `resource=http://localhost:8790/chat` so `agent:access` is bound to the chat API audience. Tokens used by the AI agent to call the Wayfinder MCP server also send `resource=http://localhost:8787/mcp` explicitly.
 
 ### MCP Tool Authorization
 
@@ -342,7 +345,7 @@ Click your name in the top-right corner and pick **Profile** to view your accoun
 
 ### No Chat Access
 
-Sign out and sign in as `jane.smith` / `jane.smith`. Jane can browse flights, hotels, and manage bookings through the web UI. Sending a chat message returns a 403 error because her token lacks the `agent:access` scope. She is not assigned the **Chat User** role.
+Sign out and sign in as `jane.smith` / `jane.smith`. Jane can browse flights, hotels, and manage bookings through the web UI. Sending a chat message returns a 403 error because her chat token lacks the `agent:access` scope. She is not assigned the **Chat User** role.
 
 ### Flight Upgrade via CIBA
 

@@ -21,7 +21,7 @@ The foundation creates the two resource servers, three roles, two demo users, an
 
 1. **Create the `wayfinder-agent` resource server.**
 
-   Invoke the **Resource Management API** to create the resource server. Set the identifier to `wayfinder-agent`. Replace `<organization-unit-id>` with the ID of your default organization unit (look it up via `GET /organization-units`):
+   Invoke the **Resource Management API** to create the resource server. Set the identifier to `http://localhost:8790/chat`, the chat API audience. Replace `<organization-unit-id>` with the ID of your default organization unit (look it up via `GET /organization-units`):
 
    ```bash
    curl -kL -X POST https://localhost:8090/resource-servers \
@@ -30,7 +30,7 @@ The foundation creates the two resource servers, three roles, two demo users, an
      -d '{
        "name": "Wayfinder Agent",
        "description": "Controls access to the Wayfinder Concierge agent",
-       "identifier": "wayfinder-agent",
+       "identifier": "http://localhost:8790/chat",
        "ouId": "<organization-unit-id>",
        "delimiter": ":"
      }'
@@ -57,6 +57,15 @@ The foundation creates the two resource servers, three roles, two demo users, an
    | Action   | Generated permission |
    | -------- | -------------------- |
    | `access` | `agent:access`       |
+
+   Configure it as the default resource server for ordinary Wayfinder web-app sign-in tokens. The AI agent sends `resource=http://localhost:8787/mcp` explicitly when it needs tokens for MCP calls.
+
+   ```bash
+   curl -kL -X PUT https://localhost:8090/server-config/defaultResourceServer \
+     -H 'Content-Type: application/json' \
+     -H 'Authorization: Bearer <access-token>' \
+     -d '{ "resourceServerId": "<wayfinder-agent-rs-id>" }'
+   ```
 
    See [Resource Servers](../../../guides/guides/resource-servers).
 

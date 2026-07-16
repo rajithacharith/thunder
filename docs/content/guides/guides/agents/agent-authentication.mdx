@@ -25,18 +25,20 @@ Use M2M tokens in the subject posture: the agent calls APIs on its own behalf wi
 curl -X POST https://localhost:8090/oauth2/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -u '<CLIENT_ID>:<CLIENT_SECRET>' \
-  -d 'grant_type=client_credentials'
+  -d 'grant_type=client_credentials' \
+  -d 'resource=https://api.example.com/invoices'
 ```
 
 ### Request Specific Scopes
 
-<ProductName /> intersects the requested scopes against the scopes authorized for the agent via its group memberships and role assignments. Requesting a scope the agent is not authorized for results in `invalid_scope`.
+<ProductName /> intersects the requested scopes against the target resource server's permissions and the scopes authorized for the agent via its group memberships and role assignments. Scopes outside that intersection are omitted from the issued token.
 
 ```bash
 curl -X POST https://localhost:8090/oauth2/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -u '<CLIENT_ID>:<CLIENT_SECRET>' \
   -d 'grant_type=client_credentials' \
+  -d 'resource=https://api.example.com/invoices' \
   -d 'scope=invoices:read invoices:write'
 ```
 
@@ -73,10 +75,11 @@ curl -X POST https://localhost:8090/oauth2/token \
   -u '<AGENT_CLIENT_ID>:<AGENT_CLIENT_SECRET>' \
   -d 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
   -d 'subject_token=<USER_ACCESS_TOKEN>' \
-  -d 'subject_token_type=urn:ietf:params:oauth:token-type:jwt'
+  -d 'subject_token_type=urn:ietf:params:oauth:token-type:jwt' \
+  -d 'resource=https://api.example.com/invoices'
 ```
 
-The issued token represents the agent acting on behalf of the user. Its scopes are bounded by the scopes present in the `subject_token`: the agent cannot escalate the user's permissions.
+The issued token represents the agent acting on behalf of the user. Its scopes are bounded by the scopes present in the `subject_token`, the permissions defined by the target resource server, and the permissions assigned to the issuing agent.
 
 ### Request a Constrained Scope
 
@@ -89,18 +92,19 @@ curl -X POST https://localhost:8090/oauth2/token \
   -d 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
   -d 'subject_token=<USER_ACCESS_TOKEN>' \
   -d 'subject_token_type=urn:ietf:params:oauth:token-type:jwt' \
+  -d 'resource=https://api.example.com/invoices' \
   -d 'scope=invoices:read'
 ```
 
-### Narrow to a Specific Audience or Resource
+### Target a Resource Server
 
-Use `audience` for a named target service, or `resource` (RFC 8707) for a resource server URI:
+Use `resource` (RFC 8707) for the resource server URI:
 
 ```bash
   -d 'resource=https://api.example.com/invoices'
 ```
 
-If both the `subject_token`'s audiences and the requested `resource` are specified, <ProductName /> merges them per RFC 8693 §2.1.
+The RFC 8693 `audience` parameter is accepted for compatibility but does not determine the access token's `aud` claim. The access-token audience is the resolved `resource`, or the configured `defaultResourceServer` when `resource` is omitted.
 
 ## Token Characteristics
 
@@ -110,7 +114,7 @@ All agent access tokens are signed JWTs (`typ: at+jwt`) and share a common set o
 |---|---|---|
 | `sub` | The agent's resource ID. | The original user's subject identifier. |
 | `iss` | <ProductName /> instance URL. | <ProductName /> instance URL. |
-| `aud` | Resource server identifier(s), or Client ID as fallback. | Resource server identifier(s), or Client ID as fallback. |
+| `aud` | The resolved resource server identifier. | The resolved resource server identifier. |
 | `scope` | Authorized scopes from the agent's group/role assignments. | A subset of the user's original scopes. |
 | `client_id` | The agent's Client ID. | The agent's Client ID. |
 | `grant_type` | `client_credentials` | `urn:ietf:params:oauth:grant-type:token-exchange` |
@@ -170,7 +174,7 @@ curl -X POST https://localhost:8090/oauth2/token \
 
 Scopes on the new access token are bounded by the scopes of the original grant. You can request a narrower scope with the `scope` parameter; requesting a broader scope returns `invalid_scope`.
 
-Refresh tokens preserve the original full set of authorized audiences, so later narrowing with `resource` still works across refreshes.
+Refresh tokens preserve the resource server binding from the original grant. A refresh request may repeat the same `resource`, or omit it to keep the existing binding.
 
 ## Troubleshooting
 

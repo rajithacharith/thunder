@@ -32,18 +32,28 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
+	"github.com/thunder-id/thunderid/tests/mocks/serverconfigmock"
 )
 
 const testAssertion = "test-id-jag-assertion" //nolint:gosec // Test assertion, not a real credential
+
+// testJWTBearerDefaultRS* model the deployment-configured default resource server used when a
+// jwt-bearer request resolves no explicit resource from the assertion or the request.
+const (
+	testJWTBearerDefaultRSID       = "jb-default-rs"                     // #nosec G101 -- resource server ID.
+	testJWTBearerDefaultRSAudience = "https://jb-default-rs.example.com" // #nosec G101 -- resource identifier URL.
+)
 
 type JWTBearerGrantHandlerTestSuite struct {
 	suite.Suite
 	mockTokenBuilder    *tokenservicemock.TokenBuilderInterfaceMock
 	mockTokenValidator  *tokenservicemock.TokenValidatorInterfaceMock
 	mockResourceService *resourcemock.ResourceServiceInterfaceMock
+	mockServerConfigSvc *serverconfigmock.ServerConfigServiceMock
 	handler             *jwtBearerGrantHandler
 	oauthApp            *providers.OAuthClient
 }
@@ -56,12 +66,20 @@ func (suite *JWTBearerGrantHandlerTestSuite) SetupTest() {
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
-	suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
-		Return([]providers.ResourceServer{}, nil).Maybe()
+	suite.mockServerConfigSvc = serverconfigmock.NewServerConfigServiceMock(suite.T())
+	// A request that resolves no explicit resource falls back to the deployment default RS.
+	suite.mockServerConfigSvc.On("GetMergedConfig", mock.Anything, "defaultResourceServer").
+		Return(resource.DefaultResourceServerConfig{ResourceServerID: testJWTBearerDefaultRSID}, nil).Maybe()
+	suite.mockResourceService.On("GetResourceServer", mock.Anything, testJWTBearerDefaultRSID).
+		Return(&providers.ResourceServer{
+			ID:         testJWTBearerDefaultRSID,
+			Identifier: testJWTBearerDefaultRSAudience,
+		}, nil).Maybe()
 	suite.handler = &jwtBearerGrantHandler{
-		tokenBuilder:    suite.mockTokenBuilder,
-		tokenValidator:  suite.mockTokenValidator,
-		resourceService: suite.mockResourceService,
+		tokenBuilder:        suite.mockTokenBuilder,
+		tokenValidator:      suite.mockTokenValidator,
+		resourceService:     suite.mockResourceService,
+		serverConfigService: suite.mockServerConfigSvc,
 	}
 
 	suite.oauthApp = &providers.OAuthClient{
@@ -81,7 +99,7 @@ func (suite *JWTBearerGrantHandlerTestSuite) SetupTest() {
 
 func (suite *JWTBearerGrantHandlerTestSuite) TestNewJWTBearerGrantHandler() {
 	handler := newJWTBearerGrantHandler(suite.mockTokenBuilder, suite.mockTokenValidator,
-		suite.mockResourceService)
+		suite.mockResourceService, suite.mockServerConfigSvc)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -151,13 +169,15 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_Success() {
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read", "write"},
 		}, nil)
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, testJWTBearerDefaultRSID,
+		[]string{"read", "write"}).Return([]string{}, nil)
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return ctx.Subject == testUserID &&
 				ctx.ClientID == testClientID &&
 				ctx.GrantType == string(providers.GrantTypeJWTBearer) &&
 				ctx.SourceIDP == testCustomIssuer &&
-				len(ctx.Audiences) == 1 && ctx.Audiences[0] == testClientID &&
+				len(ctx.Audiences) == 1 && ctx.Audiences[0] == testJWTBearerDefaultRSAudience &&
 				tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite &&
 				ctx.DPoPJkt == ""
 		})).Return(&model.TokenDTO{
@@ -195,6 +215,8 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_DPoPProof_Propagate
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read", "write"},
 		}, nil)
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, testJWTBearerDefaultRSID,
+		[]string{"read", "write"}).Return([]string{}, nil)
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return ctx.DPoPJkt == "thumbprint-jb"
@@ -253,6 +275,8 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_ScopeIntersection()
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read", "write"},
 		}, nil)
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, testJWTBearerDefaultRSID,
+		[]string{"read"}).Return([]string{}, nil)
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
@@ -291,6 +315,8 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_EmptyAppScopes_Asse
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read", "write"},
 		}, nil)
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, testJWTBearerDefaultRSID,
+		[]string{"read", "write"}).Return([]string{}, nil)
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
@@ -355,10 +381,20 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_AssertionResource_A
 	assert.Equal(suite.T(), []string{"read"}, result.AccessToken.Scopes)
 }
 
-// RFC 8707: when the assertion carries no resource claim, behavior is unchanged — audience composed
-// from the granted scopes via the client_credentials pattern.
-func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_AssertionNoResource_CurrentBehaviorUnchanged() {
-	now := time.Now().Unix()
+// Single-audience: when the assertion carries no resource claim, the request sends no resource, and
+// no defaultResourceServer is configured, there is no target to bind to and the request is rejected
+// with invalid_target.
+func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_AssertionNoResource_NoDefault_InvalidTarget() {
+	scfg := serverconfigmock.NewServerConfigServiceMock(suite.T())
+	scfg.On("GetMergedConfig", mock.Anything, "defaultResourceServer").
+		Return(resource.DefaultResourceServerConfig{ResourceServerID: ""}, nil)
+	handler := &jwtBearerGrantHandler{
+		tokenBuilder:        suite.mockTokenBuilder,
+		tokenValidator:      suite.mockTokenValidator,
+		resourceService:     suite.mockResourceService,
+		serverConfigService: scfg,
+	}
+
 	tokenRequest := &model.TokenRequest{
 		GrantType: string(providers.GrantTypeJWTBearer),
 		ClientID:  testClientID,
@@ -371,25 +407,12 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_AssertionNoResource
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read", "write"},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
-		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-			return len(ctx.Audiences) == 1 && ctx.Audiences[0] == testClientID &&
-				tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
-		})).Return(&model.TokenDTO{
-		Token:     testTokenExchangeJWT,
-		TokenType: constants.TokenTypeBearer,
-		IssuedAt:  now,
-		ExpiresIn: 3600,
-		Scopes:    []string{"read", "write"},
-		ClientID:  testClientID,
-		Subject:   testUserID,
-	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+	result, errResp := handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
-	assert.Nil(suite.T(), errResp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), []string{"read", "write"}, result.AccessToken.Scopes)
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errResp.Error)
 }
 
 // RFC 8707: a request resource parameter that is a subset of the assertion's resources narrows the
@@ -472,6 +495,8 @@ func (suite *JWTBearerGrantHandlerTestSuite) TestHandleGrant_TokenBuildError() {
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read"},
 		}, nil)
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, testJWTBearerDefaultRSID,
+		[]string{"read"}).Return([]string{}, nil)
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("token generation failed"))
 

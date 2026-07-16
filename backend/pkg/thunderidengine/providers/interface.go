@@ -104,12 +104,12 @@ type ResourceServerProvider interface {
 	GetResourceServerByIdentifier(
 		ctx context.Context, identifier string,
 	) (*ResourceServer, *common.ServiceError)
+	GetResourceServer(
+		ctx context.Context, id string,
+	) (*ResourceServer, *common.ServiceError)
 	ValidatePermissions(
 		ctx context.Context, resourceServerID string, permissions []string,
 	) ([]string, *common.ServiceError)
-	FindResourceServersByPermissions(
-		ctx context.Context, permissions []string,
-	) ([]ResourceServer, *common.ServiceError)
 }
 
 // IDPProvider defines the interface for the identity provider provider.

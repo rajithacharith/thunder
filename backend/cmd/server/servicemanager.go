@@ -479,7 +479,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, actorProvider, authnProvider, jwtService, jweService,
 		flowExecService, observabilitySvc, runtimeCryptoSvc, ouService, attributeCacheService, authZService,
-		resourceService, i18nService, idpService, dpopVerifier, oauthCfg)
+		resourceService, serverConfigService, i18nService, idpService, dpopVerifier, oauthCfg)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
 	}

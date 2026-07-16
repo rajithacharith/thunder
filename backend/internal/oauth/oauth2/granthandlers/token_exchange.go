@@ -29,27 +29,38 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // tokenExchangeGrantHandler handles the token exchange grant type.
 type tokenExchangeGrantHandler struct {
-	tokenBuilder    tokenservice.TokenBuilderInterface
-	tokenValidator  tokenservice.TokenValidatorInterface
-	resourceService providers.ResourceServerProvider
+	tokenBuilder        tokenservice.TokenBuilderInterface
+	tokenValidator      tokenservice.TokenValidatorInterface
+	authzService        providers.AuthorizationProvider
+	actorProvider       providers.ActorProvider
+	resourceService     providers.ResourceServerProvider
+	serverConfigService serverconfig.ServerConfigService
 }
 
 // newTokenExchangeGrantHandler creates a new instance of tokenExchangeGrantHandler.
 func newTokenExchangeGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
+	authzService providers.AuthorizationProvider,
+	actorProvider providers.ActorProvider,
 	resourceService providers.ResourceServerProvider,
+	serverConfigService serverconfig.ServerConfigService,
 ) GrantHandlerInterface {
 	return &tokenExchangeGrantHandler{
-		tokenBuilder:    tokenBuilder,
-		tokenValidator:  tokenValidator,
-		resourceService: resourceService,
+		tokenBuilder:        tokenBuilder,
+		tokenValidator:      tokenValidator,
+		authzService:        authzService,
+		actorProvider:       actorProvider,
+		resourceService:     resourceService,
+		serverConfigService: serverConfigService,
 	}
 }
 
@@ -206,29 +217,42 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 		return nil, errResp
 	}
 
-	// Determine final audiences per RFC 8693 §2.1: audience and resource parameters may be
-	// combined. audience values are opaque logical names passed verbatim; resource values are
-	// RFC 8707 URIs that resolve to registered Resource Servers and participate in scope
-	// downscoping.
-	resolvedRSes, resErr := resourceindicators.ResolveResourceServers(ctx, h.resourceService, tokenRequest.Resources)
+	// Retain OIDC scopes (governed by the app's OIDC scope configuration); only permission scopes
+	// are downscoped to the target resource server and filtered by the app's authorization.
+	oidcScopes, permissionScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(
+		tokenservice.JoinScopes(finalScopes), oauthApp.ScopeClaims)
+	oidcScopes = oauth2utils.FilterOIDCScopesByAllowedScopes(oidcScopes, oauthApp.Scopes)
+
+	// Bind the token to a single target resource server (RFC 8707 resource or configured default).
+	// The RFC 8693 audience parameter is not honored. A request that resolves no permission scopes
+	// and carries no resource is not bound to a resource server: its audience is the client_id.
+	targetRS, resErr := resourceindicators.ResolveAudienceBinding(
+		ctx, h.resourceService, h.serverConfigService, tokenRequest.Resources, permissionScopes)
 	if resErr != nil {
 		return nil, resErr
 	}
-	// Narrow to RS-defined permissions when resource params present (RFC 8707 §2.2), matching client_credentials.
-	if len(resolvedRSes) > 0 {
-		rsValidScopes, rsErr := resourceindicators.ComputeRSValidScopes(
-			ctx, h.resourceService, resolvedRSes, finalScopes)
-		if rsErr != nil {
-			return nil, rsErr
+
+	var finalAudiences []string
+	if targetRS == nil {
+		finalAudiences = []string{tokenRequest.ClientID}
+		finalScopes = oidcScopes
+	} else {
+		permissionScopes, resErr = resourceindicators.DownscopeToResourceServer(
+			ctx, h.resourceService, targetRS.ID, permissionScopes)
+		if resErr != nil {
+			return nil, resErr
 		}
-		finalScopes = resourceindicators.UnionScopes(rsValidScopes)
+		permissionScopes, errResp = h.filterScopesAuthorizedForApp(ctx, oauthApp, targetRS.ID, permissionScopes)
+		if errResp != nil {
+			return nil, errResp
+		}
+
+		finalScopes = make([]string, 0, len(oidcScopes)+len(permissionScopes))
+		finalScopes = append(finalScopes, oidcScopes...)
+		finalScopes = append(finalScopes, permissionScopes...)
+
+		finalAudiences = []string{targetRS.Identifier}
 	}
-	rsAudiences, audErr := resourceindicators.ComposeAudiences(ctx, h.resourceService, tokenRequest.ClientID,
-		resolvedRSes, finalScopes)
-	if audErr != nil {
-		return nil, audErr
-	}
-	finalAudiences := mergeAudiences(tokenRequest.Audiences, rsAudiences, tokenRequest.ClientID)
 
 	// Build access token using token builder
 	userSubConfig := oauthApp.UserAccessTokenConfig()
@@ -401,45 +425,54 @@ func (h *tokenExchangeGrantHandler) getScopes(
 	return validRequestedScopes, nil
 }
 
-// mergeAudiences combines opaque audience values with RS-resolved audiences per RFC 8693 §2.1.
-// Rules:
-//   - Start with explicitAudiences verbatim (preserving order, deduped within itself).
-//   - Append rsAudiences items not already present.
-//   - If rsAudiences is the clientID-only fallback (len==1 and value==clientID) and
-//     explicitAudiences is non-empty, the clientID fallback is dropped — the explicit audience
-//     request is sufficient.
-//   - If the merged set is empty, fall back to []string{clientID} (or empty if clientID is empty).
-func mergeAudiences(explicitAudiences []string, rsAudiences []string, clientID string) []string {
-	seen := make(map[string]struct{}, len(explicitAudiences)+len(rsAudiences))
-	merged := make([]string, 0, len(explicitAudiences)+len(rsAudiences))
+func (h *tokenExchangeGrantHandler) filterScopesAuthorizedForApp(
+	ctx context.Context,
+	oauthApp *providers.OAuthClient,
+	resourceServerID string,
+	scopes []string,
+) ([]string, *model.ErrorResponse) {
+	if len(scopes) == 0 {
+		return scopes, nil
+	}
 
-	for _, a := range explicitAudiences {
-		if _, ok := seen[a]; ok {
-			continue
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenExchangeGrantHandler"))
+
+	if h.authzService == nil {
+		logger.Error(ctx, "Authorization provider is not configured for token exchange")
+		return nil, &model.ErrorResponse{
+			Error:            constants.ErrorServerError,
+			ErrorDescription: "Failed to generate token",
 		}
-		seen[a] = struct{}{}
-		merged = append(merged, a)
 	}
 
-	// Drop the clientID-only fallback from rsAudiences when explicit audiences were provided.
-	isFallback := len(rsAudiences) == 1 && rsAudiences[0] == clientID
-	if isFallback && len(explicitAudiences) > 0 {
-		rsAudiences = nil
-	}
-
-	for _, a := range rsAudiences {
-		if _, ok := seen[a]; ok {
-			continue
+	var groupIDs []string
+	if h.actorProvider != nil {
+		groups, groupErr := h.actorProvider.GetActorGroups(oauthApp.ID)
+		if groupErr != nil {
+			logger.Error(ctx, "Failed to resolve app group memberships",
+				log.String("appID", oauthApp.ID), log.String("error", groupErr.Error.DefaultValue))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to generate token",
+			}
 		}
-		seen[a] = struct{}{}
-		merged = append(merged, a)
+		for _, group := range groups {
+			if group.ID != "" && !slices.Contains(groupIDs, group.ID) {
+				groupIDs = append(groupIDs, group.ID)
+			}
+		}
 	}
 
-	if len(merged) == 0 {
-		if clientID != "" {
-			return []string{clientID}
+	authzResp, svcErr := h.authzService.EvaluateAccessBatch(ctx,
+		buildAccessEvaluationsRequest(oauthApp.ID, groupIDs, scopes, resourceServerID))
+	if svcErr != nil {
+		logger.Error(ctx, "Failed to get authorized permissions for app",
+			log.String("appID", oauthApp.ID), log.String("error", svcErr.Error.DefaultValue))
+		return nil, &model.ErrorResponse{
+			Error:            constants.ErrorServerError,
+			ErrorDescription: "Failed to generate token",
 		}
-		return []string{}
 	}
-	return merged
+
+	return filterAuthorizedScopes(scopes, authzResp.Evaluations), nil
 }

@@ -40,6 +40,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/userinfo"
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	syshttp "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
@@ -61,6 +62,7 @@ func Initialize(
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService providers.AuthorizationProvider,
 	resourceService providers.ResourceServerProvider,
+	serverConfigService serverconfig.ServerConfigService,
 	i18nService providers.I18nProvider,
 	idpService providers.IDPProvider,
 	dpopVerifier dpop.VerifierInterface,
@@ -90,8 +92,8 @@ func Initialize(
 	}
 	grantHandlerProvider := granthandlers.Initialize(
 		jwtService, oauth2AuthzService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService,
-		refreshTokenRevoker, cfg)
+		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, serverConfigService,
+		cibaService, refreshTokenRevoker, cfg)
 	token.Initialize(mux, jwtService, actorProvider, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, dpopVerifier, cfg)
 	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService, tokenValidator)
