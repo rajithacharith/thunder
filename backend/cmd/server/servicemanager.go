@@ -293,9 +293,15 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	oauthCfg := oauthconfig.FromServerRuntime()
 	dpopVerifier := dpop.Initialize(oauthCfg, jti.Initialize(oauthCfg))
 
+	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(runtime.Config.Database.Runtime.Type,
+		runtime.Config.Server.Identifier)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
+	}
+
 	openid4vpSvc, openid4vpDefSvc, openid4vciCredSvc, exporters :=
 		initializeVCServices(ctx, logger, mux, runtimeCryptoSvc, configCryptoSvc, jwtService, userService,
-			ouService, dpopVerifier, exporters)
+			ouService, dpopVerifier, runtimeStoreProvider, exporters)
 
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
@@ -308,12 +314,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen, passkeyService,
 		otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService, oidcAuthnService,
 		googleAuthnService, githubAuthnService)
-
-	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(runtime.Config.Database.Runtime.Type,
-		runtime.Config.Server.Identifier)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
-	}
 
 	attributeCacheService := attributecache.Initialize(runtimeStoreProvider)
 
@@ -610,6 +610,7 @@ func initializeVCServices(
 	jwtService jwt.JWTServiceInterface, userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	dpopVerifier dpop.VerifierInterface,
+	runtimeStoreProvider providers.RuntimeStoreProvider,
 	exporters []declarativeresource.ResourceExporter,
 ) (openid4vp.OpenID4VPServiceInterface, presentation.PresentationDefinitionServiceInterface,
 	credential.CredentialConfigurationServiceInterface, []declarativeresource.ResourceExporter) {
@@ -621,7 +622,8 @@ func initializeVCServices(
 		exporters = append(exporters, vpDefExp)
 	}
 
-	openid4vpSvc, err := openid4vp.Initialize(mux, runtimeCrypto, configCrypto, jwtService, openid4vpDefSvc)
+	openid4vpSvc, err := openid4vp.Initialize(mux, runtimeCrypto, configCrypto, jwtService, openid4vpDefSvc,
+		runtimeStoreProvider)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
 	}
@@ -635,7 +637,8 @@ func initializeVCServices(
 	}
 
 	if _, err = openid4vci.Initialize(
-		mux, runtimeCrypto, jwtService, userService, dpopVerifier, openid4vciCredSvc); err != nil {
+		mux, runtimeCrypto, jwtService, userService, dpopVerifier, openid4vciCredSvc,
+		runtimeStoreProvider); err != nil {
 		logger.Fatal(ctx, "Failed to initialize OpenID4VCI issuer service", log.Error(err))
 	}
 
