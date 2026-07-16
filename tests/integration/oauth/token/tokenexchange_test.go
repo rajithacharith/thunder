@@ -319,8 +319,8 @@ func (ts *TokenExchangeTestSuite) getUserAssertion() string {
 	return authResponse.Assertion
 }
 
-// assertAudienceContains verifies that the JWT audience claim (string or array) contains the expected value.
-func (ts *TokenExchangeTestSuite) assertAudienceContains(claims *testutils.JWTClaims, expected string) {
+// assertAudienceEquals verifies that the JWT audience claim is bound to exactly one expected value.
+func (ts *TokenExchangeTestSuite) assertAudienceEquals(claims *testutils.JWTClaims, expected string) {
 	ts.T().Helper()
 
 	rawAud, ok := claims.Additional["aud"]
@@ -330,14 +330,8 @@ func (ts *TokenExchangeTestSuite) assertAudienceContains(claims *testutils.JWTCl
 	case string:
 		ts.Equal(expected, aud, "Audience should match expected value")
 	case []interface{}:
-		found := false
-		for _, v := range aud {
-			if s, ok := v.(string); ok && s == expected {
-				found = true
-				break
-			}
-		}
-		ts.True(found, "Audience array should contain %q, got %v", expected, aud)
+		ts.Require().Len(aud, 1, "Audience array should contain exactly one value")
+		ts.Equal(expected, aud[0], "Audience should match expected value")
 	default:
 		ts.Failf("unexpected aud type", "expected string or []interface{}, got %T", rawAud)
 	}
@@ -454,6 +448,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_BasicSuccess() {
 	formData.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
 	formData.Set("subject_token", ts.assertionToken)
 	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+	formData.Set("resource", "https://resource.example.com")
 
 	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)
 
@@ -469,6 +464,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_BasicSuccess() {
 	claims, err := testutils.DecodeJWT(resp.AccessToken)
 	ts.Require().NoError(err, "Access token should be a valid JWT")
 	ts.Equal(ts.userID, claims.Sub, "Subject should match user ID")
+	ts.assertAudienceEquals(claims, "https://resource.example.com")
 }
 
 func (ts *TokenExchangeTestSuite) TestTokenExchange_ExternalIDP_WithTrustedTokenAudience() {
@@ -526,6 +522,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_ExternalIDP_WithTrustedToken
 	formData.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
 	formData.Set("subject_token", externalIDToken)
 	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+	formData.Set("resource", "https://resource.example.com")
 
 	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)
 
@@ -538,7 +535,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_ExternalIDP_WithTrustedToken
 	claims, err := testutils.DecodeJWT(resp.AccessToken)
 	ts.Require().NoError(err, "Access token should be a valid JWT")
 	ts.Equal(externalSubject, claims.Sub, "Issued token subject should match external token subject")
-	ts.assertAudienceContains(claims, tokenExchangeClientID)
+	ts.assertAudienceEquals(claims, "https://resource.example.com")
 	ts.Equal(
 		"urn:ietf:params:oauth:grant-type:token-exchange",
 		claims.Additional["grant_type"],
@@ -546,13 +543,14 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_ExternalIDP_WithTrustedToken
 	)
 }
 
-// TestTokenExchange_WithAudience tests token exchange with audience parameter
+// TestTokenExchange_WithAudience tests that audience does not drive the issued access-token audience.
 func (ts *TokenExchangeTestSuite) TestTokenExchange_WithAudience() {
 	formData := url.Values{}
 	formData.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
 	formData.Set("subject_token", ts.assertionToken)
 	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
 	formData.Set("audience", "https://api.example.com")
+	formData.Set("resource", "https://resource.example.com")
 
 	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)
 
@@ -561,10 +559,10 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_WithAudience() {
 	ts.Equal(http.StatusOK, statusCode)
 	ts.NotEmpty(resp.AccessToken)
 
-	// Verify audience in JWT contains the requested audience
+	// Verify the access token is bound to the resource parameter; audience is ignored.
 	claims, err := testutils.DecodeJWT(resp.AccessToken)
 	ts.Require().NoError(err)
-	ts.assertAudienceContains(claims, "https://api.example.com")
+	ts.assertAudienceEquals(claims, "https://resource.example.com")
 }
 
 // TestTokenExchange_WithResource tests token exchange with resource parameter
@@ -585,7 +583,23 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_WithResource() {
 	// Verify resource is used as audience
 	claims, err := testutils.DecodeJWT(resp.AccessToken)
 	ts.Require().NoError(err)
-	ts.assertAudienceContains(claims, "https://resource.example.com")
+	ts.assertAudienceEquals(claims, "https://resource.example.com")
+}
+
+func (ts *TokenExchangeTestSuite) TestTokenExchange_WithMultipleResourcesRejected() {
+	formData := url.Values{}
+	formData.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
+	formData.Set("subject_token", ts.assertionToken)
+	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+	formData.Add("resource", "https://resource.example.com")
+	formData.Add("resource", "https://other-resource.example.com")
+
+	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)
+
+	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
+	ts.Require().NoError(err)
+	ts.Equal(http.StatusBadRequest, statusCode)
+	ts.Equal("invalid_target", resp.Error)
 }
 
 // TestTokenExchange_WithRequestedTokenType tests token exchange with requested_token_type
@@ -595,6 +609,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_WithRequestedTokenType() {
 	formData.Set("subject_token", ts.assertionToken)
 	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
 	formData.Set("requested_token_type", "urn:ietf:params:oauth:token-type:access_token")
+	formData.Set("resource", "https://resource.example.com")
 
 	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)
 
@@ -746,6 +761,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_PreservesUserAttributes() {
 	formData.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
 	formData.Set("subject_token", ts.assertionToken)
 	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+	formData.Set("resource", "https://resource.example.com")
 
 	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)
 
@@ -769,6 +785,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_DefaultIssuedTokenType() {
 	formData.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
 	formData.Set("subject_token", ts.assertionToken)
 	formData.Set("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+	formData.Set("resource", "https://resource.example.com")
 	// Note: requested_token_type is not set
 
 	authHeader := "Basic " + basicAuth(tokenExchangeClientID, tokenExchangeClientSecret)

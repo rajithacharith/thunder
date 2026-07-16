@@ -36,23 +36,25 @@ import (
 const (
 	testServerURL = "https://localhost:8095"
 
-	clientIDOwner      = "revoke_owner_client"
-	secretOwner        = "revoke_owner_secret"
-	clientIDOther      = "revoke_other_client"
-	secretOther        = "revoke_other_secret"
-	revokeEndpoint     = testServerURL + "/oauth2/revoke"
-	tokenEndpoint      = testServerURL + "/oauth2/token"
-	introspectEndpoint = testServerURL + "/oauth2/introspect"
+	clientIDOwner                             = "revoke_owner_client"
+	secretOwner                               = "revoke_owner_secret"
+	clientIDOther                             = "revoke_other_client"
+	secretOther                               = "revoke_other_secret"
+	revocationDefaultResourceServerIdentifier = "https://revocation-default.example.com"
+	revokeEndpoint                            = testServerURL + "/oauth2/revoke"
+	tokenEndpoint                             = testServerURL + "/oauth2/token"
+	introspectEndpoint                        = testServerURL + "/oauth2/introspect"
 )
 
 // RevocationTestSuite exercises the RFC 7009 POST /oauth2/revoke endpoint end-to-end:
 // real client authentication, real signed tokens, and the operation database.
 type RevocationTestSuite struct {
 	suite.Suite
-	client     *http.Client
-	ouID       string
-	appIDOwner string
-	appIDOther string
+	client           *http.Client
+	ouID             string
+	appIDOwner       string
+	appIDOther       string
+	resourceServerID string
 }
 
 func TestRevocationTestSuite(t *testing.T) {
@@ -71,6 +73,15 @@ func (ts *RevocationTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "failed to create test organization unit")
 	ts.ouID = ouID
 
+	resourceServerID, err := testutils.CreateResourceServerWithActions(testutils.ResourceServer{
+		Name:        "Revocation Default Resource Server",
+		Description: "Resource server for revocation integration tests",
+		Identifier:  revocationDefaultResourceServerIdentifier,
+		OUID:        ts.ouID,
+	}, []testutils.Action{})
+	ts.Require().NoError(err, "failed to create resource server")
+	ts.resourceServerID = resourceServerID
+
 	ts.appIDOwner = ts.createApp("RevokeOwnerApp", clientIDOwner, secretOwner)
 	ts.appIDOther = ts.createApp("RevokeOtherApp", clientIDOther, secretOther)
 }
@@ -81,6 +92,11 @@ func (ts *RevocationTestSuite) TearDownSuite() {
 	}
 	if ts.appIDOther != "" {
 		ts.deleteApp(ts.appIDOther)
+	}
+	if ts.resourceServerID != "" {
+		if err := testutils.DeleteResourceServer(ts.resourceServerID); err != nil {
+			ts.T().Logf("Failed to delete resource server: %v", err)
+		}
 	}
 	if ts.ouID != "" {
 		if err := testutils.DeleteOrganizationUnit(ts.ouID); err != nil {
@@ -147,7 +163,8 @@ func (ts *RevocationTestSuite) deleteApp(appID string) {
 // getAccessToken obtains a fresh client_credentials access token for the given client.
 func (ts *RevocationTestSuite) getAccessToken(clientID, clientSecret string) string {
 	req, err := http.NewRequest(http.MethodPost, tokenEndpoint,
-		strings.NewReader("grant_type=client_credentials"))
+		strings.NewReader("grant_type=client_credentials&resource="+url.QueryEscape(
+			revocationDefaultResourceServerIdentifier)))
 	ts.Require().NoError(err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(clientID, clientSecret)
@@ -206,6 +223,7 @@ func (ts *RevocationTestSuite) exchange(subjectToken, clientID, clientSecret str
 	form.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
 	form.Set("subject_token", subjectToken)
 	form.Set("subject_token_type", "urn:ietf:params:oauth:token-type:access_token")
+	form.Set("resource", revocationDefaultResourceServerIdentifier)
 
 	req, err := http.NewRequest(http.MethodPost, tokenEndpoint, strings.NewReader(form.Encode()))
 	ts.Require().NoError(err)

@@ -79,7 +79,6 @@ type resourceStoreInterface interface {
 		ctx context.Context, resServerID string, resID *string, handle string,
 	) (bool, error)
 	ValidatePermissions(ctx context.Context, resServerID string, permissions []string) ([]string, error)
-	FindResourceServersByPermissions(ctx context.Context, permissions []string) ([]providers.ResourceServer, error)
 }
 
 // resourceStore is the default implementation of resourceStoreInterface.
@@ -878,48 +877,6 @@ func (s *resourceStore) ValidatePermissions(
 	}
 
 	return invalidPermissions, nil
-}
-
-// FindResourceServersByPermissions returns distinct resource servers that define at least one of
-// the supplied permissions.
-func (s *resourceStore) FindResourceServersByPermissions(
-	ctx context.Context, permissions []string,
-) ([]providers.ResourceServer, error) {
-	if len(permissions) == 0 {
-		return []providers.ResourceServer{}, nil
-	}
-
-	var resourceServers []providers.ResourceServer
-	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		permissionsJSON, jsonErr := json.Marshal(permissions)
-		if jsonErr != nil {
-			return fmt.Errorf("failed to marshal permissions to JSON: %w", jsonErr)
-		}
-
-		results, err := dbClient.QueryContext(
-			ctx,
-			queryFindResourceServersByPermissions,
-			s.deploymentID,
-			string(permissionsJSON),
-		)
-		if err != nil {
-			return fmt.Errorf("failed to find resource servers by permissions: %w", err)
-		}
-
-		resourceServers = make([]providers.ResourceServer, 0, len(results))
-		for _, row := range results {
-			rs, buildErr := buildResourceServerFromResultRow(row)
-			if buildErr != nil {
-				return fmt.Errorf("failed to build resource server: %w", buildErr)
-			}
-			resourceServers = append(resourceServers, rs)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return resourceServers, nil
 }
 
 // Helper methods

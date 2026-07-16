@@ -49,6 +49,12 @@ func GetFlowSecret(appID string) string {
 const (
 	TestServerURL = "https://localhost:8095"
 
+	// SystemResourceIdentifier is the identifier of the bootstrapped System resource server
+	// (backend/cmd/server/bootstrap/01-default-resources.yaml). The CONSOLE app binds its tokens
+	// to this resource server via the RFC 8707 resource parameter, mirroring the console runtime
+	// config (frontend/apps/console/public/config.js).
+	SystemResourceIdentifier = "https://localhost:8090/mcp"
+
 	// FlowSecretHeaderName is the header used to present a Flow Secret to /flow/execute.
 	FlowSecretHeaderName = "Flow-Secret"
 )
@@ -1240,6 +1246,35 @@ func DeleteResourceServer(rsID string) error {
 	if resp.StatusCode != http.StatusNoContent {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("expected status 204, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
+	}
+	return nil
+}
+
+func PutDefaultResourceServer(resourceServerID string) error {
+	client := GetHTTPClient()
+
+	payload, err := json.Marshal(map[string]string{
+		"resourceServerId": resourceServerID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal default resource server config: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, TestServerURL+"/server-config/defaultResourceServer", bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create default resource server config request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update default resource server config: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 	return nil
 }

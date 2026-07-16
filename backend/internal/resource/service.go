@@ -110,13 +110,6 @@ type ResourceServiceInterface interface {
 		ctx context.Context, resourceServerID string, permissions []string,
 	) ([]string, *tidcommon.ServiceError)
 
-	// FindResourceServersByPermissions returns registered resource servers that define at least
-	// one permission in the supplied set. Used by the OAuth2 token layer to populate aud when no
-	// explicit resource parameter was supplied.
-	FindResourceServersByPermissions(
-		ctx context.Context, permissions []string,
-	) ([]providers.ResourceServer, *tidcommon.ServiceError)
-
 	// ResolveResourceServerOUHandle resolves ou_handle to an OU ID on the given resource server
 	// in-place. Called by the declarative loader validator so that file-based resource servers
 	// support ou_handle.
@@ -1289,24 +1282,6 @@ func (rs *resourceService) ValidatePermissions(
 	}
 
 	return invalidPermissions, nil
-}
-
-// FindResourceServersByPermissions returns registered resource servers that define at least one
-// permission in the supplied set.
-func (rs *resourceService) FindResourceServersByPermissions(
-	ctx context.Context,
-	permissions []string,
-) ([]providers.ResourceServer, *tidcommon.ServiceError) {
-	if len(permissions) == 0 {
-		return []providers.ResourceServer{}, nil
-	}
-
-	resourceServers, err := rs.resourceStore.FindResourceServersByPermissions(ctx, permissions)
-	if err != nil {
-		rs.logger.Error(ctx, "Failed to find resource servers by permissions", log.Error(err))
-		return nil, &tidcommon.InternalServerError
-	}
-	return resourceServers, nil
 }
 
 // ResolveResourceServerOUHandle resolves ou_handle to an OU ID on the given resource server

@@ -25,6 +25,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/ciba"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/revocation"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -42,6 +43,7 @@ func Initialize(
 	authzService providers.AuthorizationProvider,
 	actorProvider providers.ActorProvider,
 	resourceService providers.ResourceServerProvider,
+	serverConfigService serverconfig.ServerConfigService,
 	cibaService ciba.CIBAServiceInterface,
 	refreshTokenRevoker revocation.RefreshTokenRevokerInterface,
 	cfg oauthconfig.Config,
@@ -56,6 +58,7 @@ func Initialize(
 		authzService,
 		actorProvider,
 		resourceService,
+		serverConfigService,
 		cibaService,
 		refreshTokenRevoker,
 		cfg,

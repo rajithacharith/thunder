@@ -548,3 +548,16 @@ func (s *ServiceTestSuite) TestResolvePAR_ConsumeError() {
 	assert.Nil(s.T(), result)
 	assert.ErrorIs(s.T(), err, ErrPARResolutionFailed)
 }
+
+func (s *ServiceTestSuite) TestHandlePAR_MultipleResources_InvalidTarget() {
+	store := newParStoreInterfaceMock(s.T())
+	svc := newPARService(store, s.newPermissiveResourceMock(), s.testCfg)
+	app := s.newTestApp()
+	params := s.newValidParams()
+	resources := []string{"https://a.example.com", "https://b.example.com"}
+
+	resp, errCode, _ := svc.HandlePushedAuthorizationRequest(s.ctx, params, resources, app, "")
+
+	assert.Nil(s.T(), resp)
+	assert.Equal(s.T(), oauth2const.ErrorInvalidTarget, errCode)
+}

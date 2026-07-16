@@ -108,12 +108,11 @@ paths:
           in: query
           required: false
           schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-          description: Resource indicators per RFC 8707. May be repeated.
+            type: string
+          description: >-
+            Resource indicator per RFC 8707 (absolute URI, no fragment). Only one value is
+            supported; requests with multiple resource values are rejected with invalid_target.
+            When omitted, the configured defaultResourceServer is used.
         - name: acr_values
           in: query
           required: false
@@ -628,16 +627,20 @@ components:
         audience:
           type: string
           description: >-
-            Target audience for the issued token. May be repeated for token exchange. Required, and
+            Accepted for RFC 8693 token-exchange compatibility; it does not determine the issued
+            access token's aud claim (use resource to select the token audience). Required, and
             limited to exactly one value, when requesting an ID-JAG
-            (`requested_token_type=urn:ietf:params:oauth:token-type:id-jag`); the value must match one
-            of the client's configured `allowedAudiences`.
+            (`requested_token_type=urn:ietf:params:oauth:token-type:id-jag`); then the value must
+            match one of the client's configured `allowedAudiences`.
         resource:
           type: string
           description: >-
-            Resource indicator (RFC 8707). May be repeated. Optional for ID-JAG requests, where it is
-            embedded in the issued ID-JAG's `resource` claim. For the jwt-bearer grant, when present it
-            must be a subset of the assertion's own `resource` claim.
+            Resource indicator (RFC 8707). For access-token issuance, binds the issued access token
+            to exactly one resource server; when omitted, the configured defaultResourceServer is
+            used, and if neither is available the request is rejected with invalid_target. Optional
+            for ID-JAG requests, where it is embedded in the issued ID-JAG's `resource` claim. For
+            the jwt-bearer grant, when present it must be a subset of the assertion's own `resource`
+            claim.
         assertion:
           type: string
           description: >-
@@ -700,7 +703,9 @@ components:
           enum: [S256, plain]
         resource:
           type: string
-          description: Resource indicator (RFC 8707). May be repeated.
+          description: >-
+            Resource indicator per RFC 8707 (absolute URI). Only one value is supported; multiple
+            resource values are rejected with invalid_target.
         acr_values:
           type: string
         claims:

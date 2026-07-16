@@ -88,7 +88,8 @@ curl -X POST https://thunder.example.com/oauth2/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
   -d 'subject_token=<JWT_FROM_EXTERNAL_IDP>' \
-  -d 'subject_token_type=urn:ietf:params:oauth:token-type:jwt'
+  -d 'subject_token_type=urn:ietf:params:oauth:token-type:jwt' \
+  -d 'resource=https://api.example.com/app'
 ```
 
 A successful response returns a <ProductName />-issued access token:
@@ -102,7 +103,7 @@ A successful response returns a <ProductName />-issued access token:
 }
 ```
 
-The issued token's `sub` claim contains the external user's subject identifier from the original token.
+The issued token's `sub` claim contains the external user's subject identifier from the original token. Its `aud` claim is the resolved resource server identifier. If you omit `resource`, configure `defaultResourceServer` first.
 
 ## How <ProductName /> Validates the External Token
 

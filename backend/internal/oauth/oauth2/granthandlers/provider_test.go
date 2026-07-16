@@ -36,6 +36,7 @@ import (
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
+	"github.com/thunder-id/thunderid/tests/mocks/serverconfigmock"
 	"github.com/thunder-id/thunderid/tests/testhelpers"
 )
 
@@ -51,6 +52,7 @@ type GrantHandlerProviderTestSuite struct {
 	mockRBACAuthzService *rbacauthzmock.AuthorizationProviderMock
 	mockEntityProvider   *actorprovidermock.ActorProviderMock
 	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
+	mockServerConfig     *serverconfigmock.ServerConfigServiceMock
 	mockCIBAService      *cibamock.CIBAServiceInterfaceMock
 }
 
@@ -68,6 +70,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockRBACAuthzService = rbacauthzmock.NewAuthorizationProviderMock(suite.T())
 	suite.mockEntityProvider = actorprovidermock.NewActorProviderMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+	suite.mockServerConfig = serverconfigmock.NewServerConfigServiceMock(suite.T())
 	suite.mockCIBAService = cibamock.NewCIBAServiceInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
 		suite.mockJWTService,
@@ -79,6 +82,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 		suite.mockRBACAuthzService,
 		suite.mockEntityProvider,
 		suite.mockResourceService,
+		suite.mockServerConfig,
 		suite.mockCIBAService,
 		revocationmock.NewRefreshTokenRevokerInterfaceMock(suite.T()),
 		testhelpers.OAuthConfig(),
@@ -96,6 +100,7 @@ func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 		suite.mockRBACAuthzService,
 		suite.mockEntityProvider,
 		suite.mockResourceService,
+		suite.mockServerConfig,
 		suite.mockCIBAService,
 		revocationmock.NewRefreshTokenRevokerInterfaceMock(suite.T()),
 		testhelpers.OAuthConfig(),

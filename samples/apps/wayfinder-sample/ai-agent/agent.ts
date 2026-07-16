@@ -364,6 +364,7 @@ function buildAuthorizeUrl(
     client_id: agentConfig.agentID,
     redirect_uri: AGENT_REDIRECT_URI,
     scope,
+    resource: MCP_SERVER_URL,
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
@@ -382,6 +383,7 @@ async function exchangeCodeForUserToken(
     redirect_uri: AGENT_REDIRECT_URI,
     client_id: agentConfig.agentID,
     code_verifier: codeVerifier,
+    resource: MCP_SERVER_URL,
   });
 
   const basicAuth = Buffer.from(
@@ -731,8 +733,8 @@ let mcpTokenFingerprint = "";
 async function fetchAgentToken(): Promise<TokenState> {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
-    scope:
-      "booking:recommend upgrade:search",
+    scope: "booking:recommend upgrade:search",
+    resource: MCP_SERVER_URL,
   });
   const basicAuth = Buffer.from(
     `${agentConfig.agentID}:${agentConfig.agentSecret}`,
@@ -797,8 +799,8 @@ let upgradeAgentTokenState: TokenState | null = null;
 async function fetchUpgradeAgentToken(): Promise<TokenState> {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
-    scope:
-      "upgrade:read upgrade:search",
+    scope: "upgrade:read upgrade:search",
+    resource: MCP_SERVER_URL,
   });
   const basicAuth = Buffer.from(
     `${upgradeAgentConfig.agentID}:${upgradeAgentConfig.agentSecret}`,

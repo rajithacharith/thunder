@@ -614,27 +614,6 @@ func (c *compositeResourceStore) ValidatePermissions(
 	return result, nil
 }
 
-// FindResourceServersByPermissions finds resource servers that contain any of the given permissions.
-func (c *compositeResourceStore) FindResourceServersByPermissions(
-	ctx context.Context, permissions []string,
-) ([]providers.ResourceServer, error) {
-	if len(permissions) == 0 {
-		return []providers.ResourceServer{}, nil
-	}
-
-	dbServers, err := c.dbStore.FindResourceServersByPermissions(ctx, permissions)
-	if err != nil {
-		return nil, err
-	}
-
-	fileServers, err := c.fileStore.FindResourceServersByPermissions(ctx, permissions)
-	if err != nil {
-		return nil, err
-	}
-
-	return mergeAndDeduplicateResourceServers(dbServers, fileServers), nil
-}
-
 // mergeAndDeduplicateResourceServers merges resource servers with database entries taking precedence.
 func mergeAndDeduplicateResourceServers(dbServers, fileServers []providers.ResourceServer) []providers.ResourceServer {
 	seen := make(map[string]bool)

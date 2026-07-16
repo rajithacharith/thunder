@@ -27,6 +27,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -34,9 +36,10 @@ import (
 // jwtBearerGrantHandler handles the jwt-bearer grant type used to present an ID-JAG assertion
 // (draft-ietf-oauth-identity-assertion-authz-grant) issued by a trusted external IdP.
 type jwtBearerGrantHandler struct {
-	tokenBuilder    tokenservice.TokenBuilderInterface
-	tokenValidator  tokenservice.TokenValidatorInterface
-	resourceService providers.ResourceServerProvider
+	tokenBuilder        tokenservice.TokenBuilderInterface
+	tokenValidator      tokenservice.TokenValidatorInterface
+	resourceService     providers.ResourceServerProvider
+	serverConfigService serverconfig.ServerConfigService
 }
 
 // newJWTBearerGrantHandler creates a new instance of jwtBearerGrantHandler.
@@ -44,11 +47,13 @@ func newJWTBearerGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	resourceService providers.ResourceServerProvider,
+	serverConfigService serverconfig.ServerConfigService,
 ) GrantHandlerInterface {
 	return &jwtBearerGrantHandler{
-		tokenBuilder:    tokenBuilder,
-		tokenValidator:  tokenValidator,
-		resourceService: resourceService,
+		tokenBuilder:        tokenBuilder,
+		tokenValidator:      tokenValidator,
+		resourceService:     resourceService,
+		serverConfigService: serverConfigService,
 	}
 }
 
@@ -111,16 +116,15 @@ func (h *jwtBearerGrantHandler) HandleGrant(ctx context.Context, tokenRequest *m
 		grantedScopes = intersectScopes(grantedScopes, tokenservice.ParseScopes(tokenRequest.Scope))
 	}
 
-	// When the assertion carries a resource claim (RFC 8707), the resource AS resolves it to registered
-	// Resource Servers, narrows the granted scopes to what those Resource Servers permit, and derives
-	// the token audience from the resolved Resource Servers. A resource parameter on the jwt-bearer
-	// request may further narrow the assertion's resources but must not widen them. When the assertion
-	// carries no resource claim, the audience is composed from the granted scopes as before.
-	var audiences []string
-	var errResp *model.ErrorResponse
-	if len(assertionClaims.Resources) > 0 {
-		resources := assertionClaims.Resources
-		if len(tokenRequest.Resources) > 0 {
+	// The issued access token is bound to at most one resource server (RFC 8707). A resource
+	// parameter on the request may narrow the assertion's resource claim but must not widen it; an
+	// assertion that authorizes more than one resource requires the request to select one. When
+	// permission scopes are present and neither the assertion nor the request carries a resource,
+	// the configured defaultResourceServer is used, and if none is configured the request is rejected
+	// with invalid_target. OIDC-only no-resource requests are not resource-server bound.
+	resources := assertionClaims.Resources
+	if len(tokenRequest.Resources) > 0 {
+		if len(assertionClaims.Resources) > 0 {
 			for _, r := range tokenRequest.Resources {
 				if !slices.Contains(assertionClaims.Resources, r) {
 					return nil, &model.ErrorResponse{
@@ -130,30 +134,35 @@ func (h *jwtBearerGrantHandler) HandleGrant(ctx context.Context, tokenRequest *m
 					}
 				}
 			}
-			resources = tokenRequest.Resources
 		}
-
-		resolvedRSes, resErr := resourceindicators.ResolveResourceServers(ctx, h.resourceService, resources)
-		if resErr != nil {
-			return nil, resErr
-		}
-		rsValidScopes, rsErr := resourceindicators.ComputeRSValidScopes(
-			ctx, h.resourceService, resolvedRSes, grantedScopes)
-		if rsErr != nil {
-			return nil, rsErr
-		}
-		grantedScopes = resourceindicators.UnionScopes(rsValidScopes)
-
-		audiences, errResp = resourceindicators.ComposeAudiences(
-			ctx, h.resourceService, tokenRequest.ClientID, resolvedRSes, grantedScopes)
-	} else {
-		// Compose the audience following the client_credentials pattern: Resource Server identifiers
-		// discovered from the granted scopes, else the clientID fallback.
-		audiences, errResp = resourceindicators.ComposeAudiences(
-			ctx, h.resourceService, tokenRequest.ClientID, nil, grantedScopes)
+		resources = tokenRequest.Resources
 	}
+
+	// Retain OIDC scopes; downscope permission scopes to those defined on the target resource server.
+	oidcScopes, permissionScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(
+		tokenservice.JoinScopes(grantedScopes), oauthApp.ScopeClaims)
+	targetRS, errResp := resourceindicators.ResolveAudienceBinding(
+		ctx, h.resourceService, h.serverConfigService, resources, permissionScopes)
 	if errResp != nil {
 		return nil, errResp
+	}
+
+	var audiences []string
+	if targetRS == nil {
+		// OIDC-only assertion with no resource: the token is not bound to a resource server, so its
+		// audience is the client_id and it carries only the OIDC scopes.
+		audiences = []string{tokenRequest.ClientID}
+		grantedScopes = oidcScopes
+	} else {
+		permissionScopes, errResp = resourceindicators.DownscopeToResourceServer(
+			ctx, h.resourceService, targetRS.ID, permissionScopes)
+		if errResp != nil {
+			return nil, errResp
+		}
+		grantedScopes = make([]string, 0, len(oidcScopes)+len(permissionScopes))
+		grantedScopes = append(grantedScopes, oidcScopes...)
+		grantedScopes = append(grantedScopes, permissionScopes...)
+		audiences = []string{targetRS.Identifier}
 	}
 
 	// The subject is the external IdP's identifier carried in the assertion; no local user resolution
