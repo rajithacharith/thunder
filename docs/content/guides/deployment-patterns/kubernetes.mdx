@@ -101,6 +101,7 @@ helm install thunderid oci://ghcr.io/thunder-id/helm-charts/thunderid \
   --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite \
   --set configuration.database.user.type=sqlite \
+  --set configuration.database.operation.type=sqlite \
   --set deployment.securityContext.readOnlyRootFilesystem=false
 ```
 
@@ -158,6 +159,14 @@ For production deployments, use a values file to manage configuration:
           username: thunderid_user
           password: <user-db-password>
           sslmode: require
+        operation:
+          type: postgres
+          host: postgres.default.svc.cluster.local
+          port: 5432
+          name: operationdb
+          username: thunderid_user
+          password: <operation-db-password>
+          sslmode: require
     ```
 
 2. Install using the values file:
@@ -181,12 +190,13 @@ Never write database passwords directly into `custom-values.yaml` or commit it t
 
 Before deploying <ProductName />, prepare the PostgreSQL instance:
 
-1. Create the three required databases:
+1. Create the four required databases:
 
     ```sql
     CREATE DATABASE configdb;
     CREATE DATABASE runtimedb;
     CREATE DATABASE userdb;
+    CREATE DATABASE operationdb;
     ```
 
 2. Create a dedicated user:
@@ -198,7 +208,7 @@ Before deploying <ProductName />, prepare the PostgreSQL instance:
 3. Grant the required privileges in each database. Connect to each database and run both statements. Using `psql`:
 
     ```bash
-    for db in configdb runtimedb userdb; do
+    for db in configdb runtimedb userdb operationdb; do
       psql -h <db-host> -U postgres -d "$db" <<'SQL'
         GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunderid_user;
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
@@ -210,7 +220,7 @@ Before deploying <ProductName />, prepare the PostgreSQL instance:
     `GRANT ON ALL TABLES` covers tables that already exist. `ALTER DEFAULT PRIVILEGES` ensures tables created by future migrations are also accessible.
 
 4. Run the initialization scripts to create the schema:
-    - Apply the database scripts for <RepoLink path="/blob/main/backend/dbscripts/configdb/postgres.sql">configdb</RepoLink>, <RepoLink path="/blob/main/backend/dbscripts/runtimedb/postgres.sql">runtimedb</RepoLink>, and <RepoLink path="/blob/main/backend/dbscripts/userdb/postgres.sql">userdb</RepoLink>.
+    - Apply the database scripts for <RepoLink path="/blob/main/backend/dbscripts/configdb/postgres.sql">configdb</RepoLink>, <RepoLink path="/blob/main/backend/dbscripts/runtimedb/postgres.sql">runtimedb</RepoLink>, <RepoLink path="/blob/main/backend/dbscripts/userdb/postgres.sql">userdb</RepoLink>, and <RepoLink path="/blob/main/backend/dbscripts/operationdb/postgres.sql">operationdb</RepoLink>.
 
 For a PostgreSQL setup using Helm, refer to the [Bitnami PostgreSQL Helm Chart](https://bitnami.com/stacks/postgresql).
 
@@ -243,6 +253,14 @@ configuration:
       username: thunderid_user
       password: <user-db-password>
       sslmode: require
+    operation:
+      type: postgres
+      host: postgres.example.com
+      port: 5432
+      name: operationdb
+      username: thunderid_user
+      password: <operation-db-password>
+      sslmode: require
 ```
 
 ### SQLite
@@ -263,6 +281,10 @@ configuration:
     user:
       type: sqlite
       sqlitePath: database/userdb.db
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
+    operation:
+      type: sqlite
+      sqlitePath: database/operationdb.db
       sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
 ```
 

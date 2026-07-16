@@ -189,9 +189,11 @@ helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 CREATE DATABASE configdb;
 CREATE DATABASE runtimedb;
 CREATE DATABASE userdb;
+CREATE DATABASE operationdb;
 GRANT ALL PRIVILEGES ON DATABASE configdb TO dbuser;
 GRANT ALL PRIVILEGES ON DATABASE runtimedb TO dbuser;
 GRANT ALL PRIVILEGES ON DATABASE userdb TO dbuser;
+GRANT ALL PRIVILEGES ON DATABASE operationdb TO dbuser;
 SQL
 )
 ```
@@ -207,7 +209,7 @@ Apply the database schemas:
 ```bash
 kubectl run {{productSlug}}-dbinit --image=ghcr.io/thunder-id/{{productSlug}}:latest --restart=Never --command -- sleep 300
 kubectl wait --for=condition=ready pod/{{productSlug}}-dbinit --timeout=60s
-for db in configdb runtimedb userdb; do
+for db in configdb runtimedb userdb operationdb; do
   kubectl exec {{productSlug}}-dbinit -- cat /opt/{{productSlug}}/dbscripts/$db/postgres.sql | \
     kubectl exec -i postgresql-0 -- env PGPASSWORD=dbpassword psql -U dbuser -d $db
 done
@@ -226,6 +228,8 @@ helm install {{productSlug}} oci://ghcr.io/thunder-id/helm-charts/{{productSlug}
   --set configuration.database.runtime.postgres.sslmode=disable \
   --set configuration.database.user.postgres.hostname=postgresql \
   --set configuration.database.user.postgres.sslmode=disable \
+  --set configuration.database.operation.postgres.hostname=postgresql \
+  --set configuration.database.operation.postgres.sslmode=disable \
   --set configuration.server.publicUrl=https://localhost:8090 \
   --set configuration.gateClient.hostname=localhost \
   --set configuration.gateClient.port=8090

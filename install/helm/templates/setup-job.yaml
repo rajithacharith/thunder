@@ -15,7 +15,7 @@
 # under the License.
 
 {{- if .Values.setup.enabled }}
-{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
+{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") (eq .Values.configuration.database.operation.type "sqlite") }}
 {{- if and .Values.declarativeResources.enabled .Values.declarativeResources.configMap.name .Values.declarativeResources.secret.name }}
 {{- fail "Invalid declarativeResources configuration: set only one source, declarativeResources.configMap.name or declarativeResources.secret.name." }}
 {{- end }}
