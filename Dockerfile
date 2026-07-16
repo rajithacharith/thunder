@@ -21,7 +21,7 @@
 FROM golang:1.26-alpine3.23 AS builder
 
 # Install build dependencies including Node.js and npm
-RUN apk add --no-cache git make bash sqlite openssl zip nodejs npm curl
+RUN apk add --no-cache git make bash sqlite openssl zip nodejs npm curl python3 g++ build-base sqlite-dev
 
 # Set environment variables for CI build
 ENV CI=true
