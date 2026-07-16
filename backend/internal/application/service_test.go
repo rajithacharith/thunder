@@ -43,6 +43,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/resourcedependency"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/i18n/mgtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
@@ -1600,6 +1601,127 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
+}
+
+// A mobile application configured with Play Integrity attestation must have its service account
+// credentials encrypted before persistence and stripped from the response.
+func (suite *ServiceTestSuite) TestCreateApplication_WithAttestation_EncryptsAndStripsCredentials() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetServerRuntime()
+
+	service, mockStore := suite.setupTestService()
+	mockCrypto := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
+	service.cryptoSvc = mockCrypto
+
+	const rawCreds = `{"type":"service_account"}`
+	mockCrypto.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, []byte(rawCreds)).
+		Return([]byte("encrypted-creds"), nil, nil)
+
+	var persistedClient *inboundmodel.InboundClient
+	mockStore.On("CreateInboundClient",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			persistedClient, _ = args.Get(1).(*inboundmodel.InboundClient)
+		}).Return(nil)
+
+	app := &model.ApplicationDTO{
+		Name: "Mobile App",
+		OUID: testOUID,
+		InboundAuthProfile: providers.InboundAuthProfile{
+			AuthFlowID: "auth-flow-id",
+			// Attestation is a client-level setting, configured at the top level of the application
+			// regardless of protocol.
+			Attestation: &providers.AttestationConfig{
+				Android: &providers.AndroidAttestationConfig{
+					PackageName:               "com.example.app",
+					CertificateSha256Digests:  []string{"AA:BB"},
+					ServiceAccountCredentials: rawCreds,
+				},
+			},
+		},
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
+			{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"myapp://callback"},
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
+					PublicClient:            true,
+					PKCERequired:            true,
+				},
+			},
+		},
+	}
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+	require.Nil(suite.T(), svcErr)
+	require.NotNil(suite.T(), result)
+
+	// The persisted inbound client carries the encrypted credentials, never the plaintext.
+	require.NotNil(suite.T(), persistedClient)
+	require.NotNil(suite.T(), persistedClient.Attestation)
+	require.NotNil(suite.T(), persistedClient.Attestation.Android)
+	assert.Equal(suite.T(), "encrypted-creds", persistedClient.Attestation.Android.ServiceAccountCredentials)
+	assert.Equal(suite.T(), "com.example.app", persistedClient.Attestation.Android.PackageName)
+
+	// The response echoes package name and digests at the top level but never the credentials.
+	require.NotNil(suite.T(), result.Attestation)
+	require.NotNil(suite.T(), result.Attestation.Android)
+	assert.Equal(suite.T(), "com.example.app", result.Attestation.Android.PackageName)
+	assert.Empty(suite.T(), result.Attestation.Android.ServiceAccountCredentials)
+}
+
+// When credentials are omitted (as on an update that does not change them), the previously stored
+// encrypted value is preserved rather than overwritten with an empty value.
+func (suite *ServiceTestSuite) TestResolveAttestationCredentials_PreservesExistingWhenOmitted() {
+	service, mockStore := suite.setupTestService()
+
+	const appID = "app-1"
+	mockStore.On("GetInboundClientByEntityID", mock.Anything, appID).Return(
+		&inboundmodel.InboundClient{
+			Attestation: &providers.AttestationConfig{
+				Android: &providers.AndroidAttestationConfig{ServiceAccountCredentials: "stored-encrypted"},
+			},
+		}, nil)
+
+	inboundClient := &inboundmodel.InboundClient{
+		Attestation: &providers.AttestationConfig{
+			Android: &providers.AndroidAttestationConfig{PackageName: "com.example.app"},
+		},
+	}
+
+	svcErr := service.resolveAttestationCredentialsForPersist(context.Background(), appID, inboundClient)
+	require.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "stored-encrypted", inboundClient.Attestation.Android.ServiceAccountCredentials)
+	assert.Equal(suite.T(), "com.example.app", inboundClient.Attestation.Android.PackageName)
+}
+
+// A non-"not found" lookup failure while preserving omitted credentials is propagated as an internal
+// error, so a transient store failure cannot silently overwrite stored credentials with an empty
+// value.
+func (suite *ServiceTestSuite) TestResolveAttestationCredentials_LookupErrorPropagates() {
+	service, mockStore := suite.setupTestService()
+
+	const appID = "app-1"
+	mockStore.On("GetInboundClientByEntityID", mock.Anything, appID).Return(
+		(*inboundmodel.InboundClient)(nil), errors.New("database unavailable"))
+
+	inboundClient := &inboundmodel.InboundClient{
+		Attestation: &providers.AttestationConfig{
+			Android: &providers.AndroidAttestationConfig{PackageName: "com.example.app"},
+		},
+	}
+
+	svcErr := service.resolveAttestationCredentialsForPersist(context.Background(), appID, inboundClient)
+	require.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_ValidateApplicationError() {

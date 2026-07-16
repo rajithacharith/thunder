@@ -51,6 +51,7 @@ import {McpClientTypes} from '../models/mcp-client';
 import type {OAuth2Config} from '../models/oauth';
 import deriveMcpClientType from '../utils/deriveMcpClientType';
 import {getIntegrationGuideForTemplate} from '../utils/getIntegrationGuidesForTemplate';
+import getTemplateCapabilities from '../utils/getTemplateCapabilities';
 import getTemplateFieldConstraints from '../utils/getTemplateFieldConstraints';
 import getTemplateMetadata from '../utils/getTemplateMetadata';
 
@@ -128,6 +129,12 @@ export default function ApplicationEditPage() {
 
   const oauth2Constraints = useMemo(
     () => getTemplateFieldConstraints(application?.template)?.oauth2,
+    [application?.template],
+  );
+
+  // Attestation is offered only for templates that declare the capability (e.g. mobile).
+  const supportsAttestation = useMemo(
+    () => Boolean(getTemplateCapabilities(application?.template)?.attestation),
     [application?.template],
   );
 
@@ -551,6 +558,7 @@ export default function ApplicationEditPage() {
                 oauth2Config={oauth2Config}
                 oauth2Constraints={oauth2Constraints}
                 onFieldChange={handleFieldChange}
+                showAttestation={supportsAttestation}
               />
             </TabPanel>
           </>

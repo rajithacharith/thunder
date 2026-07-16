@@ -598,6 +598,12 @@ packages:
           structname: ExecutorInterfaceMock
           pkgname: coremock
           filename: "ExecutorInterface_mock.go"
+      AttestationProvider:
+        config:
+          dir: tests/mocks/attestationprovidermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: attestationprovidermock
+          filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/authnprovider/provider:
     config:

@@ -429,6 +429,11 @@ func CreateApplication(app Application) (string, error) {
 		appData["assertion"] = app.AssertionConfig
 	}
 
+	// Add client-level attestation config if provided
+	if app.Attestation != nil {
+		appData["attestation"] = app.Attestation
+	}
+
 	appJSON, err := json.Marshal(appData)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal application: %w", err)

@@ -643,6 +643,35 @@ type Certificate struct {
 	Value string          `json:"value,omitempty" yaml:"value,omitempty" jsonschema:"Certificate value in the format specified by type."`
 }
 
+// AttestationConfig holds per-application platform attestation settings used to verify the binary
+// identity of a mobile client when it initiates a flow directly over HTTP.
+type AttestationConfig struct {
+	Android *AndroidAttestationConfig `json:"android,omitempty" yaml:"android,omitempty" jsonschema:"Google Play Integrity attestation configuration for Android clients."`
+}
+
+// AndroidAttestationConfig holds the Google Play Integrity settings for an Android application.
+type AndroidAttestationConfig struct {
+	PackageName               string   `json:"packageName,omitempty"               yaml:"packageName,omitempty"               jsonschema:"Android application package name that must match the attested app."`
+	CertificateSha256Digests  []string `json:"certificateSha256Digests,omitempty"  yaml:"certificateSha256Digests,omitempty"  jsonschema:"Allowed SHA-256 digests of the app signing certificate. The attested app must match one of these."`
+	ServiceAccountCredentials string   `json:"serviceAccountCredentials,omitempty" yaml:"serviceAccountCredentials,omitempty" jsonschema:"Google Cloud service account credentials (JSON) used to call the Play Integrity API. Write-only; never returned in responses."`
+}
+
+// WithoutCredentials returns a deep copy of the attestation config with all write-only secrets
+// removed, safe to include in API responses. Returns nil for a nil receiver.
+func (c *AttestationConfig) WithoutCredentials() *AttestationConfig {
+	if c == nil {
+		return nil
+	}
+	sanitized := &AttestationConfig{}
+	if c.Android != nil {
+		android := *c.Android
+		android.ServiceAccountCredentials = ""
+		android.CertificateSha256Digests = append([]string(nil), c.Android.CertificateSha256Digests...)
+		sanitized.Android = &android
+	}
+	return sanitized
+}
+
 // OAuthProfile is the persistence shape (OAUTH_PROFILE JSONB column).
 type OAuthProfile struct {
 	RedirectURIs                       []string            `json:"redirectUris"`
@@ -675,8 +704,11 @@ type InboundClient struct {
 	Assertion                 *AssertionConfig
 	LoginConsent              *LoginConsentConfig
 	AllowedUserTypes          []string
-	Properties                map[string]interface{}
-	IsReadOnly                bool
+	// Attestation holds the optional platform attestation config that lets a mobile client prove
+	// its binary identity to initiate a flow directly, independent of any protocol profile.
+	Attestation *AttestationConfig
+	Properties  map[string]interface{}
+	IsReadOnly  bool
 }
 
 // AssertionConfig is the entity-level assertion config; token configs fall back to it.
@@ -984,6 +1016,7 @@ type InboundAuthProfile struct {
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"              yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
 	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"           yaml:"loginConsent,omitempty"           jsonschema:"Login consent configuration settings."`
 	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"       yaml:"allowedUserTypes,omitempty"       jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
+	Attestation               *AttestationConfig  `json:"attestation,omitempty"            yaml:"attestation,omitempty"            jsonschema:"Platform attestation configuration. Optional. Enables a mobile client to initiate flows directly by proving its binary identity (e.g. Google Play Integrity), regardless of protocol. The service account credentials are write-only and never returned in responses."`
 }
 
 // OAuthConfigWithSecret is the wire input shape and the create/update echo response shape.

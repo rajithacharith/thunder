@@ -29,6 +29,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/agent"
 	"github.com/thunder-id/thunderid/internal/application"
+	"github.com/thunder-id/thunderid/internal/attestation"
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn"
 	authnAssert "github.com/thunder-id/thunderid/internal/authn/assert"
@@ -405,7 +406,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// TODO: Remove entityService dependency after finalizing declarative resource loading pattern
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, entityProvider, entityService, inboundClientService, ouService, i18nService)
+		mux, mcpServer, entityProvider, entityService, inboundClientService, ouService, i18nService,
+		runtimeCryptoSvc)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize ApplicationService", log.Error(err))
 	}
@@ -469,9 +471,10 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		serverConfigService,
 	)
 
+	attestationProvider := attestation.Initialize(runtimeCryptoSvc)
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
-		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, graphBuilder,
-		runtimeStoreProvider, transactioner, flowConfig)
+		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, attestationProvider,
+		graphBuilder, runtimeStoreProvider, transactioner, flowConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}

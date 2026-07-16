@@ -130,6 +130,20 @@ You can also attach a **Certificate** for client authentication (`private_key_jw
 
 For full protocol-level details, including ACR values, scope-to-claims mapping, PAR enforcement, and token signing and encryption algorithms, see the [OAuth & OIDC](../../protocols/oauth-oidc/) catalogue.
 
+## Configure Play Integrity Attestation
+
+Mobile applications cannot safely hold a Flow Secret, so they prove their identity a different way: by presenting a Google Play Integrity token. See [Attestation](../../key-concepts/authentication/integration-models.mdx#attestation) for how this fits into the App-Native integration model. Configure it from the application's **Advanced** tab, or via the top-level `attestation.android` block in a declarative resource:
+
+| Setting | Description |
+|---------|-------------|
+| **Package Name** | The Android application package name (for example, `com.example.myapp`) that must match the attested app. |
+| **Signing Certificate SHA-256 Digests** | One or more allowed signing certificate digests, in the URL-safe base64 form reported by Play Integrity. The attested app must match one of these. |
+| **Service Account Credentials** | The Google Cloud service account JSON used to call the Play Integrity API. It is **write-only**: <ProductName /> never returns it in responses, and leaving it blank when editing keeps the stored value. |
+
+:::note
+The service account credentials are stored encrypted and never returned. For an app managed declaratively, set the `serviceAccountCredentials` field in the top-level `attestation.android` block; on update, omit it to preserve the previously stored value.
+:::
+
 ## Related Guides
 
 - [Manage Applications](../manage-applications) - Create, update, and delete applications

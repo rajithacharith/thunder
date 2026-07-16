@@ -436,6 +436,38 @@ export interface OAuth2Config {
 }
 
 /**
+ * Platform attestation configuration for an application.
+ */
+export interface AttestationConfig {
+  /**
+   * Google Play Integrity attestation configuration for Android clients.
+   */
+  android?: AndroidAttestationConfig;
+}
+
+/**
+ * Google Play Integrity attestation settings for an Android application.
+ */
+export interface AndroidAttestationConfig {
+  /**
+   * Android application package name that must match the attested app.
+   */
+  packageName?: string;
+
+  /**
+   * Allowed SHA-256 digests of the app signing certificate. The attested app must match one of
+   * these. Values use the URL-safe base64 (no padding) form reported by the Play Integrity API.
+   */
+  certificateSha256Digests?: string[];
+
+  /**
+   * Google Cloud service account credentials (JSON) used to call the Play Integrity API.
+   * Write-only: this is never returned by the API, so it is absent when loading an application.
+   */
+  serviceAccountCredentials?: string;
+}
+
+/**
  * User Info Configuration
  *
  * Configuration specific to the User Info endpoint response.

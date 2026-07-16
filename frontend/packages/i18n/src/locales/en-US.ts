@@ -2395,6 +2395,22 @@ const translations = {
     'edit.advanced.certificate.type.none': 'None',
     'edit.advanced.certificate.type.jwks': 'JWKS (Inline JSON Web Key Set)',
     'edit.advanced.certificate.type.jwksUri': 'JWKS URI (URL to JWKS endpoint)',
+    'edit.advanced.labels.attestation': 'Play Integrity Attestation (Android)',
+    'edit.advanced.attestation.intro':
+      'Verify the binary identity of an Android mobile client with Google Play Integrity when it initiates a flow directly.',
+    'edit.advanced.attestation.labels.packageName': 'Package Name',
+    'edit.advanced.attestation.labels.certificateSha256Digests': 'Signing Certificate SHA-256 Digests',
+    'edit.advanced.attestation.labels.serviceAccountCredentials': 'Service Account Credentials',
+    'edit.advanced.attestation.placeholder.packageName': 'com.example.myapp',
+    'edit.advanced.attestation.placeholder.certificateSha256Digest': 'URL-safe base64 SHA-256 digest',
+    'edit.advanced.attestation.placeholder.serviceAccountCredentials': 'Paste the Google Cloud service account JSON',
+    'edit.advanced.attestation.hint.packageName':
+      'The Android application package name that must match the attested app.',
+    'edit.advanced.attestation.hint.certificateSha256Digests':
+      'Allowed signing certificate digests, in the URL-safe base64 form reported by Play Integrity. The attested app must match one of these.',
+    'edit.advanced.attestation.hint.serviceAccountCredentials':
+      'Write-only. Used to call the Play Integrity API. Leave blank to keep the existing credentials.',
+    'edit.advanced.attestation.addDigest': 'Add Digest',
 
     /* -------------------- Edit page -------------------- */
     // Common

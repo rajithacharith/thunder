@@ -35,6 +35,16 @@ paths:
       security:
         - {}
         - FlowSecret: []
+      parameters:
+        - in: header
+          name: Attestation-Token
+          required: false
+          schema:
+            type: string
+          description: >
+            Platform attestation token (e.g. a Google Play Integrity token) presented by a mobile
+            application when initiating a new authentication flow. Required only for applications
+            configured with attestation; ignored when continuing an existing flow via executionId.
       requestBody:
         required: true
         content:
@@ -195,6 +205,21 @@ paths:
         
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: >
+            Unauthorized: The application must present a valid credential to initiate a new flow —
+            a Flow Secret for backend applications, or a platform attestation token for mobile
+            applications — and the presented credential was missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: 'Forbidden: Direct flow initiation is not permitted for this application type'
           content:
             application/json:
               schema:
