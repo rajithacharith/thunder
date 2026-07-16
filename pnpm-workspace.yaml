@@ -140,6 +140,8 @@ overrides:
   # JUSTIFICATION: Fixes GHSA-vxpw-j846-p89q (high DoS), GHSA-p88m-4jfj-68fv (HTTP header injection),
   # GHSA-35p6-xmwp-9g52 and GHSA-g8m3-5g58-fq7m — transitive via @codecov/vite-plugin chain.
   undici: '>=6.27.0'
+  # JUSTIFICATION: Fixes GHSA-xv26-6w52-cph6 — websocket-driver message corruption via abuse of protocol length headers (transitive via docusaurus > webpack-dev-server > sockjs > faye-websocket).
+  websocket-driver: '>=0.7.5'
 
 packageExtensions:
   '@hookform/resolvers':
