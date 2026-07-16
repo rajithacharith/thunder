@@ -50,7 +50,7 @@ func (suite *DBProviderTestSuite) SetupTest() {
 		Database: config.DatabaseConfig{
 			Config:    config.DataSource{Type: "postgres", Postgres: config.PostgresDataSource{Name: "identity"}},
 			Runtime:   config.DataSource{Type: "postgres", Postgres: config.PostgresDataSource{Name: "runtime"}},
-			User:      config.DataSource{Type: "postgres", Postgres: config.PostgresDataSource{Name: "user"}},
+			Entity:    config.DataSource{Type: "postgres", Postgres: config.PostgresDataSource{Name: "entity"}},
 			Operation: config.DataSource{Type: "postgres", Postgres: config.PostgresDataSource{Name: "operation"}},
 		},
 	}
@@ -62,7 +62,7 @@ func (suite *DBProviderTestSuite) TearDownTest() {
 	config.ResetServerRuntime()
 }
 
-func (suite *DBProviderTestSuite) TestGetUserDBTransactioner_Success() {
+func (suite *DBProviderTestSuite) TestGetEntityDBTransactioner_Success() {
 	// Create a mock DB connection
 	db, _, err := sqlmock.New()
 	suite.Require().NoError(err)
@@ -72,11 +72,11 @@ func (suite *DBProviderTestSuite) TestGetUserDBTransactioner_Success() {
 
 	// Manually construct the provider with an initialized client
 	provider := &dbProvider{
-		userClient: NewDBClient(model.NewDB(db), "postgres", "user", retryConfig{}),
+		entityClient: NewDBClient(model.NewDB(db), "postgres", "entity", retryConfig{}),
 	}
 
 	// Test getting the transactioner
-	txer, err := provider.GetUserDBTransactioner()
+	txer, err := provider.GetEntityDBTransactioner()
 	suite.NoError(err)
 	suite.NotNil(txer)
 }

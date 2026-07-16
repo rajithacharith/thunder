@@ -53,7 +53,7 @@ paths:
                     status: "UP"
                   - serviceName: "RuntimeDB"
                     status: "UP"
-                  - serviceName: "UserDB"
+                  - serviceName: "EntityDB"
                     status: "UP"
         '503':
           description: Service is not ready
@@ -68,7 +68,7 @@ paths:
                     status: "DOWN"
                   - serviceName: "RuntimeDB"
                     status: "UP"
-                  - serviceName: "UserDB"
+                  - serviceName: "EntityDB"
                     status: "UP"
 
 components:
@@ -94,7 +94,7 @@ components:
           enum:
             - ConfigDB
             - RuntimeDB
-            - UserDB
+            - EntityDB
         status:
           type: string
           enum:

@@ -194,10 +194,10 @@ spec:
                 type: "sqlite"
                 sqlite:
                   path: "{{ "{{.DB_RUNTIME_PATH}}" }}"
-              user:
+              entity:
                 type: "sqlite"
                 sqlite:
-                  path: "{{ "{{.DB_USER_PATH}}" }}"
+                  path: "{{ "{{.DB_ENTITY_PATH}}" }}"
 
             cache:
               disabled: false
@@ -263,15 +263,15 @@ spec:
                   username: "{{ "{{.DB_RUNTIME_USERNAME}}" }}"
                   password: "{{ "{{.DB_RUNTIME_PASSWORD}}" }}"
                   sslmode: "{{ "{{.DB_RUNTIME_SSLMODE}}" }}"
-              user:
+              entity:
                 type: "postgres"
                 postgres:
-                  hostname: "{{ "{{.DB_USER_HOSTNAME}}" }}"
+                  hostname: "{{ "{{.DB_ENTITY_HOSTNAME}}" }}"
                   port: {{ "{{.DB_PORT}}" }}
-                  name: "{{ "{{.DB_USER_NAME}}" }}"
-                  username: "{{ "{{.DB_USER_USERNAME}}" }}"
-                  password: "{{ "{{.DB_USER_PASSWORD}}" }}"
-                  sslmode: "{{ "{{.DB_USER_SSLMODE}}" }}"
+                  name: "{{ "{{.DB_ENTITY_NAME}}" }}"
+                  username: "{{ "{{.DB_ENTITY_USERNAME}}" }}"
+                  password: "{{ "{{.DB_ENTITY_PASSWORD}}" }}"
+                  sslmode: "{{ "{{.DB_ENTITY_SSLMODE}}" }}"
 
             cache:
               disabled: false

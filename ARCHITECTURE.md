@@ -1,4 +1,4 @@
-# ThunderID – Architecture Reference
+# ThunderID Architecture Reference
 
 Go IAM server (`github.com/thunder-id/thunderid`). Single binary serving a REST API + two React SPAs (`/gate`, `/console`).
 
@@ -9,7 +9,7 @@ backend/cmd/server/
   main.go               # startup
   servicemanager.go     # calls every internal/*/init.go to register routes
   bootstrap/flows/      # JSON auth/registration flow definitions (auto-seeded)
-  repository/           # configdb.db · runtimedb.db · userdb.db created at runtime in the configured data directory (SQLite or Postgres)
+  repository/           # configdb.db · runtimedb.db · entitydb.db created at runtime in the configured data directory (SQLite or Postgres)
 backend/internal/
   authn/                # credential / OTP / passkey / social login
   oauth/                # OAuth 2.0 + OIDC server (authorize, token, introspect, userinfo, JWKS, DCR)
@@ -29,7 +29,7 @@ samples/apps/           # react-sdk-sample · react-api-based-sample · react-va
 ## Backend patterns
 
 - Each domain package: `handler → service → store`, single `Initialize(mux, …)` in `init.go`.
-- Public paths (no JWT): `/auth/**`, `/flow/execute/**`, `/oauth2/**`, `/.well-known/openid-configuration/**`, `/.well-known/oauth-authorization-server/**`, `/.well-known/oauth-protected-resource`, `/gate/**`, `/console/**`, `/mcp/**` — full list in `system/security/permissions.go`.
+- Public paths (no JWT): `/auth/**`, `/flow/execute/**`, `/oauth2/**`, `/.well-known/openid-configuration/**`, `/.well-known/oauth-authorization-server/**`, `/.well-known/oauth-protected-resource`, `/gate/**`, `/console/**`, `/mcp/**`. Full list in `system/security/permissions.go`.
 - Errors: `serviceerror.ServiceError` internally; `sysutils.WriteErrorResponse(w, status, errConst)` for HTTP.
 
 ## Flow engine

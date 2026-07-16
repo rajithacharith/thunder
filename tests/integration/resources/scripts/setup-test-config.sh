@@ -37,12 +37,12 @@ if [ "$DB_TYPE" = "postgres" ]; then
       password: dbpassword
       sslmode: disable
 
-  user:
+  entity:
     type: postgres
     postgres:
       hostname: localhost
       port: 5432
-      name: userdb
+      name: entitydb
       username: dbuser
       password: dbpassword
       sslmode: disable
@@ -72,10 +72,10 @@ elif [ "$DB_TYPE" = "redis" ]; then
       db: 0
       key_prefix: "thunderid"
 
-  user:
+  entity:
     type: sqlite
     sqlite:
-      path: "database/userdb.db"
+      path: "database/entitydb.db"
       options: "cache=shared"
 
   operation:
@@ -98,10 +98,10 @@ else
       path: "database/runtimedb.db"
       options: "cache=shared"
 
-  user:
+  entity:
     type: sqlite
     sqlite:
-      path: "database/userdb.db"
+      path: "database/entitydb.db"
       options: "cache=shared"
 
   operation:

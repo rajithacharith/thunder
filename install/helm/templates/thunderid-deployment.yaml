@@ -14,7 +14,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") (eq .Values.configuration.database.operation.type "sqlite") }}
+{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.entity.type "sqlite") (eq .Values.configuration.database.operation.type "sqlite") }}
 {{- if and .Values.declarativeResources.enabled .Values.declarativeResources.configMap.name .Values.declarativeResources.secret.name }}
 {{- fail "Invalid declarativeResources configuration: set only one source, declarativeResources.configMap.name or declarativeResources.secret.name." }}
 {{- end }}

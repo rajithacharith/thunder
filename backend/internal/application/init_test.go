@@ -59,7 +59,7 @@ func newTestDBConfig() config.DatabaseConfig {
 	return config.DatabaseConfig{
 		Config:  newInMemoryDataSource(),
 		Runtime: newInMemoryDataSource(),
-		User:    newInMemoryDataSource(),
+		Entity:  newInMemoryDataSource(),
 	}
 }
 

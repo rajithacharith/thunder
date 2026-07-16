@@ -13,7 +13,7 @@ ThunderID uses three logically separated databases. Each database owns a specifi
 |--------------|------------------------------------------------------------------------|
 | `configdb`   | Identity configuration data Ex: applications, authentication flows, roles, identity providers |
 | `runtimedb`  | Runtime temporal data which holds the state of the authentication flows: authorization codes, flow contexts, WebAuthn sessions |
-| `userdb`     | Identity data: users, groups, indexed user attributes                  |
+| `entitydb`   | Identity data: users, groups, indexed user attributes                  |
 
 Although the databases are logically separated, they share consistent schema design principles documented here.
 

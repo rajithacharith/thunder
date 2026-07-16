@@ -244,43 +244,43 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 - Write operations executed via `Execute` are not retried automatically to avoid accidental duplicate writes. If your write path is explicitly idempotent, add idempotency at the business layer (for example with deterministic IDs or upsert semantics).
 - Retry metrics are emitted through OpenTelemetry metric instruments (`{{productSlug}}_db_retry_attempts_total`, `{{productSlug}}_db_retry_backoff_seconds`, `{{productSlug}}_db_operation_seconds`), which can be exported to Prometheus via your OpenTelemetry collector pipeline.
 
-### User Database
+### Entity Database
 
 Stores user profiles and credentials.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.user.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
+| `database.entity.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
 
-**`database.user.postgres.*`** is only read when `database.user.type: postgres`:
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `database.user.postgres.hostname` | `""` | Database server hostname |
-| `database.user.postgres.port` | `0` | Database server port |
-| `database.user.postgres.name` | `""` | Database name |
-| `database.user.postgres.username` | `""` | Database username |
-| `database.user.postgres.password` | `""` | Database password |
-| `database.user.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
-| `database.user.postgres.max_open_conns` | `500` | Maximum number of open connections |
-| `database.user.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.user.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
-| `database.user.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
-| `database.user.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
-| `database.user.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
-
-**`database.user.sqlite.*`** is only read when `database.user.type: sqlite`:
+**`database.entity.postgres.*`** is only read when `database.entity.type: postgres`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.user.sqlite.path` | `database/userdb.db` | SQLite database file path |
-| `database.user.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
-| `database.user.sqlite.max_open_conns` | `500` | Maximum number of open connections |
-| `database.user.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.user.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
-| `database.user.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
-| `database.user.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
-| `database.user.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+| `database.entity.postgres.hostname` | `""` | Database server hostname |
+| `database.entity.postgres.port` | `0` | Database server port |
+| `database.entity.postgres.name` | `""` | Database name |
+| `database.entity.postgres.username` | `""` | Database username |
+| `database.entity.postgres.password` | `""` | Database password |
+| `database.entity.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.entity.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.entity.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.entity.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.entity.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.entity.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.entity.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+
+**`database.entity.sqlite.*`** is only read when `database.entity.type: sqlite`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.entity.sqlite.path` | `database/entitydb.db` | SQLite database file path |
+| `database.entity.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.entity.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.entity.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.entity.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.entity.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.entity.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.entity.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 ### Operation Database
 

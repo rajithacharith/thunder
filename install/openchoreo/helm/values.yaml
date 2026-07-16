@@ -68,9 +68,9 @@ thunderid-component:
     runtime:
       sqlite:
         path: "database/runtimedb.db"
-    user:
+    entity:
       sqlite:
-        path: "database/userdb.db"
+        path: "database/entitydb.db"
 
     # ── PostgreSQL (used when type: postgres) — uncomment and fill in ─────────
     # config:
@@ -89,11 +89,11 @@ thunderid-component:
     #     username: <DB_USERNAME>
     #     password: <DB_PASSWORD>
     #     sslmode: disable
-    # user:
+    # entity:
     #   postgres:
     #     hostname: <DB_HOST>
     #     port: 5432
-    #     name: userdb
+    #     name: entitydb
     #     username: <DB_USERNAME>
     #     password: <DB_PASSWORD>
     #     sslmode: disable
