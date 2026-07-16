@@ -17,7 +17,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {CONNECTION_FORM_FIELDS} from '../../config/connectionFormFields';
+import {CONNECTION_FORM_FIELDS, type ConnectionFieldDef} from '../../config/connectionFormFields';
 import type {ConnectionResponse} from '../../models/connection';
 import {
   emptyFormValues,
@@ -66,6 +66,26 @@ describe('responseToFormValues', () => {
     const response = {id: '1', type: 'google', name: 'X', clientId: 'y'} as ConnectionResponse;
     const values = responseToFormValues(response, GOOGLE_FIELDS, REDIRECT);
     expect(values.redirectUri).toBe(REDIRECT);
+  });
+
+  it('converts a boolean tokenExchangeEnabled into a "true"/"false" form string', () => {
+    const enabled = {
+      id: '1',
+      type: 'oidc',
+      name: 'X',
+      clientId: 'y',
+      tokenExchangeEnabled: true,
+    } as ConnectionResponse;
+    expect(responseToFormValues(enabled, OIDC_FIELDS, REDIRECT).tokenExchangeEnabled).toBe('true');
+
+    const disabled = {
+      id: '1',
+      type: 'oidc',
+      name: 'X',
+      clientId: 'y',
+      tokenExchangeEnabled: false,
+    } as ConnectionResponse;
+    expect(responseToFormValues(disabled, OIDC_FIELDS, REDIRECT).tokenExchangeEnabled).toBe('false');
   });
 });
 
@@ -124,6 +144,35 @@ describe('formValuesToRequest', () => {
       secretReplaced: true,
     }) as unknown as Record<string, unknown>;
     expect(payload).not.toHaveProperty('clientSecret');
+  });
+
+  it('emits a boolean tokenExchangeEnabled instead of the raw string form value', () => {
+    const payload = formValuesToRequest(
+      {
+        ...base,
+        authorizationEndpoint: 'https://i/a',
+        tokenEndpoint: 'https://i/t',
+        tokenExchangeEnabled: 'true',
+      },
+      OIDC_FIELDS,
+      {mode: 'create'},
+    ) as unknown as Record<string, unknown>;
+    expect(payload.tokenExchangeEnabled).toBe(true);
+    expect(typeof payload.tokenExchangeEnabled).toBe('boolean');
+  });
+
+  it('emits tokenExchangeEnabled as false when the switch is off', () => {
+    const payload = formValuesToRequest(
+      {
+        ...base,
+        authorizationEndpoint: 'https://i/a',
+        tokenEndpoint: 'https://i/t',
+        tokenExchangeEnabled: 'false',
+      },
+      OIDC_FIELDS,
+      {mode: 'create'},
+    ) as unknown as Record<string, unknown>;
+    expect(payload.tokenExchangeEnabled).toBe(false);
   });
 
   it('omits empty optional fields but keeps required ones', () => {
@@ -220,5 +269,39 @@ describe('validateConnectionForm', () => {
       'create',
     );
     expect(errors.accountSid).toBe('connections:validation.required');
+  });
+
+  it('requires issuer and jwksEndpoint only when tokenExchangeEnabled is on', () => {
+    const base = {
+      name: 'n',
+      clientId: 'c',
+      clientSecret: 's',
+      redirectUri: REDIRECT,
+      authorizationEndpoint: 'https://i/a',
+      tokenEndpoint: 'https://i/t',
+      issuer: '',
+      jwksEndpoint: '',
+    };
+
+    const withExchangeOff = validateConnectionForm({...base, tokenExchangeEnabled: 'false'}, OIDC_FIELDS, 'create');
+    expect(withExchangeOff).not.toHaveProperty('issuer');
+    expect(withExchangeOff).not.toHaveProperty('jwksEndpoint');
+
+    const withExchangeOn = validateConnectionForm({...base, tokenExchangeEnabled: 'true'}, OIDC_FIELDS, 'create');
+    expect(withExchangeOn.issuer).toBe('connections:validation.required');
+    expect(withExchangeOn.jwksEndpoint).toBe('connections:validation.required');
+  });
+
+  it('skips validation for a field hidden by revealedBy, even if it would otherwise be invalid', () => {
+    const fields: ConnectionFieldDef[] = [
+      {name: 'gate', labelKey: 'x', kind: 'switch'},
+      {name: 'child', labelKey: 'y', kind: 'url', required: true, revealedBy: 'gate'},
+    ];
+
+    const hidden = validateConnectionForm({gate: 'false', child: 'not-a-url'}, fields, 'create');
+    expect(hidden).not.toHaveProperty('child');
+
+    const shown = validateConnectionForm({gate: 'true', child: 'not-a-url'}, fields, 'create');
+    expect(shown.child).toBe('connections:validation.url');
   });
 });

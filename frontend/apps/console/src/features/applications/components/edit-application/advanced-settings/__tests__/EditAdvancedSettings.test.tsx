@@ -311,4 +311,74 @@ describe('EditAdvancedSettings', () => {
       );
     });
   });
+
+  describe('ID-JAG Integration', () => {
+    it('should apply the idJag enable and the added token-exchange grant type in a single onFieldChange call on the first click', () => {
+      const oauth2ConfigWithoutTokenExchange: OAuth2Config = {
+        ...mockOAuth2Config,
+        grantTypes: ['authorization_code'],
+      };
+      const appWithInboundAuth = {
+        ...mockApplication,
+        inboundAuthConfig: [{type: 'oauth2', config: {...oauth2ConfigWithoutTokenExchange}}],
+      } as Application;
+
+      mockOnFieldChange.mockClear();
+
+      render(
+        <EditAdvancedSettings
+          application={appWithInboundAuth}
+          editedApp={{}}
+          oauth2Config={oauth2ConfigWithoutTokenExchange}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const toggle = screen.getByLabelText('applications:edit.advanced.idJag.title');
+      fireEvent.click(toggle);
+
+      expect(mockOnFieldChange).toHaveBeenCalledTimes(1);
+      expect(mockOnFieldChange).toHaveBeenCalledWith(
+        'inboundAuthConfig',
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'oauth2',
+            config: expect.objectContaining({
+              grantTypes: expect.arrayContaining([
+                'authorization_code',
+                'urn:ietf:params:oauth:grant-type:token-exchange',
+              ]) as unknown,
+              token: expect.objectContaining({
+                idJag: expect.objectContaining({enabled: true}) as unknown,
+              }) as unknown,
+            }) as unknown,
+          }),
+        ]),
+      );
+    });
+
+    it('should forward onValidationChange to IdentityAssertionsSection', () => {
+      const onValidationChange = vi.fn();
+      const oauth2ConfigWithIdJagError: OAuth2Config = {
+        ...mockOAuth2Config,
+        token: {
+          accessToken: {} as never,
+          idToken: {} as never,
+          idJag: {enabled: true, allowedAudiences: [], validityPeriod: 300},
+        },
+      };
+
+      render(
+        <EditAdvancedSettings
+          application={mockApplication}
+          editedApp={{}}
+          oauth2Config={oauth2ConfigWithIdJagError}
+          onFieldChange={mockOnFieldChange}
+          onValidationChange={onValidationChange}
+        />,
+      );
+
+      expect(onValidationChange).toHaveBeenLastCalledWith(true);
+    });
+  });
 });

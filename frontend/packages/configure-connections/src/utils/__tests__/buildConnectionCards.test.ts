@@ -144,4 +144,61 @@ describe('buildConnectionCards', () => {
     const keys = cards.map((c) => c.vendorKey);
     expect(keys).toEqual(['google', 'github', 'twilio']);
   });
+
+  it('renders an OIDC instance with idJagEnabled as a trusted-idp card, not a plain oidc card', () => {
+    const instances: ConnectionInstance[] = [
+      {id: 't1', name: 'Acme Okta', type: 'oidc', categories: ['identity-provider'], idJagEnabled: true},
+    ];
+    const cards = buildConnectionCards(instances, VENDORS);
+
+    expect(cards.filter((c) => c.vendorKey === 'oidc')).toHaveLength(0);
+    const trustedIdpCard = cards.find((c) => c.vendorKey === 'trusted-idp');
+    expect(trustedIdpCard).toMatchObject({
+      id: 'trusted-idp:t1',
+      displayName: 'Acme Okta',
+      status: 'configured',
+      comingSoon: false,
+      navTarget: '/trusted-issuers/t1',
+      categories: ['trusted-idp'],
+    });
+  });
+
+  it('renders an OIDC instance with idJagEnabled: false as a trusted-idp card', () => {
+    const instances: ConnectionInstance[] = [
+      {id: 't2', name: 'Disabled Trust', type: 'oidc', categories: ['identity-provider'], idJagEnabled: false},
+    ];
+    const cards = buildConnectionCards(instances, VENDORS);
+
+    const trustedIdpCard = cards.find((c) => c.vendorKey === 'trusted-idp');
+    expect(trustedIdpCard).toMatchObject({navTarget: '/trusted-issuers/t2'});
+  });
+
+  it('renders a plain OIDC instance without idJagEnabled as the normal oidc card, unchanged', () => {
+    const instances: ConnectionInstance[] = [
+      {id: 'f1', name: 'Federation OIDC', type: 'oidc', categories: ['identity-provider']},
+    ];
+    const cards = buildConnectionCards(instances, VENDORS);
+
+    expect(cards.some((c) => c.vendorKey === 'trusted-idp')).toBe(false);
+    const oidcCard = cards.find((c) => c.vendorKey === 'oidc');
+    expect(oidcCard).toMatchObject({
+      displayName: 'Federation OIDC',
+      navTarget: '/connections/oidc/f1',
+    });
+  });
+
+  it('renders a non-OIDC instance with idJagEnabled as its normal vendor card, not a trusted-idp card', () => {
+    const instances: ConnectionInstance[] = [
+      {id: 'g1', name: 'Corp Google', type: 'google', categories: ['identity-provider'], idJagEnabled: true},
+    ];
+    const cards = buildConnectionCards(instances, VENDORS);
+
+    expect(cards.some((c) => c.vendorKey === 'trusted-idp')).toBe(false);
+    const googleCard = cards.find((c) => c.vendorKey === 'google');
+    expect(googleCard).toMatchObject({
+      id: 'google:g1',
+      displayName: 'Corp Google',
+      navTarget: '/connections/google/g1',
+    });
+  });
 });

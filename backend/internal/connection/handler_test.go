@@ -185,6 +185,34 @@ func (s *HandlerTestSuite) TestListConnectionsIdentityProviderCategory() {
 	s.mockNotif.AssertNotCalled(s.T(), "ListSendersByType", mock.Anything, ncommon.NotificationSenderTypeMessage)
 }
 
+func (s *HandlerTestSuite) TestListConnectionsIDJagEnabledField() {
+	trusted := true
+	s.mockIDP.On("GetIdentityProviderList", mock.Anything).Return([]idp.BasicIDPDTO{
+		{ID: "1", Name: "Trusted Issuer", Type: providers.IDPTypeOIDC, IDJagEnabled: &trusted},
+		{ID: "2", Name: "Plain Federation", Type: providers.IDPTypeOIDC},
+	}, (*tidcommon.ServiceError)(nil))
+
+	req := httptest.NewRequest(http.MethodGet, "/connections?category=identity-provider", nil)
+	rr := httptest.NewRecorder()
+	s.handler.handleListConnections(rr, req)
+	s.Equal(http.StatusOK, rr.Code)
+
+	var raw struct {
+		Connections []map[string]interface{} `json:"connections"`
+	}
+	s.Require().NoError(json.NewDecoder(rr.Body).Decode(&raw))
+	s.Require().Len(raw.Connections, 2)
+
+	byID := make(map[string]map[string]interface{}, len(raw.Connections))
+	for _, c := range raw.Connections {
+		byID[c["id"].(string)] = c
+	}
+
+	s.Require().Contains(byID["1"], "idJagEnabled")
+	s.Equal(true, byID["1"]["idJagEnabled"])
+	s.NotContains(byID["2"], "idJagEnabled")
+}
+
 func (s *HandlerTestSuite) TestListConnectionsSMSProviderCategory() {
 	s.mockNotif.On("ListSendersByType", mock.Anything, ncommon.NotificationSenderTypeMessage).
 		Return([]ncommon.NotificationSenderDTO{

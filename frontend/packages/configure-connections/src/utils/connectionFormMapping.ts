@@ -61,6 +61,10 @@ export function responseToFormValues(
       continue;
     }
     const raw: unknown = (response as unknown as Record<string, unknown>)[field.name];
+    if (field.kind === 'switch') {
+      values[field.name] = raw === true ? 'true' : 'false';
+      continue;
+    }
     values[field.name] = typeof raw === 'string' ? raw : '';
   }
   return values;
@@ -109,6 +113,11 @@ export function formValuesToRequest(
       continue;
     }
 
+    if (field.kind === 'switch') {
+      payload[field.name] = raw === 'true';
+      continue;
+    }
+
     // Always include required fields and any non-empty value; omit empty optional fields.
     if (field.required || raw !== '') {
       payload[field.name] = raw;
@@ -139,6 +148,10 @@ export function validateConnectionForm(
   const errors: Record<string, string> = {};
 
   for (const field of fields) {
+    if (field.revealedBy && values[field.revealedBy] !== 'true') {
+      continue;
+    }
+
     const raw: string = (values[field.name] ?? '').trim();
 
     if (field.kind === 'secret') {
@@ -148,11 +161,15 @@ export function validateConnectionForm(
       continue;
     }
 
-    if (field.kind === 'readonly-copy' || field.kind === 'scopes') {
+    if (field.kind === 'readonly-copy' || field.kind === 'scopes' || field.kind === 'switch') {
       continue;
     }
 
-    if (field.required && raw === '') {
+    const requiredWhen: string | undefined = field.requiredWhen;
+    const isRequired: boolean =
+      Boolean(field.required) || (requiredWhen !== undefined && values[requiredWhen] === 'true');
+
+    if (isRequired && raw === '') {
       errors[field.name] = 'connections:validation.required';
       continue;
     }

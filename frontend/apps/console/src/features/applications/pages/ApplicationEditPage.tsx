@@ -277,6 +277,7 @@ export default function ApplicationEditPage() {
                 oauth2Constraints={isMcpM2mOnly ? undefined : oauth2Constraints}
                 onFieldChange={handleFieldChange}
                 allowedGrantTypes={[...TemplateConstants.MCP_CLIENT_ALLOWED_GRANT_TYPES]}
+                onValidationChange={setHasValidationErrors}
               />
             ),
           },
@@ -559,6 +560,7 @@ export default function ApplicationEditPage() {
                 oauth2Constraints={oauth2Constraints}
                 onFieldChange={handleFieldChange}
                 showAttestation={supportsAttestation}
+                onValidationChange={setHasValidationErrors}
               />
             </TabPanel>
           </>

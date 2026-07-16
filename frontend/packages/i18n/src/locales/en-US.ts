@@ -1632,6 +1632,7 @@ const translations = {
     'categories.identity-verification': 'Identity Verification',
     'categories.crm': 'CRM',
     'categories.data-store': 'Data store',
+    'categories.trusted-idp': 'Trusted Token Issuer',
 
     // Card
     'card.configured': 'Configured',
@@ -1648,6 +1649,7 @@ const translations = {
     'vendor.twilio.description': 'Send SMS one-time passcodes via Twilio.',
     'vendor.vonage.description': 'Deliver SMS and email passcodes through Vonage.',
     'vendor.custom-sms.description': 'Route SMS through your own HTTP gateway.',
+    'vendor.trustedIdp.description': 'Trusted token issuer for token exchange and ID-JAG.',
 
     // Add custom connection wizard
     'wizard.title': 'Add custom connection',
@@ -1655,7 +1657,7 @@ const translations = {
     'wizard.steps.configure': 'Configure',
     'wizard.type.heading': 'What kind of connection do you want to add?',
     'wizard.type.subheading':
-      'Custom connections aren’t in the vendor catalog — pick the type of integration you want to wire up.',
+      "Custom connections aren't in the vendor catalog. Pick the type of integration you want to wire up.",
     'wizard.type.oidc.label': 'OpenID Connect Provider',
     'wizard.type.oidc.description': 'Connect any OpenID Connect identity provider.',
     'wizard.type.oidc.tag': 'Login provider · Enterprise',
@@ -1665,6 +1667,10 @@ const translations = {
     'wizard.type.sms.label': 'SMS gateway',
     'wizard.type.sms.description': 'Route SMS through your own HTTP gateway.',
     'wizard.type.sms.tag': 'Message sender · SMS',
+    'wizard.type.trustedIdp.label': 'Trusted Token Issuer',
+    'wizard.type.trustedIdp.description':
+      "Trust an external IdP's identity assertions and exchange them for access tokens.",
+    'wizard.type.trustedIdp.tag': 'Token exchange · ID-JAG',
     'wizard.configure.heading': 'Configure your connection',
     'wizard.configure.subheading':
       'Enter the credentials and endpoints for your custom connection. Secrets are stored write-only.',
@@ -1724,6 +1730,8 @@ const translations = {
     'form.fields.issuer.label': 'Issuer',
     'form.fields.issuer.hint': 'Issuer identifier expected in tokens from this provider.',
     'form.fields.tokenExchangeEnabled.label': 'Enable token exchange',
+    'form.fields.tokenExchangeEnabled.hint':
+      "Let backend services exchange this provider's tokens for ThunderID access tokens.",
     'form.fields.trustedTokenAudience.label': 'Trusted token audience',
     'form.fields.trustedTokenAudience.hint': 'Accepted audience value for external tokens during token exchange.',
     'form.fields.accountSid.label': 'Account SID',
@@ -1736,6 +1744,7 @@ const translations = {
     'form.fields.apiSecret.hint': 'Vonage API secret used to authenticate API requests.',
     'form.fields.senderId.label': 'Sender ID',
     'form.fields.senderId.hint': 'Phone number or alphanumeric sender ID messages are sent from.',
+    'form.sections.federation': 'Federation',
     'form.optional': 'Optional',
     'form.secret.update': 'Update',
     'form.secret.keepHelp': 'Leave unchanged to keep the stored secret.',
@@ -1808,6 +1817,70 @@ const translations = {
     'validation.required': 'This field is required.',
     'validation.url': 'Enter a valid URL.',
     'validation.accountSid': 'Enter a valid Account SID: “AC” followed by 32 hexadecimal characters.',
+  },
+
+  // ============================================================================
+  // Trusted issuers namespace - Trusted issuer (trust-only OIDC connection) feature translations
+  // ============================================================================
+  trustedIssuers: {
+    // Validation
+    'validation.required': 'This field is required.',
+    'validation.url': 'Enter a valid https:// URL.',
+
+    // Create form
+    'create.title': 'Add trusted issuer',
+    'create.subtitle':
+      'Register an external identity provider whose identity assertions ThunderID can exchange for access tokens.',
+    'create.duplicateName': 'A trusted issuer with this name already exists.',
+    'create.submit': 'Add trusted issuer',
+    'create.form.name.label': 'Name',
+    'create.form.issuer.label': 'Issuer URI',
+    'create.form.issuer.hint': "The issuer URI from the external IdP's OpenID Connect discovery document.",
+    'create.form.clientId.label': 'Client ID',
+    'create.form.clientId.hint':
+      "ThunderID's client ID registered at this identity provider. Used for audience validation in incoming assertions.",
+    'create.form.jwksEndpoint.label': 'JWKS endpoint',
+    'create.form.jwksEndpoint.hint':
+      'The JWKS endpoint used to validate the signature of incoming identity assertions.',
+    'create.form.tokenExchangeEnabled.label': 'Enable token exchange',
+    'create.form.tokenExchangeEnabled.hint': 'Exchange subject tokens from this issuer for access tokens.',
+    'create.form.idJagEnabled.label': 'Enable Identity Assertion JWT Authorization Grant (ID-JAG)',
+    'create.form.idJagEnabled.hint':
+      'Accept and exchange signed identity assertions from this issuer for access tokens.',
+
+    // Detail page
+    'detail.back': 'Back to connections',
+    'detail.loadError': 'Failed to load trusted issuer.',
+    'detail.duplicateName': 'A trusted issuer with this name already exists.',
+    'detail.general.title': 'General',
+    'detail.general.description': 'Core identity of this trusted issuer.',
+    'detail.tokenExchange.title': 'Token Exchange',
+    'detail.tokenExchange.description': 'Exchange subject tokens from this issuer for access tokens.',
+    'detail.tokenExchange.audience.label': 'Trusted token audience',
+    'detail.tokenExchange.audience.hint': 'The audience value ThunderID expects in subject tokens from this issuer.',
+    'detail.consumption.title': 'Identity Assertion JWT Authorization Grant (ID-JAG)',
+    'detail.idJag.description': 'Accept and exchange signed identity assertions from this issuer for access tokens.',
+    'detail.idJag.enabledNote': 'Identity assertions from this issuer are accepted via the ID-JAG protocol.',
+    'detail.dangerZone.title': 'Danger zone',
+    'detail.dangerZone.delete.title': 'Delete trusted issuer',
+    'detail.dangerZone.delete.description':
+      'Applications relying on assertions from this issuer will stop receiving tokens. This cannot be undone.',
+    'detail.saveBar.unsaved': 'You have unsaved changes',
+    'detail.saveBar.discard': 'Discard',
+    'detail.saveBar.save': 'Save changes',
+
+    // Delete dialog
+    'delete.title': 'Delete trusted issuer',
+    'delete.message':
+      'Delete "{{name}}"? Applications relying on assertions from this issuer will stop receiving tokens. This cannot be undone.',
+
+    // Toasts
+    'create.success': 'Trusted issuer created successfully.',
+    'create.error': 'Failed to create trusted issuer. Please try again.',
+    'update.success': 'Trusted issuer updated successfully.',
+    'update.error': 'Failed to update trusted issuer. Please try again.',
+    'delete.success': 'Trusted issuer deleted successfully.',
+    'delete.error': 'Failed to delete trusted issuer. Please try again.',
   },
 
   // ============================================================================
@@ -2614,6 +2687,23 @@ const translations = {
     'edit.advanced.acrValues.placeholder': 'Select ACR values',
     'edit.advanced.acrValues.hint':
       'When acr_values is included in the authorization request, only values configured here are accepted.',
+    'edit.advanced.grantTypes.labels.ciba': 'CIBA (Client-Initiated Backchannel Authentication)',
+    'edit.advanced.grantTypes.labels.tokenExchange': 'Token Exchange',
+    'edit.advanced.grantTypes.labels.jwtBearer': 'JWT Bearer',
+    'edit.advanced.idJag.title': 'Identity Assertions (ID-JAG)',
+    'edit.advanced.idJag.description':
+      "Issue signed assertions of the signed-in user's identity that external services accept for token issuance.",
+    'edit.advanced.idJag.publicClientGuard':
+      'Identity assertions require a confidential client. Turn off Public Client to enable.',
+    'edit.advanced.idJag.labels.allowedAudiences': 'Allowed audiences',
+    'edit.advanced.idJag.allowedAudiences.placeholder': 'Type an audience and press Enter',
+    'edit.advanced.idJag.allowedAudiences.error': 'Add at least one audience.',
+    'edit.advanced.idJag.allowedAudiences.hint': 'Each assertion targets exactly one of these audiences.',
+    'edit.advanced.idJag.labels.validityPeriod': 'Assertion validity',
+    'edit.advanced.idJag.labels.seconds': 'seconds',
+    'edit.advanced.idJag.validityPeriod.error': 'Enter a value of at least 1 second.',
+    'edit.advanced.idJag.validityPeriod.hint': 'How long an issued assertion stays valid. Default 300.',
+    'edit.advanced.idJag.grantTypeHint': 'The token exchange grant type is enabled together with this feature.',
     'create.success': 'Application created successfully.',
     'create.error': 'Failed to create application. Please try again.',
     'update.success': 'Application updated successfully.',

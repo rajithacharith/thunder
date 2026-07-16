@@ -16,7 +16,18 @@
  * under the License.
  */
 
-import {Box, FormControl, FormLabel, Stack, TextField, Typography} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Collapse,
+  Divider,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Stack,
+  Switch,
+  TextField,
+  Typography,
+} from '@wso2/oxygen-ui';
 import {type JSX, type ReactNode, useMemo, useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import MaskedSecretField from './MaskedSecretField';
@@ -88,6 +99,11 @@ export default function ConnectionForm({
     return undefined;
   };
 
+  const isRequiredNow = (field: ConnectionFieldDef): boolean => {
+    const requiredWhen: string | undefined = field.requiredWhen;
+    return Boolean(field.required) || (requiredWhen !== undefined && values[requiredWhen] === 'true');
+  };
+
   // Render a hint, resolving inline <code> markup in the translation to a styled code element.
   const renderHint = (hintKey: string): ReactNode => (
     <Trans
@@ -115,11 +131,33 @@ export default function ConnectionForm({
     <Stack direction="column" spacing={3} data-testid="connection-form">
       {fields.map((field) => {
         const label: string = t(field.labelKey);
+        const visible: boolean = !field.revealedBy || values[field.revealedBy] === 'true';
 
-        if (field.kind === 'secret') {
-          return (
+        let fieldContent: ReactNode;
+
+        if (field.kind === 'switch') {
+          fieldContent = (
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={values[field.name] === 'true'}
+                    onChange={(e) => setField(field.name, e.target.checked ? 'true' : 'false')}
+                    slotProps={{input: {'aria-label': label, role: 'switch'}}}
+                  />
+                }
+                label={<Typography variant="subtitle2">{label}</Typography>}
+              />
+              {field.hintKey && (
+                <Typography variant="caption" color="text.secondary" sx={{display: 'block', ml: '52px'}}>
+                  {t(field.hintKey)}
+                </Typography>
+              )}
+            </Box>
+          );
+        } else if (field.kind === 'secret') {
+          fieldContent = (
             <MaskedSecretField
-              key={field.name}
               id={`connection-field-${field.name}`}
               label={label}
               value={values[field.name] ?? ''}
@@ -132,12 +170,9 @@ export default function ConnectionForm({
               hint={field.hintKey ? t(field.hintKey) : undefined}
             />
           );
-        }
-
-        if (field.kind === 'readonly-copy') {
-          return (
+        } else if (field.kind === 'readonly-copy') {
+          fieldContent = (
             <ReadOnlyCopyField
-              key={field.name}
               id={`connection-field-${field.name}`}
               label={label}
               value={values[field.name] ?? ''}
@@ -148,30 +183,51 @@ export default function ConnectionForm({
               }
             />
           );
+        } else {
+          const error: string | undefined = fieldError(field.name);
+          const required: boolean = isRequiredNow(field);
+          fieldContent = (
+            <FormControl fullWidth required={required} error={Boolean(error)}>
+              <FormLabel htmlFor={`connection-field-${field.name}`}>
+                {label}
+                {field.optional && !required && (
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ml: 1}}>
+                    {t('form.optional')}
+                  </Typography>
+                )}
+              </FormLabel>
+              <TextField
+                id={`connection-field-${field.name}`}
+                fullWidth
+                value={values[field.name] ?? ''}
+                placeholder={field.placeholder}
+                error={Boolean(error)}
+                helperText={error ?? (field.hintKey ? renderHint(field.hintKey) : undefined)}
+                onChange={(e) => setField(field.name, e.target.value)}
+                onBlur={() => setTouched((prev) => ({...prev, [field.name]: true}))}
+              />
+            </FormControl>
+          );
         }
 
-        const error: string | undefined = fieldError(field.name);
         return (
-          <FormControl key={field.name} fullWidth required={field.required} error={Boolean(error)}>
-            <FormLabel htmlFor={`connection-field-${field.name}`}>
-              {label}
-              {field.optional && (
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ml: 1}}>
-                  {t('form.optional')}
+          <Box key={field.name}>
+            {field.section && (
+              <Box>
+                <Divider sx={{mt: 3, mb: 2}} />
+                <Typography variant="subtitle2" component="h3">
+                  {t(field.section)}
                 </Typography>
-              )}
-            </FormLabel>
-            <TextField
-              id={`connection-field-${field.name}`}
-              fullWidth
-              value={values[field.name] ?? ''}
-              placeholder={field.placeholder}
-              error={Boolean(error)}
-              helperText={error ?? (field.hintKey ? renderHint(field.hintKey) : undefined)}
-              onChange={(e) => setField(field.name, e.target.value)}
-              onBlur={() => setTouched((prev) => ({...prev, [field.name]: true}))}
-            />
-          </FormControl>
+              </Box>
+            )}
+            {field.revealedBy ? (
+              <Collapse in={visible} timeout="auto" unmountOnExit>
+                <Box sx={{mt: 3}}>{fieldContent}</Box>
+              </Collapse>
+            ) : (
+              fieldContent
+            )}
+          </Box>
         );
       })}
     </Stack>

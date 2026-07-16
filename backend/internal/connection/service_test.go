@@ -113,6 +113,32 @@ func (s *ServiceTestSuite) TestListInstancesAllCategories() {
 	s.Equal("1", got.Connections[2].ID)
 }
 
+func (s *ServiceTestSuite) TestListInstancesIDJagEnabled() {
+	trusted := true
+	plainDisabled := false
+	s.mockIDP.On("GetIdentityProviderList", mock.Anything).Return([]idp.BasicIDPDTO{
+		{ID: "1", Name: "Trusted", Type: providers.IDPTypeOIDC, IDJagEnabled: &trusted},
+		{ID: "2", Name: "Disabled", Type: providers.IDPTypeOIDC, IDJagEnabled: &plainDisabled},
+		{ID: "3", Name: "Plain", Type: providers.IDPTypeOIDC},
+	}, (*tidcommon.ServiceError)(nil))
+
+	got, svcErr := s.svc.listInstances(context.Background(), categoryIdentityProvider,
+		serverconst.DefaultPageSize, 0)
+	s.Nil(svcErr)
+	s.Require().Len(got.Connections, 3)
+
+	byID := make(map[string]connectionInstance, len(got.Connections))
+	for _, c := range got.Connections {
+		byID[c.ID] = c
+	}
+
+	s.Require().NotNil(byID["1"].IDJagEnabled)
+	s.True(*byID["1"].IDJagEnabled)
+	s.Require().NotNil(byID["2"].IDJagEnabled)
+	s.False(*byID["2"].IDJagEnabled)
+	s.Nil(byID["3"].IDJagEnabled)
+}
+
 func (s *ServiceTestSuite) TestListInstancesPaginates() {
 	s.mockIDP.On("GetIdentityProviderList", mock.Anything).Return([]idp.BasicIDPDTO{
 		{ID: "1", Name: "A", Type: providers.IDPTypeGoogle},

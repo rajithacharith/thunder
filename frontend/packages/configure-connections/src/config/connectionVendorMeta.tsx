@@ -90,9 +90,14 @@ export const CONNECTION_VENDOR_META: ConnectionVendorMeta[] = [
 /**
  * Categories actually represented by the vendor catalog, in display order. Drives the listing
  * filter chips so categories with no connections (e.g. Email, CRM) are not shown.
+ *
+ * `trusted-idp` is always included even though it has no vendor catalog entry — trusted issuer
+ * cards are synthesized directly from connection instances by `buildConnectionCards`, not from
+ * `CONNECTION_VENDOR_META`.
  */
-export const AVAILABLE_CONNECTION_CATEGORIES: ConnectionCategory[] = CONNECTION_CATEGORIES.filter((category) =>
-  CONNECTION_VENDOR_META.some((vendor) => vendor.categories.includes(category)),
+export const AVAILABLE_CONNECTION_CATEGORIES: ConnectionCategory[] = CONNECTION_CATEGORIES.filter(
+  (category) =>
+    category === 'trusted-idp' || CONNECTION_VENDOR_META.some((vendor) => vendor.categories.includes(category)),
 );
 
 /**

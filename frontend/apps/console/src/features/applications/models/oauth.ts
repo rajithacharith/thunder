@@ -32,7 +32,8 @@ export type OAuth2GrantType =
   | 'password'
   | 'implicit'
   | 'urn:openid:params:grant-type:ciba'
-  | 'urn:ietf:params:oauth:grant-type:token-exchange';
+  | 'urn:ietf:params:oauth:grant-type:token-exchange'
+  | 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 
 /**
  * OAuth2 Grant Type Constants
@@ -63,6 +64,8 @@ export const OAuth2GrantTypes = {
   CIBA: 'urn:openid:params:grant-type:ciba',
   /** Token Exchange (RFC 8693) - Exchange a token for one scoped to a different resource/audience */
   TOKEN_EXCHANGE: 'urn:ietf:params:oauth:grant-type:token-exchange',
+  /** JWT Bearer - Exchanges a signed JWT assertion for an access token */
+  JWT_BEARER: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
 } as const;
 
 /**
@@ -226,6 +229,48 @@ export interface RefreshTokenConfig {
 }
 
 /**
+ * Identity Assertion Authorization Grant (ID-JAG) Configuration
+ *
+ * Configuration for issuing signed identity assertions that external services can accept
+ * for token issuance via the token exchange grant.
+ *
+ * @public
+ * @remarks
+ * `enabled` must be true and `allowedAudiences` must be non-empty for the application to
+ * request ID-JAGs via token exchange. ID-JAG issuance requires a confidential client;
+ * it cannot be used together with `tokenEndpointAuthMethod: 'none'`.
+ *
+ * @example
+ * ```typescript
+ * const idJagConfig: IDJAGConfig = {
+ *   enabled: true,
+ *   allowedAudiences: ['https://api.example.com'],
+ *   validityPeriod: 300
+ * };
+ * ```
+ */
+export interface IDJAGConfig {
+  /**
+   * Whether ID-JAG issuance is enabled for this application
+   */
+  enabled: boolean;
+
+  /**
+   * Resource authorization server identifiers for which this application may request ID-JAGs
+   * Each issued assertion targets exactly one of these audiences
+   * @example ['https://api.example.com']
+   */
+  allowedAudiences?: string[];
+
+  /**
+   * Validity period of an issued ID-JAG in seconds
+   * @defaultValue 300
+   * @example 300
+   */
+  validityPeriod?: number;
+}
+
+/**
  * OAuth2 Token Settings
  *
  * Complete token configuration for access tokens, ID tokens, and refresh tokens.
@@ -276,6 +321,12 @@ export interface OAuth2Token {
    * Defines the validity period for refresh tokens
    */
   refreshToken?: RefreshTokenConfig;
+
+  /**
+   * Identity Assertion Authorization Grant (ID-JAG) configuration
+   * Defines whether and how this application may issue signed identity assertions
+   */
+  idJag?: IDJAGConfig;
 }
 
 /**

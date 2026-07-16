@@ -757,6 +757,7 @@ var defaultMessages = map[string]string{
 	"error.idpservice.property_not_supported_for_type_description": "property '{{param(property)}}' is not supported for IDP type '{{param(idpType)}}'",
 	"error.idpservice.property_value_empty_description": "value cannot be empty for property '{{param(property)}}'",
 	"error.idpservice.property_value_get_failed_description": "failed to get value for property '{{param(property)}}': {{param(error)}}",
+	"error.idpservice.property_value_not_boolean_description": "value for property '{{param(property)}}' must be either 'true' or 'false'",
 	"error.idpservice.required_property_missing_description": "required property '{{param(property)}}' is missing for IDP type '{{param(idpType)}}'",
 	"error.idpservice.result_limit_exceeded": "Result limit exceeded in composite mode",
 	"error.idpservice.result_limit_exceeded_description": "The total number of records exceeds the maximum limit in composite mode",

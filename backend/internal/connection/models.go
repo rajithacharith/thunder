@@ -67,11 +67,12 @@ func parseConnectionCategory(raw string) (connectionCategory, bool) {
 // connectionInstance is a single configured connection instance in the flat GET /connections
 // listing, spanning IdP- and sender-backed connections.
 type connectionInstance struct {
-	ID          string               `json:"id"`
-	Name        string               `json:"name"`
-	Description string               `json:"description,omitempty"`
-	Type        string               `json:"type"`
-	Categories  []connectionCategory `json:"categories"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	Description  string               `json:"description,omitempty"`
+	Type         string               `json:"type"`
+	Categories   []connectionCategory `json:"categories"`
+	IDJagEnabled *bool                `json:"idJagEnabled,omitempty"`
 }
 
 // connectionListResponse is the paginated payload for GET /connections (the flat instance list).
