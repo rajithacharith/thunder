@@ -68,10 +68,7 @@ DECLARE
         'CIBA_AUTH_REQUEST',
         'WEBAUTHN_SESSION',
         'PAR_REQUEST',
-        'JTI_RECORD',
-        'OPENID4VP_REQUEST_STATE',
-        'OPENID4VCI_NONCE',
-        'OPENID4VCI_CREDENTIAL_OFFER'
+        'JTI_RECORD'
     ];
 BEGIN
     -- Guard against a batch size that would disable batching or make no progress.
