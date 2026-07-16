@@ -67,19 +67,18 @@ var knownSamples = map[string]struct {
 
 // typeToDir mirrors the awk mapping in start.sh's setup_declarative_resources.
 var typeToDir = map[string]string{
-	"application":         "applications",
-	"flow":                "flows",
-	"group":               "groups",
-	"identity_provider":   "identity_providers",
-	"layout":              "layouts",
-	"notification_sender": "notification_senders",
-	"organization_unit":   "organization_units",
-	"resource_server":     "resource_servers",
-	"role":                "roles",
-	"theme":               "themes",
-	"translation":         "translations",
-	"user":                "users",
-	"user_schema":         "user_schemas",
+	"application":       "applications",
+	"connection":        "connections",
+	"flow":              "flows",
+	"group":             "groups",
+	"layout":            "layouts",
+	"organization_unit": "organization_units",
+	"resource_server":   "resource_servers",
+	"role":              "roles",
+	"theme":             "themes",
+	"translation":       "translations",
+	"user":              "users",
+	"user_schema":       "user_schemas",
 }
 
 // ProgressEvent is a single update from RunAsync's progress channel.

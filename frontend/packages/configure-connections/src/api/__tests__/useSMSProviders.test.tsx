@@ -65,7 +65,7 @@ describe('useSMSProviders', () => {
       id: 'sender-3',
       name: 'Custom Sender',
       description: 'Custom SMS provider',
-      type: 'custom',
+      type: 'sms-gateway',
       categories: ['sms-provider'],
     },
   ];
@@ -162,7 +162,7 @@ describe('useSMSProviders', () => {
       const types = result.current.data?.map((sender) => sender.type);
       expect(types).toContain('twilio');
       expect(types).toContain('vonage');
-      expect(types).toContain('custom');
+      expect(types).toContain('sms-gateway');
     });
   });
 

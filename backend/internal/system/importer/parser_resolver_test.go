@@ -106,12 +106,10 @@ func TestParseDocuments(t *testing.T) {
 		"name: app-one",
 		"authFlowId: flow-1",
 		"---",
-		"resource_type: identity_provider",
+		"resource_type: connection",
 		"name: idp-one",
-		"type: GOOGLE",
-		"properties:",
-		"- name: client_id",
-		"  value: abc",
+		"type: google",
+		"clientId: abc",
 		"---",
 		"resource_type: flow",
 		"id: flow-1",
@@ -126,7 +124,7 @@ func TestParseDocuments(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, docs, 3)
 	assert.Equal(t, resourceTypeApplication, docs[0].ResourceType)
-	assert.Equal(t, resourceTypeIdentityProvider, docs[1].ResourceType)
+	assert.Equal(t, resourceTypeConnection, docs[1].ResourceType)
 	assert.Equal(t, resourceTypeFlow, docs[2].ResourceType)
 }
 
@@ -222,16 +220,16 @@ func TestParseDocuments_FailsForInvalidResourceType(t *testing.T) {
 
 func TestParseDocuments_ExplicitResourceTypeOverridesAmbiguousStructure(t *testing.T) {
 	content := strings.Join([]string{
-		"resource_type: identity_provider",
+		"resource_type: connection",
 		"name: google",
-		"type: GOOGLE",
+		"type: google",
 		"permissions: []",
-		"properties: []",
+		"clientId: abc",
 		"",
 	}, "\n")
 
 	docs, err := parseDocuments(content)
 	require.NoError(t, err)
 	require.Len(t, docs, 1)
-	assert.Equal(t, resourceTypeIdentityProvider, docs[0].ResourceType)
+	assert.Equal(t, resourceTypeConnection, docs[0].ResourceType)
 }

@@ -45,12 +45,11 @@ export default function ExportPage(): JSX.Element {
   useEffect(() => {
     mutate({
       applications: ['*'],
-      identityProviders: ['*'],
+      connections: ['*'],
       flows: ['*'],
       themes: ['*'],
       users: ['*'],
       organizationUnits: ['*'],
-      notificationSenders: ['*'],
       userTypes: ['*'],
       translations: ['*'],
       layouts: ['*'],

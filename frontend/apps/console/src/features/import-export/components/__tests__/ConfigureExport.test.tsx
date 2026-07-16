@@ -250,6 +250,20 @@ description: A test agent
       expect(screen.getByTestId('icon-bot')).toBeInTheDocument();
     });
 
+    it('parses connection resources and renders a connections section', () => {
+      const connectionDoc = (idx: number) => `
+---
+resource_type: connection
+name: Connection ${idx}
+type: google
+`;
+      // More than 5 so the "show more" toggle renders too.
+      const connectionsYaml = Array.from({length: 6}, (_, idx) => connectionDoc(idx)).join('\n');
+
+      render(<ConfigureExport resources={connectionsYaml} />);
+      expect(screen.getAllByTestId('icon-layers').length).toBeGreaterThan(0);
+    });
+
     it('logs error when resources string is completely invalid', () => {
       const invalidYaml = '@@@ invalid yaml @@@';
 

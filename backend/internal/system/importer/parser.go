@@ -33,8 +33,7 @@ const (
 	resourceTypeResourceServer          = "resource_server"
 	resourceTypeRole                    = "role"
 	resourceTypeGroup                   = "group"
-	resourceTypeIdentityProvider        = "identity_provider"
-	resourceTypeNotificationSender      = "notification_sender"
+	resourceTypeConnection              = "connection"
 	resourceTypeFlow                    = "flow"
 	resourceTypeTheme                   = "theme"
 	resourceTypeLayout                  = "layout"
@@ -111,8 +110,7 @@ func isKnownResourceType(resourceType string) bool {
 		resourceTypeEntityType:              {},
 		resourceTypeResourceServer:          {},
 		resourceTypeRole:                    {},
-		resourceTypeIdentityProvider:        {},
-		resourceTypeNotificationSender:      {},
+		resourceTypeConnection:              {},
 		resourceTypeFlow:                    {},
 		resourceTypeTheme:                   {},
 		resourceTypeLayout:                  {},

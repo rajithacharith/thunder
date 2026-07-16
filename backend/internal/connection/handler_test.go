@@ -99,13 +99,15 @@ func (s *HandlerTestSuite) TestListConnections() {
 	for _, c := range resp.Connections {
 		ids = append(ids, c.ID)
 	}
-	s.Equal([]string{"s2", "1", "2", "3", "s1"}, ids)
-	s.Equal("custom", resp.Connections[0].Type)
-	s.Equal([]connectionCategory{categorySMSProvider}, resp.Connections[0].Categories)
+	s.Equal([]string{"1", "2", "3", "s2", "s1"}, ids)
+	s.Equal("google", resp.Connections[0].Type)
+	s.Equal([]connectionCategory{categoryIdentityProvider}, resp.Connections[0].Categories)
 	s.Equal("google", resp.Connections[1].Type)
 	s.Equal([]connectionCategory{categoryIdentityProvider}, resp.Connections[1].Categories)
-	s.Equal("oidc", resp.Connections[3].Type)
-	s.Equal("corp", resp.Connections[3].Description)
+	s.Equal("oidc", resp.Connections[2].Type)
+	s.Equal("corp", resp.Connections[2].Description)
+	s.Equal("sms-gateway", resp.Connections[3].Type)
+	s.Equal([]connectionCategory{categorySMSProvider}, resp.Connections[3].Categories)
 	s.Equal("twilio", resp.Connections[4].Type)
 	s.Empty(resp.Links)
 }
@@ -120,8 +122,8 @@ func (s *HandlerTestSuite) TestListConnectionsPagination() {
 	s.Equal(2, resp.StartIndex)
 	s.Equal(2, resp.Count)
 	s.Require().Len(resp.Connections, 2)
-	s.Equal("1", resp.Connections[0].ID)
-	s.Equal("2", resp.Connections[1].ID)
+	s.Equal("2", resp.Connections[0].ID)
+	s.Equal("3", resp.Connections[1].ID)
 
 	rels := make([]string, 0, len(resp.Links))
 	for _, link := range resp.Links {
@@ -226,7 +228,7 @@ func (s *HandlerTestSuite) TestListConnectionsSMSProviderCategory() {
 
 	s.Equal(http.StatusOK, rr.Code)
 	s.Require().Len(resp.Connections, 2)
-	s.Equal("custom", resp.Connections[0].Type)
+	s.Equal("sms-gateway", resp.Connections[0].Type)
 	s.Equal("twilio", resp.Connections[1].Type)
 	s.mockIDP.AssertNotCalled(s.T(), "GetIdentityProviderList", mock.Anything)
 }
