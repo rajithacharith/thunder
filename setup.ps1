@@ -56,6 +56,8 @@ $BOOTSTRAP_FAIL_FAST = if ($env:BOOTSTRAP_FAIL_FAST -eq "false") { $false } else
 $BOOTSTRAP_SKIP_PATTERN = if ($env:BOOTSTRAP_SKIP_PATTERN) { $env:BOOTSTRAP_SKIP_PATTERN } else { "" }
 $BOOTSTRAP_ONLY_PATTERN = if ($env:BOOTSTRAP_ONLY_PATTERN) { $env:BOOTSTRAP_ONLY_PATTERN } else { "" }
 $BOOTSTRAP_DIR = if ($env:BOOTSTRAP_DIR) { $env:BOOTSTRAP_DIR } else { ".\bootstrap" }
+$ADMIN_USERNAME_PROVIDED = if ($env:ADMIN_USERNAME) { $true } else { $false }
+$ADMIN_PASSWORD_PROVIDED = if ($env:ADMIN_PASSWORD) { $true } else { $false }
 $ADMIN_USERNAME = if ($env:ADMIN_USERNAME) { $env:ADMIN_USERNAME } else { "admin" }
 # Left empty when not supplied: Set-AdminPassword (below) generates a random password
 # in that case, rather than falling back to a fixed, predictable value.
@@ -122,6 +124,10 @@ function Show-Help {
     Write-Host "  --verbose                Enable detailed setup output"
     Write-Host "  --debug                  Enable debug mode with remote debugging"
     Write-Host "  --debug-port PORT        Set debug port (default: 2345)"
+    Write-Host "  --admin-username VALUE   Username for the default admin user (default: admin)"
+    Write-Host "                           Falls back to ADMIN_USERNAME env var if flag not set"
+    Write-Host "  --admin-password VALUE   Password for the default admin user"
+    Write-Host "                           Falls back to ADMIN_PASSWORD env var; generated if unset"
     Write-Host "  --direct-auth-secret VALUE Secret gating the Direct API endpoints"
     Write-Host "                           Falls back to DIRECT_AUTH_SECRET env var; generated if unset"
     Write-Host "  --help                   Show this help message"
@@ -162,6 +168,32 @@ while ($i -lt $args.Count) {
             }
             else {
                 Write-Host "Missing value for --debug-port" -ForegroundColor Red
+                exit 1
+            }
+            break
+        }
+        '--admin-username' {
+            $i++
+            if ($i -lt $args.Count -and $args[$i] -notlike '--*') {
+                $ADMIN_USERNAME = $args[$i]
+                $ADMIN_USERNAME_PROVIDED = $true
+                $i++
+            }
+            else {
+                Write-Host "--admin-username requires a non-empty value" -ForegroundColor Red
+                exit 1
+            }
+            break
+        }
+        '--admin-password' {
+            $i++
+            if ($i -lt $args.Count -and $args[$i] -notlike '--*') {
+                $ADMIN_PASSWORD = $args[$i]
+                $ADMIN_PASSWORD_PROVIDED = $true
+                $i++
+            }
+            else {
+                Write-Host "--admin-password requires a non-empty value" -ForegroundColor Red
                 exit 1
             }
             break
@@ -486,6 +518,36 @@ function Show-CertificatesNotice {
     Write-Host ""
 }
 
+# ============================================================================
+# Prompt for Admin Credentials (interactive mode only)
+# ============================================================================
+
+# Prompt for any credential not supplied via CLI flags or environment variables, but only
+# when stdin is a terminal.
+if (([Console]::In -and -not [Console]::IsInputRedirected) -and (-not $ADMIN_USERNAME_PROVIDED -or -not $ADMIN_PASSWORD_PROVIDED)) {
+    Write-Host ""
+    Write-Host "Configure the default admin user (press Enter to accept defaults):"
+    Write-Host ""
+    if (-not $ADMIN_USERNAME_PROVIDED) {
+        $inputUsername = Read-Host "  Admin username [admin]"
+        $ADMIN_USERNAME = if ($inputUsername) { $inputUsername } else { "admin" }
+    }
+    if (-not $ADMIN_PASSWORD_PROVIDED) {
+        # Generate the password up front so it can be shown as the prompt default (the value
+        # used if the operator presses Enter). A typed value overrides it.
+        Set-AdminPassword
+        $inputPassword = Read-Host "  Admin password [$ADMIN_PASSWORD]" -AsSecureString
+        $plainInputPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($inputPassword)
+        )
+        if ($plainInputPassword) {
+            $ADMIN_PASSWORD = $plainInputPassword
+            $ADMIN_PASSWORD_GENERATED = $false
+        }
+    }
+    Write-Host ""
+}
+
 # Read configuration
 Read-Config | Out-Null
 
@@ -600,10 +662,20 @@ if ($VERBOSE_MODE) {
     Write-Host "[WAIT] Creating default resources..." -ForegroundColor Blue
 }
 
-& $startScript --bootstrap
-if ($LASTEXITCODE -ne 0) {
-    Log-Error "Failed to create default resources"
-    exit 1
+try {
+    & $startScript --bootstrap
+    if ($LASTEXITCODE -ne 0) {
+        Log-Error "Failed to create default resources"
+        exit 1
+    }
+}
+finally {
+    # Env:ADMIN_USERNAME/ADMIN_PASSWORD were set above so the nested start.ps1 call could read
+    # them. This script runs in the caller's own pwsh.exe process (not a forked child), so without
+    # this cleanup they'd leak into the interactive session and silently suppress the prompt on
+    # the next ./setup.ps1 run.
+    Remove-Item Env:ADMIN_USERNAME -ErrorAction SilentlyContinue
+    Remove-Item Env:ADMIN_PASSWORD -ErrorAction SilentlyContinue
 }
 Log-Success "Default resources created"
 
