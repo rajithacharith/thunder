@@ -415,14 +415,11 @@ export default function ApplicationEditPage() {
               return templateMetadata ? (
                 <Box sx={{mt: 1}}>
                   <Chip
-                    icon={
-                      <Box sx={{display: 'flex', alignItems: 'center', '& > *': {width: 16, height: 16}}}>
-                        {templateMetadata.icon}
-                      </Box>
-                    }
                     label={templateMetadata.displayName}
                     size="small"
-                    sx={{px: 0.5}}
+                    color="primary"
+                    variant="outlined"
+                    sx={{fontSize: '0.7rem'}}
                   />
                 </Box>
               ) : null;

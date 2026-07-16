@@ -222,25 +222,6 @@ describe('DashboardLayout', () => {
     expect(screen.getByTestId('outlet')).toBeInTheDocument();
   });
 
-  it('navigates to open-project page when open project button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<DashboardLayout />);
-
-    const openProjectButton = screen.getByRole('button', {name: /navigation:pages\.openProject/i});
-    await user.click(openProjectButton);
-
-    expect(mockNavigate).toHaveBeenCalledWith('/import-configuration');
-  });
-
-  it('navigates to export page when export button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<DashboardLayout />);
-
-    const exportButton = screen.getByText('navigation:pages.export');
-    expect(exportButton).toBeInTheDocument();
-    await user.click(exportButton);
-  });
-
   it('navigates to welcome page when welcome menu item is clicked', async () => {
     const user = userEvent.setup();
     render(<DashboardLayout />);

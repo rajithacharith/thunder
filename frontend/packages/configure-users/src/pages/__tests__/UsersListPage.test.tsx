@@ -72,13 +72,6 @@ describe('UsersListPage', () => {
     expect(createButton).toBeInTheDocument();
   });
 
-  it('renders search icon', () => {
-    const {container} = render(<UsersListPage />);
-
-    const searchIcon = container.querySelector('svg');
-    expect(searchIcon).toBeInTheDocument();
-  });
-
   it('navigates to add user flow when create button is clicked', async () => {
     const user = userEvent.setup();
     render(<UsersListPage />);
@@ -86,7 +79,9 @@ describe('UsersListPage', () => {
     const createButton = screen.getByRole('button', {name: /add user/i});
     await user.click(createButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/add');
+    });
   });
 
   it('renders UsersList component', () => {
@@ -127,7 +122,9 @@ describe('UsersListPage', () => {
     const createButton = screen.getByRole('button', {name: /add user/i});
     await user.click(createButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/add');
+    });
 
     await waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(

@@ -356,7 +356,7 @@ export default function TokenUserAttributesSection({
                         transition: 'all 0.3s ease',
                         transform: isHighlighted ? 'scale(1.05)' : 'scale(1)',
                         boxShadow: isHighlighted ? '0 0 0 2px rgba(25, 118, 210, 0.4)' : 'none',
-                        '&:hover': {backgroundColor: 'action.hover'},
+                        '&:hover': isActive ? {backgroundColor: 'primary.dark'} : {backgroundColor: 'action.hover'},
                       }}
                     />
                   );

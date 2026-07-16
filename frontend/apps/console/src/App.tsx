@@ -62,6 +62,7 @@ const TranslationsEditPage = lazy(() =>
 const TranslationsListPage = lazy(() =>
   import('@thunderid/configure-translations').then((m) => ({default: m.TranslationsListPage})),
 );
+const UserAddPage = lazy(() => import('@thunderid/configure-users').then((m) => ({default: m.UserAddPage})));
 const UserCreatePage = lazy(() => import('@thunderid/configure-users').then((m) => ({default: m.UserCreatePage})));
 const UserEditPage = lazy(() => import('@thunderid/configure-users').then((m) => ({default: m.UserEditPage})));
 const UserInvitePage = lazy(() => import('@thunderid/configure-users').then((m) => ({default: m.UserInvitePage})));
@@ -109,6 +110,7 @@ const ImportConfigurationUploadPage = lazy(
 const ImportConfigurationValidatePage = lazy(
   () => import('./features/import-export/pages/ImportConfigurationValidatePage'),
 );
+const ImportExportPage = lazy(() => import('./features/import-export/pages/ImportExportPage'));
 const ConnectionsListPage = lazy(() =>
   import('@thunderid/configure-connections').then((m) => ({default: m.ConnectionsListPage})),
 );
@@ -240,7 +242,17 @@ export default function App(): JSX.Element {
               <Route index element={<CreateRolePage />} />
             </Route>
             <Route
-              path="/users/create"
+              path="/users/add"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<UserAddPage />} />
+            </Route>
+            <Route
+              path="/users/add/create"
               element={
                 <ProtectedRoute>
                   <UserCreateProvider>
@@ -252,7 +264,7 @@ export default function App(): JSX.Element {
               <Route index element={<UserCreatePage />} />
             </Route>
             <Route
-              path="/users/invite"
+              path="/users/add/invite"
               element={
                 <ProtectedRoute>
                   <FullScreenLayout />
@@ -420,6 +432,16 @@ export default function App(): JSX.Element {
               }
             >
               <Route index element={<LoginFlowBuilderPage />} />
+            </Route>
+            <Route
+              path="/import-export"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<ImportExportPage />} />
             </Route>
             <Route
               path="/export"

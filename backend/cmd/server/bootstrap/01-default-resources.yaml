@@ -1112,7 +1112,7 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: heading_usertype
       label: '{{ t(onboarding:forms.user_type.title) }}'
@@ -1171,7 +1171,7 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: heading_ou_selection
       label: '{{ t(onboarding:forms.ou_selection.title) }}'
@@ -1217,19 +1217,19 @@ nodes:
       id: text_header_onboarding_mode
       label: '{{ t(onboarding:forms.onboarding_mode.title) }}'
       variant: HEADING_1
-      align: center
+      align: left
     - type: TEXT
       id: text_subtitle_onboarding_mode
       label: '{{ t(onboarding:forms.onboarding_mode.subtitle) }}'
       variant: HEADING_6
-      align: center
+      align: left
     - type: BLOCK
       id: block_onboarding_mode_actions
       components:
       - type: STACK
         id: stack_onboarding_mode_actions
         direction: row
-        justify: center
+        justify: flex-start
         components:
         - type: ACTION
           id: action_create_user_now
@@ -1275,12 +1275,12 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: text_header_create_user_details
       label: '{{ t(onboarding:forms.add_user.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: text_subtitle_create_user_details
       label: '{{ t(onboarding:forms.add_user.subtitle) }}'
@@ -1311,17 +1311,17 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: admin_registration_complete_icon
       label: ✅
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: admin_registration_complete_heading
       label: '{{ t(onboarding:forms.add_user_complete.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: admin_registration_complete_message
       label: '{{ t(onboarding:forms.add_user_complete.description) }}'
@@ -1339,7 +1339,7 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: text_header_email
       label: '{{ t(onboarding:forms.email.title) }}'
@@ -1395,19 +1395,19 @@ nodes:
       id: text_header_invite_method
       label: '{{ t(onboarding:forms.invite_mode.title) }}'
       variant: HEADING_1
-      align: center
+      align: left
     - type: TEXT
       id: text_subtitle_invite_method
       label: '{{ t(onboarding:forms.invite_mode.subtitle) }}'
       variant: HEADING_6
-      align: center
+      align: left
     - type: BLOCK
       id: block_invite_method_actions
       components:
       - type: STACK
         id: stack_invite_actions
         direction: row
-        justify: center
+        justify: flex-start
         components:
         - type: ACTION
           id: action_send_email_invite
@@ -1470,17 +1470,17 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: email_status_icon
       label: ✅
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: email_status_heading
       label: '{{ t(onboarding:forms.invite_email_sent.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: email_status_message
       label: '{{ t(onboarding:forms.invite_email_sent.message) }}'
@@ -1498,17 +1498,17 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: email_unavailable_icon
       label: ⚠️
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: email_unavailable_heading
       label: '{{ t(onboarding:forms.invite_email_unavailable.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: email_unavailable_message
       label: '{{ t(onboarding:forms.invite_email_unavailable.message) }}'
@@ -1543,17 +1543,17 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: link_status_icon
       label: ✅
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: link_status_heading
       label: '{{ t(onboarding:forms.invite_link_status.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: link_status_message
       label: '{{ t(onboarding:forms.invite_link_status.message) }}'
@@ -1609,12 +1609,12 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: text_header_user_details
       label: '{{ t(onboarding:forms.complete_registration.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: text_subtitle_user_details
       label: '{{ t(onboarding:forms.complete_registration.subtitle) }}'
@@ -1645,17 +1645,17 @@ nodes:
   type: PROMPT
   meta:
     components:
-    - align: center
+    - align: left
       type: TEXT
       id: registration_complete_icon
       label: ✅
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: registration_complete_heading
       label: '{{ t(invite:complete.title) }}'
       variant: HEADING_1
-    - align: center
+    - align: left
       type: TEXT
       id: registration_complete_message
       label: '{{ t(invite:complete.description) }}'

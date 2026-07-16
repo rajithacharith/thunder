@@ -27,12 +27,6 @@ const mockNavigate = vi.fn();
 const mockMutateAsync = vi.fn();
 const mockReset = vi.fn();
 
-// Helper to get the Create User action button (not the breadcrumb)
-const getCreateUserButton = () => {
-  const createButtons = screen.getAllByRole('button', {name: /create user/i});
-  return createButtons[createButtons.length - 1];
-};
-
 // Mock react-router
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -304,6 +298,16 @@ async function goToDetailsStep(user: ReturnType<typeof userEvent.setup>, schemaN
 }
 
 describe('UserCreatePage', () => {
+  /**
+   * Helper to get the Create User action button (not the breadcrumb).
+   * Multiple "Create User" elements exist on the page (breadcrumb + button),
+   * so we select the last one which is the action button.
+   */
+  function getCreateUserButton() {
+    const createButtons = screen.getAllByRole('button', {name: /create user/i});
+    return createButtons[createButtons.length - 1];
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockResolvedValue(undefined);
@@ -366,6 +370,18 @@ describe('UserCreatePage', () => {
     renderPage();
 
     expect(screen.getByLabelText('breadcrumb')).toBeInTheDocument();
+  });
+
+  it('navigates to add user page when Add User breadcrumb is clicked', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const addUserBreadcrumb = screen.getByRole('button', {name: /add user/i});
+    await user.click(addUserBreadcrumb);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/add');
+    });
   });
 
   it('disables Continue button when no schema is selected', () => {
@@ -530,12 +546,10 @@ describe('UserCreatePage', () => {
 
     // Wait for step ready state to update before clicking submit
     await waitFor(() => {
-      const createButtons = screen.getAllByRole('button', {name: /create user/i});
-      expect(createButtons[createButtons.length - 1]).not.toBeDisabled();
+      expect(getCreateUserButton()).not.toBeDisabled();
     });
 
-    const createButtons = screen.getAllByRole('button', {name: /create user/i});
-    await user.click(createButtons[createButtons.length - 1]);
+    await user.click(getCreateUserButton());
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -560,12 +574,10 @@ describe('UserCreatePage', () => {
     await user.click(screen.getByTestId('fill-form-with-empty-values'));
 
     await waitFor(() => {
-      const createButtons = screen.getAllByRole('button', {name: /create user/i});
-      expect(createButtons[createButtons.length - 1]).not.toBeDisabled();
+      expect(getCreateUserButton()).not.toBeDisabled();
     });
 
-    const createButtons = screen.getAllByRole('button', {name: /create user/i});
-    await user.click(createButtons[createButtons.length - 1]);
+    await user.click(getCreateUserButton());
 
     await waitFor(() => {
       const calledWith = mockMutateAsync.mock.calls[0][0] as {attributes: Record<string, unknown>};
@@ -695,12 +707,10 @@ describe('UserCreatePage', () => {
     await user.click(screen.getByTestId('fill-form'));
 
     await waitFor(() => {
-      const createButtons = screen.getAllByRole('button', {name: /create user/i});
-      expect(createButtons[createButtons.length - 1]).not.toBeDisabled();
+      expect(getCreateUserButton()).not.toBeDisabled();
     });
 
-    const createButtons = screen.getAllByRole('button', {name: /create user/i});
-    await user.click(createButtons[createButtons.length - 1]);
+    await user.click(getCreateUserButton());
 
     await waitFor(() => {
       expect(screen.getByText('Organization unit ID is missing for the selected user type.')).toBeInTheDocument();
@@ -731,12 +741,10 @@ describe('UserCreatePage', () => {
     await user.click(screen.getByTestId('fill-form'));
 
     await waitFor(() => {
-      const createButtons = screen.getAllByRole('button', {name: /create user/i});
-      expect(createButtons[createButtons.length - 1]).not.toBeDisabled();
+      expect(getCreateUserButton()).not.toBeDisabled();
     });
 
-    const createButtons = screen.getAllByRole('button', {name: /create user/i});
-    await user.click(createButtons[createButtons.length - 1]);
+    await user.click(getCreateUserButton());
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();

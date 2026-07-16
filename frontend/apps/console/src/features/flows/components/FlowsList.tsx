@@ -171,6 +171,9 @@ export default function FlowsList(): JSX.Element {
             rows={data?.flows ?? []}
             columns={columns}
             getRowId={(row): string => (row as BasicFlowDefinition).id}
+            getRowClassName={(params) =>
+              (params.row as BasicFlowDefinition).isReadOnly ? 'row-not-clickable' : 'row-clickable'
+            }
             onRowClick={(params) => {
               if (!(params.row as BasicFlowDefinition).isReadOnly) {
                 handleEditClick(params.row as BasicFlowDefinition);
