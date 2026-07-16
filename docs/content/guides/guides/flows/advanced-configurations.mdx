@@ -536,6 +536,8 @@ Sets credentials (e.g., password) for an existing user. Typically used in regist
 
 #### Federated Authentication
 
+After a successful federated authentication, these executors set the `entityState` runtime key from the account-linking result: `exists` when the federated identity resolves to a unique existing local user. A later node can branch on `{{ctx(entityState)}}`.
+
 <details>
 <summary>OAuth</summary>
 

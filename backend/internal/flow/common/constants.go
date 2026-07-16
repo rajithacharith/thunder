@@ -202,7 +202,8 @@ const (
 	// RuntimeKeyBindingMessage holds the human-readable binding message displayed to the user
 	// on both the consumption device and the authentication device to correlate the CIBA request.
 	RuntimeKeyBindingMessage = "bindingMessage"
-	// RuntimeKeyEntityState holds the entity existence state set by the IdentifyingExecutor in check_state mode.
+	// RuntimeKeyEntityState holds the entity existence state, set by the IdentifyingExecutor in
+	// check_state mode or by the federated auth executors from their account-linking result.
 	RuntimeKeyEntityState = "entityState"
 	// RuntimeKeyAuthorizationRequestID holds the auth request identifier bound to the current flow
 	// execution (the OAuth authorize authId or the CIBA auth_req_id), if applicable.
