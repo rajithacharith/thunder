@@ -1365,6 +1365,35 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidURL() {
 	assert.Equal(suite.T(), &ErrorInvalidApplicationURL, svcErr)
 }
 
+func (suite *ServiceTestSuite) TestValidateApplication_AmbiguousAttestationConfig() {
+	testConfig := &config.Config{}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetServerRuntime()
+
+	service, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: providers.InboundAuthProfile{
+			AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			Attestation: &providers.AttestationConfig{
+				Android: &providers.AndroidAttestationConfig{PackageName: "com.example.app"},
+				Apple:   &providers.AppleAttestationConfig{TeamID: "TEAM123", BundleID: "com.example.app"},
+			},
+		},
+	}
+
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorAmbiguousAttestationConfig, svcErr)
+}
+
 //nolint:dupl // Testing different URL validation scenarios
 func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 	testConfig := &config.Config{}

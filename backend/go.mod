@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/auth v0.22.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cloudflare/circl v1.6.4
+	github.com/fxamacker/cbor/v2 v2.9.2
 	github.com/go-webauthn/webauthn v0.17.4
 	github.com/google/jsonschema-go v0.4.3
 	github.com/lib/pq v1.10.9
@@ -35,7 +36,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect

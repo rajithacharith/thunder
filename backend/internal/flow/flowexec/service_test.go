@@ -2852,6 +2852,39 @@ func (s *ServiceTestSuite) TestCheckDirectFlowInitiationAllowed_AttestationValid
 	s.Nil(svcErr)
 }
 
+// appleAttestationClient returns an inbound client configured with Apple App Attest attestation.
+func appleAttestationClient() *providers.InboundClient {
+	return &providers.InboundClient{
+		ID: "mobile-app",
+		Attestation: &providers.AttestationConfig{
+			Apple: &providers.AppleAttestationConfig{TeamID: "TEAM123", BundleID: "com.example.app"},
+		},
+	}
+}
+
+// An Apple-configured client also resolves to attestation-based flow initiation, and a token verified
+// by the provider permits direct flow initiation.
+func (s *ServiceTestSuite) TestCheckDirectFlowInitiationAllowed_AppleAttestationValid() {
+	t := s.T()
+	mockActorProvider := actorprovidermock.NewActorProviderMock(t)
+	mockActorProvider.EXPECT().GetInboundClientByID(mock.Anything, "mobile-app").Return(
+		appleAttestationClient(), nil)
+	mockProvider := attestationprovidermock.NewAttestationProviderMock(t)
+	mockProvider.EXPECT().Verify(mock.Anything, mock.MatchedBy(func(cfg *providers.AttestationConfig) bool {
+		return cfg != nil && cfg.Apple != nil && cfg.Apple.TeamID == "TEAM123"
+	}), "good-token").Return(true, nil)
+
+	service := &flowExecService{
+		actorProvider:       mockActorProvider,
+		attestationVerifier: mockProvider,
+		cfg:                 testFlowExecCfg,
+	}
+
+	svcErr := service.checkDirectFlowInitiationAllowed(context.Background(), "mobile-app",
+		providers.FlowTypeAuthentication, "", "good-token", log.GetLogger())
+	s.Nil(svcErr)
+}
+
 // --- getFlowContext ---
 
 func (s *ServiceTestSuite) TestGetFlowContext_NilDbModel() {

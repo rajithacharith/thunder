@@ -1372,10 +1372,15 @@ components:
       type: object
       description: >
         Platform attestation configuration used to verify the binary identity of a mobile client
-        when it initiates a flow directly over HTTP.
+        when it initiates a flow directly over HTTP. Configure exactly one platform.
+      oneOf:
+        - required: [android]
+        - required: [apple]
       properties:
         android:
           $ref: '#/components/schemas/AndroidAttestation'
+        apple:
+          $ref: '#/components/schemas/AppleAttestation'
 
     AndroidAttestation:
       type: object
@@ -1399,6 +1404,22 @@ components:
           description: >
             Google Cloud service account credentials (JSON) used to call the Play Integrity API.
             Write-only: never returned in responses. Omit on update to preserve the stored value.
+
+    AppleAttestation:
+      type: object
+      description: Apple App Attest attestation configuration for iOS clients.
+      required: [teamId, bundleId]
+      properties:
+        teamId:
+          type: string
+          minLength: 1
+          description: Apple Developer Team ID.
+          example: "ABCDE12345"
+        bundleId:
+          type: string
+          minLength: 1
+          description: iOS application bundle identifier that must match the attested app.
+          example: "com.example.myapp"
 
     InboundAuthConfig:
       type: object

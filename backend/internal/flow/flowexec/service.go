@@ -311,7 +311,7 @@ func (s *flowExecService) resolveFlowInitiationMode(
 	if clientErr != nil {
 		return 0, nil, clientErr
 	}
-	if client.Attestation != nil && client.Attestation.Android != nil {
+	if client.Attestation != nil && (client.Attestation.Android != nil || client.Attestation.Apple != nil) {
 		return flowInitiationAttestation, client.Attestation, nil
 	}
 

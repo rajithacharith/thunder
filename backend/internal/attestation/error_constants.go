@@ -33,4 +33,19 @@ var (
 	// errAppNotPlayRecognized is returned when Play Integrity does not recognize the app as a
 	// genuine, Play-distributed binary.
 	errAppNotPlayRecognized = errors.New("app is not recognized by Google Play")
+
+	// errCertificateChainInvalid is returned when an App Attest attestation certificate chain does
+	// not validate against Apple's App Attest root certificate authority.
+	errCertificateChainInvalid = errors.New("attestation certificate chain is invalid")
+	// errAppIdentifierMismatch is returned when the attested App ID does not match the registered
+	// Team ID and Bundle ID.
+	errAppIdentifierMismatch = errors.New("attested app identifier does not match the registered identity")
+	// errKeyIdentifierMismatch is returned when the attested credential ID does not match the hash of
+	// the attestation certificate's public key.
+	errKeyIdentifierMismatch = errors.New("attested credential identifier does not match the certificate key")
+	// errEnvironmentUnrecognized is returned when the App Attest AAGUID identifies neither the
+	// production nor the development environment.
+	errEnvironmentUnrecognized = errors.New("attestation environment is not recognized")
+	// errSignCountNonZero is returned when a fresh App Attest key reports a non-zero signature count.
+	errSignCountNonZero = errors.New("attestation signature count is not zero")
 )

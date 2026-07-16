@@ -130,9 +130,13 @@ You can also attach a **Certificate** for client authentication (`private_key_jw
 
 For full protocol-level details, including ACR values, scope-to-claims mapping, PAR enforcement, and token signing and encryption algorithms, see the [OAuth & OIDC](../../protocols/oauth-oidc/) catalogue.
 
-## Configure Play Integrity Attestation
+## Configure Platform Attestation
 
-Mobile applications cannot safely hold a Flow Secret, so they prove their identity a different way: by presenting a Google Play Integrity token. See [Attestation](../../key-concepts/authentication/integration-models.mdx#attestation) for how this fits into the App-Native integration model. Configure it from the application's **Advanced** tab, or via the top-level `attestation.android` block in a declarative resource:
+Mobile applications cannot safely hold a Flow Secret, so they prove their identity a different way: by presenting a platform attestation token. <ProductName /> supports Google Play Integrity for Android clients and Apple App Attest for iOS clients. See [Attestation](../../key-concepts/authentication/integration-models.mdx#attestation) for how this fits into the App-Native integration model. Attestation is optional; when enabled, an application configures exactly one platform, from its **Advanced** tab or via the top-level `attestation` block in a declarative resource.
+
+### Android (Google Play Integrity)
+
+Configure the Android platform under the `attestation.android` block:
 
 | Setting | Description |
 |---------|-------------|
@@ -141,8 +145,17 @@ Mobile applications cannot safely hold a Flow Secret, so they prove their identi
 | **Service Account Credentials** | The Google Cloud service account JSON used to call the Play Integrity API. It is **write-only**: <ProductName /> never returns it in responses, and leaving it blank when editing keeps the stored value. |
 
 :::note
-The service account credentials are stored encrypted and never returned. For an app managed declaratively, set the `serviceAccountCredentials` field in the top-level `attestation.android` block; on update, omit it to preserve the previously stored value.
+The service account credentials are stored encrypted and never returned. For an app managed declaratively, set the `serviceAccountCredentials` field in the `attestation.android` block. On update, omit it to preserve the previously stored value.
 :::
+
+### iOS (Apple App Attest)
+
+Configure the iOS platform under the `attestation.apple` block. Verification runs entirely on the server: <ProductName /> validates the attestation certificate chain against Apple's App Attest root certificate authority, then checks the attested app against the registered identity. This platform uses only non-secret identifiers, so nothing is stored write-only.
+
+| Setting | Description |
+|---------|-------------|
+| **Team ID** | The Apple Developer Team ID (for example, `ABCDE12345`). |
+| **Bundle ID** | The iOS application bundle identifier (for example, `com.example.myapp`) that must match the attested app. |
 
 ## Related Guides
 

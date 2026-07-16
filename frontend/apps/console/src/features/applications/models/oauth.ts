@@ -494,14 +494,25 @@ export interface OAuth2Config {
 }
 
 /**
- * Platform attestation configuration for an application.
+ * Platform attestation configuration for an application. An application configures exactly one
+ * platform: the `android` and `apple` variants are mutually exclusive, so `{}` and a config with
+ * both set are both compile-time errors.
  */
-export interface AttestationConfig {
-  /**
-   * Google Play Integrity attestation configuration for Android clients.
-   */
-  android?: AndroidAttestationConfig;
-}
+export type AttestationConfig =
+  | {
+      /**
+       * Google Play Integrity attestation configuration for Android clients.
+       */
+      android: AndroidAttestationConfig;
+      apple?: undefined;
+    }
+  | {
+      android?: undefined;
+      /**
+       * Apple App Attest attestation configuration for iOS clients.
+       */
+      apple: AppleAttestationConfig;
+    };
 
 /**
  * Google Play Integrity attestation settings for an Android application.
@@ -523,6 +534,23 @@ export interface AndroidAttestationConfig {
    * Write-only: this is never returned by the API, so it is absent when loading an application.
    */
   serviceAccountCredentials?: string;
+}
+
+/**
+ * Apple App Attest attestation settings for an iOS application.
+ */
+export interface AppleAttestationConfig {
+  /**
+   * Apple Developer Team ID. Required together with bundleId: the backend needs both to verify
+   * the attested App ID.
+   */
+  teamId: string;
+
+  /**
+   * iOS application bundle identifier that must match the attested app. Required together with
+   * teamId.
+   */
+  bundleId: string;
 }
 
 /**

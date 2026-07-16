@@ -348,3 +348,39 @@ func (suite *ModelTestSuite) TestNodeContext_ConsumeInput_AccumulatesAcrossCalls
 
 	assert.Equal(suite.T(), []string{"a", "c", "b"}, nc.GetConsumedInputs())
 }
+
+// ----- AttestationConfig -----
+
+func (suite *ModelTestSuite) TestAttestationConfig_WithoutCredentials_NilReceiver() {
+	var cfg *AttestationConfig
+	assert.Nil(suite.T(), cfg.WithoutCredentials())
+}
+
+func (suite *ModelTestSuite) TestAttestationConfig_WithoutCredentials_StripsAndroidSecret() {
+	cfg := &AttestationConfig{
+		Android: &AndroidAttestationConfig{
+			PackageName:               "com.example.app",
+			CertificateSha256Digests:  []string{"AA:BB"},
+			ServiceAccountCredentials: "secret",
+		},
+	}
+
+	sanitized := cfg.WithoutCredentials()
+
+	assert.Equal(suite.T(), "com.example.app", sanitized.Android.PackageName)
+	assert.Equal(suite.T(), []string{"AA:BB"}, sanitized.Android.CertificateSha256Digests)
+	assert.Empty(suite.T(), sanitized.Android.ServiceAccountCredentials)
+}
+
+func (suite *ModelTestSuite) TestAttestationConfig_WithoutCredentials_PassesApplePassThrough() {
+	cfg := &AttestationConfig{
+		Apple: &AppleAttestationConfig{TeamID: "TEAM123", BundleID: "com.example.app"},
+	}
+
+	sanitized := cfg.WithoutCredentials()
+
+	assert.NotNil(suite.T(), sanitized.Apple)
+	assert.Equal(suite.T(), "TEAM123", sanitized.Apple.TeamID)
+	assert.Equal(suite.T(), "com.example.app", sanitized.Apple.BundleID)
+	assert.Nil(suite.T(), sanitized.Android)
+}

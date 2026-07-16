@@ -139,7 +139,10 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	engineCtx.graphBuilder = graphbuilder.Initialize(engineCtx.flowFactory, engineCtx.execRegistry,
 		engineCtx.interceptorRegistry, graphCache)
 
-	attestationProvider := attestation.Initialize(engineCtx.runtimeCryptoSvc)
+	attestationProvider, err := attestation.Initialize(engineCtx.runtimeCryptoSvc)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize attestation provider", log.Error(err))
+	}
 	flowExecService, err := flowexec.Initialize(mux, engineCtx.flowProvider, engineCtx.actorProvider,
 		engineCtx.execRegistry, engineCtx.interceptorRegistry, engineCtx.observabilitySvc,
 		engineCtx.runtimeCryptoSvc, attestationProvider, engineCtx.graphBuilder, runtimeStoreProvider,

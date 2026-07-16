@@ -488,4 +488,19 @@ var (
 				"browser-based single-page applications.",
 		},
 	}
+	// ErrorAmbiguousAttestationConfig is returned when an application's attestation configuration
+	// sets more than one platform, which the flow-initiation verifier cannot unambiguously dispatch.
+	ErrorAmbiguousAttestationConfig = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "APP-1038",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.applicationservice.ambiguous_attestation_config",
+			DefaultValue: "Attestation configuration must set exactly one platform",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key: "error.applicationservice.ambiguous_attestation_config_description",
+			DefaultValue: "An application's attestation configuration may configure only one platform " +
+				"(android or apple) at a time",
+		},
+	}
 )
