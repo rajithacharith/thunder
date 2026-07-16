@@ -30,7 +30,7 @@ curl -kL -X POST https://localhost:8090/connections/oauth \
     "description": "Custom OAuth 2.0 provider",
     "clientId": "<client-id>",
     "clientSecret": "<client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+    "redirectUri": "https://<your-thunderid-host>/gate/callback",
     "authorizationEndpoint": "https://<provider>/oauth/authorize",
     "tokenEndpoint": "https://<provider>/oauth/token",
     "userInfoEndpoint": "https://<provider>/api/userinfo"
@@ -46,7 +46,7 @@ curl -kL -X POST https://localhost:8090/connections/oauth \
   "type": "oauth",
   "clientId": "<client-id>",
   "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+  "redirectUri": "https://<your-thunderid-host>/gate/callback",
   "authorizationEndpoint": "https://<provider>/oauth/authorize",
   "tokenEndpoint": "https://<provider>/oauth/token",
   "userInfoEndpoint": "https://<provider>/api/userinfo"
@@ -84,7 +84,7 @@ curl -kL -X POST https://localhost:8090/connections/oauth \
     "name": "My OAuth Provider",
     "clientId": "<client-id>",
     "clientSecret": "<client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+    "redirectUri": "https://<your-thunderid-host>/gate/callback",
     "authorizationEndpoint": "https://<provider>/oauth/authorize",
     "tokenEndpoint": "https://<provider>/oauth/token",
     "userInfoEndpoint": "https://<provider>/api/userinfo",

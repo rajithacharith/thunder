@@ -39,7 +39,7 @@ curl -kL -X POST https://localhost:8090/connections/oidc \
     "description": "Corporate OIDC provider",
     "clientId": "<client-id>",
     "clientSecret": "<client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+    "redirectUri": "https://<your-thunderid-host>/gate/callback",
     "authorizationEndpoint": "https://<provider>/oauth2/authorize",
     "tokenEndpoint": "https://<provider>/oauth2/token"
   }'
@@ -54,7 +54,7 @@ curl -kL -X POST https://localhost:8090/connections/oidc \
   "type": "oidc",
   "clientId": "<client-id>",
   "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+  "redirectUri": "https://<your-thunderid-host>/gate/callback",
   "authorizationEndpoint": "https://<provider>/oauth2/authorize",
   "tokenEndpoint": "https://<provider>/oauth2/token"
 }
@@ -91,7 +91,7 @@ External providers emit attributes under their own names, which may differ from 
   "name": "My OIDC Provider",
   "clientId": "<client-id>",
   "clientSecret": "<client-secret>",
-  "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+  "redirectUri": "https://<your-thunderid-host>/gate/callback",
   "authorizationEndpoint": "https://<provider>/oauth2/authorize",
   "tokenEndpoint": "https://<provider>/oauth2/token",
   "attributeConfiguration": {
@@ -168,7 +168,7 @@ curl -kL -X POST https://localhost:8090/connections/oidc \
     "name": "My OIDC Provider",
     "clientId": "<client-id>",
     "clientSecret": "<client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+    "redirectUri": "https://<your-thunderid-host>/gate/callback",
     "authorizationEndpoint": "https://<provider>/oauth2/authorize",
     "tokenEndpoint": "https://<provider>/oauth2/token",
     "userInfoEndpoint": "https://<provider>/userinfo",
