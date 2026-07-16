@@ -281,6 +281,8 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *providers.NodeContext,
 		}
 	}
 
+	setFederatedEntityState(execResp)
+
 	switch ctx.FlowType {
 	case providers.FlowTypeAuthentication:
 		if isAuthenticationWithoutLocalUserAllowed(ctx) {

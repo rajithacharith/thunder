@@ -166,6 +166,73 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
+func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoLocalUser_EntityStateNotExists() { //nolint:dupl
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"code": "auth_code_123",
+		},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	execResp := &providers.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	// newOIDCAuthenticatedUser carries an entity-reference token but no resolved EntityReference,
+	// modeling account linking that found no matching local account.
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).
+		Return(newOIDCAuthenticatedUser(), providers.AuthenticatedClaims{
+			"sub": "user-sub-123", "email": "new@example.com",
+		}, (*tidcommon.ServiceError)(nil))
+
+	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), entityStateNotExists, execResp.RuntimeData[common.RuntimeKeyEntityState])
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
+}
+
+func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_LocalUser_EntityStateExists() { //nolint:dupl
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"code": "auth_code_123",
+		},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	execResp := &providers.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	// A resolved EntityReference models account linking matching an existing local user.
+	var authUser providers.AuthUser
+	authUser.SetEntityReference(&providers.EntityReference{EntityID: "local-user-123"})
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).
+		Return(authUser, providers.AuthenticatedClaims{
+			"sub": "user-sub-123", "email": "existing@example.com",
+		}, (*tidcommon.ServiceError)(nil))
+
+	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), entityStateExists, execResp.RuntimeData[common.RuntimeKeyEntityState])
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
+}
+
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce() {
 	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
