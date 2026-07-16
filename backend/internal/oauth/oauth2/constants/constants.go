@@ -67,6 +67,7 @@ const (
 	RequestParamDPoPJkt             string = "dpop_jkt"
 	RequestParamLoginHint           string = "login_hint"
 	RequestParamIDTokenHint         string = "id_token_hint"
+	RequestParamPostLogoutRedirect  string = "post_logout_redirect_uri"
 	RequestParamLoginHintToken      string = "login_hint_token" // #nosec G101
 	RequestParamBindingMessage      string = "binding_message"
 	RequestParamRequestedExpiry     string = "requested_expiry"
@@ -246,6 +247,7 @@ const (
 	ClaimSub      string = "sub"
 	ClaimIss      string = "iss"
 	ClaimAud      string = "aud"
+	ClaimAzp      string = "azp"
 	ClaimExp      string = "exp"
 	ClaimIat      string = "iat"
 	ClaimJTI      string = "jti"

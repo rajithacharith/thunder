@@ -265,6 +265,63 @@ func (_c *sessionStoreMock_DeleteBySessionID_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// DeleteSession provides a mock function for the type sessionStoreMock
+func (_mock *sessionStoreMock) DeleteSession(ctx context.Context, sessionID string) error {
+	ret := _mock.Called(ctx, sessionID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteSession")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, sessionID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// sessionStoreMock_DeleteSession_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteSession'
+type sessionStoreMock_DeleteSession_Call struct {
+	*mock.Call
+}
+
+// DeleteSession is a helper method to define mock.On call
+//   - ctx context.Context
+//   - sessionID string
+func (_e *sessionStoreMock_Expecter) DeleteSession(ctx interface{}, sessionID interface{}) *sessionStoreMock_DeleteSession_Call {
+	return &sessionStoreMock_DeleteSession_Call{Call: _e.mock.On("DeleteSession", ctx, sessionID)}
+}
+
+func (_c *sessionStoreMock_DeleteSession_Call) Run(run func(ctx context.Context, sessionID string)) *sessionStoreMock_DeleteSession_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *sessionStoreMock_DeleteSession_Call) Return(err error) *sessionStoreMock_DeleteSession_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *sessionStoreMock_DeleteSession_Call) RunAndReturn(run func(ctx context.Context, sessionID string) error) *sessionStoreMock_DeleteSession_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetByCheckpoint provides a mock function for the type sessionStoreMock
 func (_mock *sessionStoreMock) GetByCheckpoint(ctx context.Context, sessionID string, checkpointID string) (*SessionContext, error) {
 	ret := _mock.Called(ctx, sessionID, checkpointID)

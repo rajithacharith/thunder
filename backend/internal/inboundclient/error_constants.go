@@ -51,6 +51,8 @@ var (
 	ErrFKInvalidRegistrationFlow = errors.New("invalid registration flow ID")
 	// ErrFKInvalidRecoveryFlow is returned when the recovery flow ID does not exist.
 	ErrFKInvalidRecoveryFlow = errors.New("invalid recovery flow ID")
+	// ErrFKInvalidSignOutFlow is returned when the sign-out flow ID does not exist.
+	ErrFKInvalidSignOutFlow = errors.New("invalid sign-out flow ID")
 	// ErrFKFlowDefinitionRetrievalFailed is returned when a flow definition cannot be retrieved.
 	ErrFKFlowDefinitionRetrievalFailed = errors.New("error retrieving flow definition")
 	// ErrFKFlowServerError is returned when a server error occurs while resolving a flow.

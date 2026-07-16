@@ -638,6 +638,9 @@ func LoadConfig(configPath string, defaultPath string, serverHome string) (*Conf
 		if cfg.GateClient.LoginPath == "" {
 			cfg.GateClient.LoginPath = urlpath.Join(cfg.GateClient.Path, "signin")
 		}
+		if cfg.GateClient.SignOutPath == "" {
+			cfg.GateClient.SignOutPath = urlpath.Join(cfg.GateClient.Path, "signout")
+		}
 		if cfg.GateClient.ErrorPath == "" {
 			cfg.GateClient.ErrorPath = urlpath.Join(cfg.GateClient.Path, "error")
 		}

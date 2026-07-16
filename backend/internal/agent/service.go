@@ -1361,6 +1361,7 @@ func buildOAuthProfile(configs []providers.InboundAuthConfigWithSecret) *provide
 	}
 	return &providers.OAuthProfile{
 		RedirectURIs:                       cfg.RedirectURIs,
+		PostLogoutRedirectURIs:             cfg.PostLogoutRedirectURIs,
 		GrantTypes:                         grantTypes,
 		ResponseTypes:                      sysutils.ConvertToStringSlice(cfg.ResponseTypes),
 		TokenEndpointAuthMethod:            string(authMethod),
@@ -1386,6 +1387,7 @@ func oauthProfileToComplete(clientID string, p *providers.OAuthProfile) *provide
 	return &providers.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       p.RedirectURIs,
+		PostLogoutRedirectURIs:             p.PostLogoutRedirectURIs,
 		GrantTypes:                         grants,
 		ResponseTypes:                      respTypes,
 		TokenEndpointAuthMethod:            providers.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod),

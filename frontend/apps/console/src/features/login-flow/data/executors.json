@@ -925,5 +925,25 @@
         "onSuccess": ""
       }
     }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Session Sign Out Executor",
+      "label": "End Session",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "SessionSignOutExecutor"
+        },
+        "onSuccess": ""
+      }
+    }
   }
 ]

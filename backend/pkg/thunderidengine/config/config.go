@@ -140,6 +140,7 @@ type GateClientConfig struct {
 	Scheme       string `yaml:"scheme"        json:"scheme"`
 	Path         string `yaml:"path"          json:"path"`
 	LoginPath    string `yaml:"login_path"    json:"login_path"`
+	SignOutPath  string `yaml:"signout_path"   json:"signout_path"`
 	ErrorPath    string `yaml:"error_path"    json:"error_path"`
 	CallbackPath string `yaml:"callback_path" json:"callback_path"`
 }

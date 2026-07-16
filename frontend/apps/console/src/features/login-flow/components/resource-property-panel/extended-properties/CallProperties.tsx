@@ -23,6 +23,7 @@ import {useParams} from 'react-router';
 import useGetFlows from '@/features/flows/api/useGetFlows';
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
+import {FlowType} from '@/features/flows/models/flows';
 import type {BasicFlowDefinition} from '@/features/flows/models/responses';
 import type {StepData} from '@/features/flows/models/steps';
 
@@ -49,10 +50,13 @@ function CallProperties({resource, onChange}: CallPropertiesPropsInterface): Rea
     return stepData?.flow?.filterFlowType;
   }, [resource]);
 
+  // Sign-out flows are excluded as call targets: terminating an SSO session part-way through another
+  // flow (e.g. a login flow) is not a meaningful composition, so they are not offered here.
   const flows: BasicFlowDefinition[] = useMemo<BasicFlowDefinition[]>(() => {
     const list = data?.flows ?? [];
     return list.filter(
-      (f: BasicFlowDefinition) => f.id !== flowId && (!filterFlowType || f.flowType === filterFlowType),
+      (f: BasicFlowDefinition) =>
+        f.id !== flowId && f.flowType !== FlowType.SIGNOUT && (!filterFlowType || f.flowType === filterFlowType),
     );
   }, [data, flowId, filterFlowType]);
 

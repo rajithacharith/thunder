@@ -2469,6 +2469,11 @@ const translations = {
     'edit.general.redirectUris.addUri': 'Add URI',
     'edit.general.redirectUris.error.empty': 'Invalid Redirect: URI must not be empty.',
     'edit.general.redirectUris.error.invalid': 'Invalid Redirect: Please enter a valid URL.',
+    'edit.general.postLogoutRedirectUris.title': 'Post-Logout Redirect URIs',
+    'edit.general.postLogoutRedirectUris.description':
+      'Allowed URIs to redirect to after logout. A post_logout_redirect_uri passed to the logout endpoint must match one of these.',
+    'edit.general.postLogoutRedirectUris.addUri': 'Add URI',
+    'edit.general.postLogoutRedirectUris.error.invalid': 'Invalid Redirect: Please enter a valid URL.',
     'edit.general.allowedUserTypes.placeholder': 'Select user types',
     'edit.general.allowedUserTypes.hint': 'Users of these types can authenticate with this application',
     'edit.general.applicationUrl.hint': 'The homepage URL of your application',
@@ -2505,6 +2510,12 @@ const translations = {
     'edit.flows.recoveryFlow.placeholder': 'Select a recovery flow',
     'edit.flows.recoveryFlow.hint': 'Select the flow that handles account recovery for this {{entity}}.',
     'edit.flows.recoveryFlow.alert':
+      'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
+    'edit.flows.labels.signOutFlow': 'Sign Out Flow',
+    'edit.flows.labels.signOutFlow.description': 'Confirm and terminate the SSO session when people sign out.',
+    'edit.flows.signOutFlow.placeholder': 'Select a sign-out flow',
+    'edit.flows.signOutFlow.hint': 'Select the flow that runs when a user signs out of this {{entity}}.',
+    'edit.flows.signOutFlow.alert':
       'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
     'edit.flows.editFlow': 'Edit flow',
 

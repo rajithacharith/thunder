@@ -12806,5 +12806,222 @@
       ]
     },
     "nodes": []
+  },
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "BLANK",
+    "flowType": "SIGNOUT",
+    "display": {
+      "label": "Blank",
+      "description": "Start from scratch with an empty canvas",
+      "image": "assets/images/icons/arrowhead-right-outline.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "name": "New Sign Out Flow",
+      "handle": "new-signout-flow",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "layout": {
+            "size": {
+              "width": 101,
+              "height": 34
+            },
+            "position": {
+              "x": 62,
+              "y": 278
+            }
+          },
+          "onSuccess": "view_prompt"
+        },
+        {
+          "id": "view_prompt",
+          "type": "PROMPT",
+          "layout": {
+            "size": {
+              "width": 350,
+              "height": 466
+            },
+            "position": {
+              "x": 463,
+              "y": 62
+            }
+          },
+          "meta": {
+            "components": [
+              {
+                "category": "DISPLAY",
+                "id": "text_heading",
+                "label": "Heading",
+                "resourceType": "ELEMENT",
+                "type": "TEXT",
+                "variant": "HEADING_3"
+              },
+              {
+                "category": "BLOCK",
+                "components": [
+                  {
+                    "category": "ACTION",
+                    "eventType": "SUBMIT",
+                    "id": "action_continue",
+                    "label": "Continue",
+                    "resourceType": "ELEMENT",
+                    "type": "ACTION",
+                    "variant": "PRIMARY"
+                  }
+                ],
+                "id": "block_actions",
+                "resourceType": "ELEMENT",
+                "type": "BLOCK"
+              }
+            ]
+          },
+          "prompts": [
+            {
+              "action": {
+                "ref": "action_continue",
+                "nextNode": "end"
+              }
+            }
+          ]
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "layout": {
+            "size": {
+              "width": 85,
+              "height": 34
+            },
+            "position": {
+              "x": 1657,
+              "y": 278
+            }
+          }
+        }
+      ]
+    },
+    "nodes": []
+  },
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "BASIC",
+    "flowType": "SIGNOUT",
+    "display": {
+      "label": "Confirm & Sign Out",
+      "description": "Ask the user to confirm, then terminate their SSO session",
+      "image": "assets/images/icons/arrowhead-right-outline.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "name": "Basic Sign Out Flow",
+      "handle": "basic-signout-flow",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "layout": {
+            "size": {
+              "width": 101,
+              "height": 34
+            },
+            "position": {
+              "x": 62,
+              "y": 278
+            }
+          },
+          "onSuccess": "prompt_confirm"
+        },
+        {
+          "id": "prompt_confirm",
+          "type": "PROMPT",
+          "layout": {
+            "size": {
+              "width": 350,
+              "height": 300
+            },
+            "position": {
+              "x": 463,
+              "y": 150
+            }
+          },
+          "meta": {
+            "components": [
+              {
+                "align": "center",
+                "category": "DISPLAY",
+                "id": "text_signout_title",
+                "label": "Sign out of your account?",
+                "resourceType": "ELEMENT",
+                "type": "TEXT",
+                "variant": "HEADING_3"
+              },
+              {
+                "category": "BLOCK",
+                "components": [
+                  {
+                    "category": "ACTION",
+                    "eventType": "SUBMIT",
+                    "id": "action_confirm",
+                    "label": "Sign out",
+                    "resourceType": "ELEMENT",
+                    "type": "ACTION",
+                    "variant": "PRIMARY"
+                  }
+                ],
+                "id": "block_signout",
+                "resourceType": "ELEMENT",
+                "type": "BLOCK"
+              }
+            ]
+          },
+          "prompts": [
+            {
+              "action": {
+                "ref": "action_confirm",
+                "nextNode": "session_signout"
+              }
+            }
+          ]
+        },
+        {
+          "id": "session_signout",
+          "type": "TASK_EXECUTION",
+          "layout": {
+            "size": {
+              "width": 217,
+              "height": 113
+            },
+            "position": {
+              "x": 960,
+              "y": 240
+            }
+          },
+          "executor": {
+            "name": "SessionSignOutExecutor"
+          },
+          "onSuccess": "end"
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "layout": {
+            "size": {
+              "width": 85,
+              "height": 34
+            },
+            "position": {
+              "x": 1400,
+              "y": 278
+            }
+          }
+        }
+      ]
+    },
+    "nodes": []
   }
 ]

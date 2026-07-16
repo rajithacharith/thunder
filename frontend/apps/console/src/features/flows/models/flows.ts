@@ -55,6 +55,11 @@ export const FlowType = {
    * Recovery flows handle password and account recovery processes
    */
   RECOVERY: 'RECOVERY',
+
+  /**
+   * SignOut flows terminate an established SSO session
+   */
+  SIGNOUT: 'SIGNOUT',
 } as const;
 
 /**
