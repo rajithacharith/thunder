@@ -27,32 +27,43 @@ export const DefaultThemeConfig = {
   colorSchemes: {
     light: {
       palette: {
+        // Explicit transparency channels: Oxygen freezes these at its own palette during the theme merge.
         primary: {
           main: '#3688FF',
+          mainChannel: '54 136 255',
           dark: '#2d78e0',
+          darkChannel: '45 120 224',
           light: '#6ba8f5',
+          lightChannel: '107 168 245',
           contrastText: '#ffffff',
         },
         secondary: {
           main: '#5498b4',
+          mainChannel: '84 152 180',
           dark: '#2d8eac',
+          darkChannel: '45 142 172',
           light: '#85cde3',
+          lightChannel: '133 205 227',
           contrastText: '#ffffff',
         },
         warning: {
           main: '#f59e0b',
+          mainChannel: '245 158 11',
           contrastText: '#ffffff',
         },
         error: {
           main: '#ef4444',
+          mainChannel: '239 68 68',
           contrastText: '#ffffff',
         },
         info: {
           main: '#8bf9fa',
+          mainChannel: '139 249 250',
           contrastText: '#0a1628',
         },
         success: {
           main: '#10b981',
+          mainChannel: '16 185 129',
           contrastText: '#ffffff',
         },
         background: {
@@ -64,36 +75,52 @@ export const DefaultThemeConfig = {
           primary: '#181818',
           secondary: 'rgba(24, 24, 24, 0.72)',
         },
+        // Explicit disabled Switch shades.
+        Switch: {
+          primaryDisabledColor: '#b2d1ff',
+          secondaryDisabledColor: '#bed7e2',
+        },
       },
     },
     dark: {
       palette: {
+        // Explicit transparency channels: Oxygen freezes these at its own palette during the theme merge.
         primary: {
           main: '#3688FF',
+          mainChannel: '54 136 255',
           dark: '#2d78e0',
+          darkChannel: '45 120 224',
           light: '#6ba8f5',
+          lightChannel: '107 168 245',
           contrastText: '#ffffff',
         },
         secondary: {
           main: '#5498b4',
+          mainChannel: '84 152 180',
           dark: '#2d8eac',
+          darkChannel: '45 142 172',
           light: '#85cde3',
+          lightChannel: '133 205 227',
           contrastText: '#0a2230',
         },
         warning: {
           main: '#f59e0b',
+          mainChannel: '245 158 11',
           contrastText: '#ffffff',
         },
         error: {
           main: '#ef4444',
+          mainChannel: '239 68 68',
           contrastText: '#ffffff',
         },
         info: {
           main: '#8bf9fa',
+          mainChannel: '139 249 250',
           contrastText: '#0a1628',
         },
         success: {
           main: '#10b981',
+          mainChannel: '16 185 129',
           contrastText: '#ffffff',
         },
         background: {
@@ -104,6 +131,11 @@ export const DefaultThemeConfig = {
         text: {
           primary: '#FFFFFF',
           secondary: 'rgba(255, 255, 255, 0.7)',
+        },
+        // Explicit disabled Switch shades.
+        Switch: {
+          primaryDisabledColor: '#183d72',
+          secondaryDisabledColor: '#254450',
         },
       },
     },
