@@ -1491,7 +1491,6 @@
             }
           },
           "properties": {
-            "senderId": "{{SENDER_ID}}",
             "emailTemplate": "OTP"
           },
           "executor": {
@@ -7127,7 +7126,6 @@
             }
           },
           "properties": {
-            "senderId": "{{SENDER_ID}}",
             "emailTemplate": "OTP"
           },
           "executor": {

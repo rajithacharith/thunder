@@ -926,6 +926,8 @@ type ExecutorSupportedProperties struct {
 	Property string `json:"property"`
 	// IsRequired indicates whether the property is required for the executor to function correctly.
 	IsRequired bool `json:"isRequired"`
+	// ApplicableModes limits the required check to the listed modes.
+	ApplicableModes []string `json:"applicableModes,omitempty"`
 }
 
 // ExecutorMeta describes the static capabilities of an executor.
