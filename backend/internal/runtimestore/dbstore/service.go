@@ -48,7 +48,7 @@ func newDBStore(dbProvider provider.DBProviderInterface, deploymentID string) pr
 // A non-positive ttlSeconds stores the entry without expiry. Existing entries are overwritten.
 func (d *dbStore) Put(ctx context.Context, namespace providers.RuntimeStoreNamespace,
 	key string, value []byte, ttlSeconds int64) error {
-	dbClient, err := d.dbProvider.GetRuntimeDBClient()
+	dbClient, err := d.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -72,7 +72,7 @@ func (d *dbStore) Put(ctx context.Context, namespace providers.RuntimeStoreNames
 // Returns (nil, nil) when the key is missing or expired.
 func (d *dbStore) Get(ctx context.Context, namespace providers.RuntimeStoreNamespace,
 	key string) ([]byte, error) {
-	dbClient, err := d.dbProvider.GetRuntimeDBClient()
+	dbClient, err := d.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -94,7 +94,7 @@ func (d *dbStore) Get(ctx context.Context, namespace providers.RuntimeStoreNames
 // Returns an error when the key is missing or expired.
 func (d *dbStore) Update(ctx context.Context, namespace providers.RuntimeStoreNamespace,
 	key string, value []byte) error {
-	dbClient, err := d.dbProvider.GetRuntimeDBClient()
+	dbClient, err := d.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -114,7 +114,7 @@ func (d *dbStore) Update(ctx context.Context, namespace providers.RuntimeStoreNa
 // Delete removes a value from the database runtime store by its key. It is idempotent.
 func (d *dbStore) Delete(ctx context.Context, namespace providers.RuntimeStoreNamespace,
 	key string) error {
-	dbClient, err := d.dbProvider.GetRuntimeDBClient()
+	dbClient, err := d.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -132,7 +132,7 @@ func (d *dbStore) Delete(ctx context.Context, namespace providers.RuntimeStoreNa
 // consume the same value twice. Returns (nil, nil) when the key is missing or expired.
 func (d *dbStore) Take(ctx context.Context, namespace providers.RuntimeStoreNamespace,
 	key string) ([]byte, error) {
-	dbClient, err := d.dbProvider.GetRuntimeDBClient()
+	dbClient, err := d.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -158,7 +158,7 @@ func (d *dbStore) ExtendTTL(ctx context.Context, namespace providers.RuntimeStor
 		return fmt.Errorf("ttl seconds cannot be negative or zero: %d", ttlSeconds)
 	}
 
-	dbClient, err := d.dbProvider.GetRuntimeDBClient()
+	dbClient, err := d.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

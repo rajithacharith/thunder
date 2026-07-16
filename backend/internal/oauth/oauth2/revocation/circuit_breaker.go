@@ -32,7 +32,7 @@ const (
 	enforcementOpenDuration = 30 * time.Second
 )
 
-// circuitState is the state of the operation-DB circuit breaker.
+// circuitState is the state of the runtime-persistent-DB circuit breaker.
 type circuitState int
 
 const (
@@ -42,7 +42,7 @@ const (
 )
 
 // circuitBreaker is a minimal consecutive-failure circuit breaker guarding deny-list reads.
-// While open it short-circuits calls so a failing operation DB is not hammered on every request.
+// While open it short-circuits calls so a failing runtime persistent DB is not hammered on every request.
 type circuitBreaker struct {
 	mu               sync.Mutex
 	state            circuitState
@@ -64,7 +64,7 @@ func newCircuitBreaker(failureThreshold int, openDuration time.Duration) *circui
 // allow reports whether a call may proceed. When the open window has elapsed it transitions to
 // half-open and admits a single trial call; further callers are rejected until that probe resolves
 // (via recordSuccess/recordFailure), so a burst of concurrent requests cannot all hit a still-failing
-// operation DB on each reopen.
+// runtime persistent DB on each reopen.
 func (cb *circuitBreaker) allow() bool {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()

@@ -26,7 +26,7 @@ var queryConfigDBTable = model.DBQuery{
 	Query: "SELECT 1",
 }
 
-var queryRuntimeDBTable = model.DBQuery{
+var queryRuntimeTransientDBTable = model.DBQuery{
 	ID:    "HLC-00002",
 	Query: "SELECT 1",
 }

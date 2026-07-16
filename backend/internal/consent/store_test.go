@@ -94,7 +94,7 @@ func sampleAuthRow(consentID, id string) map[string]interface{} {
 // CreateConsent
 
 func (s *ConsentStoreTestSuite) TestCreateConsent_Success() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", anyArgs(QueryCreateConsent, 8)...).Return(int64(1), nil).Once()
 	s.mockDBClient.On("ExecuteContext", anyArgs(queryWithID("CNQ-CONSENT_MGT-05"), 7)...).
 		Return(int64(1), nil).Once()
@@ -112,7 +112,7 @@ func (s *ConsentStoreTestSuite) TestCreateConsent_Success() {
 }
 
 func (s *ConsentStoreTestSuite) TestCreateConsent_NoAuthorizations_SkipsInsert() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", anyArgs(QueryCreateConsent, 8)...).Return(int64(1), nil).Once()
 
 	consent := &Consent{ID: "c1", GroupID: "app1", Status: ConsentStatusActive}
@@ -124,7 +124,7 @@ func (s *ConsentStoreTestSuite) TestCreateConsent_NoAuthorizations_SkipsInsert()
 // GetConsent
 
 func (s *ConsentStoreTestSuite) TestGetConsent_Found() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", anyArgs(QueryGetConsentByID, 2)...).
 		Return([]map[string]interface{}{sampleConsentRow("c1")}, nil).Once()
 	s.mockDBClient.On("QueryContext", anyArgs(queryWithID("CNQ-CONSENT_MGT-06"), 2)...).
@@ -144,7 +144,7 @@ func (s *ConsentStoreTestSuite) TestGetConsent_Found() {
 }
 
 func (s *ConsentStoreTestSuite) TestGetConsent_NotFound() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", anyArgs(QueryGetConsentByID, 2)...).
 		Return([]map[string]interface{}{}, nil).Once()
 
@@ -157,7 +157,7 @@ func (s *ConsentStoreTestSuite) TestGetConsent_NotFound() {
 // UpdateConsent
 
 func (s *ConsentStoreTestSuite) TestUpdateConsent_Success() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", anyArgs(QueryUpdateConsent, 6)...).Return(int64(1), nil).Once()
 	s.mockDBClient.On("ExecuteContext", anyArgs(QueryDeleteConsentAuthorizations, 2)...).
 		Return(int64(1), nil).Once()
@@ -177,7 +177,7 @@ func (s *ConsentStoreTestSuite) TestUpdateConsent_Success() {
 }
 
 func (s *ConsentStoreTestSuite) TestUpdateConsent_NotFound() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", anyArgs(QueryUpdateConsent, 6)...).Return(int64(0), nil).Once()
 
 	consent := &Consent{ID: "c1", GroupID: "app1", Status: ConsentStatusActive}
@@ -189,7 +189,7 @@ func (s *ConsentStoreTestSuite) TestUpdateConsent_NotFound() {
 // SearchConsents
 
 func (s *ConsentStoreTestSuite) TestSearchConsents_ReturnsResultsWithAuthorizations() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", anyArgs(queryWithID("CNQ-CONSENT_MGT-07"), 2)...).
 		Return([]map[string]interface{}{sampleConsentRow("c1"), sampleConsentRow("c2")}, nil).Once()
 	s.mockDBClient.On("QueryContext", anyArgs(queryWithID("CNQ-CONSENT_MGT-06"), 3)...).
@@ -213,7 +213,7 @@ func (s *ConsentStoreTestSuite) TestSearchConsents_ReturnsResultsWithAuthorizati
 }
 
 func (s *ConsentStoreTestSuite) TestSearchConsents_NoResults() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", anyArgs(queryWithID("CNQ-CONSENT_MGT-07"), 2)...).
 		Return([]map[string]interface{}{}, nil).Once()
 

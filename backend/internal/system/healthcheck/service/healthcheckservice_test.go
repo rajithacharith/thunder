@@ -34,11 +34,11 @@ import (
 
 type HealthCheckServiceTestSuite struct {
 	suite.Suite
-	service        HealthCheckServiceInterface
-	mockDBProvider *dbprovidermock.DBProviderInterfaceMock
-	mockConfigDB   *dbprovidermock.DBClientInterfaceMock
-	mockRuntimeDB  *dbprovidermock.DBClientInterfaceMock
-	mockEntityDB   *dbprovidermock.DBClientInterfaceMock
+	service                HealthCheckServiceInterface
+	mockDBProvider         *dbprovidermock.DBProviderInterfaceMock
+	mockConfigDB           *dbprovidermock.DBClientInterfaceMock
+	mockRuntimeTransientDB *dbprovidermock.DBClientInterfaceMock
+	mockEntityDB           *dbprovidermock.DBClientInterfaceMock
 }
 
 func TestHealthCheckServiceSuite(t *testing.T) {
@@ -52,7 +52,7 @@ func (suite *HealthCheckServiceTestSuite) SetupTest() {
 				Type:   "sqlite",
 				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
-			Runtime: config.DataSource{
+			RuntimeTransient: config.DataSource{
 				Type:   "sqlite",
 				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
@@ -72,14 +72,14 @@ func (suite *HealthCheckServiceTestSuite) BeforeTest(suiteName, testName string)
 	suite.mockConfigDB = dbClientConfig
 
 	dbClientRuntime := &dbprovidermock.DBClientInterfaceMock{}
-	suite.mockRuntimeDB = dbClientRuntime
+	suite.mockRuntimeTransientDB = dbClientRuntime
 
 	dbClientEntity := &dbprovidermock.DBClientInterfaceMock{}
 	suite.mockEntityDB = dbClientEntity
 
 	dbProvider := &dbprovidermock.DBProviderInterfaceMock{}
 	dbProvider.On("GetConfigDBClient").Return(dbClientConfig, nil)
-	dbProvider.On("GetRuntimeDBClient").Return(dbClientRuntime, nil)
+	dbProvider.On("GetRuntimeTransientDBClient").Return(dbClientRuntime, nil)
 	dbProvider.On("GetEntityDBClient").Return(dbClientEntity, nil)
 	suite.mockDBProvider = dbProvider
 	suite.service.(*HealthCheckService).DBProvider = dbProvider
@@ -87,19 +87,19 @@ func (suite *HealthCheckServiceTestSuite) BeforeTest(suiteName, testName string)
 
 func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 	const (
-		tcAllDBUp        = "AllDatabasesUp"
-		tcConfigDBDown   = "ConfigDBDown"
-		tcRuntimeDBDown  = "RuntimeDBDown"
-		tcEntityDBDown   = "EntityDBDown"
-		tcAllThreeDBDown = "AllThreeDBsDown"
+		tcAllDBUp                = "AllDatabasesUp"
+		tcConfigDBDown           = "ConfigDBDown"
+		tcRuntimeTransientDBDown = "RuntimeTransientDBDown"
+		tcEntityDBDown           = "EntityDBDown"
+		tcAllThreeDBDown         = "AllThreeDBsDown"
 	)
 	testCases := []struct {
-		name                 string
-		setupConfigDB        func()
-		setupRuntimeDB       func()
-		setupEntityDB        func()
-		expectedStatus       model.Status
-		expectedServiceCount int
+		name                    string
+		setupConfigDB           func()
+		setupRuntimeTransientDB func()
+		setupEntityDB           func()
+		expectedStatus          model.Status
+		expectedServiceCount    int
 	}{
 		{
 			name: tcAllDBUp,
@@ -107,8 +107,8 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 				suite.mockConfigDB.On("Query", queryConfigDBTable).Return([]map[string]interface{}{
 					{"1": 1}}, nil)
 			},
-			setupRuntimeDB: func() {
-				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return([]map[string]interface{}{
+			setupRuntimeTransientDB: func() {
+				suite.mockRuntimeTransientDB.On("Query", queryRuntimeTransientDBTable).Return([]map[string]interface{}{
 					{"1": 1}}, nil)
 			},
 			setupEntityDB: func() {
@@ -123,8 +123,8 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			setupConfigDB: func() {
 				suite.mockConfigDB.On("Query", queryConfigDBTable).Return(nil, errors.New("database error"))
 			},
-			setupRuntimeDB: func() {
-				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return([]map[string]interface{}{
+			setupRuntimeTransientDB: func() {
+				suite.mockRuntimeTransientDB.On("Query", queryRuntimeTransientDBTable).Return([]map[string]interface{}{
 					{"1": 1}}, nil)
 			},
 			setupEntityDB: func() {
@@ -135,13 +135,14 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			expectedServiceCount: 3,
 		},
 		{
-			name: tcRuntimeDBDown,
+			name: tcRuntimeTransientDBDown,
 			setupConfigDB: func() {
 				suite.mockConfigDB.On("Query", queryConfigDBTable).Return([]map[string]interface{}{
 					{"1": 1}}, nil)
 			},
-			setupRuntimeDB: func() {
-				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return(nil, errors.New("database error"))
+			setupRuntimeTransientDB: func() {
+				suite.mockRuntimeTransientDB.On("Query", queryRuntimeTransientDBTable).
+					Return(nil, errors.New("database error"))
 			},
 			setupEntityDB: func() {
 				suite.mockEntityDB.On("Query", queryEntityDBTable).Return([]map[string]interface{}{
@@ -156,8 +157,9 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 				suite.mockConfigDB.On("Query", queryConfigDBTable).Return([]map[string]interface{}{
 					{"1": 1}}, nil)
 			},
-			setupRuntimeDB: func() {
-				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return(nil, errors.New("database error"))
+			setupRuntimeTransientDB: func() {
+				suite.mockRuntimeTransientDB.On("Query", queryRuntimeTransientDBTable).
+					Return(nil, errors.New("database error"))
 			},
 			setupEntityDB: func() {
 				suite.mockEntityDB.On("Query", queryEntityDBTable).Return(nil, errors.New("database error"))
@@ -170,8 +172,9 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			setupConfigDB: func() {
 				suite.mockConfigDB.On("Query", queryConfigDBTable).Return(nil, errors.New("database error"))
 			},
-			setupRuntimeDB: func() {
-				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return(nil, errors.New("database error"))
+			setupRuntimeTransientDB: func() {
+				suite.mockRuntimeTransientDB.On("Query", queryRuntimeTransientDBTable).
+					Return(nil, errors.New("database error"))
 			},
 			setupEntityDB: func() {
 				suite.mockEntityDB.On("Query", queryEntityDBTable).Return(nil, errors.New("database error"))
@@ -185,15 +188,15 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			// Reset mock expectations
 			suite.mockConfigDB.ExpectedCalls = nil
-			suite.mockRuntimeDB.ExpectedCalls = nil
+			suite.mockRuntimeTransientDB.ExpectedCalls = nil
 			suite.mockEntityDB.ExpectedCalls = nil
 
 			// Setup database mocks
 			if tc.setupConfigDB != nil {
 				tc.setupConfigDB()
 			}
-			if tc.setupRuntimeDB != nil {
-				tc.setupRuntimeDB()
+			if tc.setupRuntimeTransientDB != nil {
+				tc.setupRuntimeTransientDB()
 			}
 			if tc.setupEntityDB != nil {
 				tc.setupEntityDB()
@@ -212,7 +215,7 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 				serviceNames[status.ServiceName] = true
 			}
 			assert.True(t, serviceNames["ConfigDB"], "ConfigDB service status should be present")
-			assert.True(t, serviceNames["RuntimeDB"], "RuntimeDB service status should be present")
+			assert.True(t, serviceNames["RuntimeTransientDB"], "RuntimeTransientDB service status should be present")
 			assert.True(t, serviceNames["EntityDB"], "EntityDB service status should be present")
 
 			// If config DB is expected down, verify it's reported as down
@@ -224,11 +227,12 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 				}
 			}
 
-			// If runtime DB is expected down, verify it's reported as down
-			if tc.name == tcRuntimeDBDown || tc.name == "RuntimeDBClientError" || tc.name == tcAllThreeDBDown {
+			// If runtime transient DB is expected down, verify it's reported as down
+			if tc.name == tcRuntimeTransientDBDown || tc.name == "RuntimeTransientDBClientError" ||
+				tc.name == tcAllThreeDBDown {
 				for _, status := range serverStatus.ServiceStatus {
-					if status.ServiceName == "RuntimeDB" {
-						assert.Equal(t, model.StatusDown, status.Status, "RuntimeDB should be DOWN")
+					if status.ServiceName == "RuntimeTransientDB" {
+						assert.Equal(t, model.StatusDown, status.Status, "RuntimeTransientDB should be DOWN")
 					}
 				}
 			}
@@ -245,7 +249,7 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			// Verify that the mock expectations were met
 			suite.mockDBProvider.AssertExpectations(t)
 			suite.mockConfigDB.AssertExpectations(t)
-			suite.mockRuntimeDB.AssertExpectations(t)
+			suite.mockRuntimeTransientDB.AssertExpectations(t)
 			suite.mockEntityDB.AssertExpectations(t)
 		})
 	}
@@ -254,7 +258,8 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 func (suite *HealthCheckServiceTestSuite) TestCheckReadiness_DBRetrievalError() {
 	suite.mockDBProvider.ExpectedCalls = nil
 	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("failed to get config DB client"))
-	suite.mockDBProvider.On("GetRuntimeDBClient").Return(nil, errors.New("failed to get runtime DB client"))
+	suite.mockDBProvider.On("GetRuntimeTransientDBClient").
+		Return(nil, errors.New("failed to get runtime transient DB client"))
 	suite.mockDBProvider.On("GetEntityDBClient").Return(nil, errors.New("failed to get entity DB client"))
 
 	// Execute the method being tested
@@ -267,8 +272,8 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness_DBRetrievalError() 
 	for _, status := range serverStatus.ServiceStatus {
 		if status.ServiceName == "ConfigDB" {
 			assert.Equal(suite.T(), model.StatusDown, status.Status, "ConfigDB should be DOWN")
-		} else if status.ServiceName == "RuntimeDB" {
-			assert.Equal(suite.T(), model.StatusDown, status.Status, "RuntimeDB should be DOWN")
+		} else if status.ServiceName == "RuntimeTransientDB" {
+			assert.Equal(suite.T(), model.StatusDown, status.Status, "RuntimeTransientDB should be DOWN")
 		} else if status.ServiceName == "EntityDB" {
 			assert.Equal(suite.T(), model.StatusDown, status.Status, "EntityDB should be DOWN")
 		}

@@ -51,7 +51,7 @@ paths:
                 serviceStatus:
                   - serviceName: "ConfigDB"
                     status: "UP"
-                  - serviceName: "RuntimeDB"
+                  - serviceName: "RuntimeTransientDB"
                     status: "UP"
                   - serviceName: "EntityDB"
                     status: "UP"
@@ -66,7 +66,7 @@ paths:
                 serviceStatus:
                   - serviceName: "ConfigDB"
                     status: "DOWN"
-                  - serviceName: "RuntimeDB"
+                  - serviceName: "RuntimeTransientDB"
                     status: "UP"
                   - serviceName: "EntityDB"
                     status: "UP"
@@ -93,7 +93,7 @@ components:
           type: string
           enum:
             - ConfigDB
-            - RuntimeDB
+            - RuntimeTransientDB
             - EntityDB
         status:
           type: string

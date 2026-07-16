@@ -300,8 +300,8 @@ function initialize_databases() {
 
     mkdir -p "$REPOSITORY_DB_DIR"
 
-    db_files=("configdb.db" "runtimedb.db" "entitydb.db" "operationdb.db")
-    script_paths=("configdb/sqlite.sql" "runtimedb/sqlite.sql" "entitydb/sqlite.sql" "operationdb/sqlite.sql")
+    db_files=("configdb.db" "runtime-transient.db" "entitydb.db" "runtime-persistent.db")
+    script_paths=("configdb/sqlite.sql" "runtime-transient/sqlite.sql" "entitydb/sqlite.sql" "runtime-persistent/sqlite.sql")
 
     for ((i = 0; i < ${#db_files[@]}; i++)); do
         db_file="${db_files[$i]}"

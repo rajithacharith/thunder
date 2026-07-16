@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package revocation implements single-token revocation over the database.operation deny list (the
+// Package revocation implements single-token revocation over the database.runtime_persistent deny list (the
 // JTI deny list): the RFC 7009 POST /oauth2/revoke write path (RevocationService) and the read/
 // enforcement path (the enforcement service) that rejects revoked tokens on the AS hot path — introspection, the
 // refresh grant, and token exchange — under a fail-closed policy.

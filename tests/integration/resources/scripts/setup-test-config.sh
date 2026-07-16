@@ -27,12 +27,12 @@ if [ "$DB_TYPE" = "postgres" ]; then
       password: dbpassword
       sslmode: disable
 
-  runtime:
+  runtime_transient:
     type: postgres
     postgres:
       hostname: localhost
       port: 5432
-      name: runtimedb
+      name: runtime_transient
       username: dbuser
       password: dbpassword
       sslmode: disable
@@ -47,12 +47,12 @@ if [ "$DB_TYPE" = "postgres" ]; then
       password: dbpassword
       sslmode: disable
 
-  operation:
+  runtime_persistent:
     type: postgres
     postgres:
       hostname: localhost
       port: 5432
-      name: operationdb
+      name: runtime_persistent
       username: dbuser
       password: dbpassword
       sslmode: disable
@@ -65,7 +65,7 @@ elif [ "$DB_TYPE" = "redis" ]; then
       path: "database/configdb.db"
       options: "cache=shared"
 
-  runtime:
+  runtime_transient:
     type: redis
     redis:
       address: "localhost:6379"
@@ -78,10 +78,10 @@ elif [ "$DB_TYPE" = "redis" ]; then
       path: "database/entitydb.db"
       options: "cache=shared"
 
-  operation:
+  runtime_persistent:
     type: sqlite
     sqlite:
-      path: "database/operationdb.db"
+      path: "database/runtime-persistent.db"
       options: "cache=shared"
 EOF
 else
@@ -92,10 +92,10 @@ else
       path: "database/configdb.db"
       options: "cache=shared"
 
-  runtime:
+  runtime_transient:
     type: sqlite
     sqlite:
-      path: "database/runtimedb.db"
+      path: "database/runtime-transient.db"
       options: "cache=shared"
 
   entity:
@@ -104,10 +104,10 @@ else
       path: "database/entitydb.db"
       options: "cache=shared"
 
-  operation:
+  runtime_persistent:
     type: sqlite
     sqlite:
-      path: "database/operationdb.db"
+      path: "database/runtime-persistent.db"
       options: "cache=shared"
 EOF
 fi

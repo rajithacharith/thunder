@@ -70,7 +70,7 @@ func (s *ResolverTestSuite) row(state string) map[string]interface{} {
 }
 
 func (s *ResolverTestSuite) expectQuery(rows []map[string]interface{}, err error) {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByHandle,
 		"handle-abc", testDeploymentID).Return(rows, err)
 }
@@ -94,7 +94,7 @@ func (s *ResolverTestSuite) TestResolve_EmptyHandle() {
 
 	s.NoError(err)
 	s.Nil(got)
-	s.mockDBProvider.AssertNotCalled(s.T(), "GetOperationDBClient")
+	s.mockDBProvider.AssertNotCalled(s.T(), "GetRuntimePersistentDBClient")
 }
 
 func (s *ResolverTestSuite) TestResolve_AbsentNoRow() {

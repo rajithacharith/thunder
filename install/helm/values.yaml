@@ -277,14 +277,14 @@ configuration:
         max_retries: 3
         min_retry_backoff_ms: 50
         max_retry_backoff_ms: 2000
-    # Runtime database configuration
-    runtime:
+    # Runtime-transient database configuration
+    runtime_transient:
       # WARNING: Use sqlite only if you are running a single pod.
       type: "postgres" # postgres, sqlite, or redis
       postgres:
         hostname: "localhost"
         port: "5432"
-        name: "runtimedb"
+        name: "runtime_transient"
         username: "dbuser"
         password: "dbpassword"
         passwordRef:
@@ -298,7 +298,7 @@ configuration:
         min_retry_backoff_ms: 50
         max_retry_backoff_ms: 2000
       sqlite:
-        path: "database/runtimedb.db"
+        path: "database/runtime-transient.db"
         options: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
         max_open_conns: 500
         max_idle_conns: 100
@@ -343,14 +343,14 @@ configuration:
         max_retries: 3
         min_retry_backoff_ms: 50
         max_retry_backoff_ms: 2000
-    # Operation database configuration. Stores SSO sessions, revoked tokens, and consent records.
-    operation:
+    # Runtime-persistent database configuration. Stores SSO sessions, revoked tokens, and consent records.
+    runtime_persistent:
       # WARNING: Use sqlite only if you are running a single pod.
       type: "postgres" # postgres or sqlite
       postgres:
         hostname: "localhost"
         port: "5432"
-        name: "operationdb"
+        name: "runtime_persistent"
         username: "dbuser"
         password: "dbpassword"
         passwordRef:
@@ -364,7 +364,7 @@ configuration:
         min_retry_backoff_ms: 50
         max_retry_backoff_ms: 2000
       sqlite:
-        path: "database/operationdb.db"
+        path: "database/runtime-persistent.db"
         options: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
         max_open_conns: 500
         max_idle_conns: 100

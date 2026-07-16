@@ -67,7 +67,7 @@ type SecurityConfig struct {
 // cache of revoked tokens synced from a source on a fixed interval. When disabled, protected
 // endpoints do not check revocation.
 //
-// Source selects where the deny list is synced from. Only "db" (the operation database) is supported
+// Source selects where the deny list is synced from. Only "db" (the runtime persistent database) is supported
 // today; future values may include an endpoint or event stream. SyncIntervalSeconds bounds how stale
 // the cache may be; a non-positive value falls back to the built-in default.
 type TokenRevocationConfig struct {

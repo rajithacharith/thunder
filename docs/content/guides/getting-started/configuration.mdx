@@ -172,67 +172,67 @@ Stores identity provider configurations, applications, and authentication flows.
 | `database.config.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
 | `database.config.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
-### Runtime Database
+### Runtime-transient Database
 
-Stores runtime data like sessions, tokens, and temporary data. The runtime database supports three backend types: `sqlite`, `postgres`, and `redis`.
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `database.runtime.type` | `sqlite` | Database type (`sqlite`, `postgres`, or `redis`) |
-
-**`database.runtime.postgres.*`** is only read when `database.runtime.type: postgres`:
+Stores short-lived runtime data such as authorization codes, authorization requests, PAR requests, and nonces. The runtime-transient database supports three backend types: `sqlite`, `postgres`, and `redis`.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.runtime.postgres.hostname` | `""` | Database server hostname |
-| `database.runtime.postgres.port` | `0` | Database server port |
-| `database.runtime.postgres.name` | `""` | Database name |
-| `database.runtime.postgres.username` | `""` | Database username |
-| `database.runtime.postgres.password` | `""` | Database password |
-| `database.runtime.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
-| `database.runtime.postgres.max_open_conns` | `500` | Maximum number of open connections |
-| `database.runtime.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.runtime.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
-| `database.runtime.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
-| `database.runtime.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
-| `database.runtime.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+| `database.runtime_transient.type` | `sqlite` | Database type (`sqlite`, `postgres`, or `redis`) |
 
-**`database.runtime.sqlite.*`** is only read when `database.runtime.type: sqlite`:
+**`database.runtime_transient.postgres.*`** is only read when `database.runtime_transient.type: postgres`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.runtime.sqlite.path` | `database/runtimedb.db` | SQLite database file path |
-| `database.runtime.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
-| `database.runtime.sqlite.max_open_conns` | `500` | Maximum number of open connections |
-| `database.runtime.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.runtime.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
-| `database.runtime.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
-| `database.runtime.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
-| `database.runtime.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+| `database.runtime_transient.postgres.hostname` | `""` | Database server hostname |
+| `database.runtime_transient.postgres.port` | `0` | Database server port |
+| `database.runtime_transient.postgres.name` | `""` | Database name |
+| `database.runtime_transient.postgres.username` | `""` | Database username |
+| `database.runtime_transient.postgres.password` | `""` | Database password |
+| `database.runtime_transient.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.runtime_transient.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime_transient.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime_transient.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime_transient.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.runtime_transient.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.runtime_transient.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
-**`database.runtime.redis.*`** is only read when `database.runtime.type: redis`:
+**`database.runtime_transient.sqlite.*`** is only read when `database.runtime_transient.type: sqlite`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.runtime.redis.address` | `""` | Redis server address in `host:port` format, for example `localhost:6379` |
-| `database.runtime.redis.username` | `""` | Redis ACL username. Leave empty if ACLs are not configured |
-| `database.runtime.redis.password` | `""` | Redis password or ACL user password |
-| `database.runtime.redis.db` | `0` | Redis logical database index (0 to 15) |
-| `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by <ProductName />, for example `{{productSlug}}:` |
-| `database.runtime.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
-| `database.runtime.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
-| `database.runtime.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
-| `database.runtime.redis.dial_timeout_ms` | `5000` | Redis connection (dial) timeout in milliseconds |
-| `database.runtime.redis.read_timeout_ms` | `3000` | Redis read timeout in milliseconds |
-| `database.runtime.redis.write_timeout_ms` | `3000` | Redis write timeout in milliseconds |
+| `database.runtime_transient.sqlite.path` | `database/runtime-transient.db` | SQLite database file path |
+| `database.runtime_transient.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.runtime_transient.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime_transient.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime_transient.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime_transient.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.runtime_transient.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.runtime_transient.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+
+**`database.runtime_transient.redis.*`** is only read when `database.runtime_transient.type: redis`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime_transient.redis.address` | `""` | Redis server address in `host:port` format, for example `localhost:6379` |
+| `database.runtime_transient.redis.username` | `""` | Redis ACL username. Leave empty if ACLs are not configured |
+| `database.runtime_transient.redis.password` | `""` | Redis password or ACL user password |
+| `database.runtime_transient.redis.db` | `0` | Redis logical database index (0 to 15) |
+| `database.runtime_transient.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by <ProductName />, for example `{{productSlug}}:` |
+| `database.runtime_transient.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
+| `database.runtime_transient.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
+| `database.runtime_transient.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
+| `database.runtime_transient.redis.dial_timeout_ms` | `5000` | Redis connection (dial) timeout in milliseconds |
+| `database.runtime_transient.redis.read_timeout_ms` | `3000` | Redis read timeout in milliseconds |
+| `database.runtime_transient.redis.write_timeout_ms` | `3000` | Redis write timeout in milliseconds |
 
 #### Redis Connection Requirements
 
 - <ProductName /> requires Redis 6.0 or later.
 - <ProductName /> connects to a single Redis node. Cluster mode and Sentinel mode are not currently supported.
 - The default Redis port is `6379`. Ensure the port is reachable from the <ProductName /> server.
-- <ProductName /> does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime.redis.address` at the proxy endpoint.
-- If your Redis deployment uses Access Control Lists (ACLs), create a dedicated user and grant the following commands: `GET`, `SET`, `DEL`, `EXPIRE`, `EVAL`, `EVALSHA`. Set `database.runtime.redis.username` and `database.runtime.redis.password` accordingly.
+- <ProductName /> does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime_transient.redis.address` at the proxy endpoint.
+- If your Redis deployment uses Access Control Lists (ACLs), create a dedicated user and grant the following commands: `GET`, `SET`, `DEL`, `EXPIRE`, `EVAL`, `EVALSHA`. Set `database.runtime_transient.redis.username` and `database.runtime_transient.redis.password` accordingly.
 - <ProductName /> calls `PING` at startup to verify connectivity. The process terminates if the Redis server is unreachable.
 
 #### Database Retry Behavior
@@ -282,43 +282,43 @@ Stores user profiles and credentials.
 | `database.entity.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
 | `database.entity.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
-### Operation Database
+### Runtime-persistent Database
 
-Stores SSO sessions, revoked tokens, and consent records. This database is required. <ProductName /> fails to start when `database.operation` is not configured.
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `database.operation.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
-
-**`database.operation.postgres.*`** is only read when `database.operation.type: postgres`:
+Stores SSO sessions, revoked tokens, and consent records. This database is required. <ProductName /> fails to start when `database.runtime_persistent` is not configured.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.operation.postgres.hostname` | `""` | Database server hostname |
-| `database.operation.postgres.port` | `0` | Database server port |
-| `database.operation.postgres.name` | `""` | Database name |
-| `database.operation.postgres.username` | `""` | Database username |
-| `database.operation.postgres.password` | `""` | Database password |
-| `database.operation.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
-| `database.operation.postgres.max_open_conns` | `500` | Maximum number of open connections |
-| `database.operation.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.operation.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
-| `database.operation.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
-| `database.operation.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
-| `database.operation.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+| `database.runtime_persistent.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
 
-**`database.operation.sqlite.*`** is only read when `database.operation.type: sqlite`:
+**`database.runtime_persistent.postgres.*`** is only read when `database.runtime_persistent.type: postgres`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.operation.sqlite.path` | `database/operationdb.db` | SQLite database file path |
-| `database.operation.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
-| `database.operation.sqlite.max_open_conns` | `500` | Maximum number of open connections |
-| `database.operation.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.operation.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
-| `database.operation.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
-| `database.operation.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
-| `database.operation.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+| `database.runtime_persistent.postgres.hostname` | `""` | Database server hostname |
+| `database.runtime_persistent.postgres.port` | `0` | Database server port |
+| `database.runtime_persistent.postgres.name` | `""` | Database name |
+| `database.runtime_persistent.postgres.username` | `""` | Database username |
+| `database.runtime_persistent.postgres.password` | `""` | Database password |
+| `database.runtime_persistent.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.runtime_persistent.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime_persistent.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime_persistent.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime_persistent.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.runtime_persistent.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.runtime_persistent.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
+
+**`database.runtime_persistent.sqlite.*`** is only read when `database.runtime_persistent.type: sqlite`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime_persistent.sqlite.path` | `database/runtime-persistent.db` | SQLite database file path |
+| `database.runtime_persistent.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.runtime_persistent.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime_persistent.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime_persistent.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime_persistent.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.runtime_persistent.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.runtime_persistent.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 ## Cache Configuration
 

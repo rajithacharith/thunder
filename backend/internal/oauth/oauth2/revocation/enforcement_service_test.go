@@ -98,13 +98,13 @@ func (s *EnforcementServiceTestSuite) TestEnsureNotRevoked_OpenCircuitShortCircu
 	s.Assert().Equal(callsAtTrip, len(s.mockStore.Calls), "open circuit should not call the store")
 }
 
-// When the circuit trips, an OPERATION_DB_UNAVAILABLE alert is published exactly once per trip —
+// When the circuit trips, an RUNTIME_PERSISTENT_DB_UNAVAILABLE alert is published exactly once per trip —
 // not once per failed request — so a sustained outage does not flood the observability pipeline.
 func (s *EnforcementServiceTestSuite) TestEnsureNotRevoked_AlertsOncePerTrip() {
 	obsMock := observabilitymock.NewObservabilityServiceInterfaceMock(s.T())
 	obsMock.On("IsEnabled").Return(true)
 	obsMock.On("PublishEvent", mock.Anything, mock.MatchedBy(func(evt *providers.Event) bool {
-		return evt.Type == string(event.EventTypeOperationDBUnavailable)
+		return evt.Type == string(event.EventTypeRuntimePersistentDBUnavailable)
 	})).Return()
 
 	c := &enforcementService{

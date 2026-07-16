@@ -29,8 +29,9 @@ import (
 
 // Initialize returns the runtime store provider backing the given runtime datasource type.
 // Redis-backed runtimes use the Redis store; all others use the relational database store.
-func Initialize(runtimeDBType, deploymentID string) (providers.RuntimeStoreProvider, transaction.Transactioner, error) {
-	if runtimeDBType == dbprovider.DataSourceTypeRedis {
+func Initialize(runtimeTransientDBType, deploymentID string) (
+	providers.RuntimeStoreProvider, transaction.Transactioner, error) {
+	if runtimeTransientDBType == dbprovider.DataSourceTypeRedis {
 		return redisstore.Initialize(deploymentID)
 	}
 	return dbstore.Initialize(deploymentID)

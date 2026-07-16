@@ -37,8 +37,8 @@ type EnforcementServiceInterface interface {
 	EnsureNotRevoked(ctx context.Context, jti string) error
 }
 
-// enforcement service is the default EnforcementServiceInterface. It consults the operation DB behind a circuit breaker
-// and alerts (via an observability event) when the breaker trips.
+// enforcement service is the default EnforcementServiceInterface. It consults the runtime persistent DB behind a
+// circuit breaker and alerts (via an observability event) when the breaker trips.
 type enforcementService struct {
 	store            RevokedTokenStoreInterface
 	breaker          *circuitBreaker
@@ -46,7 +46,7 @@ type enforcementService struct {
 	logger           *log.Logger
 }
 
-// newEnforcementService creates a deny-list enforcement service backed by the operation DB, guarded
+// newEnforcementService creates a deny-list enforcement service backed by the runtime persistent DB, guarded
 // by a circuit breaker and the fail-closed policy. It is unexported and constructed once via
 // Initialize so the shared enforcement instance — and its circuit breaker — cannot be duplicated by
 // external callers.
@@ -67,7 +67,7 @@ func (c *enforcementService) EnsureNotRevoked(ctx context.Context, jti string) e
 	}
 
 	if !c.breaker.allow() {
-		c.logger.Debug(ctx, "Operation DB circuit is open; failing closed for revocation check")
+		c.logger.Debug(ctx, "Runtime-persistent DB circuit is open; failing closed for revocation check")
 		return ErrEnforcementUnavailable
 	}
 
@@ -76,7 +76,7 @@ func (c *enforcementService) EnsureNotRevoked(ctx context.Context, jti string) e
 		c.logger.Error(ctx, "Failed to consult token revocation deny list; failing closed",
 			log.Error(err))
 		if c.breaker.recordFailure() {
-			c.publishOperationDBUnavailableEvent(ctx, err)
+			c.publishRuntimePersistentDBUnavailableEvent(ctx, err)
 		}
 		return ErrEnforcementUnavailable
 	}
@@ -88,15 +88,15 @@ func (c *enforcementService) EnsureNotRevoked(ctx context.Context, jti string) e
 	return nil
 }
 
-// publishOperationDBUnavailableEvent emits an alert event when the operation-DB circuit trips.
-func (c *enforcementService) publishOperationDBUnavailableEvent(ctx context.Context, cause error) {
+// publishRuntimePersistentDBUnavailableEvent emits an alert event when the runtime-persistent-DB circuit trips.
+func (c *enforcementService) publishRuntimePersistentDBUnavailableEvent(ctx context.Context, cause error) {
 	if c.observabilitySvc == nil || !c.observabilitySvc.IsEnabled() {
 		return
 	}
 
 	evt := event.NewEvent(
 		syscontext.GetTraceID(ctx),
-		string(event.EventTypeOperationDBUnavailable),
+		string(event.EventTypeRuntimePersistentDBUnavailable),
 		event.ComponentAuthHandler,
 	).
 		WithStatus(providers.StatusFailure).

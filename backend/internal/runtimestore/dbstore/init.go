@@ -28,7 +28,7 @@ import (
 // Initialize creates and returns a new DBStore instance for the given deployment.
 func Initialize(deploymentID string) (providers.RuntimeStoreProvider, transaction.Transactioner, error) {
 	dbProvider := provider.GetDBProvider()
-	transactioner, error := dbProvider.GetRuntimeDBTransactioner()
+	transactioner, error := dbProvider.GetRuntimeTransientDBTransactioner()
 	if error != nil {
 		return nil, nil, error
 	}
