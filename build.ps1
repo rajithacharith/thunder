@@ -640,6 +640,9 @@ function Prepare-Backend-For-Packaging {
     
     $security_dir = Join-Path $package_folder $SECURITY_DIR
     New-Item -Path $security_dir -ItemType Directory -Force | Out-Null
+    # Never ship key material: strip any dev certs/keys that copying config above may have brought in.
+    Remove-Item -Path (Join-Path $security_dir "*.cert") -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $security_dir "*.key") -Force -ErrorAction SilentlyContinue
 
     # Copy bootstrap directory
     Write-Host "Copying bootstrap scripts..."
@@ -647,15 +650,7 @@ function Prepare-Backend-For-Packaging {
     # Never ship the dev-only CORS seed that Run stages into the source bootstrap dir.
     Remove-Item -Path (Join-Path $package_folder "bootstrap/02-server-configurations.yaml") -Force -ErrorAction SilentlyContinue
 
-    Write-Host "=== Ensuring server certificates exist in the distribution ==="
-    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "server"
-    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "signing"
-    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "ecdsa-signing" -Algorithm "ECDSA"
-    Write-Host "================================================================"
-
-    Write-Host "=== Ensuring crypto file exists in the distribution ==="
-    Ensure-Crypto-File -key_dir (Join-Path $package_folder "config/certs")
-    Write-Host "================================================================"
+    # Key material is not generated into the distribution; setup.ps1 generates it per deployment.
 }
 
 function Prepare-Frontend-For-Packaging {

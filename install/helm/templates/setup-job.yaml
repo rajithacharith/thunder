@@ -172,6 +172,9 @@ spec:
             - name: database-storage
               mountPath: /opt/thunderid/database
             {{- end }}
+            # Per-deployment key material is generated here by setup.sh and shared with the server.
+            - name: certs-storage
+              mountPath: /opt/thunderid/config/certs
             - name: deployment-yaml-volume
               mountPath: /opt/thunderid/deployment.yaml
               subPath: deployment.yaml
@@ -221,6 +224,9 @@ spec:
             {{- end }}
             {{- end }}
       volumes:
+        - name: certs-storage
+          persistentVolumeClaim:
+            claimName: {{ include "thunderid.fullname" . }}-certs-pvc
         {{- if or .Values.persistence.enabled $usingSqlite }}
         - name: database-storage
           persistentVolumeClaim:

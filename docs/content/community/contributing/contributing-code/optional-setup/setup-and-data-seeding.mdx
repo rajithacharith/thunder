@@ -54,6 +54,8 @@ Because there is no readable password to reuse, re-running setup with nothing su
 
 Under the hood, `setup.sh` exports the resolved credentials and delegates to `./start.sh --bootstrap`, which runs the compiled binary's in-process `bootstrap` one-shot (creating the resources above, then exiting) and starts the bundled consent server for the duration of the run. It reads the resource definitions from `bootstrap/`. After setup completes, use `./start.sh` to serve.
 
+Alongside seeding these resources, `setup.sh` (and `setup.ps1`) also generate this deployment's TLS, JWT signing, and AES encryption key material into `config/certs` when it is not already present, reusing any existing material on later runs. This key material is never shipped in the product, so each deployment gets its own; the server fails to start if it is missing.
+
 ## Seed and serve in one step (`./start.sh --bootstrap-and-serve`)
 
 `./start.sh --bootstrap-and-serve` is a local/dev convenience that seeds the default resources and then starts the long-running server in a single command. Unlike `setup.sh`, it **never generates a password**. You must provide one:

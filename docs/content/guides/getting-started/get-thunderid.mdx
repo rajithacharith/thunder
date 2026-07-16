@@ -67,6 +67,8 @@ Initialize <ProductName /> with the default configurations and data before start
 </TabItem>
 </Tabs>
 
+Setup generates this deployment's own TLS, JWT signing, and encryption keys, in addition to seeding the default data, so every deployment uses unique key material. The keys are reused on later runs, and the server does not start without them.
+
 ## Start <ProductName />
 
 Launch the <ProductName /> server:

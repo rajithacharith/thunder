@@ -360,12 +360,6 @@ jobs:
           cd ../tests/integration
           go mod download
 
-      - name: 🔐 Generate and Upload Certificates
-        uses: ./.github/actions/generate-certificates
-        with:
-          show-cert-info: 'true'
-          product-name: ${{ env.PRODUCT_NAME }}
-
       - name: 📦 Install pnpm for Frontend Build
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
@@ -415,20 +409,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📥 Download Shared Certificates for Docker
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: ssl-certificates
-          path: target/out/.cert/
-
-      - name: 📋 Prepare Docker Build Context
-        run: |
-          # Copy certificates into the Docker build context
-          mkdir -p docker-certs
-          cp target/out/.cert/server.cert docker-certs/
-          cp target/out/.cert/server.key docker-certs/
-          echo "✅ Certificates prepared for Docker build context"
-
       - name: 🐳 Build and Push Multi-Arch Docker Image
         run: |
           # Build image under the repository owner with the product name
@@ -443,14 +423,12 @@ jobs:
           
           echo "🐳 Building and pushing Docker image: ${IMAGE_NAME}:${DOCKER_VERSION}"
           
-          # Build and push multi-arch image with version and latest tags
-          # Pass shared certificates as build context with paths relative to build context
+          # Build and push multi-arch image with version and latest tags.
+          # No key material is baked into the image; each deployment generates its own via setup.sh.
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --tag "${IMAGE_NAME}:${DOCKER_VERSION}" \
             --tag "${IMAGE_NAME}:latest" \
-            --build-arg CERT_FILE=docker-certs/server.cert \
-            --build-arg KEY_FILE=docker-certs/server.key \
             --push \
             .
           
