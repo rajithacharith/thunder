@@ -39,7 +39,7 @@ curl -kL -X POST https://localhost:8090/connections/google \
     "description": "Optional description",
     "clientId": "<client-id>",
     "clientSecret": "<client-secret>",
-    "redirectUri": "https://localhost:8090/oauth2/callback"
+    "redirectUri": "https://localhost:8090/gate/callback"
   }'
 ```
 
@@ -55,7 +55,7 @@ Each vendor accepts a different set of fields. See [Add a Google Identity Provid
   "type": "google",
   "clientId": "<client-id>",
   "clientSecret": "******",
-  "redirectUri": "https://localhost:8090/oauth2/callback"
+  "redirectUri": "https://localhost:8090/gate/callback"
 }
 ```
 
@@ -129,7 +129,7 @@ curl -kL -X PUT https://localhost:8090/connections/google/<idp-id> \
   -d '{
     "name": "My Provider",
     "clientId": "<new-client-id>",
-    "redirectUri": "https://localhost:8090/oauth2/callback"
+    "redirectUri": "https://localhost:8090/gate/callback"
   }'
 ```
 

@@ -26,7 +26,7 @@ This guide walks you through registering a Google identity provider (IdP) in <Pr
 6. Under **Authorized redirect URIs**, add the callback URL for your <ProductName /> deployment:
 
    ```text
-   https://<your-thunderid-host>/oauth2/callback
+   https://<your-thunderid-host>/gate/callback
    ```
 
 7. Click **Create**. Google displays your **Client ID** and **Client Secret**. Copy both values. You need them in the next step.
@@ -44,7 +44,7 @@ curl -kL -X POST https://localhost:8090/connections/google \
     "description": "Google social login",
     "clientId": "<google-client-id>",
     "clientSecret": "<google-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback"
+    "redirectUri": "https://<your-thunderid-host>/gate/callback"
   }'
 ```
 
@@ -58,7 +58,7 @@ curl -kL -X POST https://localhost:8090/connections/google \
   "type": "google",
   "clientId": "<google-client-id>",
   "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/oauth2/callback"
+  "redirectUri": "https://<your-thunderid-host>/gate/callback"
 }
 ```
 
@@ -83,7 +83,7 @@ curl -kL -X POST https://localhost:8090/connections/google \
     "name": "Google",
     "clientId": "<google-client-id>",
     "clientSecret": "<google-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+    "redirectUri": "https://<your-thunderid-host>/gate/callback",
     "scopes": ["openid", "email", "profile"],
     "prompt": "select_account"
   }'

@@ -26,7 +26,7 @@ This guide walks you through registering a GitHub identity provider (IdP) in <Pr
    - **Authorization callback URL**: The callback URL for your <ProductName /> deployment:
 
      ```text
-     https://<your-thunderid-host>/oauth2/callback
+     https://<your-thunderid-host>/gate/callback
      ```
 
 4. Click **Register application**.
@@ -46,7 +46,7 @@ curl -kL -X POST https://localhost:8090/connections/github \
     "description": "GitHub social login",
     "clientId": "<github-client-id>",
     "clientSecret": "<github-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback"
+    "redirectUri": "https://<your-thunderid-host>/gate/callback"
   }'
 ```
 
@@ -60,7 +60,7 @@ curl -kL -X POST https://localhost:8090/connections/github \
   "type": "github",
   "clientId": "<github-client-id>",
   "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/oauth2/callback"
+  "redirectUri": "https://<your-thunderid-host>/gate/callback"
 }
 ```
 
@@ -87,7 +87,7 @@ curl -kL -X POST https://localhost:8090/connections/github \
     "name": "GitHub",
     "clientId": "<github-client-id>",
     "clientSecret": "<github-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/oauth2/callback",
+    "redirectUri": "https://<your-thunderid-host>/gate/callback",
     "scopes": ["user:email"]
   }'
 ```
