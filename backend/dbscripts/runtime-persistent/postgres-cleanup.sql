@@ -16,10 +16,10 @@
 -- ----------------------------------------------------------------------------
 
 -- ============================================================
--- Stored procedure: purge expired operationdb rows in bounded batches.
+-- Stored procedure: purge expired runtime_persistent rows in bounded batches.
 --
--- Unlike runtimedb, operation data is authoritative and must survive a
--- runtime flush; only rows past their EXPIRY_TIME are safe to delete. A revoked
+-- Unlike runtime_transient, runtime_persistent data is authoritative and must survive a
+-- runtime_transient flush; only rows past their EXPIRY_TIME are safe to delete. A revoked
 -- token's row is removable once the token itself would have naturally expired.
 --
 -- Deletes expired rows in batches of p_batch_size (default 1000), committing
@@ -27,37 +27,37 @@
 -- CALL (the per-batch COMMIT cannot run inside an outer transaction).
 --
 -- Run once manually (ad-hoc / on-demand):
---   PGPASSWORD=<pass> psql -h <host> -p <port> -U <user> -d <operationdb> \
---     -c "CALL cleanup_expired_operationdb_data();"
+--   PGPASSWORD=<pass> psql -h <host> -p <port> -U <user> -d <runtime_persistent> \
+--     -c "CALL cleanup_expired_runtime_persistent_data();"
 --
 --   -- Optional: override the batch size (rows deleted per batch):
---   -c "CALL cleanup_expired_operationdb_data(500);"
+--   -c "CALL cleanup_expired_runtime_persistent_data(500);"
 --
 -- Scheduled execution options:
 --
 --   1. pg_cron (RECOMMENDED, requires the pg_cron extension):
 --      CREATE EXTENSION IF NOT EXISTS pg_cron;
 --      SELECT cron.schedule(
---        'cleanup-operationdb-expired',
+--        'cleanup-runtime_persistent-expired',
 --        '*/60 * * * *',
---        $$CALL cleanup_expired_operationdb_data()$$
+--        $$CALL cleanup_expired_runtime_persistent_data()$$
 --      );
---      -- To verify: SELECT * FROM cron.job WHERE jobname = 'cleanup-operationdb-expired';
---      -- To remove: SELECT cron.unschedule('cleanup-operationdb-expired');
+--      -- To verify: SELECT * FROM cron.job WHERE jobname = 'cleanup-runtime_persistent-expired';
+--      -- To remove: SELECT cron.unschedule('cleanup-runtime_persistent-expired');
 --
---   2. Kubernetes CronJob: call CALL cleanup_expired_operationdb_data()
+--   2. Kubernetes CronJob: call CALL cleanup_expired_runtime_persistent_data()
 --      via a psql container on the desired schedule.
 --
 --   3. OS cron (every 60 minutes):
 -- --      */60 * * * * postgres PGPASSWORD=<pass> psql -h <host> -p <port> \
--- --        -U <user> -d <operationdb> -c "CALL cleanup_expired_operationdb_data();" \
+-- --        -U <user> -d <runtime_persistent> -c "CALL cleanup_expired_runtime_persistent_data();" \
 -- --        >> /var/log/thunderid-operation-cleanup.log 2>&1
 -- ============================================================
 
 -- Drop the old parameterless signature so re-applying doesn't leave an ambiguous overload.
-DROP PROCEDURE IF EXISTS cleanup_expired_operationdb_data();
+DROP PROCEDURE IF EXISTS cleanup_expired_runtime_persistent_data();
 
-CREATE OR REPLACE PROCEDURE cleanup_expired_operationdb_data(p_batch_size INT DEFAULT 1000)
+CREATE OR REPLACE PROCEDURE cleanup_expired_runtime_persistent_data(p_batch_size INT DEFAULT 1000)
 LANGUAGE plpgsql
 AS $$
 DECLARE

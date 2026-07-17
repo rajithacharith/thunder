@@ -176,7 +176,7 @@ func (s *RevocationServiceTestSuite) TestRevokeRefreshToken_EmptyJTIIsNoOp() {
 func (s *RevocationServiceTestSuite) TestRevokeRefreshToken_StoreErrorPropagates() {
 	revoker := s.service.(RefreshTokenRevokerInterface)
 	s.storeMock.On("InsertRevokedToken", mock.Anything, mock.Anything).
-		Return(errors.New("operation database unavailable"))
+		Return(errors.New("runtime persistent database unavailable"))
 
 	err := revoker.RevokeRefreshToken(context.Background(), "jti-x", time.Now().UTC())
 	assert.Error(s.T(), err)

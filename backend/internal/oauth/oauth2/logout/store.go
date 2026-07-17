@@ -55,7 +55,7 @@ type logoutRequestStoreInterface interface {
 }
 
 // logoutRequestStore persists logout request contexts in the runtime store, so the backend follows the
-// configured runtime datasource (relational database, Redis, or in-memory) rather than being tied to one.
+// configured runtime transient datasource (relational database, Redis, or in-memory) rather than being tied to one.
 type logoutRequestStore struct {
 	runtimeStore   providers.RuntimeStoreProvider
 	validityPeriod time.Duration

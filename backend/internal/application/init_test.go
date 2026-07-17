@@ -57,9 +57,9 @@ func newInMemoryDataSource() config.DataSource {
 // in-memory SQLite database suitable for unit tests.
 func newTestDBConfig() config.DatabaseConfig {
 	return config.DatabaseConfig{
-		Config:  newInMemoryDataSource(),
-		Runtime: newInMemoryDataSource(),
-		Entity:  newInMemoryDataSource(),
+		Config:           newInMemoryDataSource(),
+		RuntimeTransient: newInMemoryDataSource(),
+		Entity:           newInMemoryDataSource(),
 	}
 }
 

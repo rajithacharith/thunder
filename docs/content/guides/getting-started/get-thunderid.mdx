@@ -189,13 +189,13 @@ helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
   --set auth.postgresPassword=dbpassword \
   --set-file primary.initdb.scripts.setup\\.sql=<(cat <<'SQL'
 CREATE DATABASE configdb;
-CREATE DATABASE runtimedb;
+CREATE DATABASE runtime_transient;
 CREATE DATABASE entitydb;
-CREATE DATABASE operationdb;
+CREATE DATABASE runtime_persistent;
 GRANT ALL PRIVILEGES ON DATABASE configdb TO dbuser;
-GRANT ALL PRIVILEGES ON DATABASE runtimedb TO dbuser;
+GRANT ALL PRIVILEGES ON DATABASE runtime_transient TO dbuser;
 GRANT ALL PRIVILEGES ON DATABASE entitydb TO dbuser;
-GRANT ALL PRIVILEGES ON DATABASE operationdb TO dbuser;
+GRANT ALL PRIVILEGES ON DATABASE runtime_persistent TO dbuser;
 SQL
 )
 ```
@@ -211,7 +211,7 @@ Apply the database schemas:
 ```bash
 kubectl run {{productSlug}}-dbinit --image=ghcr.io/thunder-id/{{productSlug}}:latest --restart=Never --command -- sleep 300
 kubectl wait --for=condition=ready pod/{{productSlug}}-dbinit --timeout=60s
-for db in configdb runtimedb entitydb operationdb; do
+for db in configdb runtime_transient entitydb runtime_persistent; do
   kubectl exec {{productSlug}}-dbinit -- cat /opt/{{productSlug}}/dbscripts/$db/postgres.sql | \
     kubectl exec -i postgresql-0 -- env PGPASSWORD=dbpassword psql -U dbuser -d $db
 done
@@ -226,12 +226,12 @@ Install <ProductName /> using the [<ProductName /> Helm chart](https://github.co
 helm install {{productSlug}} oci://ghcr.io/thunder-id/helm-charts/{{productSlug}} \
   --set configuration.database.config.postgres.hostname=postgresql \
   --set configuration.database.config.postgres.sslmode=disable \
-  --set configuration.database.runtime.postgres.hostname=postgresql \
-  --set configuration.database.runtime.postgres.sslmode=disable \
+  --set configuration.database.runtime_transient.postgres.hostname=postgresql \
+  --set configuration.database.runtime_transient.postgres.sslmode=disable \
   --set configuration.database.entity.postgres.hostname=postgresql \
   --set configuration.database.entity.postgres.sslmode=disable \
-  --set configuration.database.operation.postgres.hostname=postgresql \
-  --set configuration.database.operation.postgres.sslmode=disable \
+  --set configuration.database.runtime_persistent.postgres.hostname=postgresql \
+  --set configuration.database.runtime_persistent.postgres.sslmode=disable \
   --set configuration.server.publicUrl=https://localhost:8090 \
   --set configuration.gateClient.hostname=localhost \
   --set configuration.gateClient.port=8090

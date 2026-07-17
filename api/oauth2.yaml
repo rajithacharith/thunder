@@ -388,7 +388,7 @@ paths:
         "500":
           description: >-
             Internal server error — the revocation could not be recorded, for example when the
-            operation database is unavailable.
+            runtime persistent database is unavailable.
           content:
             application/json:
               schema:

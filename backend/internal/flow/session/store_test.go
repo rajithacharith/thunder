@@ -79,7 +79,7 @@ func (s *StoreTestSuite) TestNewStore() {
 func (s *StoreTestSuite) TestCreate_Success() {
 	sess := s.sampleSession()
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryCreateSession,
 		sess.SessionID, testDeploymentID, sess.SubjectID, sess.FlowID, sess.FlowVersion,
 		sess.FlowExecutionID, sess.HandleID,
@@ -97,7 +97,7 @@ func (s *StoreTestSuite) TestCreate_Success() {
 func (s *StoreTestSuite) TestCreate_DBError() {
 	sess := s.sampleSession()
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryCreateSession,
 		sess.SessionID, testDeploymentID, sess.SubjectID, sess.FlowID, sess.FlowVersion,
 		sess.FlowExecutionID, sess.HandleID,
@@ -131,7 +131,7 @@ func (s *StoreTestSuite) TestGetByHandle_Hit() {
 		"version":             int64(3),
 	}
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByHandle,
 		"handle-abc", testDeploymentID).
 		Return([]map[string]interface{}{row}, nil)
@@ -152,7 +152,7 @@ func (s *StoreTestSuite) TestGetByHandle_Hit() {
 }
 
 func (s *StoreTestSuite) TestGetByHandle_Miss() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByHandle,
 		"missing", testDeploymentID).
 		Return([]map[string]interface{}{}, nil)
@@ -181,7 +181,7 @@ func (s *StoreTestSuite) TestGetByExecutionID_Hit() {
 		"version":             int64(1),
 	}
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByExecutionID,
 		"exec-1", testDeploymentID).
 		Return([]map[string]interface{}{row}, nil)
@@ -195,7 +195,7 @@ func (s *StoreTestSuite) TestGetByExecutionID_Hit() {
 }
 
 func (s *StoreTestSuite) TestGetByExecutionID_Miss() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByExecutionID,
 		"missing", testDeploymentID).
 		Return([]map[string]interface{}{}, nil)
@@ -209,7 +209,7 @@ func (s *StoreTestSuite) TestGetByExecutionID_Miss() {
 func (s *StoreTestSuite) TestUpdate_Success() {
 	sess := s.sampleSession()
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryUpdateSession,
 		sess.FlowVersion, sess.HandleID,
 		sess.LastActiveAt, nil, sess.AbsoluteExpiresAt,
@@ -226,7 +226,7 @@ func (s *StoreTestSuite) TestUpdate_Success() {
 func (s *StoreTestSuite) TestUpdate_VersionConflict() {
 	sess := s.sampleSession()
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryUpdateSession,
 		sess.FlowVersion, sess.HandleID,
 		sess.LastActiveAt, nil, sess.AbsoluteExpiresAt,
@@ -240,7 +240,7 @@ func (s *StoreTestSuite) TestUpdate_VersionConflict() {
 }
 
 func (s *StoreTestSuite) TestGetByHandle_ClientError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(nil, errors.New("no client"))
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(nil, errors.New("no client"))
 
 	got, err := s.store.GetByHandle(context.Background(), "handle-abc")
 
@@ -249,7 +249,7 @@ func (s *StoreTestSuite) TestGetByHandle_ClientError() {
 }
 
 func (s *StoreTestSuite) TestGetByHandle_QueryError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByHandle,
 		"handle-abc", testDeploymentID).
 		Return(nil, errors.New("query failed"))
@@ -316,7 +316,7 @@ func (s *StoreTestSuite) TestBuildSessionFromRow_BadIntField() {
 
 func (s *StoreTestSuite) TestGetByHandle_MultipleRows() {
 	row := map[string]interface{}{"session_id": "sess-1"}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByHandle,
 		"handle-abc", testDeploymentID).
 		Return([]map[string]interface{}{row, row}, nil)
@@ -329,7 +329,7 @@ func (s *StoreTestSuite) TestGetByHandle_MultipleRows() {
 }
 
 func (s *StoreTestSuite) TestGetByHandle_BuildError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByHandle,
 		"handle-abc", testDeploymentID).
 		Return([]map[string]interface{}{{"session_id": 42}}, nil) // non-string id fails buildSessionFromRow
@@ -341,7 +341,7 @@ func (s *StoreTestSuite) TestGetByHandle_BuildError() {
 }
 
 func (s *StoreTestSuite) TestGetByExecutionID_QueryError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionByExecutionID,
 		"exec-1", testDeploymentID).
 		Return(nil, errors.New("query failed"))
@@ -354,7 +354,7 @@ func (s *StoreTestSuite) TestGetByExecutionID_QueryError() {
 
 func (s *StoreTestSuite) TestUpdate_DBError() {
 	sess := s.sampleSession()
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryUpdateSession,
 		sess.FlowVersion, sess.HandleID, sess.LastActiveAt, nil, sess.AbsoluteExpiresAt,
 		string(sess.State), sess.SessionID, testDeploymentID, sess.Version).

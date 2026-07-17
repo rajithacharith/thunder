@@ -28,11 +28,11 @@ import (
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
-// newCIBAStore returns a Redis-backed store when the runtime database is configured for Redis,
+// newCIBAStore returns a Redis-backed store when the runtime transient database is configured for Redis,
 // and falls back to the SQL-backed store otherwise. This mirrors the selection pattern used
 // by the authz package for its authorization request and code stores.
 func newCIBAStore(cfg oauthconfig.Config) CIBARequestStoreInterface {
-	if cfg.RuntimeDBType == provider.DataSourceTypeRedis {
+	if cfg.RuntimeTransientDBType == provider.DataSourceTypeRedis {
 		return newRedisCIBARequestStore(provider.GetRedisProvider(), cfg.DeploymentID)
 	}
 	return newCIBARequestStore(cfg.DeploymentID)
@@ -67,7 +67,7 @@ func newCIBARequestStore(deploymentID string) CIBARequestStoreInterface {
 // UserID is not included at creation — it is populated by MarkAuthenticated once the
 // callback verifies the assertion.
 func (s *cibaRequestStore) Add(ctx context.Context, request *CIBAAuthRequest) error {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+	dbClient, err := s.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -88,7 +88,7 @@ func (s *cibaRequestStore) GetByID(ctx context.Context, authReqID string) (*CIBA
 		return nil, ErrCIBARequestNotFound
 	}
 
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+	dbClient, err := s.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -115,7 +115,7 @@ func (s *cibaRequestStore) GetByID(ctx context.Context, authReqID string) (*CIBA
 // The WHERE STATE = 'PENDING' guard in the query prevents a double-callback race condition.
 func (s *cibaRequestStore) MarkAuthenticated(ctx context.Context, authReqID, userID,
 	authorizedScopes, attributeCacheID, completedACR string, authTime time.Time) error {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+	dbClient, err := s.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -134,7 +134,7 @@ func (s *cibaRequestStore) MarkAuthenticated(ctx context.Context, authReqID, use
 // no row was updated (i.e. the request was already consumed or is not authenticated), enabling
 // one-time-use enforcement without a separate read under concurrent polling.
 func (s *cibaRequestStore) MarkConsumed(ctx context.Context, authReqID string) (bool, error) {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+	dbClient, err := s.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -150,7 +150,7 @@ func (s *cibaRequestStore) MarkConsumed(ctx context.Context, authReqID string) (
 
 // UpdateLastPolled updates the last polled timestamp of a CIBA authentication request.
 func (s *cibaRequestStore) UpdateLastPolled(ctx context.Context, authReqID string, polledAt time.Time) error {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+	dbClient, err := s.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -165,7 +165,7 @@ func (s *cibaRequestStore) UpdateLastPolled(ctx context.Context, authReqID strin
 
 // UpdateState updates the state of a CIBA authentication request.
 func (s *cibaRequestStore) UpdateState(ctx context.Context, authReqID string, state CIBARequestState) error {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+	dbClient, err := s.dbProvider.GetRuntimeTransientDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

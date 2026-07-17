@@ -9,7 +9,7 @@ backend/cmd/server/
   main.go               # startup
   servicemanager.go     # calls every internal/*/init.go to register routes
   bootstrap/flows/      # JSON auth/registration flow definitions (auto-seeded)
-  repository/           # configdb.db · runtimedb.db · entitydb.db created at runtime in the configured data directory (SQLite or Postgres)
+  repository/           # configdb.db · runtime-transient.db · runtime-persistent.db · entitydb.db created at runtime in the configured data directory (SQLite or Postgres)
 backend/internal/
   authn/                # credential / OTP / passkey / social login
   oauth/                # OAuth 2.0 + OIDC server (authorize, token, introspect, userinfo, JWKS, DCR)
@@ -34,7 +34,7 @@ samples/apps/           # react-sdk-sample · react-api-based-sample · react-va
 
 ## Flow engine
 
-Authentication/registration are JSON node graphs (`START → PROMPT → TASK → DECISION → COMPLETE`). The engine steps through nodes, persisting state in `runtimedb` across requests. Each `TASK` node names an executor (e.g. `"CredentialsAuthExecutor"`). To add one: implement `core.ExecutorInterface`, add name to `executor/constants.go`, register in `executor/init.go`.
+Authentication/registration are JSON node graphs (`START → PROMPT → TASK → DECISION → COMPLETE`). The engine steps through nodes, persisting state in `runtime_transient` across requests. Each `TASK` node names an executor (e.g. `"CredentialsAuthExecutor"`). To add one: implement `core.ExecutorInterface`, add name to `executor/constants.go`, register in `executor/init.go`.
 
 ## ThunderID React SDK
 

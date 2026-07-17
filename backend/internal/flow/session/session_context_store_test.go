@@ -66,7 +66,7 @@ func (s *SessionContextStoreTestSuite) TestCreate_Persists() {
 	payload, err := c.serializePayload()
 	s.Require().NoError(err)
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryCreateSessionContext,
 		c.SessionID, testDeploymentID, c.CheckpointID, payload, c.ContextVersion).
 		Return(int64(1), nil)
@@ -85,12 +85,12 @@ func (s *SessionContextStoreTestSuite) TestCreate_TooLarge() {
 
 	s.ErrorIs(createErr, errSessionContextTooLarge)
 	// Oversized payloads are rejected before any DB call.
-	s.mockDBProvider.AssertNotCalled(s.T(), "GetOperationDBClient")
+	s.mockDBProvider.AssertNotCalled(s.T(), "GetRuntimePersistentDBClient")
 }
 
 func (s *SessionContextStoreTestSuite) TestCreate_DBError() {
 	c := sampleSessionContext()
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryCreateSessionContext,
 		c.SessionID, testDeploymentID, c.CheckpointID, mustSerialize(s.T(), c), c.ContextVersion).
 		Return(int64(0), errors.New("db down"))
@@ -112,7 +112,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_Hit() {
 		"context":         payload,
 		"context_version": int64(1),
 	}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "session").
 		Return([]map[string]interface{}{row}, nil)
@@ -130,7 +130,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_Hit() {
 }
 
 func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_Miss() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "missing").
 		Return([]map[string]interface{}{}, nil)
@@ -142,7 +142,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_Miss() {
 }
 
 func (s *SessionContextStoreTestSuite) TestListCheckpointIDs() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListCheckpointsBySessionID,
 		"sess-1", testDeploymentID).
 		Return([]map[string]interface{}{
@@ -157,7 +157,7 @@ func (s *SessionContextStoreTestSuite) TestListCheckpointIDs() {
 }
 
 func (s *SessionContextStoreTestSuite) TestDelete() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryDeleteSessionContext,
 		"sess-1", testDeploymentID).
 		Return(int64(1), nil)
@@ -169,7 +169,7 @@ func (s *SessionContextStoreTestSuite) TestDelete() {
 }
 
 func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_QueryError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "session").
 		Return(nil, errors.New("query failed"))
@@ -184,7 +184,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_MultipleRows() {
 		"session_id": "sess-1", "checkpoint_id": "session",
 		"context": "{}", "context_version": int64(1),
 	}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "session").
 		Return([]map[string]interface{}{row, row}, nil)
@@ -197,7 +197,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_MultipleRows() {
 
 func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_BuildError() {
 	row := map[string]interface{}{"session_id": 42, "checkpoint_id": "session", "context_version": int64(1)}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "session").
 		Return([]map[string]interface{}{row}, nil)
@@ -212,7 +212,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_BadContextVersion() {
 		"session_id": "sess-1", "checkpoint_id": "session",
 		"context": "{}", "context_version": "nope",
 	}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "session").
 		Return([]map[string]interface{}{row}, nil)
@@ -228,7 +228,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_BadPayload() {
 		"session_id": "sess-1", "checkpoint_id": "session",
 		"context": "not-json", "context_version": int64(1),
 	}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryGetSessionContextByCheckpoint,
 		"sess-1", testDeploymentID, "session").
 		Return([]map[string]interface{}{row}, nil)
@@ -239,7 +239,7 @@ func (s *SessionContextStoreTestSuite) TestGetByCheckpoint_BadPayload() {
 }
 
 func (s *SessionContextStoreTestSuite) TestListCheckpointIDs_QueryError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListCheckpointsBySessionID,
 		"sess-1", testDeploymentID).
 		Return(nil, errors.New("query failed"))
@@ -250,7 +250,7 @@ func (s *SessionContextStoreTestSuite) TestListCheckpointIDs_QueryError() {
 }
 
 func (s *SessionContextStoreTestSuite) TestListCheckpointIDs_ParseError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListCheckpointsBySessionID,
 		"sess-1", testDeploymentID).
 		Return([]map[string]interface{}{{"checkpoint_id": 42}}, nil) // non-string fails parseString
@@ -261,7 +261,7 @@ func (s *SessionContextStoreTestSuite) TestListCheckpointIDs_ParseError() {
 }
 
 func (s *SessionContextStoreTestSuite) TestDelete_DBError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryDeleteSessionContext,
 		"sess-1", testDeploymentID).
 		Return(int64(0), errors.New("db down"))

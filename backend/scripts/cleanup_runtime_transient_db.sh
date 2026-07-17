@@ -19,9 +19,9 @@ set -euo pipefail
 # ----------------------------------------------------------------------------
 
 # =============================================================================
-# Runtime Database Cleanup Script
+# Runtime-transient Database Cleanup Script
 #
-# Deletes expired rows from runtime database tables. Designed to be run
+# Deletes expired rows from runtime transient database tables. Designed to be run
 # manually (one-shot) or scheduled via cron for periodic cleanup.
 #
 # Tables cleaned (in order):
@@ -34,21 +34,21 @@ set -euo pipefail
 #
 # Usage examples:
 #   # SQLite (local development)
-#   ./cleanup_runtime_db.sh -type sqlite -path /path/to/runtimedb.db
+#   ./cleanup_runtime_transient_db.sh -type sqlite -path /path/to/runtime-transient.db
 #
 #   # PostgreSQL
-#   ./cleanup_runtime_db.sh -type postgres -host localhost -port 5432 \
+#   ./cleanup_runtime_transient_db.sh -type postgres -host localhost -port 5432 \
 #       -name thunderidruntime -username thunderid -password secret
 #
 #   # With options
-#   ./cleanup_runtime_db.sh -type sqlite -path /path/to/runtimedb.db \
+#   ./cleanup_runtime_transient_db.sh -type sqlite -path /path/to/runtime-transient.db \
 #       -batch_size 500 -grace_period 120 -deployment_id my-deployment
 #
 #   # Dry run (show counts without deleting)
-#   ./cleanup_runtime_db.sh -type sqlite -path /path/to/runtimedb.db -dry_run
+#   ./cleanup_runtime_transient_db.sh -type sqlite -path /path/to/runtime-transient.db -dry_run
 #
 #   # Cron (every 30 minutes)
-#   */30 * * * * /opt/thunderid/scripts/cleanup_runtime_db.sh \
+#   */30 * * * * /opt/thunderid/scripts/cleanup_runtime_transient_db.sh \
 #       -type postgres -host localhost -port 5432 -name thunderidruntime \
 #       -username thunderid -password "$THUNDERID_DB_PASSWORD" \
 #       >> /var/log/thunderid-cleanup.log 2>&1
@@ -77,9 +77,9 @@ TOTAL_DELETED=0
 
 print_help() {
   echo ""
-  echo "Runtime Database Cleanup Script"
+  echo "Runtime-transient Database Cleanup Script"
   echo ""
-  echo "Deletes expired rows from runtime database tables. Can be run once"
+  echo "Deletes expired rows from runtime transient database tables. Can be run once"
   echo "or scheduled via cron for periodic cleanup."
   echo ""
   echo "Usage:"
@@ -334,7 +334,7 @@ cleanup_table() {
 }
 
 cleanup_all_tables() {
-  echo "Cleaning up expired rows from runtime database tables..."
+  echo "Cleaning up expired rows from runtime transient database tables..."
   echo ""
 
   if [ -n "$DEPLOYMENT_ID" ]; then
@@ -368,7 +368,7 @@ cleanup_all_tables() {
 
 main() {
   echo "============================================"
-  echo "ThunderID Runtime Database Cleanup"
+  echo "ThunderID Runtime-transient Database Cleanup"
   echo "$(date '+%Y-%m-%d %H:%M:%S')"
   echo "============================================"
   echo ""

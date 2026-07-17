@@ -55,7 +55,7 @@ func (suite *DBSourceTestSuite) SetupTest() {
 
 func (suite *DBSourceTestSuite) TestSnapshot_Success() {
 	expiry := time.Now().Add(time.Hour).UTC()
-	suite.mockDBProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("QueryContext", mock.Anything, querySnapshotRevokedTokens,
 		mock.Anything, testDeploymentID).
 		Return([]map[string]interface{}{
@@ -72,7 +72,7 @@ func (suite *DBSourceTestSuite) TestSnapshot_Success() {
 }
 
 func (suite *DBSourceTestSuite) TestSnapshot_Empty() {
-	suite.mockDBProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("QueryContext", mock.Anything, querySnapshotRevokedTokens,
 		mock.Anything, testDeploymentID).
 		Return([]map[string]interface{}{}, nil)
@@ -84,7 +84,7 @@ func (suite *DBSourceTestSuite) TestSnapshot_Empty() {
 }
 
 func (suite *DBSourceTestSuite) TestSnapshot_DBClientError() {
-	suite.mockDBProvider.On("GetOperationDBClient").Return(nil, errors.New("db client error"))
+	suite.mockDBProvider.On("GetRuntimePersistentDBClient").Return(nil, errors.New("db client error"))
 
 	entries, err := suite.source.Snapshot(context.Background())
 
@@ -94,7 +94,7 @@ func (suite *DBSourceTestSuite) TestSnapshot_DBClientError() {
 }
 
 func (suite *DBSourceTestSuite) TestSnapshot_QueryError() {
-	suite.mockDBProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("QueryContext", mock.Anything, querySnapshotRevokedTokens,
 		mock.Anything, testDeploymentID).
 		Return(nil, errors.New("query error"))
@@ -107,7 +107,7 @@ func (suite *DBSourceTestSuite) TestSnapshot_QueryError() {
 }
 
 func (suite *DBSourceTestSuite) TestSnapshot_InvalidJTI() {
-	suite.mockDBProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("QueryContext", mock.Anything, querySnapshotRevokedTokens,
 		mock.Anything, testDeploymentID).
 		Return([]map[string]interface{}{
@@ -122,7 +122,7 @@ func (suite *DBSourceTestSuite) TestSnapshot_InvalidJTI() {
 }
 
 func (suite *DBSourceTestSuite) TestSnapshot_InvalidExpiryTime() {
-	suite.mockDBProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("QueryContext", mock.Anything, querySnapshotRevokedTokens,
 		mock.Anything, testDeploymentID).
 		Return([]map[string]interface{}{

@@ -38,7 +38,7 @@ type RevokedTokenStoreInterface interface {
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 }
 
-// revokedTokenStore implements RevokedTokenStoreInterface against the operation database.
+// revokedTokenStore implements RevokedTokenStoreInterface against the runtime persistent database.
 type revokedTokenStore struct {
 	dbProvider   provider.DBProviderInterface
 	deploymentID string
@@ -57,9 +57,9 @@ func newRevokedTokenStore() RevokedTokenStoreInterface {
 // InsertRevokedToken writes a JTI to the deny list. A duplicate (deployment, jti) is a no-op.
 // A UUID v7 surrogate primary key is generated when the token has no ID.
 func (s *revokedTokenStore) InsertRevokedToken(ctx context.Context, token RevokedToken) error {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
-		return fmt.Errorf("failed to get operation database client: %w", err)
+		return fmt.Errorf("failed to get runtime persistent database client: %w", err)
 	}
 
 	id := token.ID
@@ -81,9 +81,9 @@ func (s *revokedTokenStore) InsertRevokedToken(ctx context.Context, token Revoke
 
 // IsTokenRevoked reports whether a non-expired deny-list entry exists for the given JTI.
 func (s *revokedTokenStore) IsTokenRevoked(ctx context.Context, jti string) (bool, error) {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
-		return false, fmt.Errorf("failed to get operation database client: %w", err)
+		return false, fmt.Errorf("failed to get runtime persistent database client: %w", err)
 	}
 
 	results, err := dbClient.QueryContext(ctx, queryIsTokenRevoked, jti, time.Now().UTC(), s.deploymentID)

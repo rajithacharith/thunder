@@ -119,8 +119,8 @@ func (suite *AuthorizeServiceTestSuite) BeforeTest(suiteName, testName string) {
 			ErrorPath: "/error",
 		},
 		Database: config.DatabaseConfig{
-			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
-			Runtime: config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
+			Config:           config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
+			RuntimeTransient: config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
 		},
 		JWT: engineconfig.JWTConfig{
 			Issuer: "https://localhost:8090",

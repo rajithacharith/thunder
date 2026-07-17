@@ -33,14 +33,14 @@ const (
 	columnNameExpiryTime = "expiry_time"
 )
 
-// dbSource reads the deny-list snapshot from the operation database. It is the only source today; it
+// dbSource reads the deny-list snapshot from the runtime persistent database. It is the only source today; it
 // issues a single read-only bulk query per sync and never writes.
 type dbSource struct {
 	dbProvider   provider.DBProviderInterface
 	deploymentID string
 }
 
-// newDBSource creates a dbSource bound to the operation database and this deployment's identifier.
+// newDBSource creates a dbSource bound to the runtime persistent database and this deployment's identifier.
 func newDBSource() syncSource {
 	return &dbSource{
 		dbProvider:   provider.GetDBProvider(),
@@ -50,9 +50,9 @@ func newDBSource() syncSource {
 
 // Snapshot returns all non-expired deny-list entries for this deployment.
 func (s *dbSource) Snapshot(ctx context.Context) ([]revokedEntry, error) {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get operation database client: %w", err)
+		return nil, fmt.Errorf("failed to get runtime persistent database client: %w", err)
 	}
 
 	rows, err := dbClient.QueryContext(ctx, querySnapshotRevokedTokens, time.Now().UTC(), s.deploymentID)

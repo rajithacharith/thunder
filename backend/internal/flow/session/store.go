@@ -28,16 +28,16 @@ import (
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
-// store is the single operation-DB-backed persistence implementation for SSO sessions. It satisfies
+// store is the single runtime-persistent-DB-backed persistence implementation for SSO sessions. It satisfies
 // the sessionStore interface — session rows, per-checkpoint contexts, and participants all back onto
-// the same operation datasource, so they share one struct rather than duplicating the provider and
+// the same runtime persistent datasource, so they share one struct rather than duplicating the provider and
 // deployment id across parallel stores.
 type store struct {
 	dbProvider   provider.DBProviderInterface
 	deploymentID string
 }
 
-// newStore creates the session store backed by the given operation DB provider. It returns the
+// newStore creates the session store backed by the given runtime persistent DB provider. It returns the
 // concrete type so Initialize can hand the one instance to each of the store interfaces the service
 // depends on.
 func newStore(dbProvider provider.DBProviderInterface, deploymentID string) *store {
@@ -49,7 +49,7 @@ func newStore(dbProvider provider.DBProviderInterface, deploymentID string) *sto
 
 // Create persists a new session.
 func (st *store) Create(ctx context.Context, s Session) error {
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, queryCreateSession,
 			s.SessionID, st.deploymentID, s.SubjectID, s.FlowID, s.FlowVersion,
 			s.FlowExecutionID, s.HandleID,
@@ -77,7 +77,7 @@ func (st *store) GetByExecutionID(ctx context.Context, flowExecutionID string) (
 func (st *store) getSingle(ctx context.Context, query model.DBQuery, key string) (*Session, error) {
 	var result *Session
 
-	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	err := withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		results, err := dbClient.QueryContext(ctx, query, key, st.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to execute query: %w", err)
@@ -105,7 +105,7 @@ func (st *store) getSingle(ctx context.Context, query model.DBQuery, key string)
 // Update writes the mutable fields of an existing session under an optimistic-lock guard. It
 // touches only SESSION — never the auth context — so an activity touch stays lean.
 func (st *store) Update(ctx context.Context, s *Session) error {
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		rowsAffected, err := dbClient.ExecuteContext(ctx, queryUpdateSession,
 			s.FlowVersion, s.HandleID,
 			s.LastActiveAt,
@@ -132,7 +132,7 @@ func (st *store) CreateContext(ctx context.Context, c SessionContext) error {
 		return errSessionContextTooLarge
 	}
 
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, execErr := dbClient.ExecuteContext(ctx, queryCreateSessionContext,
 			c.SessionID, st.deploymentID, c.CheckpointID, payload, c.ContextVersion)
 		if execErr != nil {
@@ -147,7 +147,7 @@ func (st *store) GetByCheckpoint(ctx context.Context, sessionID,
 	checkpointID string) (*SessionContext, error) {
 	var result *SessionContext
 
-	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	err := withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		results, queryErr := dbClient.QueryContext(ctx, queryGetSessionContextByCheckpoint,
 			sessionID, st.deploymentID, checkpointID)
 		if queryErr != nil {
@@ -177,7 +177,7 @@ func (st *store) GetByCheckpoint(ctx context.Context, sessionID,
 func (st *store) ListCheckpointIDs(ctx context.Context, sessionID string) ([]string, error) {
 	var ids []string
 
-	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	err := withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		results, queryErr := dbClient.QueryContext(ctx, queryListCheckpointsBySessionID, sessionID, st.deploymentID)
 		if queryErr != nil {
 			return fmt.Errorf("failed to execute query: %w", queryErr)
@@ -199,7 +199,7 @@ func (st *store) ListCheckpointIDs(ctx context.Context, sessionID string) ([]str
 
 // Delete removes a session's session context.
 func (st *store) Delete(ctx context.Context, sessionID string) error {
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, queryDeleteSessionContext, sessionID, st.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to delete session context: %w", err)
@@ -210,7 +210,7 @@ func (st *store) Delete(ctx context.Context, sessionID string) error {
 
 // DeleteSession removes the session row itself.
 func (st *store) DeleteSession(ctx context.Context, sessionID string) error {
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, queryDeleteSession, sessionID, st.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to delete session: %w", err)
@@ -250,7 +250,7 @@ func (st *store) buildSessionContextFromRow(row map[string]interface{}) (*Sessio
 
 // Record inserts or refreshes a participant under the upsert query.
 func (st *store) Record(ctx context.Context, p Participant) error {
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, queryUpsertParticipant,
 			p.SessionID, st.deploymentID, p.AppID, p.FirstJoinedAt, p.LastActiveAt)
 		if err != nil {
@@ -264,7 +264,7 @@ func (st *store) Record(ctx context.Context, p Participant) error {
 func (st *store) ListBySessionID(ctx context.Context, sessionID string) ([]Participant, error) {
 	var result []Participant
 
-	err := withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	err := withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		results, queryErr := dbClient.QueryContext(ctx, queryListParticipantsBySessionID, sessionID, st.deploymentID)
 		if queryErr != nil {
 			return fmt.Errorf("failed to execute query: %w", queryErr)
@@ -286,7 +286,7 @@ func (st *store) ListBySessionID(ctx context.Context, sessionID string) ([]Parti
 
 // DeleteBySessionID removes all participants of a session.
 func (st *store) DeleteBySessionID(ctx context.Context, sessionID string) error {
-	return withOperationDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
+	return withRuntimePersistentDBClient(st.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, queryDeleteParticipantsBySessionID, sessionID, st.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to delete session participants: %w", err)
@@ -321,11 +321,11 @@ func buildParticipantFromRow(row map[string]interface{}) (Participant, error) {
 	}, nil
 }
 
-// withOperationDBClient runs fn with an operation database client. SSO sessions are persistent
-// state that must survive a runtime database flush, so they live in the operation datasource.
-func withOperationDBClient(dbProvider provider.DBProviderInterface,
+// withRuntimePersistentDBClient runs fn with an runtime persistent database client. SSO sessions are persistent
+// state that must survive a runtime database flush, so they live in the runtime persistent datasource.
+func withRuntimePersistentDBClient(dbProvider provider.DBProviderInterface,
 	fn func(provider.DBClientInterface) error) error {
-	dbClient, err := dbProvider.GetOperationDBClient()
+	dbClient, err := dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

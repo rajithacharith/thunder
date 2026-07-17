@@ -47,11 +47,11 @@ type consentStore struct {
 
 // newConsentStore creates a new consentStore along with a transactioner that callers can use to
 // wrap the multi-table create and update operations in a single database transaction. Consent
-// records are operation-classified state, so they are persisted to the operation datasource.
+// records are long-lived persistent state, so they are persisted to the runtime persistent datasource.
 func newConsentStore() (consentStoreInterface, transaction.Transactioner, error) {
 	dbProvider := provider.GetDBProvider()
 
-	transactioner, err := dbProvider.GetOperationDBTransactioner()
+	transactioner, err := dbProvider.GetRuntimePersistentDBTransactioner()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get transactioner: %w", err)
 	}
@@ -64,7 +64,7 @@ func newConsentStore() (consentStoreInterface, transaction.Transactioner, error)
 
 // CreateConsent persists a consent record and its authorization records.
 func (s *consentStore) CreateConsent(ctx context.Context, consent *Consent) error {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -96,7 +96,7 @@ func (s *consentStore) CreateConsent(ctx context.Context, consent *Consent) erro
 
 // GetConsent retrieves a consent record and its authorization records by id.
 func (s *consentStore) GetConsent(ctx context.Context, id string) (*Consent, error) {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -126,7 +126,7 @@ func (s *consentStore) GetConsent(ctx context.Context, id string) (*Consent, err
 
 // UpdateConsent updates an existing consent record and replaces its authorization records.
 func (s *consentStore) UpdateConsent(ctx context.Context, consent *Consent) error {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -164,7 +164,7 @@ func (s *consentStore) UpdateConsent(ctx context.Context, consent *Consent) erro
 
 // SearchConsents retrieves consent records matching the given filters, each with its authorizations.
 func (s *consentStore) SearchConsents(ctx context.Context, filters ConsentFilter) ([]*Consent, error) {
-	dbClient, err := s.dbProvider.GetOperationDBClient()
+	dbClient, err := s.dbProvider.GetRuntimePersistentDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}

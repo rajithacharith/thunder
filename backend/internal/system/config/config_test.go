@@ -533,7 +533,7 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 					Port:     5432,
 				},
 			},
-			Runtime: DataSource{
+			RuntimeTransient: DataSource{
 				Type: "postgres",
 				Postgres: PostgresDataSource{
 					Hostname: "base-runtime-host",
