@@ -19,26 +19,32 @@ server:
   port: {{ .Values.configuration.server.port }}
   http_only: {{ .Values.configuration.server.httpOnly }}
   public_url: {{ .Values.configuration.server.publicUrl | quote }}
-  {{- if .Values.configuration.server.security }}
+  {{- if or .Values.configuration.server.security .Values.setup.enabled }}
   security:
-    {{- if .Values.configuration.server.security.jwksCacheTtl }}
-    jwks_cache_ttl: {{ .Values.configuration.server.security.jwksCacheTtl }}
+    {{- with .Values.configuration.server.security }}
+    {{- if .jwksCacheTtl }}
+    jwks_cache_ttl: {{ .jwksCacheTtl }}
     {{- end }}
-    {{- if .Values.configuration.server.security.trustedIssuer }}
+    {{- if .trustedIssuer }}
     trusted_issuer:
-      issuer: {{ .Values.configuration.server.security.trustedIssuer.issuer | quote }}
-      jwks_url: {{ .Values.configuration.server.security.trustedIssuer.jwksUrl | quote }}
-      audience: {{ .Values.configuration.server.security.trustedIssuer.audience | quote }}
-      {{- if .Values.configuration.server.security.trustedIssuer.requiredClaims }}
+      issuer: {{ .trustedIssuer.issuer | quote }}
+      jwks_url: {{ .trustedIssuer.jwksUrl | quote }}
+      audience: {{ .trustedIssuer.audience | quote }}
+      {{- if .trustedIssuer.requiredClaims }}
       required_claims:
-        {{- range .Values.configuration.server.security.trustedIssuer.requiredClaims }}
+        {{- range .trustedIssuer.requiredClaims }}
         - claim: {{ .claim | quote }}
           value: {{ .value | quote }}
         {{- end }}
       {{- end }}
     {{- end }}
-    {{- if .Values.configuration.server.security.directAuthSecret }}
+    {{- end }}
+    {{- if and .Values.configuration.server.security .Values.configuration.server.security.directAuthSecret }}
     direct_auth_secret: {{ .Values.configuration.server.security.directAuthSecret | quote }}
+    {{- else if .Values.setup.enabled }}
+    # The setup job generates the secret into config/secrets/direct_auth_secret on a shared volume;
+    # the server reads it from there at load time via this file:// reference.
+    direct_auth_secret: "file://config/secrets/direct_auth_secret"
     {{- end }}
   {{- end }}
 
@@ -265,7 +271,7 @@ passkey:
   {{- end }}
 
 openid4vp:
-  client_id: {{ .Values.configuration.openid4vp.clientId | quote }}
+  client_id_scheme: {{ .Values.configuration.openid4vp.clientIdScheme | quote }}
   signing_key_id: {{ .Values.configuration.openid4vp.signingKeyId | quote }}
   ephemeral_key_id: {{ .Values.configuration.openid4vp.ephemeralKeyId | quote }}
   response_enc_values:
