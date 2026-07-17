@@ -28,6 +28,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/pem"
 	"math/big"
 	"testing"
 	"time"
@@ -364,8 +365,35 @@ func (s *AppAttestVerifierTestSuite) TestVerify_KeyIdentifierMismatch() {
 	s.assertRejected(verifier, appleConfig(), token)
 }
 
-func (s *AppAttestVerifierTestSuite) TestNewAppAttestVerifier_ParsesEmbeddedRoot() {
-	verifier, err := newAppAttestVerifier()
+func (s *AppAttestVerifierTestSuite) TestNewAppAttestVerifier_ParsesConfiguredRoot() {
+	rootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	s.Require().NoError(err)
+	rootTemplate := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Test App Attest Root"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	rootDER, err := x509.CreateCertificate(rand.Reader, rootTemplate, rootTemplate, &rootKey.PublicKey, rootKey)
+	s.Require().NoError(err)
+	rootPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootDER}))
+
+	verifier, err := newAppAttestVerifier(rootPEM)
 	s.NoError(err)
 	s.NotNil(verifier)
+}
+
+func (s *AppAttestVerifierTestSuite) TestNewAppAttestVerifier_MissingRoot() {
+	verifier, err := newAppAttestVerifier("")
+	s.Error(err)
+	s.Nil(verifier)
+}
+
+func (s *AppAttestVerifierTestSuite) TestNewAppAttestVerifier_InvalidRoot() {
+	verifier, err := newAppAttestVerifier("not a valid pem certificate")
+	s.Error(err)
+	s.Nil(verifier)
 }
