@@ -63,7 +63,7 @@ vi.mock('react-router', async (importOriginal) => ({
 }));
 vi.mock('@thunderid/contexts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@thunderid/contexts')>()),
-  useConfig: () => ({getServerUrl: () => 'https://id.acme.io'}),
+  useConfig: () => ({getGateCallbackUrl: () => 'https://id.acme.io/gate/callback'}),
   useToast: () => ({showToast: vi.fn()}),
 }));
 vi.mock('@thunderid/components', () => ({

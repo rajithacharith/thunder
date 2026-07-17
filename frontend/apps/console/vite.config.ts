@@ -53,6 +53,10 @@ const BUNDLE_ANALYSIS_ENABLED = process.env.CODECOV_BUNDLE_UPLOAD === 'true';
 // __DEV_SERVER_URL__ only for the dev server; production builds receive an empty string.
 const DEV_SERVER_URL = process.env.THUNDERID_DEV_SERVER_URL?.trim();
 
+// Dev gate app URL, from THUNDERID_DEV_GATE_URL (default https://localhost:5190). Injected into
+// __DEV_GATE_URL__ only for the dev server; production builds receive an empty string.
+const DEV_GATE_URL = process.env.THUNDERID_DEV_GATE_URL?.trim();
+
 // https://vite.dev/config/
 export default defineConfig(({command}) => ({
   base: BASE_URL,
@@ -95,6 +99,9 @@ export default defineConfig(({command}) => ({
           ? DEV_SERVER_URL
           : 'https://localhost:8090'
         : '',
+    ),
+    __DEV_GATE_URL__: JSON.stringify(
+      command === 'serve' ? (DEV_GATE_URL && DEV_GATE_URL.length > 0 ? DEV_GATE_URL : 'https://localhost:5190') : '',
     ),
   },
   plugins: [

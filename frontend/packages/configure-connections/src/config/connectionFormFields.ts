@@ -73,10 +73,7 @@ const oauthFields = (namePlaceholder: string, clientIdPlaceholder: string): Conn
   {
     name: 'redirectUri',
     labelKey: 'connections:form.fields.redirectUri.label',
-    hintKey: 'connections:form.fields.redirectUri.hint',
-    kind: 'url',
-    required: true,
-    placeholder: 'https://your-gate-host/gate/callback',
+    kind: 'readonly-copy',
   },
   {
     name: 'scopes',
@@ -173,10 +170,7 @@ export const CONNECTION_FORM_FIELDS: Record<ConnectionType, ConnectionFieldDef[]
     {
       name: 'redirectUri',
       labelKey: 'connections:form.fields.redirectUri.label',
-      hintKey: 'connections:form.fields.redirectUri.hint',
-      kind: 'url',
-      required: true,
-      placeholder: 'https://your-gate-host/gate/callback',
+      kind: 'readonly-copy',
     },
     {
       name: 'scopes',
@@ -232,10 +226,7 @@ export const CONNECTION_FORM_FIELDS: Record<ConnectionType, ConnectionFieldDef[]
     {
       name: 'redirectUri',
       labelKey: 'connections:form.fields.redirectUri.label',
-      hintKey: 'connections:form.fields.redirectUri.hint',
-      kind: 'url',
-      required: true,
-      placeholder: 'https://your-gate-host/gate/callback',
+      kind: 'readonly-copy',
     },
     {
       name: 'scopes',
