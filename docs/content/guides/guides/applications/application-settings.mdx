@@ -157,6 +157,21 @@ Configure the iOS platform under the `attestation.apple` block. Verification run
 | **Team ID** | The Apple Developer Team ID (for example, `ABCDE12345`). |
 | **Bundle ID** | The iOS application bundle identifier (for example, `com.example.myapp`) that must match the attested app. |
 
+The trust anchor used to validate the attestation certificate chain is a server-level setting, shared by every application, rather than a per-application one. It is configured under the `attestation.apple.root_certificate` key in `deployment.yaml` and holds the PEM-encoded Apple App Attestation Root CA certificate. <ProductName /> ships the public Apple root as the default in `config/default.json`, valid until 2045, so no configuration is required to verify iOS attestations out of the box.
+
+:::note
+Override this only if Apple publishes a new App Attestation Root CA. To do so, add the replacement certificate to `deployment.yaml`, which takes precedence over the shipped default:
+
+```yaml
+attestation:
+  apple:
+    root_certificate: |
+      -----BEGIN CERTIFICATE-----
+      <your PEM-encoded certificate>
+      -----END CERTIFICATE-----
+```
+:::
+
 ## Related Guides
 
 - [Manage Applications](../manage-applications) - Create, update, and delete applications

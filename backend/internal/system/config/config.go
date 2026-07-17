@@ -188,6 +188,19 @@ type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
 }
 
+// AttestationConfig holds engine-level platform attestation configuration shared across
+// applications.
+type AttestationConfig struct {
+	Apple AppleAttestationConfig `yaml:"apple" json:"apple"`
+}
+
+// AppleAttestationConfig holds the engine-level Apple App Attest settings. RootCertificate is the
+// PEM-encoded Apple "App Attestation Root CA" certificate used as the trust anchor when verifying
+// attestation certificate chains.
+type AppleAttestationConfig struct {
+	RootCertificate string `yaml:"root_certificate" json:"root_certificate"`
+}
+
 // OpenID4VPConfig holds the OpenID4VP verifier engine configuration. Engine
 // defaults (client_id_scheme, signing key, base URLs, response advertisement, trust
 // anchors) live at the top level; presentation definitions are managed at runtime
@@ -570,6 +583,7 @@ type Config struct {
 	EntityType           EntityTypeConfig                 `yaml:"user_type"             json:"user_type"`
 	Observability        engineconfig.ObservabilityConfig `yaml:"observability"         json:"observability"`
 	Passkey              PasskeyConfig                    `yaml:"passkey"               json:"passkey"`
+	Attestation          AttestationConfig                `yaml:"attestation"           json:"attestation"`
 	OpenID4VP            OpenID4VPConfig                  `yaml:"openid4vp"             json:"openid4vp"`
 	OpenID4VCI           OpenID4VCIConfig                 `yaml:"openid4vci"            json:"openid4vci"`
 	AuthnProvider        AuthnProviderConfig              `yaml:"authn_provider"        json:"authn_provider"`

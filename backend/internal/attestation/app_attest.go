@@ -49,13 +49,16 @@ type appAttestVerifier struct {
 	logger   *log.Logger
 }
 
-// newAppAttestVerifier creates a verifier trusted against Apple's public App Attestation Root CA. It
-// errors if the embedded root certificate fails to parse, so the caller can fail server startup
-// instead of running with a non-functional verifier.
-func newAppAttestVerifier() (providers.AttestationProvider, error) {
+// newAppAttestVerifier creates a verifier trusted against the configured Apple App Attestation Root
+// CA. It errors if the root certificate is missing or fails to parse, so the caller can fail server
+// startup instead of running with a non-functional verifier.
+func newAppAttestVerifier(rootPEM string) (providers.AttestationProvider, error) {
+	if rootPEM == "" {
+		return nil, fmt.Errorf("attestation: Apple App Attestation Root CA certificate is not configured")
+	}
 	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM([]byte(appleAppAttestRootPEM)) {
-		return nil, fmt.Errorf("attestation: failed to parse embedded Apple App Attestation Root CA")
+	if !pool.AppendCertsFromPEM([]byte(rootPEM)) {
+		return nil, fmt.Errorf("attestation: failed to parse configured Apple App Attestation Root CA")
 	}
 	return &appAttestVerifier{
 		rootPool: pool,
