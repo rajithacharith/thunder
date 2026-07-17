@@ -76,7 +76,7 @@ func (suite *HealthCheckHandlerTestSuite) TestHandleReadinessRequest_AllUp() {
 			Status:      model.StatusUp,
 		},
 		{
-			ServiceName: "UserDB",
+			ServiceName: "EntityDB",
 			Status:      model.StatusUp,
 		},
 	}
@@ -118,7 +118,7 @@ func (suite *HealthCheckHandlerTestSuite) TestHandleReadinessRequest_Down() {
 			Status:      model.StatusDown,
 		},
 		{
-			ServiceName: "UserDB",
+			ServiceName: "EntityDB",
 			Status:      model.StatusDown,
 		},
 	}

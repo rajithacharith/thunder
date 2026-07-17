@@ -61,15 +61,15 @@ func (hcs *HealthCheckService) CheckReadiness(ctx context.Context) model.ServerS
 		Status:      hcs.checkRuntimeDatabaseStatus(ctx, queryRuntimeDBTable),
 	}
 
-	userDBStatus := model.ServiceStatus{
-		ServiceName: "UserDB",
-		Status:      hcs.checkUserDatabaseStatus(ctx, queryUserDBTable),
+	entityDBStatus := model.ServiceStatus{
+		ServiceName: "EntityDB",
+		Status:      hcs.checkEntityDatabaseStatus(ctx, queryEntityDBTable),
 	}
 
 	status := model.StatusUp
 	if configDBStatus.Status == model.StatusDown ||
 		runtimeDBStatus.Status == model.StatusDown ||
-		userDBStatus.Status == model.StatusDown {
+		entityDBStatus.Status == model.StatusDown {
 		status = model.StatusDown
 	}
 	return model.ServerStatus{
@@ -77,7 +77,7 @@ func (hcs *HealthCheckService) CheckReadiness(ctx context.Context) model.ServerS
 		ServiceStatus: []model.ServiceStatus{
 			configDBStatus,
 			runtimeDBStatus,
-			userDBStatus,
+			entityDBStatus,
 		},
 	}
 }
@@ -111,10 +111,10 @@ func (hcs *HealthCheckService) checkRedisRuntimeStatus(ctx context.Context) mode
 	return model.StatusUp
 }
 
-// checkUserDatabaseStatus checks the status of the runtime database with the specified query.
-func (hcs *HealthCheckService) checkUserDatabaseStatus(ctx context.Context, query dbmodel.DBQuery) model.Status {
-	dbClient, err := hcs.DBProvider.GetUserDBClient()
-	return hcs.executeDatabaseHealthCheck(ctx, "UserDB", dbClient, err, query)
+// checkEntityDatabaseStatus checks the status of the entity database with the specified query.
+func (hcs *HealthCheckService) checkEntityDatabaseStatus(ctx context.Context, query dbmodel.DBQuery) model.Status {
+	dbClient, err := hcs.DBProvider.GetEntityDBClient()
+	return hcs.executeDatabaseHealthCheck(ctx, "EntityDB", dbClient, err, query)
 }
 
 // executeDatabaseHealthCheck runs the provided query on the given database client and reports its status.

@@ -154,32 +154,32 @@ database:
       min_retry_backoff_ms: {{ .Values.configuration.database.runtime.postgres.min_retry_backoff_ms }}
       max_retry_backoff_ms: {{ .Values.configuration.database.runtime.postgres.max_retry_backoff_ms }}
     {{- end }}
-  user:
-    type: {{ .Values.configuration.database.user.type | quote }}
-    {{- if eq .Values.configuration.database.user.type "sqlite" }}
+  entity:
+    type: {{ .Values.configuration.database.entity.type | quote }}
+    {{- if eq .Values.configuration.database.entity.type "sqlite" }}
     sqlite:
-      path: {{ .Values.configuration.database.user.sqlite.path | quote }}
-      options: {{ .Values.configuration.database.user.sqlite.options | quote }}
-      max_open_conns: {{ .Values.configuration.database.user.sqlite.max_open_conns }}
-      max_idle_conns: {{ .Values.configuration.database.user.sqlite.max_idle_conns }}
-      conn_max_lifetime: {{ .Values.configuration.database.user.sqlite.conn_max_lifetime }}
-      max_retries: {{ .Values.configuration.database.user.sqlite.max_retries }}
-      min_retry_backoff_ms: {{ .Values.configuration.database.user.sqlite.min_retry_backoff_ms }}
-      max_retry_backoff_ms: {{ .Values.configuration.database.user.sqlite.max_retry_backoff_ms }}
+      path: {{ .Values.configuration.database.entity.sqlite.path | quote }}
+      options: {{ .Values.configuration.database.entity.sqlite.options | quote }}
+      max_open_conns: {{ .Values.configuration.database.entity.sqlite.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.entity.sqlite.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.entity.sqlite.conn_max_lifetime }}
+      max_retries: {{ .Values.configuration.database.entity.sqlite.max_retries }}
+      min_retry_backoff_ms: {{ .Values.configuration.database.entity.sqlite.min_retry_backoff_ms }}
+      max_retry_backoff_ms: {{ .Values.configuration.database.entity.sqlite.max_retry_backoff_ms }}
     {{- else }}
     postgres:
-      hostname: {{ .Values.configuration.database.user.postgres.hostname | quote }}
-      port: {{ .Values.configuration.database.user.postgres.port }}
-      name: {{ .Values.configuration.database.user.postgres.name | quote }}
-      username: {{ .Values.configuration.database.user.postgres.username | quote }}
-      password: {{ "{{.DB_USER_PASSWORD}}" | quote }}
-      sslmode: {{ .Values.configuration.database.user.postgres.sslmode | quote }}
-      max_open_conns: {{ .Values.configuration.database.user.postgres.max_open_conns }}
-      max_idle_conns: {{ .Values.configuration.database.user.postgres.max_idle_conns }}
-      conn_max_lifetime: {{ .Values.configuration.database.user.postgres.conn_max_lifetime }}
-      max_retries: {{ .Values.configuration.database.user.postgres.max_retries }}
-      min_retry_backoff_ms: {{ .Values.configuration.database.user.postgres.min_retry_backoff_ms }}
-      max_retry_backoff_ms: {{ .Values.configuration.database.user.postgres.max_retry_backoff_ms }}
+      hostname: {{ .Values.configuration.database.entity.postgres.hostname | quote }}
+      port: {{ .Values.configuration.database.entity.postgres.port }}
+      name: {{ .Values.configuration.database.entity.postgres.name | quote }}
+      username: {{ .Values.configuration.database.entity.postgres.username | quote }}
+      password: {{ "{{.DB_ENTITY_PASSWORD}}" | quote }}
+      sslmode: {{ .Values.configuration.database.entity.postgres.sslmode | quote }}
+      max_open_conns: {{ .Values.configuration.database.entity.postgres.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.entity.postgres.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.entity.postgres.conn_max_lifetime }}
+      max_retries: {{ .Values.configuration.database.entity.postgres.max_retries }}
+      min_retry_backoff_ms: {{ .Values.configuration.database.entity.postgres.min_retry_backoff_ms }}
+      max_retry_backoff_ms: {{ .Values.configuration.database.entity.postgres.max_retry_backoff_ms }}
     {{- end }}
   operation:
     type: {{ .Values.configuration.database.operation.type | quote }}

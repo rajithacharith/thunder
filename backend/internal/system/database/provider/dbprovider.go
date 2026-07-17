@@ -40,7 +40,7 @@ const (
 
 	dbNameConfig    = "config"
 	dbNameRuntime   = "runtime"
-	dbNameUser      = "user"
+	dbNameEntity    = "entity"
 	dbNameOperation = "operation"
 )
 
@@ -54,10 +54,10 @@ type dbConfig struct {
 type DBProviderInterface interface {
 	GetConfigDBClient() (DBClientInterface, error)
 	GetRuntimeDBClient() (DBClientInterface, error)
-	GetUserDBClient() (DBClientInterface, error)
+	GetEntityDBClient() (DBClientInterface, error)
 	GetOperationDBClient() (DBClientInterface, error)
 	GetConfigDBTransactioner() (transaction.Transactioner, error)
-	GetUserDBTransactioner() (transaction.Transactioner, error)
+	GetEntityDBTransactioner() (transaction.Transactioner, error)
 	GetRuntimeDBTransactioner() (transaction.Transactioner, error)
 	GetOperationDBTransactioner() (transaction.Transactioner, error)
 }
@@ -74,8 +74,8 @@ type dbProvider struct {
 	configMutex     sync.RWMutex
 	runtimeClient   DBClientInterface
 	runtimeMutex    sync.RWMutex
-	userClient      DBClientInterface
-	userMutex       sync.RWMutex
+	entityClient    DBClientInterface
+	entityMutex     sync.RWMutex
 	operationClient DBClientInterface
 	operationMutex  sync.RWMutex
 }
@@ -120,11 +120,11 @@ func (d *dbProvider) GetRuntimeDBClient() (DBClientInterface, error) {
 	return d.getOrInitClient(&d.runtimeClient, &d.runtimeMutex, runtimeDBConfig, dbNameRuntime)
 }
 
-// GetUserDBClient returns a database client for runtime datasource.
+// GetEntityDBClient returns a database client for entity datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
-func (d *dbProvider) GetUserDBClient() (DBClientInterface, error) {
-	userDBConfig := config.GetServerRuntime().Config.Database.User
-	return d.getOrInitClient(&d.userClient, &d.userMutex, userDBConfig, dbNameUser)
+func (d *dbProvider) GetEntityDBClient() (DBClientInterface, error) {
+	entityDBConfig := config.GetServerRuntime().Config.Database.Entity
+	return d.getOrInitClient(&d.entityClient, &d.entityMutex, entityDBConfig, dbNameEntity)
 }
 
 // GetOperationDBClient returns a database client for the operation datasource.
@@ -140,10 +140,10 @@ func (d *dbProvider) GetConfigDBTransactioner() (transaction.Transactioner, erro
 	return d.getTransactioner(d.GetConfigDBClient, dbNameConfig)
 }
 
-// GetUserDBTransactioner returns a transactioner for the user database.
+// GetEntityDBTransactioner returns a transactioner for the entity database.
 // The transactioner manages database transactions with automatic nesting detection.
-func (d *dbProvider) GetUserDBTransactioner() (transaction.Transactioner, error) {
-	return d.getTransactioner(d.GetUserDBClient, dbNameUser)
+func (d *dbProvider) GetEntityDBTransactioner() (transaction.Transactioner, error) {
+	return d.getTransactioner(d.GetEntityDBClient, dbNameEntity)
 }
 
 // GetRuntimeDBTransactioner returns a transactioner for the runtime database.
@@ -175,7 +175,7 @@ func (d *dbProvider) getTransactioner(
 	return client.GetTransactioner()
 }
 
-// initializeAllClients initializes config, runtime, and user database clients at startup.
+// initializeAllClients initializes config, runtime, and entity database clients at startup.
 func (d *dbProvider) initializeAllClients() {
 	// This runs outside any request, so context.Background() is used (no request trace ID).
 	ctx := context.Background()
@@ -195,10 +195,10 @@ func (d *dbProvider) initializeAllClients() {
 		}
 	}
 
-	userDBConfig := config.GetServerRuntime().Config.Database.User
-	err = d.initializeClient(&d.userClient, userDBConfig, dbNameUser)
+	entityDBConfig := config.GetServerRuntime().Config.Database.Entity
+	err = d.initializeClient(&d.entityClient, entityDBConfig, dbNameEntity)
 	if err != nil {
-		logger.Error(ctx, "Failed to initialize user database client", log.Error(err))
+		logger.Error(ctx, "Failed to initialize entity database client", log.Error(err))
 	}
 
 	operationDBConfig := config.GetServerRuntime().Config.Database.Operation
@@ -344,7 +344,7 @@ func (d *dbProvider) Close() error {
 
 	configErr := d.closeClient(&d.configClient, &d.configMutex, "config")
 	runtimeErr := d.closeClient(&d.runtimeClient, &d.runtimeMutex, "runtime")
-	userErr := d.closeClient(&d.userClient, &d.userMutex, "user")
+	entityErr := d.closeClient(&d.entityClient, &d.entityMutex, "entity")
 	operationErr := d.closeClient(&d.operationClient, &d.operationMutex, "operation")
 
 	// Close the Redis runtime provider if it was initialized.
@@ -353,7 +353,7 @@ func (d *dbProvider) Close() error {
 		redisErr = redisInstance.Close()
 	}
 
-	return errors.Join(configErr, runtimeErr, userErr, operationErr, redisErr)
+	return errors.Join(configErr, runtimeErr, entityErr, operationErr, redisErr)
 }
 
 // closeClient is a helper to close a DB client with locking.

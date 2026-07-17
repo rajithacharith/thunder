@@ -84,7 +84,7 @@ If you want to install ThunderID with SQLite databases, use the following comman
 helm install my-thunderid oci://ghcr.io/thunder-id/helm-charts/thunderid \
   --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite \
-  --set configuration.database.user.type=sqlite \
+  --set configuration.database.entity.type=sqlite \
   --set configuration.database.operation.type=sqlite
 ```
 
@@ -287,7 +287,7 @@ configuration:
         password: "my-secret-password-2"
       redis:
         password: "my-runtime-redis-password"
-    user:
+    entity:
       postgres:
         password: "my-secret-password-3"
 ```
@@ -298,13 +298,13 @@ helm install my-thunderid oci://ghcr.io/thunder-id/helm-charts/thunderid \
   --set configuration.database.config.postgres.password=mypass1 \
   --set configuration.database.runtime.postgres.password=mypass2 \
   --set configuration.database.runtime.redis.password=myredispass \
-  --set configuration.database.user.postgres.password=mypass3 \
+  --set configuration.database.entity.postgres.password=mypass3 \
   --set configuration.database.operation.postgres.password=mypass4
 ```
 
 Helm automatically:
 - Creates `<release-name>-db-credentials` Secret as a pre-install/pre-upgrade hook
-- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_RUNTIME_REDIS_PASSWORD`, `DB_USER_PASSWORD`, `DB_OPERATION_PASSWORD`) into pods
+- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_RUNTIME_REDIS_PASSWORD`, `DB_ENTITY_PASSWORD`, `DB_OPERATION_PASSWORD`) into pods
 - Updates pods when passwords change (via checksum annotations)
 
 #### Pattern 2: External Secret (For Production - Recommended)
@@ -338,7 +338,7 @@ configuration:
         passwordRef:
           name: "my-db-secrets"
           key: "runtime-redis-password"
-    user:
+    entity:
       postgres:
         passwordRef:
           name: "my-db-secrets"
@@ -362,7 +362,7 @@ when ThunderID reads configuration directly via its application config loader (e
 They are not resolved when the value is first converted into a Kubernetes Secret by this chart.
 
 #### Password Field Options
-Password fields are available in `configuration.database.config.postgres`, `configuration.database.runtime.postgres`, `configuration.database.runtime.redis`, `configuration.database.user.postgres`, and `configuration.database.operation.postgres`:
+Password fields are available in `configuration.database.config.postgres`, `configuration.database.runtime.postgres`, `configuration.database.runtime.redis`, `configuration.database.entity.postgres`, and `configuration.database.operation.postgres`:
 
 | Field                  | Description                                                                                                                                    | Example                      |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
@@ -442,23 +442,23 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.database.runtime.redis.passwordRef.key` | Kubernetes Secret key for runtime Redis password                                                                                                      | `""`                         |
 | `configuration.database.runtime.redis.db`          | Redis logical database index (0–15) (for Redis only)                                                                                                   | `0`                          |
 | `configuration.database.runtime.redis.key_prefix`   | Prefix applied to all Redis keys written by ThunderID (for Redis only)                                                                                   | `""`                         |
-| `configuration.database.user.type`                | User database type (postgres or sqlite)                                                                                                                 | `postgres`                   |
-| `configuration.database.user.sqlite.path`          | SQLite database path (for SQLite only)                                                                                                                  | `database/userdb.db` |
-| `configuration.database.user.sqlite.options`       | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.user.sqlite.max_open_conns` | Maximum number of open connections for SQLite                                                                                                        | `500`                        |
-| `configuration.database.user.sqlite.max_idle_conns` | Maximum number of idle SQLite connections                                                                                                            | `100`                        |
-| `configuration.database.user.sqlite.conn_max_lifetime` | Maximum SQLite connection lifetime in seconds                                                                                                      | `3600`                       |
-| `configuration.database.user.postgres.name`                | Postgres database name (for postgres only)                                                                                                              | `userdb`                     |
-| `configuration.database.user.postgres.hostname`            | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
-| `configuration.database.user.postgres.port`                | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
-| `configuration.database.user.postgres.username`            | Postgres username (for postgres only)                                                                                                                   | `dbuser`                   |
-| `configuration.database.user.postgres.password`            | User Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.              | `dbpassword`        |
-| `configuration.database.user.postgres.passwordRef.name`     | Kubernetes Secret name for user Postgres password                                                                                                       | `""`    |
-| `configuration.database.user.postgres.passwordRef.key`      | Kubernetes Secret key for user Postgres password                                                                                                        | `""`    |
-| `configuration.database.user.postgres.sslmode`             | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
-| `configuration.database.user.postgres.max_open_conns`      | Maximum number of open connections to the database                                                                                                      | `500`                        |
-| `configuration.database.user.postgres.max_idle_conns`      | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
-| `configuration.database.user.postgres.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.entity.type`                | Entity database type (postgres or sqlite)                                                                                                                 | `postgres`                   |
+| `configuration.database.entity.sqlite.path`          | SQLite database path (for SQLite only)                                                                                                                  | `database/entitydb.db` |
+| `configuration.database.entity.sqlite.options`       | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.entity.sqlite.max_open_conns` | Maximum number of open connections for SQLite                                                                                                        | `500`                        |
+| `configuration.database.entity.sqlite.max_idle_conns` | Maximum number of idle SQLite connections                                                                                                            | `100`                        |
+| `configuration.database.entity.sqlite.conn_max_lifetime` | Maximum SQLite connection lifetime in seconds                                                                                                      | `3600`                       |
+| `configuration.database.entity.postgres.name`                | Postgres database name (for postgres only)                                                                                                              | `entitydb`                     |
+| `configuration.database.entity.postgres.hostname`            | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
+| `configuration.database.entity.postgres.port`                | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
+| `configuration.database.entity.postgres.username`            | Postgres username (for postgres only)                                                                                                                   | `dbuser`                   |
+| `configuration.database.entity.postgres.password`            | Entity Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.              | `dbpassword`        |
+| `configuration.database.entity.postgres.passwordRef.name`     | Kubernetes Secret name for entity Postgres password                                                                                                       | `""`    |
+| `configuration.database.entity.postgres.passwordRef.key`      | Kubernetes Secret key for entity Postgres password                                                                                                        | `""`    |
+| `configuration.database.entity.postgres.sslmode`             | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.entity.postgres.max_open_conns`      | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.entity.postgres.max_idle_conns`      | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.entity.postgres.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
 | `configuration.database.operation.type`           | Operation database type (postgres or sqlite). Stores SSO sessions, revoked tokens, and consent records.                                                 | `postgres`                   |
 | `configuration.database.operation.sqlite.path`     | SQLite database path (for SQLite only)                                                                                                                  | `database/operationdb.db` |
 | `configuration.database.operation.sqlite.options`  | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |

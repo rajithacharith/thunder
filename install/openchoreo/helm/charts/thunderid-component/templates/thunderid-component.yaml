@@ -79,8 +79,8 @@ spec:
         value: {{ .Values.database.config.sqlite.path | default "database/configdb.db" | quote }}
       - key: DB_RUNTIME_PATH
         value: {{ .Values.database.runtime.sqlite.path | default "database/runtimedb.db" | quote }}
-      - key: DB_USER_PATH
-        value: {{ .Values.database.user.sqlite.path | default "database/userdb.db" | quote }}
+      - key: DB_ENTITY_PATH
+        value: {{ .Values.database.entity.sqlite.path | default "database/entitydb.db" | quote }}
       - key: CRYPTO_ENCRYPTION_KEY
         value: {{ .Values.crypto.encryption.key | quote }}
   endpoints:

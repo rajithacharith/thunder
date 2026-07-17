@@ -50,7 +50,7 @@ func (suite *InitTestSuite) SetupTest() {
 		Database: config.DatabaseConfig{
 			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
 			Runtime: config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
-			User:    config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
+			Entity:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
 		},
 	}
 	_ = config.InitializeServerRuntime("", testConfig)
@@ -89,7 +89,7 @@ func (suite *InitTestSuite) TestInitialize_ReturnsError_WhenRuntimeTransactioner
 		Database: config.DatabaseConfig{
 			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
 			Runtime: config.DataSource{},
-			User:    config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
+			Entity:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
 		},
 	}
 	_ = config.InitializeServerRuntime("", testConfig)

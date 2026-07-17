@@ -543,7 +543,7 @@ func RunInitScript(zipFilePattern string) error {
 	}{
 		{"configdb", "dbscripts/configdb", "configdb.db"},
 		{"runtimedb", "dbscripts/runtimedb", "runtimedb.db"},
-		{"userdb", "dbscripts/userdb", "userdb.db"},
+		{"entitydb", "dbscripts/entitydb", "entitydb.db"},
 		{"operationdb", "dbscripts/operationdb", "operationdb.db"},
 	}
 

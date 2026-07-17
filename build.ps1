@@ -575,8 +575,8 @@ function Initialize-Databases {
 
     New-Item -Path $REPOSITORY_DB_DIR -ItemType Directory -Force | Out-Null
 
-    $db_files = @("configdb.db", "runtimedb.db", "userdb.db", "operationdb.db")
-    $script_paths = @("configdb/sqlite.sql", "runtimedb/sqlite.sql", "userdb/sqlite.sql", "operationdb/sqlite.sql")
+    $db_files = @("configdb.db", "runtimedb.db", "entitydb.db", "operationdb.db")
+    $script_paths = @("configdb/sqlite.sql", "runtimedb/sqlite.sql", "entitydb/sqlite.sql", "operationdb/sqlite.sql")
 
     for ($i = 0; $i -lt $db_files.Length; $i++) {
         $db_file = $db_files[$i]

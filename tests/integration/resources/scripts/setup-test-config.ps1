@@ -67,11 +67,11 @@ if ($DbType -eq "postgres") {
     path: ""
     options: ""
 
-  user:
+  entity:
     type: postgres
     hostname: localhost
     port: 5432
-    name: userdb
+    name: entitydb
     username: dbuser
     password: dbpassword
     sslmode: disable
@@ -102,7 +102,7 @@ if ($DbType -eq "postgres") {
     path: "database/runtimedb.db"
     options: "cache=shared"
 
-  user:
+  entity:
     type: sqlite
     hostname: ""
     port: 0
@@ -110,7 +110,7 @@ if ($DbType -eq "postgres") {
     username: ""
     password: ""
     sslmode: ""
-    path: "database/userdb.db"
+    path: "database/entitydb.db"
     options: "cache=shared"
 "@
 }

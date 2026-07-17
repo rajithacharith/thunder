@@ -103,7 +103,7 @@ type RedisDataSource struct {
 type DatabaseConfig struct {
 	Config    DataSource `yaml:"config"    json:"config"`
 	Runtime   DataSource `yaml:"runtime"   json:"runtime"`
-	User      DataSource `yaml:"user"      json:"user"`
+	Entity    DataSource `yaml:"entity"    json:"entity"`
 	Operation DataSource `yaml:"operation" json:"operation"`
 }
 
