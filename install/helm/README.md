@@ -377,6 +377,7 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.server.port`                       | ThunderID server port                                                                                                                                     | `8090`                       |
 | `configuration.server.httpOnly`                   | Whether the server should run in HTTP-only mode                                                                                                         | `false`                      |
 | `configuration.server.publicURL`                  | Public URL of the ThunderID server                                                                                                                        | `https://thunderid.local`      |
+| `configuration.server.security.directAuthSecret`  | Secret that gates the Direct API endpoints (`/auth/**`, `/register/passkey/**`). Leave unset to let the setup job generate one per deployment onto the secrets PVC (referenced from `deployment.yaml` as `file://config/secrets/direct_auth_secret`); set an explicit value to override generation. When unset and `setup.enabled=false`, the Direct API stays blocked. See [Direct API Secret](#direct-api-secret). | `""` (generated) |
 | `configuration.gateClient.hostname`               | Gate client hostname                                                                                                                                    | `thunderid.local`              |
 | `configuration.gateClient.port`                   | Gate client port                                                                                                                                        | `443`                       |
 | `configuration.gateClient.scheme`                 | Gate client scheme                                                                                                                                      | `https`                      |
@@ -384,6 +385,7 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.consoleClient.path`                | Console client base path                                                                                                                                | `/console`                   |
 | `configuration.consoleClient.clientId`            | Console client ID                                                                                                                                       | `CONSOLE`                    |
 | `configuration.consoleClient.scopes`              | Console client scopes                                                                                                                                   | `['openid', 'profile', 'email', 'system']` |
+| `configuration.consoleClient.resourceIdentifier`  | Resource indicator (audience) the console sends on token requests. Must match the identifier of the System resource server seeded by the bootstrap defaults. When empty, the parameter is omitted (requires a configured default resource server). | `https://localhost:8090/mcp` |
 | `configuration.tls.minVersion`                    | Minimum TLS version                                                                                                                                     | `1.3`                        |
 | `configuration.tls.certFile`                      | Server TLS certificate file path                                                                                                                        | `config/certs/server.cert` |
 | `configuration.tls.keyFile`                       | Server TLS key file path                                                                                                                                | `config/certs/server.key`  |
@@ -401,6 +403,8 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.crypto.keys[].id`                  | Signing key identifier                                                                                                                                  | `default-key`                |
 | `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                                                                           | `config/certs/signing.cert` |
 | `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                                                                   | `config/certs/signing.key`  |
+
+> The default `configuration.crypto.keys` list includes two entries: `default-key` (RSA, used for JWT signing) and `ecdsa-key` (ECDSA at `config/certs/ecdsa-signing.{cert,key}`, used by the OpenID4VP/OpenID4VCI engines). The setup job generates both key pairs per deployment.
 | `configuration.database.config.type`            | Config database type (postgres or sqlite)                                                                                                               | `postgres`                   |
 | `configuration.database.config.sqlite.path`      | SQLite database path (for SQLite only)                                                                                                                  | `database/configdb.db` |
 | `configuration.database.config.sqlite.options`   | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
@@ -519,6 +523,23 @@ Persistence is **automatically enabled** when using SQLite as the database type 
 - When any database is configured to use SQLite, a PersistentVolumeClaim (PVC) is **always created** to store the database files, regardless of the `persistence.enabled` or `setup.enabled` settings.
 - The PVC is mounted by the setup job's init container (if `setup.enabled` is true) to initialize the database, and by the main ThunderID deployment for ongoing operation.
 - You can customize the storage size and storage class for the PVC using the `persistence.size` and `persistence.storageClass` values.
+
+#### Setup-generated Storage (Certificates and Secrets)
+
+When `setup.enabled=true`, the setup job generates per-deployment material onto two dedicated PVCs that the ThunderID deployment then reads: `certs` (TLS, JWT/ECDSA signing, and AES encryption keys) and `secrets` (the generated Direct Auth Secret). Both are created before the setup job runs and persist across pod restarts. Treat the `certs` PVC as durable, losing it invalidates all issued tokens and previously encrypted data.
+
+| Name                                   | Description                                                     | Default                      |
+| -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
+| `certs.persistence.storageClass`       | Storage class for the certificates PVC (use "-" for none)       | `""`                         |
+| `certs.persistence.accessMode`         | Certificates PVC access mode                                    | `ReadWriteOnce`              |
+| `certs.persistence.size`               | Certificates PVC storage size                                   | `16Mi`                       |
+| `certs.persistence.annotations`        | Additional annotations for the certificates PVC                 | `{}`                         |
+| `secrets.persistence.storageClass`     | Storage class for the secrets PVC (use "-" for none)            | `""`                         |
+| `secrets.persistence.accessMode`       | Secrets PVC access mode                                         | `ReadWriteOnce`              |
+| `secrets.persistence.size`             | Secrets PVC storage size                                        | `16Mi`                       |
+| `secrets.persistence.annotations`      | Additional annotations for the secrets PVC                      | `{}`                         |
+
+**Note:** With `deployment.replicaCount > 1` and replicas potentially scheduled onto different nodes, set `accessMode` to `ReadWriteMany` (requires a supporting storage class) on these PVCs so every replica can read the material, or supply your own key material / Direct Auth Secret and set `setup.enabled=false`.
 
 ### Declarative Resources Parameters
 
@@ -689,7 +710,7 @@ kubectl exec -it deploy/my-thunderid -- grep -n "declarative_resources\|enabled"
 
 ### Setup Job Parameters
 
-The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize ThunderID with default resources (admin user, organization, etc.).
+The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize ThunderID: it generates per-deployment key material (TLS, JWT/ECDSA signing, and AES keys) and the [Direct API Secret](#direct-api-secret) onto their PVCs, then bootstraps the default resources (admin user, organization, etc.).
 
 | Name                                   | Description                                                     | Default                      |
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
@@ -787,6 +808,18 @@ Environment variable item structure for secret-backed environment variables in `
 **Job Retention Behavior:**
 - When `preserveJob=false` (default): Successful jobs are deleted immediately. Failed jobs are kept for `ttlSecondsAfterFinished` (24 hours) to allow debugging.
 - When `preserveJob=true`: Job is kept indefinitely regardless of success/failure status. Use this for troubleshooting or audit purposes.
+
+### Direct API Secret
+
+The Direct API endpoints (`/auth/**`, `/register/passkey/**`) are gated by a server-level secret. They are **secure by default**: while no secret is configured they are blocked with `401`, and once configured every request must send the value in the `Direct-Auth-Secret` header.
+
+The secret is stored in a file rather than inline in `deployment.yaml`, so generation keeps working even though `deployment.yaml` is mounted as a read-only ConfigMap. `deployment.yaml` references it as `direct_auth_secret: "file://config/secrets/direct_auth_secret"`, and the setup job writes the value to that path on the shared secrets PVC.
+
+Behavior depends on your values:
+
+- **`setup.enabled=true`, `configuration.server.security.directAuthSecret` unset (default):** the setup job generates a random secret onto the secrets PVC, so the Direct API works out of the box. The generated value is printed once in the setup completion summary — capture it there.
+- **`configuration.server.security.directAuthSecret` set:** the inline value is used as-is and generation is skipped. Prefer supplying it via a Kubernetes Secret / `--set` rather than committing it to `values.yaml`.
+- **`setup.enabled=false` and no inline value:** no secret is configured and the Direct API stays blocked.
 
 ### Bootstrap Resource Parameters
 

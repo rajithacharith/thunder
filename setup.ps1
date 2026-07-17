@@ -64,9 +64,10 @@ $ADMIN_USERNAME = if ($env:ADMIN_USERNAME) { $env:ADMIN_USERNAME } else { "admin
 $ADMIN_PASSWORD = if ($env:ADMIN_PASSWORD) { $env:ADMIN_PASSWORD } else { "" }
 $ADMIN_PASSWORD_GENERATED = $false
 # Direct Auth Secret gates the Direct API endpoints (secure by default). When not supplied, one is
-# generated during setup and written to deployment.yaml.
+# generated during setup and written to the secret file referenced by deployment.yaml.
 $DIRECT_AUTH_SECRET = if ($env:DIRECT_AUTH_SECRET) { $env:DIRECT_AUTH_SECRET } else { "" }
 $DIRECT_AUTH_SECRET_GENERATED = $false
+$DIRECT_AUTH_SECRET_FILE = ""
 # Set when key material is generated this run (controls the one-time notice).
 $CERTS_GENERATED = $false
 
@@ -309,47 +310,6 @@ function Resolve-ConfigFile {
     return ""
 }
 
-# Write-DirectAuthSecret writes the Direct Auth Secret into server.security.direct_auth_secret of the given
-# deployment.yaml, updating an existing key, adding it under an existing security block, or creating a
-# security block under server.
-function Write-DirectAuthSecret {
-    param([string]$File, [string]$Value)
-    # Escape for a YAML double-quoted scalar: backslash first, then double-quote.
-    $escaped = ($Value -replace '\\', '\\') -replace '"', '\"'
-    $lines = @(Get-Content $File)
-    $out = New-Object System.Collections.Generic.List[string]
-    $done = $false
-    if ($lines -match '^\s*direct_auth_secret:') {
-        foreach ($line in $lines) {
-            if (-not $done -and $line -match '^(\s*)direct_auth_secret:') {
-                $out.Add("$($matches[1])direct_auth_secret: `"$escaped`"")
-                $done = $true
-            }
-            else { $out.Add($line) }
-        }
-    }
-    elseif ($lines -match '^\s*security:\s*$') {
-        foreach ($line in $lines) {
-            $out.Add($line)
-            if (-not $done -and $line -match '^\s*security:\s*$') {
-                $out.Add("    direct_auth_secret: `"$escaped`"")
-                $done = $true
-            }
-        }
-    }
-    else {
-        foreach ($line in $lines) {
-            $out.Add($line)
-            if (-not $done -and $line -match '^server:\s*$') {
-                $out.Add("  security:")
-                $out.Add("    direct_auth_secret: `"$escaped`"")
-                $done = $true
-            }
-        }
-    }
-    Set-Content -Path $File -Value $out
-}
-
 # Set-AdminPassword ensures the default admin account is usable out of the box while staying secure by
 # default: it uses the provided value, or generates a random one. Unlike the Direct Auth Secret, this
 # intentionally regenerates every run where no value is supplied (no persisted value to check), so
@@ -387,9 +347,11 @@ function Show-AdminCredentialsNotice {
     Write-Host ""
 }
 
-# Set-DirectAuthSecret ensures the Direct API is usable out of the box while staying secure by default:
-# it respects an existing non-empty secret, otherwise uses the provided value or generates a random
-# one, and writes it into deployment.yaml.
+# Set-DirectAuthSecret ensures the Direct API is usable out of the box while staying secure by default.
+# The secret is persisted to config/secrets/direct_auth_secret and the server reads it via the file://
+# reference in deployment.yaml. This keeps generation working when deployment.yaml is read-only: only
+# the secrets directory needs to be writable. An operator can still set an explicit inline secret in
+# deployment.yaml, which is honored as-is.
 function Set-DirectAuthSecret {
     $configFile = Resolve-ConfigFile
     if (-not $configFile) {
@@ -397,20 +359,51 @@ function Set-DirectAuthSecret {
         return
     }
 
+    # Inspect the configured secret. A file:// reference points at the secret file this script
+    # maintains; a plain value means the operator set an explicit secret, which is honored as-is.
     $content = Get-Content $configFile -Raw
+    $existing = ""
     if ($content -match '(?m)^\s*direct_auth_secret:\s*[''"]?([^''"\s]+)[''"]?') {
-        $script:DIRECT_AUTH_SECRET = $matches[1]
+        $existing = $matches[1]
+    }
+    $ref = ""
+    if ($existing -like 'file://*') {
+        $ref = $existing.Substring(7)
+    }
+    elseif ($existing) {
+        $script:DIRECT_AUTH_SECRET = $existing
         return
     }
 
-    if (-not $DIRECT_AUTH_SECRET) {
-        $bytes = New-Object 'System.Byte[]' 32
-        [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-        $script:DIRECT_AUTH_SECRET = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''
-        $script:DIRECT_AUTH_SECRET_GENERATED = $true
+    # Resolve the target secret file (from the file:// reference, or the default location).
+    $baseDir = Split-Path -Parent $configFile
+    if ($ref) {
+        if ([System.IO.Path]::IsPathRooted($ref)) { $secretFile = $ref }
+        else { $secretFile = Join-Path $baseDir $ref }
     }
+    else {
+        $secretFile = Join-Path $baseDir "config/secrets/direct_auth_secret"
+    }
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $secretFile) | Out-Null
+    # Record the resolved path so the notice can report where the secret was written.
+    $script:DIRECT_AUTH_SECRET_FILE = $secretFile
 
-    Write-DirectAuthSecret -File $configFile -Value $DIRECT_AUTH_SECRET
+    # An explicit provided value is written to the secret file. Otherwise reuse an existing secret,
+    # or generate a random one. Use Set-Content/Get-Content (PowerShell cmdlets) rather than
+    # [System.IO.File] so relative paths resolve against the session location, matching New-Item above.
+    if ($DIRECT_AUTH_SECRET) {
+        Set-Content -Path $secretFile -Value $DIRECT_AUTH_SECRET -NoNewline -Encoding Ascii
+        return
+    }
+    if ((Test-Path $secretFile) -and ((Get-Item $secretFile).Length -gt 0)) {
+        $script:DIRECT_AUTH_SECRET = (Get-Content -Path $secretFile -Raw)
+        return
+    }
+    $bytes = New-Object 'System.Byte[]' 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $script:DIRECT_AUTH_SECRET = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''
+    Set-Content -Path $secretFile -Value $DIRECT_AUTH_SECRET -NoNewline -Encoding Ascii
+    $script:DIRECT_AUTH_SECRET_GENERATED = $true
 }
 
 # Show-DirectAuthSecretNotice prints the generated Direct Auth Secret once, so the operator can capture it.
@@ -418,7 +411,8 @@ function Show-DirectAuthSecretNotice {
     if (-not $DIRECT_AUTH_SECRET_GENERATED) { return }
     Write-Host "Direct Auth Secret (Direct API): $DIRECT_AUTH_SECRET"
     Write-Host "  Send it in the 'Direct-Auth-Secret' header when calling the Direct API endpoints."
-    Write-Host "  It has been written to deployment.yaml (server.security.direct_auth_secret)."
+    Write-Host "  It has been written to $DIRECT_AUTH_SECRET_FILE, which deployment.yaml"
+    Write-Host "  references via server.security.direct_auth_secret."
     Write-Host ""
 }
 
