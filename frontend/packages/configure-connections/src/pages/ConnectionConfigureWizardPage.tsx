@@ -42,7 +42,7 @@ import isConflictError from '../utils/isConflictError';
 export default function ConnectionConfigureWizardPage(): JSX.Element | null {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
-  const {getServerUrl} = useConfig();
+  const {getGateCallbackUrl} = useConfig();
   const {type} = useParams<{type: string}>();
 
   const connectionType = type as ConnectionType;
@@ -60,7 +60,7 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
   }, [meta, navigate]);
 
   const fields = useMemo(() => (meta ? CONNECTION_FORM_FIELDS[connectionType] : []), [meta, connectionType]);
-  const redirectUri = `${getServerUrl()}/gate/callback`;
+  const redirectUri = getGateCallbackUrl();
   const emptyValues = useMemo(() => emptyFormValues(fields, redirectUri), [fields, redirectUri]);
 
   if (!meta) {

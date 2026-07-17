@@ -80,14 +80,14 @@ describe('ConnectionForm', () => {
     expect(onFieldChange).toHaveBeenCalledWith('clientId', 'my-client-id');
   });
 
-  it('renders the redirect URI as an editable field that reports edits', () => {
-    const onFieldChange = vi.fn();
-    render(<ConnectionForm {...baseProps} onFieldChange={onFieldChange} />);
+  it('renders the redirect URI as a read-only copy field with the derived value', () => {
+    render(<ConnectionForm {...baseProps} />);
 
-    const input = screen.getByPlaceholderText('https://your-gate-host/gate/callback');
-    fireEvent.change(input, {target: {value: 'https://gate.example.com/gate/callback'}});
-
-    expect(onFieldChange).toHaveBeenCalledWith('redirectUri', 'https://gate.example.com/gate/callback');
+    const field = getConnectionField('redirectUri') as HTMLInputElement;
+    expect(field).toHaveValue('https://id.acme.io/oauth/callback/google');
+    expect(field).toHaveAttribute('readonly');
+    expect(screen.getByTestId('connection-field-redirectUri-copy')).toBeInTheDocument();
+    expect(screen.getByText('Add this exact URI to your Google OAuth client.')).toBeInTheDocument();
   });
 
   describe('OIDC federation fields', () => {

@@ -79,7 +79,7 @@ function canonicalAttr(config: AttributeConfiguration | undefined): string {
 export default function ConnectionDetailPage(): JSX.Element | null {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
-  const {getServerUrl} = useConfig();
+  const {getGateCallbackUrl} = useConfig();
   const {type, id} = useParams<{type: string; id?: string}>();
 
   const connectionType = type as ConnectionType;
@@ -110,7 +110,7 @@ export default function ConnectionDetailPage(): JSX.Element | null {
   }, [meta, navigate]);
 
   const fields = useMemo(() => (meta ? CONNECTION_FORM_FIELDS[connectionType] : []), [meta, connectionType]);
-  const redirectUri = `${getServerUrl()}/gate/callback`;
+  const redirectUri = getGateCallbackUrl();
   const data = connectionQuery.data;
 
   const baseline = useMemo<ConnectionFormValues>(

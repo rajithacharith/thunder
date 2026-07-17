@@ -64,7 +64,7 @@ export default function ConnectionCreateWizardPage({
 }: ConnectionCreateWizardPageProps): JSX.Element {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
-  const {getServerUrl} = useConfig();
+  const {getGateCallbackUrl} = useConfig();
 
   const [step, setStep] = useState<Step>(Step.TYPE);
   const [selectedType, setSelectedType] = useState<SelectableConnectionType | null>(null);
@@ -82,7 +82,7 @@ export default function ConnectionCreateWizardPage({
   const createMutation = useCreateConnection(activeType);
   const meta = VENDOR_META_BY_TYPE[activeType];
   const fields = CONNECTION_FORM_FIELDS[activeType];
-  const redirectUri = `${getServerUrl()}/gate/callback`;
+  const redirectUri = getGateCallbackUrl();
   const emptyValues = useMemo(() => emptyFormValues(fields, redirectUri), [fields, redirectUri]);
 
   const values: ConnectionFormValues = {...emptyValues, ...editedValues};
