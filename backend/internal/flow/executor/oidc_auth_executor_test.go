@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/oidcmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -54,12 +55,11 @@ func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 
-	defaultInputs := []providers.Input{{Identifier: "code", Type: "string", Required: true}}
 	mockExec := createMockAuthExecutor(suite.T(), ExecutorNameOIDCAuth)
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameOIDCAuth, providers.ExecutorTypeAuthentication,
-		defaultInputs, []providers.Input{}, mock.Anything).Return(mockExec)
+		defaultCodeOnlyInputs, []providers.Input{}, mock.Anything).Return(mockExec)
 
-	suite.executor = newOIDCAuthExecutor(ExecutorNameOIDCAuth, defaultInputs, []providers.Input{},
+	suite.executor = newOIDCAuthExecutor(ExecutorNameOIDCAuth, defaultCodeOnlyInputs, []providers.Input{},
 		suite.mockFlowFactory, suite.mockIDPService, suite.mockOIDCService,
 		suite.mockAuthnProvider, providers.IDPTypeOIDC)
 }
@@ -85,8 +85,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 		},
 	}
 
+	oidcURL := "https://oidc.provider.com/authorize?client_id=abc&scope=openid&state=test-state&nonce=test-nonce"
+	oidcParams := map[string]string{
+		oauth2const.RequestParamState: "test-state",
+		oauth2const.RequestParamNonce: "test-nonce",
+	}
 	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
-		Return("https://oidc.provider.com/authorize?client_id=abc&scope=openid", nil)
+		Return(oidcURL, oidcParams, nil)
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
 		Return(&providers.IDPDTO{ID: "idp-123", Name: "TestOIDCProvider"}, nil)
@@ -96,10 +101,92 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), providers.ExecExternalRedirection, resp.Status)
-	assert.Contains(suite.T(), resp.RedirectURL, "https://oidc.provider.com/authorize")
+	assert.Contains(suite.T(), resp.RedirectURL, oidcURL)
+	assert.Equal(suite.T(), "test-nonce", resp.RuntimeData[common.RuntimeKeyOIDCNonce])
+	assert.Equal(suite.T(), "test-state", resp.RuntimeData[common.RuntimeKeyOAuthState])
 	assert.Equal(suite.T(), "TestOIDCProvider", resp.AdditionalData[common.DataIDPName])
 	suite.mockOIDCService.AssertExpectations(suite.T())
 	suite.mockIDPService.AssertExpectations(suite.T())
+}
+
+func (suite *OIDCAuthExecutorTestSuite) TestExecute_BuildAuthorizeFlow_NonceMissingInMetadata() {
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
+		NodeInputs:  []providers.Input{{Identifier: "code", Type: "string", Required: true}},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	oidcURL := "https://oidc.provider.com/authorize?client_id=abc&scope=openid&state=test-state"
+	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
+		Return(oidcURL, map[string]string{oauth2const.RequestParamState: "test-state"}, nil)
+
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
+		Return(&providers.IDPDTO{ID: "idp-123", Name: "TestOIDCProvider"}, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+	assert.Contains(suite.T(), err.Error(), "OIDC nonce is missing")
+}
+
+func (suite *OIDCAuthExecutorTestSuite) TestExecute_BuildAuthorizeFlow_NonceEmptyInMetadata() {
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
+		NodeInputs:  []providers.Input{{Identifier: "code", Type: "string", Required: true}},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	oidcURL := "https://oidc.provider.com/authorize?client_id=abc&scope=openid&state=test-state"
+	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
+		Return(oidcURL, map[string]string{
+			oauth2const.RequestParamState: "test-state",
+			oauth2const.RequestParamNonce: "",
+		}, nil)
+
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
+		Return(&providers.IDPDTO{ID: "idp-123", Name: "TestOIDCProvider"}, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+	assert.Contains(suite.T(), err.Error(), "OIDC nonce is missing")
+}
+
+func (suite *OIDCAuthExecutorTestSuite) TestExecute_BuildAuthorizeFlow_ClientErrorSkipsNonceCheck() {
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
+		NodeInputs:  []providers.Input{{Identifier: "code", Type: "string", Required: true}},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	clientErr := &tidcommon.ServiceError{
+		Type:             tidcommon.ClientErrorType,
+		Code:             "IDP-001",
+		ErrorDescription: tidcommon.I18nMessage{DefaultValue: "IDP not configured"},
+	}
+	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
+		Return("", (map[string]string)(nil), clientErr)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), clientErr, resp.Error)
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_AuthenticatesUser() {
@@ -238,8 +325,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
-			"code":  "auth_code_123",
-			"nonce": "expected_nonce_123",
+			"code": "auth_code_123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyOIDCNonce: "expected_nonce_123",
 		},
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
@@ -251,18 +340,91 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce
 		RuntimeData:    make(map[string]string),
 	}
 
+	nonceMismatchErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
+		Code:  "AUTH-OIDC-1003",
+		Error: tidcommon.I18nMessage{DefaultValue: "Nonce mismatch"},
+	}
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
-			"sub":   "user-sub-123",
-			"nonce": "different_nonce_456",
-		}, (*tidcommon.ServiceError)(nil))
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims(nil), nonceMismatchErr)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), providers.ExecFailure, execResp.Status)
-	assert.Contains(suite.T(), execResp.Error.Error.DefaultValue, "Nonce mismatch")
+	assert.Equal(suite.T(), nonceMismatchErr, execResp.Error)
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
+}
+
+func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidNonce() {
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"code": "auth_code_123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyOIDCNonce: "matching_nonce_123",
+		},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	execResp := &providers.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	authenticatedAuthUser := newOIDCAuthenticatedUser()
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
+			"sub":   "user-sub-123",
+			"email": "test@example.com",
+			"nonce": "matching_nonce_123",
+		}, (*tidcommon.ServiceError)(nil))
+
+	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), providers.ExecComplete, execResp.Status)
+	assert.True(suite.T(), execResp.AuthUser.IsAuthenticated())
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
+}
+
+func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NonceMissingInRuntimeData() {
+	ctx := &providers.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    providers.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"code": "auth_code_123",
+		},
+		NodeProperties: map[string]interface{}{
+			"idpId": "idp-123",
+		},
+	}
+
+	execResp := &providers.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	nonceMismatchErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
+		Code:  "AUTH-OIDC-1003",
+		Error: tidcommon.I18nMessage{DefaultValue: "Nonce mismatch"},
+	}
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims(nil), nonceMismatchErr)
+
+	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), providers.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), nonceMismatchErr, execResp.Error)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -484,6 +646,9 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyOIDCNonce: "nonce_value",
 		},
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",

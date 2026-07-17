@@ -28,8 +28,28 @@ import (
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
+	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
 )
+
+// setupSocialAuthExecutorMock creates the shared mocks for social auth executor constructor tests
+// (GitHub, Google) and wires the CreateExecutor expectation for the given executor name.
+func setupSocialAuthExecutorMock(t *testing.T, executorName string) (
+	*coremock.FlowFactoryInterfaceMock,
+	*idpmock.IDPServiceInterfaceMock,
+	*managermock.AuthnProviderManagerMock,
+) {
+	t.Helper()
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(t)
+	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
+	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
+	baseExec := coremock.NewExecutorInterfaceMock(t)
+	mockFlowFactory.On("CreateExecutor", executorName,
+		providers.ExecutorTypeAuthentication, defaultCodeOnlyInputs, []providers.Input{}, mock.Anything).
+		Return(baseExec).Once()
+	return mockFlowFactory, mockIDPService, mockAuthnProvider
+}
 
 type UtilsTestSuite struct {
 	suite.Suite
@@ -65,14 +85,18 @@ func (s *UtilsTestSuite) TestGetAuthnServiceName() {
 	}
 }
 
+// defaultCodeOnlyInputs is the standard default input set for OAuth/OIDC executors that only require an
+// authorization code.
+var defaultCodeOnlyInputs = []providers.Input{
+	{Identifier: "code", Type: "string", Required: true},
+}
+
 // createMockAuthExecutor creates a mock executor for OAuth/OIDC authentication.
 func createMockAuthExecutor(t *testing.T, executorName string) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(executorName).Maybe()
 	mockExec.On("GetType").Return(providers.ExecutorTypeAuthentication).Maybe()
-	mockExec.On("GetDefaultInputs").Return([]providers.Input{
-		{Identifier: "code", Type: "string", Required: true},
-	}).Maybe()
+	mockExec.On("GetDefaultInputs").Return(defaultCodeOnlyInputs).Maybe()
 	mockExec.On("GetPrerequisites").Return([]providers.Input{}).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
 		func(ctx *providers.NodeContext, execResp *providers.ExecutorResponse) bool {

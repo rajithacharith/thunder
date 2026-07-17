@@ -38,6 +38,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	notifcommon "github.com/thunder-id/thunderid/internal/notification/common"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/template"
@@ -663,7 +664,8 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOAuthSucc
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).
+		Return(redirectURL, map[string]string{oauth2const.RequestParamState: "test-state"}, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -676,46 +678,52 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOAuthSucc
 	suite.Equal(testSessionTkn, result.SessionToken)
 }
 
-func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOIDCSuccess() {
+func (suite *AuthenticationServiceTestSuite) assertStartIDPAuthSuccess(
+	idpType providers.IDPType, redirectURL string, setupBuildURL func(string),
+) {
 	idpID := testIDPID
-	redirectURL := "https://oidc.provider.com/authorize"
-	identityProvider := &providers.IDPDTO{
-		ID:   idpID,
-		Type: providers.IDPTypeOIDC,
-	}
 
-	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).
+		Return(&providers.IDPDTO{ID: idpID, Type: idpType}, nil)
+	setupBuildURL(idpID)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
 
-	result, err := suite.service.StartIDPAuthentication(context.Background(), providers.IDPTypeOIDC, idpID)
+	result, err := suite.service.StartIDPAuthentication(
+		context.Background(), idpType, idpID)
 
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(redirectURL, result.RedirectURL)
 }
 
-func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGoogleSuccess() {
-	idpID := testIDPID
-	redirectURL := "https://accounts.google.com/o/oauth2/v2/auth"
-	identityProvider := &providers.IDPDTO{
-		ID:   idpID,
-		Type: providers.IDPTypeGoogle,
+func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOIDCSuccess() {
+	metadata := map[string]string{
+		oauth2const.RequestParamState: "test-state",
+		oauth2const.RequestParamNonce: "test-nonce",
 	}
+	suite.assertStartIDPAuthSuccess(
+		providers.IDPTypeOIDC, "https://oidc.provider.com/authorize",
+		func(idpID string) {
+			suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, idpID).
+				Return("https://oidc.provider.com/authorize", metadata, nil)
+		},
+	)
+}
 
-	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockGoogleService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(testSessionTkn, int64(600), nil)
-
-	result, err := suite.service.StartIDPAuthentication(context.Background(), providers.IDPTypeGoogle, idpID)
-
-	suite.Nil(err)
-	suite.NotNil(result)
-	suite.Equal(redirectURL, result.RedirectURL)
+func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGoogleSuccess() {
+	metadata := map[string]string{
+		oauth2const.RequestParamState: "test-state",
+		oauth2const.RequestParamNonce: "test-nonce",
+	}
+	suite.assertStartIDPAuthSuccess(
+		providers.IDPTypeGoogle, "https://accounts.google.com/o/oauth2/v2/auth",
+		func(idpID string) {
+			suite.mockGoogleService.On("BuildAuthorizeURL", mock.Anything, idpID).
+				Return("https://accounts.google.com/o/oauth2/v2/auth", metadata, nil)
+		},
+	)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGitHubSuccess() {
@@ -727,7 +735,8 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGitHubSuc
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockGithubService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
+	suite.mockGithubService.On("BuildAuthorizeURL", mock.Anything, idpID).
+		Return(redirectURL, map[string]string{oauth2const.RequestParamState: "test-state"}, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -792,7 +801,8 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationCrossType
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).
+		Return(redirectURL, map[string]string{oauth2const.RequestParamState: "test-state"}, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -812,7 +822,8 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).
+		Return(redirectURL, map[string]string{oauth2const.RequestParamState: "test-state"}, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &tidcommon.ServiceError{
@@ -1193,7 +1204,8 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationBuildURLE
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
-	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return("", svcErr)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).
+		Return("", (map[string]string)(nil), svcErr)
 
 	result, err := suite.service.StartIDPAuthentication(context.Background(), providers.IDPTypeOAuth, idpID)
 

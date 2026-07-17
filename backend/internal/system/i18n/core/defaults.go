@@ -1201,8 +1201,6 @@ var defaultMessages = map[string]string{
 	"flows.executor.errors.no_user_types_available_desc": "No user types are currently available",
 	"flows.executor.errors.no_valid_user_types": "No valid user types available",
 	"flows.executor.errors.no_valid_user_types_desc": "There are no valid user types configured for this flow",
-	"flows.executor.errors.nonce_mismatch": "Nonce mismatch in ID token",
-	"flows.executor.errors.nonce_mismatch_desc": "The nonce in the ID token claims does not match the expected value",
 	"flows.executor.errors.openid4vp_definition_not_configured": "OpenID4VP presentation definition is not configured",
 	"flows.executor.errors.openid4vp_definition_not_configured_desc": "The OpenID4VP node is missing the presentation_definition_id property",
 	"flows.executor.errors.openid4vp_expired": "The OpenID4VP request expired before a response was received",
