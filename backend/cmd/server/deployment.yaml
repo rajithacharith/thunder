@@ -1,6 +1,10 @@
 server:
   hostname: "localhost"
   port: 8090
+  security:
+    # Gates the Direct API endpoints. The secret is generated into config/secrets/direct_auth_secret
+    # by setup.sh and read from there at load time. Callers present it in the Direct-Auth-Secret header.
+    direct_auth_secret: "file://config/secrets/direct_auth_secret"
 
 tls:
   min_version: "1.3"

@@ -232,6 +232,9 @@ function clean() {
     echo "Removing certificates in the $BACKEND_DIR/$SECURITY_DIR"
     rm -rf "$BACKEND_DIR/$SECURITY_DIR"
 
+    echo "Removing runtime secrets in the $BACKEND_DIR/config/secrets"
+    rm -rf "$BACKEND_DIR/config/secrets"
+
     echo "Removing certificates in the $VANILLA_SAMPLE_APP_DIR"
     rm -f "$VANILLA_SAMPLE_APP_DIR/server.cert"
     rm -f "$VANILLA_SAMPLE_APP_DIR/server.key"
@@ -473,6 +476,9 @@ function prepare_backend_for_packaging() {
     mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
     # Never ship key material: strip any dev certs/keys that "cp -r config" above may have copied in.
     rm -f "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"/*.cert "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"/*.key
+    # Never ship runtime secrets: strip the dev Direct Auth Secret that "cp -r config" may have copied in.
+    # setup.sh generates a fresh per-deployment secret.
+    rm -rf "$DIST_DIR/$PRODUCT_FOLDER/config/secrets"
 
     # Copy bootstrap directory
     echo "Copying bootstrap scripts..."
@@ -959,7 +965,43 @@ function ensure_crypto_file() {
         
         echo "Successfully generated and added new crypto key to $KEY_FILE."
     fi
-    
+
+    echo "================================================================"
+}
+
+function ensure_direct_auth_secret_file() {
+    local SECRET_DIR="$1"
+
+    # Path referenced by server.security.direct_auth_secret (file://config/secrets/direct_auth_secret)
+    # in deployment.yaml. The server reads the secret from here at load time.
+    local SECRET_FILE="$SECRET_DIR/direct_auth_secret"
+
+    echo "=== Ensuring Direct Auth Secret file exists ==="
+
+    if [ -f "$SECRET_FILE" ]; then
+        echo "Direct Auth Secret file already present in $SECRET_FILE. Skipping generation."
+    else
+        echo "Direct Auth Secret file not found. Generating new secret at $SECRET_FILE..."
+
+        # Generate 32-byte secret (64 hex characters) using openssl.
+        local NEW_SECRET
+        if ! NEW_SECRET=$(openssl rand -hex 32); then
+            echo "ERROR: Failed to generate Direct Auth Secret using openssl."
+            exit 1
+        fi
+
+        # Ensure the target directory exists.
+        mkdir -p "$SECRET_DIR"
+
+        # Write the secret without a trailing newline so it is used verbatim.
+        echo -n "$NEW_SECRET" > "$SECRET_FILE"
+
+        echo "Successfully generated and added new Direct Auth Secret to $SECRET_FILE."
+    fi
+
+    # Restrict the secret to the owner, whether newly generated or pre-existing.
+    chmod 600 "$SECRET_FILE"
+
     echo "================================================================"
 }
 
@@ -994,6 +1036,7 @@ function run() {
     ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
+    ensure_direct_auth_secret_file "$BACKEND_DIR/config/secrets"
 
     echo "Initializing databases..."
     initialize_databases
@@ -1061,6 +1104,7 @@ function run_backend() {
     ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
+    ensure_direct_auth_secret_file "$BACKEND_DIR/config/secrets"
 
     echo "Initializing databases..."
     initialize_databases

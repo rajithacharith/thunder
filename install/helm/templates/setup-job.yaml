@@ -175,6 +175,11 @@ spec:
             # Per-deployment key material is generated here by setup.sh and shared with the server.
             - name: certs-storage
               mountPath: /opt/thunderid/config/certs
+            # Runtime secrets (e.g. the Direct Auth Secret) are written here by setup.sh and shared with
+            # the server. Writable so setup.sh can persist the secret even though deployment.yaml is
+            # mounted read-only.
+            - name: secrets-storage
+              mountPath: /opt/thunderid/config/secrets
             - name: deployment-yaml-volume
               mountPath: /opt/thunderid/deployment.yaml
               subPath: deployment.yaml
@@ -227,6 +232,9 @@ spec:
         - name: certs-storage
           persistentVolumeClaim:
             claimName: {{ include "thunderid.fullname" . }}-certs-pvc
+        - name: secrets-storage
+          persistentVolumeClaim:
+            claimName: {{ include "thunderid.fullname" . }}-secrets-pvc
         {{- if or .Values.persistence.enabled $usingSqlite }}
         - name: database-storage
           persistentVolumeClaim:

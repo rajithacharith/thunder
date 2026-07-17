@@ -59,6 +59,7 @@ RUN apk add --no-cache \
     sqlite \
     bash \
     curl \
+    openssl \
     unzip
 
 # Create user and group

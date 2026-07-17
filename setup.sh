@@ -58,9 +58,10 @@ ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 ADMIN_PASSWORD_GENERATED=false
 # Direct Auth Secret gates the Direct API endpoints (secure by default). When not supplied, one is
-# generated during setup and written to deployment.yaml.
+# generated during setup and written to the secret file referenced by deployment.yaml.
 DIRECT_AUTH_SECRET="${DIRECT_AUTH_SECRET:-}"
 DIRECT_AUTH_SECRET_GENERATED=false
+DIRECT_AUTH_SECRET_FILE=""
 # Set when key material is generated this run (controls the one-time notice).
 CERTS_GENERATED=false
 
@@ -314,38 +315,6 @@ resolve_config_file() {
     fi
 }
 
-# write_direct_auth_secret writes the Direct Auth Secret into server.security.direct_auth_secret of the
-# given deployment.yaml, updating an existing key, adding it under an existing security block, or
-# creating a security block under server. Uses awk (portable across macOS/Linux) instead of sed -i.
-write_direct_auth_secret() {
-    local file="$1" val="$2" tmp esc
-    # Escape for a YAML double-quoted scalar: backslash first, then double-quote. Pass via the
-    # environment (ENVIRON) so awk does not re-process the backslash escapes.
-    esc=${val//\\/\\\\}
-    esc=${esc//\"/\\\"}
-    tmp="$(mktemp)"
-    if grep -qE '^[[:space:]]*direct_auth_secret:' "$file"; then
-        esc="$esc" awk '
-            /^[[:space:]]*direct_auth_secret:/ && !done {
-                match($0, /^[[:space:]]*/); print substr($0, 1, RLENGTH) "direct_auth_secret: \"" ENVIRON["esc"] "\""
-                done=1; next
-            }
-            { print }
-        ' "$file" >"$tmp"
-    elif grep -qE '^[[:space:]]*security:[[:space:]]*$' "$file"; then
-        esc="$esc" awk '
-            { print }
-            /^[[:space:]]*security:[[:space:]]*$/ && !done { print "    direct_auth_secret: \"" ENVIRON["esc"] "\""; done=1 }
-        ' "$file" >"$tmp"
-    else
-        esc="$esc" awk '
-            { print }
-            /^server:[[:space:]]*$/ && !done { print "  security:"; print "    direct_auth_secret: \"" ENVIRON["esc"] "\""; done=1 }
-        ' "$file" >"$tmp"
-    fi
-    mv "$tmp" "$file"
-}
-
 # print_admin_credentials_notice shows the generated admin password once, so the operator can capture
 # it. Only shown when the password was generated during this run (not for operator-supplied values).
 print_admin_credentials_notice() {
@@ -360,35 +329,62 @@ print_admin_credentials_notice() {
 }
 
 # configure_direct_auth_secret ensures the Direct API is usable out of the box while staying secure by
-# default: it respects an existing non-empty secret, otherwise uses the provided value or generates a
-# random one, and writes it into deployment.yaml.
+# default. The secret is persisted to config/secrets/direct_auth_secret and the server reads it via the
+# file:// reference in deployment.yaml. This keeps generation working when deployment.yaml is read-only
+# (e.g. a mounted Kubernetes ConfigMap): only the secrets directory needs to be writable. An operator can
+# still set an explicit inline secret in deployment.yaml, which is honored as-is.
 configure_direct_auth_secret() {
-    local config_file existing
+    local config_file existing ref secret_file
     config_file="$(resolve_config_file)"
     if [ -z "$config_file" ]; then
         log_warning "deployment.yaml not found; skipping Direct Auth Secret configuration"
         return 0
     fi
 
-    # Respect an existing non-empty value (e.g. from a prior setup run or manual config).
+    # Inspect the configured secret. A file:// reference points at the secret file this script
+    # maintains; a plain value means the operator set an explicit secret, which is honored as-is.
     existing=$(grep -E '^[[:space:]]*direct_auth_secret:' "$config_file" | sed 's/#.*//' \
         | sed -E 's/^[[:space:]]*direct_auth_secret:[[:space:]]*//' | tr -d '"'\''[:space:]' | head -1)
-    if [ -n "$existing" ]; then
+    ref="${existing#file://}"
+    if [ -n "$existing" ] && [ "$ref" = "$existing" ]; then
         DIRECT_AUTH_SECRET="$existing"
         return 0
     fi
 
-    # Use the provided value, or generate a random one. Guard openssl with '|| true' so a failure
-    # does not abort the script under 'set -e' before the /dev/urandom fallback runs.
-    if [ -z "$DIRECT_AUTH_SECRET" ]; then
-        DIRECT_AUTH_SECRET="$(openssl rand -hex 32 2>/dev/null || true)"
-        if [ -z "$DIRECT_AUTH_SECRET" ]; then
-            DIRECT_AUTH_SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
-        fi
-        DIRECT_AUTH_SECRET_GENERATED=true
+    # Resolve the target secret file. Prefer the path from the file:// reference (relative to the
+    # deployment.yaml directory); otherwise fall back to the default location.
+    if [ -n "$ref" ]; then
+        case "$ref" in
+            /*) secret_file="$ref" ;;
+            *)  secret_file="$(dirname "$config_file")/$ref" ;;
+        esac
+    else
+        secret_file="$(dirname "$config_file")/config/secrets/direct_auth_secret"
     fi
+    mkdir -p "$(dirname "$secret_file")"
+    # Record the resolved path so the notice can report where the secret was written.
+    DIRECT_AUTH_SECRET_FILE="$secret_file"
 
-    write_direct_auth_secret "$config_file" "$DIRECT_AUTH_SECRET"
+    # An explicit provided value is written to the secret file. Otherwise reuse an existing secret,
+    # or generate a random one. Guard openssl with '|| true' so a failure does not abort the script
+    # under 'set -e' before the /dev/urandom fallback runs.
+    if [ -n "$DIRECT_AUTH_SECRET" ]; then
+        printf '%s' "$DIRECT_AUTH_SECRET" >"$secret_file"
+        chmod 600 "$secret_file"
+        return 0
+    fi
+    if [ -s "$secret_file" ]; then
+        chmod 600 "$secret_file"
+        DIRECT_AUTH_SECRET="$(cat "$secret_file")"
+        return 0
+    fi
+    DIRECT_AUTH_SECRET="$(openssl rand -hex 32 2>/dev/null || true)"
+    if [ -z "$DIRECT_AUTH_SECRET" ]; then
+        DIRECT_AUTH_SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    fi
+    printf '%s' "$DIRECT_AUTH_SECRET" >"$secret_file"
+    chmod 600 "$secret_file"
+    DIRECT_AUTH_SECRET_GENERATED=true
 }
 
 # print_direct_auth_secret_notice shows the generated Direct Auth Secret once, so the operator can capture
@@ -399,7 +395,8 @@ print_direct_auth_secret_notice() {
     fi
     echo "Direct Auth Secret (Direct API): ${DIRECT_AUTH_SECRET}"
     echo "  Send it in the 'Direct-Auth-Secret' header when calling the Direct API endpoints."
-    echo "  It has been written to deployment.yaml (server.security.direct_auth_secret)."
+    echo "  It has been written to ${DIRECT_AUTH_SECRET_FILE}, which deployment.yaml"
+    echo "  references via server.security.direct_auth_secret."
     echo ""
 }
 
