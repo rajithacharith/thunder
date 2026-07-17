@@ -93,7 +93,7 @@ curl -X POST https://{{productSlug}}.example.com/oauth2/token \
   -d "code_verifier=$CODE_VERIFIER"
 ```
 
-Access tokens issued by this flow are bound to one resource server. Send `resource=https://api.example.com/...` on the authorization or token request when the client knows the target API, or configure `defaultResourceServer` so token requests without a `resource` have a valid audience.
+Access tokens with permission scopes are bound to one resource server. Send `resource=https://api.example.com/...` on the authorization or token request when the client knows the target API, or configure `defaultResourceServer` for permission-bearing requests that omit `resource`. OIDC-only or scopeless requests without `resource` use the `client_id` audience.
 
 ## Related Guides
 

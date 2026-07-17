@@ -432,6 +432,7 @@ OAuth 2.0 and OpenID Connect settings.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `oauth.refresh_token.renew_on_grant` | `false` | If `true`, issues a new refresh token on each access token grant |
+| `oauth.refresh_token.revoke_previous_on_renew` | `true` | If `true`, revokes the consumed refresh token after a successful renewal. Applies when `renew_on_grant` is enabled |
 | `oauth.refresh_token.validity_period` | `86400` | Refresh token validity period in seconds (24 hours) |
 | `oauth.authorization_code.validity_period` | `600` | Authorization code validity period in seconds (10 minutes) |
 | `oauth.dcr.insecure` | `false` | If `true`, allows insecure dynamic client registration (development only) |
@@ -854,11 +855,11 @@ The `null` origin is shared by sandboxed iframes, `file://` and `data:` document
 
 ## Default Resource Server
 
-Sets the resource server that access tokens are bound to when a token request omits the `resource` parameter. It is stored in the server-config `defaultResourceServer` section, not in `deployment.yaml`. When no default is configured and the request omits `resource`, token issuance fails with `invalid_target`.
+Sets the resource server for permission-bearing token requests that omit the `resource` parameter. It is stored in the server-config `defaultResourceServer` section, not in `deployment.yaml`. When no default is configured, a request that contains permission scopes but omits `resource` fails with `invalid_target`. OIDC-only and scopeless requests use the `client_id` audience instead.
 
 | Field | Description |
 |-------|-------------|
-| `resourceServerId` | The ID of a registered resource server. It must reference an existing resource server, otherwise the update is rejected with `invalid_target`. |
+| `resourceServerId` | The ID of a registered resource server. It must reference an existing resource server, otherwise the update is rejected with `SCF-1003` ("Invalid server configuration value"). |
 
 Set it in either of these ways:
 

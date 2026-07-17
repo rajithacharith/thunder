@@ -39,8 +39,8 @@ Import the Wayfinder configuration bundle.
 
    The import creates:
 
-   - **Resource servers:** `wayfinder-agent` (identifier `http://localhost:8790/chat`, with `agent:access`) and `wayfinder` (identifier `http://localhost:8787/mcp`, with `wayfinder:booking:read`, `wayfinder:booking:create`, `wayfinder:booking:cancel`, `wayfinder:booking:recommend`).
-   - **Default resource server:** set to `wayfinder-agent`, so sign-in tokens that omit `resource` are bound to it. The agent sends `resource=http://localhost:8787/mcp` explicitly for MCP calls.
+   - **Resource servers:** `wayfinder-agent` (identifier `http://localhost:8790/chat`, with `agent:access`) and `wayfinder` (identifier `http://localhost:8787/mcp`, with `booking:read`, `booking:create`, `booking:cancel`, `booking:recommend`).
+   - **Default resource server:** set to `wayfinder`, so web sign-in tokens that omit `resource` are bound to the booking API. The chat widget sends `resource=http://localhost:8790/chat`, and the agent sends `resource=http://localhost:8787/mcp` for MCP calls.
    - **Roles:** `Chat User`, `Booking User`, and `Recommender`, with users and the agent pre-assigned:
      - `Chat User` → `john.doe`.
      - `Booking User` → `john.doe` and `jane.smith`.
