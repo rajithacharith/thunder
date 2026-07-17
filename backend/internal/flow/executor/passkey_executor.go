@@ -136,7 +136,9 @@ func newPasskeyAuthExecutor(
 				passkeyExecutorModeRegFinish,
 			},
 			SupportedProperties: []providers.ExecutorSupportedProperties{
-				{Property: "relyingPartyId", IsRequired: true},
+				{Property: "relyingPartyId", IsRequired: true, ApplicableModes: []string{
+					passkeyExecutorModeChallenge, passkeyExecutorModeRegStart,
+				}},
 				{Property: "relyingPartyName"},
 				{Property: "authenticatorSelection"},
 				{Property: "attestation"},
