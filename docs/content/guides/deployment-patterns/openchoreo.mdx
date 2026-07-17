@@ -91,7 +91,7 @@ bao kv put secret/thunderid/dev \
   ADMIN_PASSWORD=<admin-password> \
   DB_CONFIG_HOSTNAME=<db-host> DB_CONFIG_PORT=5432 DB_CONFIG_NAME=configdb \
   DB_CONFIG_USERNAME=<db-user> DB_CONFIG_PASSWORD=<db-password> DB_CONFIG_SSLMODE=require \
-  # ... repeat the six properties for DB_RUNTIME_*, DB_USER_*, and DB_OPERATION_*
+  # ... repeat the six properties for DB_RUNTIME_TRANSIENT_*, DB_ENTITY_*, and DB_RUNTIME_PERSISTENT_*
 ```
 
 The `ResourceType` renders an `ExternalSecret` that extracts every property at the store path into the container environment. <ProductName /> resolves the `{{.VAR}}` placeholders in its configuration at startup.
@@ -193,18 +193,18 @@ Prepare the PostgreSQL instance before deployment:
 
     ```sql
     CREATE DATABASE configdb;
-    CREATE DATABASE runtimedb;
-    CREATE DATABASE userdb;
-    CREATE DATABASE operationdb;
+    CREATE DATABASE runtime_transient;
+    CREATE DATABASE entitydb;
+    CREATE DATABASE runtime_persistent;
     ```
 
 2. Load the schema into each database. The scripts ship in the <ProductName /> repository under `backend/dbscripts`; clone it if you have not already. Run each script against its database:
 
     ```bash
     psql -h <db-host> -U <db-user> -d configdb    -f backend/dbscripts/configdb/postgres.sql
-    psql -h <db-host> -U <db-user> -d runtimedb   -f backend/dbscripts/runtimedb/postgres.sql
-    psql -h <db-host> -U <db-user> -d userdb      -f backend/dbscripts/userdb/postgres.sql
-    psql -h <db-host> -U <db-user> -d operationdb -f backend/dbscripts/operationdb/postgres.sql
+    psql -h <db-host> -U <db-user> -d runtime_transient   -f backend/dbscripts/runtime-transient/postgres.sql
+    psql -h <db-host> -U <db-user> -d entitydb      -f backend/dbscripts/entitydb/postgres.sql
+    psql -h <db-host> -U <db-user> -d runtime_persistent -f backend/dbscripts/runtime-persistent/postgres.sql
     ```
 
 :::warning

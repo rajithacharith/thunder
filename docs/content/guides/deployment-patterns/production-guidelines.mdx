@@ -28,9 +28,9 @@ The default configuration uses SQLite, which stores data in local files. SQLite 
 | Database | Purpose |
 |----------|---------|
 | `config` | Application configuration, flows, and identity providers |
-| `runtime` | Active sessions, tokens, and OAuth state |
-| `user` | User accounts and credentials |
-| `operation` | SSO sessions, revoked tokens, and consent records |
+| `runtime_transient` | Short-lived OAuth state: authorization codes, requests, and nonces |
+| `entity` | User accounts and credentials |
+| `runtime_persistent` | Long-lived operational state: revoked tokens, SSO sessions, and consents |
 
 Configure each database in `deployment.yaml`:
 
@@ -49,12 +49,12 @@ database:
       max_idle_conns: 100
       conn_max_lifetime: 3600
 
-  runtime:
+  runtime_transient:
     type: "postgres"
     postgres:
       hostname: "your-db-host"
       port: "5432"
-      name: "runtimedb"
+      name: "runtime_transient"
       username: "dbuser"
       password: "dbpassword"
       sslmode: "require"
@@ -62,12 +62,12 @@ database:
       max_idle_conns: 100
       conn_max_lifetime: 3600
 
-  user:
+  entity:
     type: "postgres"
     postgres:
       hostname: "your-db-host"
       port: "5432"
-      name: "userdb"
+      name: "entitydb"
       username: "dbuser"
       password: "dbpassword"
       sslmode: "require"
@@ -75,12 +75,12 @@ database:
       max_idle_conns: 100
       conn_max_lifetime: 3600
 
-  operation:
+  runtime_persistent:
     type: "postgres"
     postgres:
       hostname: "your-db-host"
       port: "5432"
-      name: "operationdb"
+      name: "runtime_persistent"
       username: "dbuser"
       password: "dbpassword"
       sslmode: "require"

@@ -643,6 +643,8 @@ jobs:
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
+        with:
+          download-certificates: 'false'
 
       - name: 📝 Update Sample Apps Version
         uses: ./.github/actions/update-sample-versions

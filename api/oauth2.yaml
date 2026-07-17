@@ -112,7 +112,9 @@ paths:
           description: >-
             Resource indicator per RFC 8707 (absolute URI, no fragment). Only one value is
             supported; requests with multiple resource values are rejected with invalid_target.
-            When omitted, the configured defaultResourceServer is used.
+            When omitted from a permission-bearing request, the configured
+            defaultResourceServer is used. OIDC-only and scopeless requests use the
+            client_id audience.
         - name: acr_values
           in: query
           required: false
@@ -386,7 +388,7 @@ paths:
         "500":
           description: >-
             Internal server error — the revocation could not be recorded, for example when the
-            operation database is unavailable.
+            runtime persistent database is unavailable.
           content:
             application/json:
               schema:
@@ -636,8 +638,9 @@ components:
           type: string
           description: >-
             Resource indicator (RFC 8707). For access-token issuance, binds the issued access token
-            to exactly one resource server; when omitted, the configured defaultResourceServer is
-            used, and if neither is available the request is rejected with invalid_target. Optional
+            to exactly one resource server. When omitted from a permission-bearing request, the
+            configured defaultResourceServer is used, and if neither is available the request is
+            rejected with invalid_target. OIDC-only and scopeless requests use the client_id audience. Optional
             for ID-JAG requests, where it is embedded in the issued ID-JAG's `resource` claim. For
             the jwt-bearer grant, when present it must be a subset of the assertion's own `resource`
             claim.

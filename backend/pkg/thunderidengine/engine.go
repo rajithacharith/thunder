@@ -90,7 +90,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		logger.Fatal(ctx, "Failed to initialize JOSE services", log.Error(err))
 	}
 
-	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(engineCtx.runtimeDBType,
+	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(engineCtx.runtimeTransientDBType,
 		engineCtx.serverConfig.Identifier)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize runtime store", log.Error(err))
@@ -152,12 +152,12 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	}
 
 	oauthConfig := oauthconfig.Config{
-		DeploymentID:  engineCtx.serverConfig.Identifier,
-		RuntimeDBType: engineCtx.runtimeDBType,
-		BaseURL:       config.GetServerURL(&engineCtx.serverConfig),
-		JWT:           engineCtx.jwtConfig,
-		OAuth:         engineCtx.oauthConfig,
-		GateClient:    engineCtx.gateClientConfig,
+		DeploymentID:           engineCtx.serverConfig.Identifier,
+		RuntimeTransientDBType: engineCtx.runtimeTransientDBType,
+		BaseURL:                config.GetServerURL(&engineCtx.serverConfig),
+		JWT:                    engineCtx.jwtConfig,
+		OAuth:                  engineCtx.oauthConfig,
+		GateClient:             engineCtx.gateClientConfig,
 	}
 	// The embedded engine has no server-config store, so no default resource server is available.
 	// Implicit no-resource requests that carry permission scopes are rejected; OIDC-only or
@@ -230,15 +230,15 @@ type engineContext struct {
 	graphBuilder        graphbuilder.GraphBuilderInterface
 	authAssertGen       assert.AuthAssertGeneratorInterface
 
-	serverHome          string
-	runtimeDBType       string
-	oauthConfig         engineconfig.OAuthConfig
-	jwtConfig           engineconfig.JWTConfig
-	flowConfig          engineconfig.FlowConfig
-	serverConfig        engineconfig.ServerConfig
-	cacheConfig         engineconfig.CacheConfig
-	observabilityConfig engineconfig.ObservabilityConfig
-	gateClientConfig    engineconfig.GateClientConfig
+	serverHome             string
+	runtimeTransientDBType string
+	oauthConfig            engineconfig.OAuthConfig
+	jwtConfig              engineconfig.JWTConfig
+	flowConfig             engineconfig.FlowConfig
+	serverConfig           engineconfig.ServerConfig
+	cacheConfig            engineconfig.CacheConfig
+	observabilityConfig    engineconfig.ObservabilityConfig
+	gateClientConfig       engineconfig.GateClientConfig
 
 	actorProvider         providers.ActorProvider
 	authnProvider         providers.AuthnProviderManager

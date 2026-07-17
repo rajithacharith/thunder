@@ -42,10 +42,10 @@
         "max_retry_backoff_ms": 2000
       }
     },
-    "runtime": {
+    "runtime_transient": {
       "type": "sqlite",
       "sqlite": {
-        "path": "database/runtimedb.db",
+        "path": "database/runtime-transient.db",
         "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
         "max_open_conns": 500,
         "max_idle_conns": 100,
@@ -68,10 +68,23 @@
         "write_timeout_ms": 3000
       }
     },
-    "user": {
+    "entity": {
       "type": "sqlite",
       "sqlite": {
-        "path": "database/userdb.db",
+        "path": "database/entitydb.db",
+        "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
+        "max_open_conns": 500,
+        "max_idle_conns": 100,
+        "conn_max_lifetime": 3600,
+        "max_retries": 3,
+        "min_retry_backoff_ms": 50,
+        "max_retry_backoff_ms": 2000
+      }
+    },
+    "runtime_persistent": {
+      "type": "sqlite",
+      "sqlite": {
+        "path": "database/runtime-persistent.db",
         "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
         "max_open_conns": 500,
         "max_idle_conns": 100,
@@ -310,5 +323,10 @@
     "credential_validity_seconds": 2592000,
     "batch_size": 5,
     "enforce_scope": false
+  },
+  "attestation": {
+    "apple": {
+      "root_certificate": "-----BEGIN CERTIFICATE-----\nMIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYw\nJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwK\nQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNa\nFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlv\nbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9y\nbmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdh\nNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9au\nYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/\nMB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYw\nCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn\n53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijV\noyFraWVIyd/dganmrduC1bmTBGwD\n-----END CERTIFICATE-----\n"
+    }
   }
 }

@@ -47,7 +47,7 @@ func (suite *InitTestSuite) SetupTest() {
 	// Initialize() builds the store, which reads the server runtime config.
 	_ = config.InitializeServerRuntime("test", &config.Config{
 		Database: config.DatabaseConfig{
-			Operation: config.DataSource{
+			RuntimePersistent: config.DataSource{
 				Type:   "sqlite",
 				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},

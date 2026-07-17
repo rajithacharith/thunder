@@ -589,7 +589,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_RenewRevokeFailu
 	// The deny-list write fails; the rotation must fail closed rather than leave the old token usable.
 	suite.mockRefreshRevoker.
 		On("RevokeRefreshToken", mock.Anything, mock.Anything, mock.Anything).
-		Return(errors.New("operation database unavailable"))
+		Return(errors.New("runtime persistent database unavailable"))
 
 	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 

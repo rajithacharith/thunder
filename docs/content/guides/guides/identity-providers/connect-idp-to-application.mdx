@@ -27,6 +27,10 @@ Applications in <ProductName /> do not reference IdPs directly. The connection r
   - [Add an OAuth 2.0 Identity Provider](../add-oauth-provider)
 - You have created an application. See [Manage Applications](../../applications/manage-applications).
 
+:::note Federated sign-in requires a local user
+By default, federated sign-in maps the external identity to a local user, which must already exist in the user store or the sign-in step fails. To sign in a first-time federated user, enable **Allow Authentication Without Local User** (`allowAuthenticationWithoutLocalUser`) on the social login executor and add a **Provisioning** executor to create the local account. See [Federated Authentication](../../flows/advanced-configurations#federated-authentication).
+:::
+
 <Stepper stepNode="h2" as="h2">
 
 ## Step 1: Open the Flow Designer

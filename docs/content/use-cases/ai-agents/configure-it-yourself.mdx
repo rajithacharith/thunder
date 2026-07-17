@@ -58,20 +58,11 @@ The foundation creates the two resource servers, three roles, two demo users, an
    | -------- | -------------------- |
    | `access` | `agent:access`       |
 
-   Configure it as the default resource server for ordinary Wayfinder web-app sign-in tokens. The AI agent sends `resource=http://localhost:8787/mcp` explicitly when it needs tokens for MCP calls.
-
-   ```bash
-   curl -kL -X PUT https://localhost:8090/server-config/defaultResourceServer \
-     -H 'Content-Type: application/json' \
-     -H 'Authorization: Bearer <access-token>' \
-     -d '{ "resourceServerId": "<wayfinder-agent-rs-id>" }'
-   ```
-
    See [Resource Servers](../../../guides/guides/resource-servers).
 
 2. **Create the `wayfinder` resource server.**
 
-   Invoke the **Resource Management API** again. The identifier is `http://localhost:8787/mcp`, a URL-shaped identifier per [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) that matches what the Wayfinder MCP server advertises in `/.well-known/oauth-protected-resource`. MCP Inspector reads that metadata and passes the value back as `resource=...` on `/oauth2/token`; <ProductName /> would reject the request with `invalid_target` otherwise. This resource server protects both the REST surface (`/api/*`) and the MCP surface (`/mcp`) of the Wayfinder server. Both check the same `wayfinder:booking:*` permissions:
+   Invoke the **Resource Management API** again. The identifier is `http://localhost:8787/mcp`, a URL-shaped identifier per [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) that matches what the Wayfinder MCP server advertises in `/.well-known/oauth-protected-resource`. MCP Inspector reads that metadata and passes the value back as `resource=...` on `/oauth2/token`; <ProductName /> would reject the request with `invalid_target` otherwise. This resource server protects both the REST surface (`/api/*`) and the MCP surface (`/mcp`) of the Wayfinder server. Both check the same `booking:*` permissions:
 
    ```bash
    curl -kL -X POST https://localhost:8090/resource-servers \
@@ -107,10 +98,19 @@ The foundation creates the two resource servers, three roles, two demo users, an
 
    | Action      | Generated permission |
    | ----------- | -------------------- |
-   | `read`      | `wayfinder:booking:read`       |
-   | `create`    | `wayfinder:booking:create`     |
-   | `cancel`    | `wayfinder:booking:cancel`     |
-   | `recommend` | `wayfinder:booking:recommend`  |
+   | `read`      | `booking:read`       |
+   | `create`    | `booking:create`     |
+   | `cancel`    | `booking:cancel`     |
+   | `recommend` | `booking:recommend`  |
+
+   Configure the booking resource server as the default for Wayfinder web sign-in tokens. The web application requests `booking:*` permissions without a `resource`, so the default must be the resource server that defines those permissions. The chat widget targets `http://localhost:8790/chat` explicitly.
+
+   ```bash
+   curl -kL -X PUT https://localhost:8090/server-config/defaultResourceServer \
+     -H 'Content-Type: application/json' \
+     -H 'Authorization: Bearer <access-token>' \
+     -d '{ "resourceServerId": "<wayfinder-rs-id>" }'
+   ```
 
 3. **Create the `Chat User` role.**
 
@@ -135,7 +135,7 @@ The foundation creates the two resource servers, three roles, two demo users, an
 
 4. **Create the `Booking User` role.**
 
-   Grant it `wayfinder:booking:read`, `wayfinder:booking:create`, and `wayfinder:booking:cancel` on `wayfinder`:
+   Grant it `booking:read`, `booking:create`, and `booking:cancel` on `wayfinder`:
 
    ```bash
    curl -kL -X POST https://localhost:8090/roles \
@@ -148,7 +148,7 @@ The foundation creates the two resource servers, three roles, two demo users, an
        "permissions": [
          {
            "resourceServerId": "<wayfinder-rs-id>",
-           "permissions": ["wayfinder:booking:read", "wayfinder:booking:create", "wayfinder:booking:cancel"]
+           "permissions": ["booking:read", "booking:create", "booking:cancel"]
          }
        ]
      }'
@@ -156,7 +156,7 @@ The foundation creates the two resource servers, three roles, two demo users, an
 
 5. **Create the `Recommender` role.**
 
-   Grant it `wayfinder:booking:recommend` on `wayfinder`. This role will be assigned to the Wayfinder Concierge in a later step, not to a user:
+   Grant it `booking:recommend` on `wayfinder`. This role will be assigned to the Wayfinder Concierge in a later step, not to a user:
 
    ```bash
    curl -kL -X POST https://localhost:8090/roles \
@@ -164,12 +164,12 @@ The foundation creates the two resource servers, three roles, two demo users, an
      -H 'Authorization: Bearer <access-token>' \
      -d '{
        "name": "Recommender",
-       "description": "Grants the wayfinder:booking:recommend permission to the Wayfinder Concierge",
+       "description": "Grants the booking:recommend permission to the Wayfinder Concierge",
        "ouId": "<organization-unit-id>",
        "permissions": [
          {
            "resourceServerId": "<wayfinder-rs-id>",
-           "permissions": ["wayfinder:booking:recommend"]
+           "permissions": ["booking:recommend"]
          }
        ]
      }'
@@ -243,7 +243,7 @@ The Concierge runs as a first-class agent in <ProductName />. It needs its own c
 
 ## Build the Agent Authentication Flow
 
-The Wayfinder Concierge needs a separate authentication flow that drives the on-behalf-of (OBO) consent screen when a chat request triggers a mutating tool. The flow authenticates the user with username and password, then shows a consent screen listing the `wayfinder:booking:*` permissions the agent is requesting.
+The Wayfinder Concierge needs a separate authentication flow that drives the on-behalf-of (OBO) consent screen when a chat request triggers a mutating tool. The flow authenticates the user with username and password, then shows a consent screen listing the `booking:*` permissions the agent is requesting.
 
 Navigate to **Flows** and create a flow with these steps:
 

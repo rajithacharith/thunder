@@ -50,7 +50,7 @@ func TestRevokedTokenStoreTestSuite(t *testing.T) {
 func (suite *RevokedTokenStoreTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Operation: config.DataSource{
+			RuntimePersistent: config.DataSource{
 				Type:   "sqlite",
 				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
@@ -86,7 +86,7 @@ func (suite *RevokedTokenStoreTestSuite) TestNewRevokedTokenStore() {
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_Success() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertRevokedToken,
 		suite.testToken.ID, suite.testToken.JTI,
@@ -103,7 +103,7 @@ func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_Success() {
 
 func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_GeneratesIDWhenEmpty() {
 	suite.testToken.ID = ""
-	suite.mockdbProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 
 	// ID is generated internally, so it is matched with mock.Anything.
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertRevokedToken,
@@ -119,7 +119,7 @@ func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_GeneratesIDWhenE
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_DBClientError() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(nil, errors.New("db client error"))
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(nil, errors.New("db client error"))
 
 	err := suite.store.InsertRevokedToken(context.Background(), suite.testToken)
 	assert.Error(suite.T(), err)
@@ -129,7 +129,7 @@ func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_DBClientError() 
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_ExecError() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertRevokedToken,
 		suite.testToken.ID, suite.testToken.JTI,
@@ -145,7 +145,7 @@ func (suite *RevokedTokenStoreTestSuite) TestInsertRevokedToken_ExecError() {
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_True() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 
 	suite.mockDBClient.On("QueryContext", mock.Anything, queryIsTokenRevoked,
 		"test-jti", mock.Anything, testDeploymentID).
@@ -159,7 +159,7 @@ func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_True() {
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_False() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 
 	suite.mockDBClient.On("QueryContext", mock.Anything, queryIsTokenRevoked,
 		"test-jti", mock.Anything, testDeploymentID).
@@ -173,7 +173,7 @@ func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_False() {
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_DBClientError() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(nil, errors.New("db client error"))
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(nil, errors.New("db client error"))
 
 	revoked, err := suite.store.IsTokenRevoked(context.Background(), "test-jti")
 	assert.Error(suite.T(), err)
@@ -183,7 +183,7 @@ func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_DBClientError() {
 }
 
 func (suite *RevokedTokenStoreTestSuite) TestIsTokenRevoked_QueryError() {
-	suite.mockdbProvider.On("GetOperationDBClient").Return(suite.mockDBClient, nil)
+	suite.mockdbProvider.On("GetRuntimePersistentDBClient").Return(suite.mockDBClient, nil)
 
 	suite.mockDBClient.On("QueryContext", mock.Anything, queryIsTokenRevoked,
 		"test-jti", mock.Anything, testDeploymentID).

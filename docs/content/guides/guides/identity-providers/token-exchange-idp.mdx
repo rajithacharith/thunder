@@ -45,7 +45,7 @@ curl -X POST https://thunderid.example.com/connections/oidc \
     "name": "Asgardeo",
     "clientId": "my-external-client-id",
     "clientSecret": "my-external-client-secret",
-    "redirectUri": "https://thunderid.example.com/oauth2/callback",
+    "redirectUri": "https://thunderid.example.com/gate/callback",
     "authorizationEndpoint": "https://api.asgardeo.io/t/myorg/oauth2/authorize",
     "tokenEndpoint": "https://api.asgardeo.io/t/myorg/oauth2/token",
     "issuer": "https://api.asgardeo.io/t/myorg/oauth2/token",
@@ -101,7 +101,7 @@ A successful response returns a <ProductName />-issued access token:
 }
 ```
 
-The issued token's `sub` claim contains the external user's subject identifier from the original token. Its `aud` claim is the resolved resource server identifier. If you omit `resource`, configure `defaultResourceServer` first.
+The issued token's `sub` claim contains the external user's subject identifier from the original token. For permission-bearing requests, its `aud` claim is the explicit resource server identifier or the configured `defaultResourceServer`. An OIDC-only or scopeless request without `resource` uses the `client_id` audience.
 
 ## How <ProductName /> Validates the External Token
 

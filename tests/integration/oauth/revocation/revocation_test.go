@@ -47,7 +47,7 @@ const (
 )
 
 // RevocationTestSuite exercises the RFC 7009 POST /oauth2/revoke endpoint end-to-end:
-// real client authentication, real signed tokens, and the operation database.
+// real client authentication, real signed tokens, and the runtime persistent database.
 type RevocationTestSuite struct {
 	suite.Suite
 	client           *http.Client

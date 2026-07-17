@@ -66,13 +66,13 @@ These resources are shared by every B2C walkthrough.
      }'
    ```
 
-   This generates three permissions: `wayfinder:booking:read`, `wayfinder:booking:create`, and `wayfinder:booking:cancel`.
+   This generates three permissions: `booking:read`, `booking:create`, and `booking:cancel`.
 
    See [Resource Servers](../../../../guides/guides/resource-servers).
 
 3. **Create the `Traveler` role.**
 
-   Roles and their permissions are managed through the Role Management API. Create the role with the three `wayfinder:booking:*` permissions in one call. Replace `<default-ou-id>` with the ID of your default organization unit (look it up via `GET /organization-units`) and `<wayfinder-rs-id>` with the ID returned when you created the `wayfinder` resource server.
+   Roles and their permissions are managed through the Role Management API. Create the role with the three `booking:*` permissions in one call. Replace `<default-ou-id>` with the ID of your default organization unit (look it up via `GET /organization-units`) and `<wayfinder-rs-id>` with the ID returned when you created the `wayfinder` resource server.
 
    ```bash
    curl -k -X POST https://localhost:8090/roles \
@@ -85,7 +85,7 @@ These resources are shared by every B2C walkthrough.
        "permissions": [
          {
            "resourceServerId": "<wayfinder-rs-id>",
-           "permissions": ["wayfinder:booking:read", "wayfinder:booking:create", "wayfinder:booking:cancel"]
+           "permissions": ["booking:read", "booking:create", "booking:cancel"]
          }
        ]
      }'

@@ -7,13 +7,13 @@ description: RFC 8707 Resource Indicators in {{ProductName}}, to target access t
 
 # Resource Indicators
 
-**Resource Indicators for OAuth 2.0** ([RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707)) lets a client tell <ProductName /> *which* resource server the access token is for. The client passes a single `resource` parameter. <ProductName /> looks it up against the registered resource servers, narrows the granted scopes to those owned by that resource server, and writes its identifier into the token's `aud` claim. When the client omits `resource`, <ProductName /> uses the configured `defaultResourceServer`; if neither is available, token issuance fails with `invalid_target`.
+**Resource Indicators for OAuth 2.0** ([RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707)) lets a client tell <ProductName /> *which* resource server the access token is for. The client passes a single `resource` parameter. <ProductName /> looks it up against the registered resource servers, narrows the granted permission scopes to those owned by that resource server, and writes its identifier into the token's `aud` claim. When permission scopes are requested without `resource`, <ProductName /> uses the configured `defaultResourceServer`. If neither target is available, token issuance fails with `invalid_target`. OIDC-only and scopeless requests without `resource` use the `client_id` as the access-token audience.
 
 The effect: a token issued for the payments API cannot be replayed against the bookings API. Each token is bound to its intended audience.
 
 ## How It Works
 
-The `resource` parameter is accepted on the authorization request, the token request, and the refresh request.
+The `resource` parameter is accepted on authorization and PAR requests and on authorization code, client credentials, JWT bearer, refresh token, and token exchange requests. CIBA does not currently support resource indicators.
 
 ```http
 GET /oauth2/authorize
@@ -49,11 +49,11 @@ The issued access token carries the resource identifier as its `aud`:
 
 | Aspect | Behavior |
 |---|---|
-| Accepted on | `/oauth2/authorize`, `/oauth2/par`, `/oauth2/token` (every grant), `/oauth2/token` with `grant_type=refresh_token` |
+| Accepted on | `/oauth2/authorize`, `/oauth2/par`, and `/oauth2/token` for authorization code, client credentials, JWT bearer, refresh token, and token exchange grants |
 | Value rules | The `resource` must be an absolute URI with no fragment. A request with more than one `resource` parameter is rejected with `invalid_target`. |
 | Resolution | The URI is matched to a registered resource server's `identifier` |
 | Unknown identifier | Request rejected with `invalid_target` |
-| No `resource` | The configured `defaultResourceServer` is used; if none is configured, the request is rejected with `invalid_target` |
+| No `resource` | Permission-bearing requests use `defaultResourceServer` and return `invalid_target` if it is unset. OIDC-only and scopeless requests use `client_id` as the audience |
 | Scope filtering | Requested scopes are filtered to those defined on the targeted resource server. Scopes not owned by that resource server are silently dropped |
 | OIDC standard scopes | `openid`, `profile`, `email`, `phone`, `address` are **not** filtered by resource indicators |
 | Custom scope_claims | Scopes covered by an application's `scopeClaims` mapping also pass through unchanged |
@@ -64,7 +64,8 @@ The issued access token carries the resource identifier as its `aud`:
 |---|---|
 | One `resource` | JSON string: `"aud": "https://api.example.com/payments"` |
 | Multiple `resource` parameters | Rejected with `invalid_target` |
-| No `resource` parameter | The configured `defaultResourceServer` identifier. If no default is configured, the request is rejected with `invalid_target`. |
+| No `resource`, permission scopes requested | The configured `defaultResourceServer` identifier. If no default is configured, the request is rejected with `invalid_target`. |
+| No `resource`, no permission scopes | The requesting client's `client_id`. |
 
 The `aud` claim is always a single string, per [RFC 7519 §4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
 
@@ -123,5 +124,5 @@ curl -X POST https://{{productSlug}}.example.com/oauth2/token \
 
 - [Authorization](../../../../key-concepts/authorization), how resource servers, permissions, and scopes fit together
 - [Resource Servers](../../../resource-servers), register a resource server
-- [Refresh Token](../refresh-token), narrowing on refresh
+- [Refresh Token](../refresh-token), preserving the resource binding on refresh
 - [Token Exchange](../token-exchange), `resource` is supported on exchange too

@@ -53,9 +53,9 @@ resources for services explicitly opted into `mutable`/`composite` stores.
    ```bash
    # against each database, run the matching script:
    backend/dbscripts/configdb/postgres.sql     # → configdb
-   backend/dbscripts/runtimedb/postgres.sql    # → runtimedb
-   backend/dbscripts/userdb/postgres.sql       # → userdb
-   backend/dbscripts/operationdb/postgres.sql  # → operationdb
+   backend/dbscripts/runtime-transient/postgres.sql    # → runtime_transient
+   backend/dbscripts/entitydb/postgres.sql       # → entitydb
+   backend/dbscripts/runtime-persistent/postgres.sql  # → runtime_persistent
    ```
 
    The default `dbType: sqlite` needs no database at all: it uses the
@@ -95,7 +95,7 @@ bao kv put secret/thunderid/dev \
   ADMIN_PASSWORD=<PASSWORD> \
   DB_CONFIG_HOSTNAME=<DB_HOST> DB_CONFIG_PORT=5432 DB_CONFIG_NAME=configdb \
   DB_CONFIG_USERNAME=<DB_USER> DB_CONFIG_PASSWORD=<DB_PASSWORD> DB_CONFIG_SSLMODE=require \
-  ... # same six for DB_RUNTIME_*, DB_USER_*, DB_OPERATION_*
+  ... # same six for DB_RUNTIME_TRANSIENT_*, DB_ENTITY_*, DB_RUNTIME_PERSISTENT_*
 ```
 
 The ResourceType renders an `ExternalSecret` that extracts every property at
@@ -108,9 +108,9 @@ only needed with `runtime.dbType: postgres`:
 | `CRYPTO_ENCRYPTION_KEY` | 32-byte hex key (`openssl rand -hex 32`) |
 | `ADMIN_PASSWORD` | Admin user password, resolving the `{{.ADMIN_PASSWORD}}` placeholder in the declarative resources file |
 | `DB_CONFIG_HOSTNAME` / `_PORT` / `_NAME` / `_USERNAME` / `_PASSWORD` / `_SSLMODE` | Config database connection (postgres only) |
-| `DB_RUNTIME_*` (same six) | Runtime database connection (postgres only) |
-| `DB_USER_*` (same six) | User database connection (postgres only) |
-| `DB_OPERATION_*` (same six) | Operation database connection (postgres only) |
+| `DB_RUNTIME_TRANSIENT_*` (same six) | Runtime-transient database connection (postgres only) |
+| `DB_ENTITY_*` (same six) | Entity database connection (postgres only) |
+| `DB_RUNTIME_PERSISTENT_*` (same six) | Runtime-persistent database connection (postgres only) |
 
 The rendered `deployment.yaml` keeps these fields as `{{.VAR}}` placeholders;
 ThunderID resolves them from the environment at startup. The materialized

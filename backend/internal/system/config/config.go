@@ -101,10 +101,10 @@ type RedisDataSource struct {
 
 // DatabaseConfig holds the different database configuration details.
 type DatabaseConfig struct {
-	Config    DataSource `yaml:"config"    json:"config"`
-	Runtime   DataSource `yaml:"runtime"   json:"runtime"`
-	User      DataSource `yaml:"user"      json:"user"`
-	Operation DataSource `yaml:"operation" json:"operation"`
+	Config            DataSource `yaml:"config"             json:"config"`
+	RuntimeTransient  DataSource `yaml:"runtime_transient"  json:"runtime_transient"`
+	Entity            DataSource `yaml:"entity"             json:"entity"`
+	RuntimePersistent DataSource `yaml:"runtime_persistent" json:"runtime_persistent"`
 }
 
 // NotificationConfig holds the notification configuration details.
@@ -186,6 +186,19 @@ type UserConfig struct {
 // PasskeyConfig holds the passkey configuration details.
 type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
+}
+
+// AttestationConfig holds engine-level platform attestation configuration shared across
+// applications.
+type AttestationConfig struct {
+	Apple AppleAttestationConfig `yaml:"apple" json:"apple"`
+}
+
+// AppleAttestationConfig holds the engine-level Apple App Attest settings. RootCertificate is the
+// PEM-encoded Apple "App Attestation Root CA" certificate used as the trust anchor when verifying
+// attestation certificate chains.
+type AppleAttestationConfig struct {
+	RootCertificate string `yaml:"root_certificate" json:"root_certificate"`
 }
 
 // OpenID4VPConfig holds the OpenID4VP verifier engine configuration. Engine
@@ -570,6 +583,7 @@ type Config struct {
 	EntityType           EntityTypeConfig                 `yaml:"user_type"             json:"user_type"`
 	Observability        engineconfig.ObservabilityConfig `yaml:"observability"         json:"observability"`
 	Passkey              PasskeyConfig                    `yaml:"passkey"               json:"passkey"`
+	Attestation          AttestationConfig                `yaml:"attestation"           json:"attestation"`
 	OpenID4VP            OpenID4VPConfig                  `yaml:"openid4vp"             json:"openid4vp"`
 	OpenID4VCI           OpenID4VCIConfig                 `yaml:"openid4vci"            json:"openid4vci"`
 	AuthnProvider        AuthnProviderConfig              `yaml:"authn_provider"        json:"authn_provider"`

@@ -21,7 +21,7 @@ package session
 import "context"
 
 // sessionStore is the package-private persistence contract covering SSO sessions, their
-// per-checkpoint session contexts, and their participants. A single operation-DB-backed
+// per-checkpoint session contexts, and their participants. A single runtime-persistent-DB-backed
 // implementation (store) satisfies it, and the service depends on this one interface. It is not
 // used outside the package.
 type sessionStore interface {

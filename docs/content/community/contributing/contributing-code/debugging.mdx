@@ -157,12 +157,13 @@ npm run dev
 
 | Database | Path |
 |----------|------|
-| User DB | `<repo-root>/backend/cmd/server/database/userdb.db` |
-| Runtime DB | `<repo-root>/backend/cmd/server/database/runtimedb.db` |
+| Entity DB | `<repo-root>/backend/cmd/server/database/entitydb.db` |
+| Runtime-transient DB | `<repo-root>/backend/cmd/server/database/runtime-transient.db` |
+| Runtime-persistent DB | `<repo-root>/backend/cmd/server/database/runtime-persistent.db` |
 | Config DB | `<repo-root>/backend/cmd/server/database/configdb.db` |
 
 5. Click **Test Connection** to verify, then click **Finish**
-6. Repeat for the other two databases
+6. Repeat for the other three databases
 
 ## Debug with Local SDK Changes
 
@@ -238,4 +239,4 @@ In VS Code, open these files and set breakpoints:
 
 ### 5. Verify in Database
 
-Open DBeaver and view the `User` table in the User DB to confirm the new user was created.
+Open DBeaver and view the `ENTITY` table in the Entity DB to confirm the new user was created.

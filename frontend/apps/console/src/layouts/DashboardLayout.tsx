@@ -117,7 +117,7 @@ function SidebarFooterButtons(): ReactNode {
 }
 
 export default function DashboardLayout(): ReactNode {
-  const {signIn, clearSession, discovery} = useThunderID();
+  const {clearSession, discovery} = useThunderID();
   const {isTrustedIssuerGenericOidc, getTrustedIssuerClientId, getClientUrl} = useConfig();
   const {t} = useTranslation();
   const logger = useLogger();
@@ -147,11 +147,9 @@ export default function DashboardLayout(): ReactNode {
       return;
     }
 
-    signOut()
-      .then(() => signIn())
-      .catch((error: unknown) => {
-        logger.error('Sign out/in failed', {error});
-      });
+    signOut().catch((error: unknown) => {
+      logger.error('Sign out failed', {error});
+    });
   };
 
   const appRoutes: NavCategory[] = useMemo(

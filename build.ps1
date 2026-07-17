@@ -314,6 +314,11 @@ function Clean {
         Remove-Item -Path (Join-Path $BACKEND_DIR $SECURITY_DIR) -Recurse -Force -ErrorAction SilentlyContinue
     }
 
+    Write-Host "Removing runtime secrets in $BACKEND_DIR/config/secrets"
+    if (Test-Path (Join-Path $BACKEND_DIR "config/secrets")) {
+        Remove-Item -Path (Join-Path $BACKEND_DIR "config/secrets") -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     Write-Host "Removing certificates in $VANILLA_SAMPLE_APP_DIR"
     Remove-Item -Path (Join-Path $VANILLA_SAMPLE_APP_DIR "server.cert") -Force -ErrorAction SilentlyContinue
     Remove-Item -Path (Join-Path $VANILLA_SAMPLE_APP_DIR "server.key") -Force -ErrorAction SilentlyContinue
@@ -575,8 +580,8 @@ function Initialize-Databases {
 
     New-Item -Path $REPOSITORY_DB_DIR -ItemType Directory -Force | Out-Null
 
-    $db_files = @("configdb.db", "runtimedb.db", "userdb.db", "operationdb.db")
-    $script_paths = @("configdb/sqlite.sql", "runtimedb/sqlite.sql", "userdb/sqlite.sql", "operationdb/sqlite.sql")
+    $db_files = @("configdb.db", "runtime-transient.db", "entitydb.db", "runtime-persistent.db")
+    $script_paths = @("configdb/sqlite.sql", "runtime-transient/sqlite.sql", "entitydb/sqlite.sql", "runtime-persistent/sqlite.sql")
 
     for ($i = 0; $i -lt $db_files.Length; $i++) {
         $db_file = $db_files[$i]
@@ -643,6 +648,9 @@ function Prepare-Backend-For-Packaging {
     # Never ship key material: strip any dev certs/keys that copying config above may have brought in.
     Remove-Item -Path (Join-Path $security_dir "*.cert") -Force -ErrorAction SilentlyContinue
     Remove-Item -Path (Join-Path $security_dir "*.key") -Force -ErrorAction SilentlyContinue
+    # Never ship runtime secrets: strip the dev Direct Auth Secret that copying config may have brought in.
+    # setup.ps1 generates a fresh per-deployment secret.
+    Remove-Item -Path (Join-Path $package_folder "config/secrets") -Recurse -Force -ErrorAction SilentlyContinue
 
     # Copy bootstrap directory
     Write-Host "Copying bootstrap scripts..."
@@ -1452,6 +1460,60 @@ function Ensure-Crypto-File {
     Write-Host "================================================================"
 }
 
+function Ensure-DirectAuthSecret-File {
+    param(
+        [string]$secret_dir
+    )
+
+    # Path referenced by server.security.direct_auth_secret (file://config/secrets/direct_auth_secret)
+    # in deployment.yaml. The server reads the secret from here at load time.
+    $SECRET_FILE = Join-Path $secret_dir "direct_auth_secret"
+
+    Write-Host "================================================================"
+    Write-Host "Ensuring Direct Auth Secret file exists..."
+
+    if (Test-Path $SECRET_FILE) {
+        Write-Host "Direct Auth Secret file already present in $SECRET_FILE. Skipping generation."
+    }
+    else {
+        Write-Host "Direct Auth Secret file not found. Generating new secret at $SECRET_FILE..."
+        $NEW_SECRET = $null
+
+        # Prefer OpenSSL; fall back to .NET cryptography (always available in PowerShell).
+        $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+        if ($openssl) {
+            try {
+                $NEW_SECRET = (openssl rand -hex 32 | Out-String).Trim()
+                if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($NEW_SECRET) -or $NEW_SECRET.Length -ne 64) {
+                    throw "OpenSSL rand command failed or returned empty/incorrect length."
+                }
+            }
+            catch {
+                Write-Host " - OpenSSL failed: $_. Falling back to .NET cryptography."
+                $NEW_SECRET = $null
+            }
+        }
+
+        if ([string]::IsNullOrEmpty($NEW_SECRET)) {
+            $bytes = New-Object byte[] 32
+            $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+            $rng.GetBytes($bytes)
+            $rng.Dispose()
+            $NEW_SECRET = ([System.BitConverter]::ToString($bytes) -replace '-', '').ToLower()
+        }
+
+        # Ensure the target directory exists.
+        New-Item -Path $secret_dir -ItemType Directory -Force | Out-Null
+
+        # Write the secret without a trailing newline so it is used verbatim.
+        Set-Content -Path $SECRET_FILE -Value $NEW_SECRET -NoNewline -Encoding Ascii
+
+        Write-Host "Successfully generated and added new Direct Auth Secret to $SECRET_FILE."
+    }
+
+    Write-Host "================================================================"
+}
+
 function Run {
     function Cleanup-Servers {
         Write-Host ""
@@ -1479,6 +1541,7 @@ function Run {
     Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "ecdsa-signing" -Algorithm "ECDSA"
     Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
     Ensure-Crypto-File -key_dir (Join-Path $BACKEND_DIR "config/certs")
+    Ensure-DirectAuthSecret-File -secret_dir (Join-Path $BACKEND_DIR "config/secrets")
     Write-Host "Initializing databases..."
     Initialize-Databases
 
@@ -1560,6 +1623,7 @@ function Run-Backend {
 
     Write-Host "=== Ensuring crypto file exists for run ==="
     Ensure-Crypto-File -key_dir (Join-Path $BACKEND_DIR "config/certs")
+    Ensure-DirectAuthSecret-File -secret_dir (Join-Path $BACKEND_DIR "config/secrets")
 
     Write-Host "Initializing databases..."
     Initialize-Databases

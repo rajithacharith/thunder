@@ -60,10 +60,10 @@ wayfinder-agent                         (Resource Server)
 
 wayfinder                               (Resource Server)
 └── booking                             (Resource)
-    ├── read       →  wayfinder:booking:read      (Permission)
-    ├── create     →  wayfinder:booking:create
-    ├── cancel     →  wayfinder:booking:cancel
-    └── recommend  →  wayfinder:booking:recommend
+    ├── read       →  booking:read      (Permission)
+    ├── create     →  booking:create
+    ├── cancel     →  booking:cancel
+    └── recommend  →  booking:recommend
 ```
 
 Permissions are issued to the access tokens. See [Resource Servers](../../../guides/guides/resource-servers).
@@ -73,8 +73,8 @@ Permissions are issued to the access tokens. See [Resource Servers](../../../gui
 A role bundles permissions for a class of principal. A user's or agent's effective permissions are the union of permissions across their roles. Wayfinder defines three roles:
 
 - `Chat User`: grants `agent:access`, the permission required to talk to the Wayfinder Concierge.
-- `Booking User`: grants `wayfinder:booking:read`, `wayfinder:booking:create`, and `wayfinder:booking:cancel` for booking travel through the UI.
-- `Recommender`: grants `wayfinder:booking:recommend`, the permission the Wayfinder Concierge needs to surface flight recommendations on its own.
+- `Booking User`: grants `booking:read`, `booking:create`, and `booking:cancel` for booking travel through the UI.
+- `Recommender`: grants `booking:recommend`, the permission the Wayfinder Concierge needs to surface flight recommendations on its own.
 
 John Doe carries both user roles; Jane Smith carries only `Booking User`. The `Recommender` role is assigned to the `WAYFINDER-CONCIERGE` agent, not to a user.
 

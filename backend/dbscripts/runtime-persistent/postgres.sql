@@ -16,7 +16,7 @@
 -- ----------------------------------------------------------------------------
 
 -- Table to store revoked token JTIs (single-token revocation deny list).
--- Part of the database.operation classification: authoritative authorization
+-- Part of the database.runtime_persistent classification: authoritative authorization
 -- enforcement state that must survive a runtime database flush.
 CREATE TABLE "REVOKED_TOKEN" (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
@@ -34,7 +34,7 @@ CREATE UNIQUE INDEX idx_revoked_token_jti_deployment ON "REVOKED_TOKEN" (DEPLOYM
 CREATE INDEX idx_revoked_token_expiry_time ON "REVOKED_TOKEN" (EXPIRY_TIME);
 
 -- Table to store SSO sessions, grouped by flow (FLOW_ID) and resolved by an opaque handle.
--- Part of the database.operation classification: persistent session state that must survive a
+-- Part of the database.runtime_persistent classification: persistent session state that must survive a
 -- runtime database flush.
 CREATE TABLE "SSO_SESSION" (
     SESSION_ID VARCHAR(36) NOT NULL,

@@ -53,7 +53,7 @@ func (s *ParticipantStoreTestSuite) TestRecord_Upserts() {
 	now := time.Unix(1700000000, 0).UTC()
 	p := Participant{SessionID: "sess-1", AppID: "app-1", FirstJoinedAt: now, LastActiveAt: now}
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryUpsertParticipant,
 		"sess-1", testDeploymentID, "app-1", now, now).
 		Return(int64(1), nil)
@@ -69,7 +69,7 @@ func (s *ParticipantStoreTestSuite) TestRecord_DBError() {
 	now := time.Unix(1700000000, 0).UTC()
 	p := Participant{SessionID: "sess-1", AppID: "app-1", FirstJoinedAt: now, LastActiveAt: now}
 
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryUpsertParticipant,
 		"sess-1", testDeploymentID, "app-1", now, now).
 		Return(int64(0), errors.New("db down"))
@@ -87,7 +87,7 @@ func (s *ParticipantStoreTestSuite) TestListBySessionID() {
 		{"session_id": "sess-1", "app_id": "app-1", "first_joined_at": first, "last_active_at": first},
 		{"session_id": "sess-1", "app_id": "app-2", "first_joined_at": second, "last_active_at": second},
 	}
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListParticipantsBySessionID,
 		"sess-1", testDeploymentID).
 		Return(rows, nil)
@@ -102,7 +102,7 @@ func (s *ParticipantStoreTestSuite) TestListBySessionID() {
 }
 
 func (s *ParticipantStoreTestSuite) TestListBySessionID_Empty() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListParticipantsBySessionID,
 		"sess-1", testDeploymentID).
 		Return([]map[string]interface{}{}, nil)
@@ -114,7 +114,7 @@ func (s *ParticipantStoreTestSuite) TestListBySessionID_Empty() {
 }
 
 func (s *ParticipantStoreTestSuite) TestDeleteBySessionID() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryDeleteParticipantsBySessionID,
 		"sess-1", testDeploymentID).
 		Return(int64(2), nil)
@@ -126,7 +126,7 @@ func (s *ParticipantStoreTestSuite) TestDeleteBySessionID() {
 }
 
 func (s *ParticipantStoreTestSuite) TestListBySessionID_ClientError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(nil, errors.New("no client"))
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(nil, errors.New("no client"))
 
 	got, err := s.store.ListBySessionID(context.Background(), "sess-1")
 
@@ -135,7 +135,7 @@ func (s *ParticipantStoreTestSuite) TestListBySessionID_ClientError() {
 }
 
 func (s *ParticipantStoreTestSuite) TestListBySessionID_QueryError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListParticipantsBySessionID,
 		"sess-1", testDeploymentID).
 		Return(nil, errors.New("query failed"))
@@ -147,7 +147,7 @@ func (s *ParticipantStoreTestSuite) TestListBySessionID_QueryError() {
 }
 
 func (s *ParticipantStoreTestSuite) TestListBySessionID_BuildError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("QueryContext", context.Background(), queryListParticipantsBySessionID,
 		"sess-1", testDeploymentID).
 		Return([]map[string]interface{}{{"session_id": 42}}, nil) // non-string id fails buildParticipantFromRow
@@ -159,7 +159,7 @@ func (s *ParticipantStoreTestSuite) TestListBySessionID_BuildError() {
 }
 
 func (s *ParticipantStoreTestSuite) TestDeleteBySessionID_DBError() {
-	s.mockDBProvider.On("GetOperationDBClient").Return(s.mockDBClient, nil)
+	s.mockDBProvider.On("GetRuntimePersistentDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryDeleteParticipantsBySessionID,
 		"sess-1", testDeploymentID).
 		Return(int64(0), errors.New("db down"))

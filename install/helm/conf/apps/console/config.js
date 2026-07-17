@@ -30,6 +30,9 @@ window.__THUNDERID_RUNTIME_CONFIG__ = {
     base: {{ .Values.configuration.consoleClient.path | quote }},
     client_id: {{ .Values.configuration.consoleClient.clientId | quote }},
     scopes: {{ .Values.configuration.consoleClient.scopes }},
+    {{- if .Values.configuration.consoleClient.resourceIdentifier }}
+    resource_identifier: {{ .Values.configuration.consoleClient.resourceIdentifier | quote }},
+    {{- end }}
   },
   {{- if .Values.configuration.server.publicUrl }}
   // Defaults to the origin this app is served from. Required only when the server's

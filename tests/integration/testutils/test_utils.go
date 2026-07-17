@@ -542,9 +542,9 @@ func RunInitScript(zipFilePattern string) error {
 		dbFileName string
 	}{
 		{"configdb", "dbscripts/configdb", "configdb.db"},
-		{"runtimedb", "dbscripts/runtimedb", "runtimedb.db"},
-		{"userdb", "dbscripts/userdb", "userdb.db"},
-		{"operationdb", "dbscripts/operationdb", "operationdb.db"},
+		{"runtime_transient", "dbscripts/runtime-transient", "runtime-transient.db"},
+		{"entitydb", "dbscripts/entitydb", "entitydb.db"},
+		{"runtime_persistent", "dbscripts/runtime-persistent", "runtime-persistent.db"},
 	}
 
 	for _, db := range databases {
