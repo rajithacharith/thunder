@@ -12439,13 +12439,6 @@
                     "label": "{{ t(recovery:forms.username.actions.submit.label) }}",
                     "variant": "PRIMARY",
                     "eventType": "SUBMIT"
-                  },
-                  {
-                    "category": "DISPLAY",
-                    "id": "rich_text_signup",
-                    "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Remember your password? </span><a href=\"{{meta(application.sign_in_url)}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign in</span></a></p>",
-                    "resourceType": "ELEMENT",
-                    "type": "RICH_TEXT"
                   }
                 ]
               }
@@ -12598,13 +12591,6 @@
                     "label": "{{ t(recovery:forms.otp_sent.actions.verify.label) }}",
                     "variant": "PRIMARY",
                     "eventType": "SUBMIT"
-                  },
-                  {
-                    "category": "DISPLAY",
-                    "id": "rich_text_signup",
-                    "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Remember your password? </span><a href=\"{{meta(application.sign_in_url)}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign in</span></a></p>",
-                    "resourceType": "ELEMENT",
-                    "type": "RICH_TEXT"
                   }
                 ]
               }
