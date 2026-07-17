@@ -1,13 +1,13 @@
 ---
 title: Identity Concepts
 docType: use-case
-description: "How the Securing MCP tryout maps to product concepts: the external MCP client application, the protected MCP resource server, and the consent step that narrows what the client can do."
+description: How the Securing MCP tryout maps to product concepts, including the external MCP client application, the protected MCP resource server, and the consent step that narrows what the client can do.
 sidebar_position: 5
 ---
 
 # Identity Concepts
 
-This page explains the identity concepts behind the Securing MCP tryout you set up in [Try It Out](../try-it-out). For the underlying user types, roles, the booking resource server, and the Wayfinder Concierge agent, see [Identity Concepts](../../identity-concepts) under Securing AI Agents. This page covers only the MCP-specific additions.
+This page explains the identity concepts behind the Securing MCP tryout you set up in [Try It Out](../try-it-out). For the underlying user types, roles, the booking resource server, and the Wayfinder Concierge agent, see the [Identity Model](../../try-it-out#identity-model) under Securing AI Agents. This page covers only the MCP-specific additions.
 
 ## Application
 
@@ -15,8 +15,8 @@ An application is the OAuth2 client that <ProductName /> issues tokens to. This 
 
 The application registers redirect URIs for MCP Inspector:
 
-- `http://localhost:6274/oauth/callback/debug`: MCP Inspector's debug callback.
-- `http://localhost:6274/oauth/callback`: MCP Inspector's standard callback.
+- `http://localhost:6274/oauth/callback/debug`, MCP Inspector's debug callback.
+- `http://localhost:6274/oauth/callback`, MCP Inspector's standard callback.
 
 `EXTERNAL-MCP-CLIENT` is wired to the same authentication flow as the Wayfinder Concierge, so the OAuth consent screen surfaces each requested `booking:*` permission as an individual toggle at sign-in time.
 

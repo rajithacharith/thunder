@@ -7,14 +7,14 @@ sidebar_position: 3
 
 # Acting on Its Own
 
-In this walkthrough, John asks the Wayfinder Concierge for flights from Colombo to Singapore and follows up with a request for recommendations. The Concierge answers from the booking API catalog. No popup, no extra consent, it makes the calls under its own identity, using its M2M token.
+In this walkthrough, John asks the Wayfinder Concierge for flights from Colombo to Singapore and follows up with a request for recommendations. The Concierge answers from the booking API catalog. No popup, no extra consent: it makes the calls under its own identity, using its M2M token.
 
 :::note Prerequisites
 Complete [Setup](../#setup) before starting this walkthrough.
 :::
 
 :::info Background
-[Implementation Paths](../../overview#implementation-paths) covers the requirements story behind this use case.
+The [AI Agent Identity and Access Journey](../../overview#ai-agent-identity-and-access-journey) covers the requirements story behind this use case.
 :::
 
 ## Walk Through the Use Case
@@ -36,7 +36,7 @@ Complete [Setup](../#setup) before starting this walkthrough.
 
    This calls the `recommend_bookings` MCP tool, which requires the `booking:recommend` scope. The agent gets it because it requests `scope=booking:recommend` when fetching its M2M token. The `Recommender` role you assigned to `WAYFINDER-CONCIERGE` during setup grants exactly that permission.
 
-No consent popup appears at any point. The user never sees the agent's M2M token: it lives entirely inside the AI Agent.
+No consent popup appears at any point. The user never sees the agent's M2M token, it lives entirely inside the AI Agent.
 
 ## Try a Variant
 
