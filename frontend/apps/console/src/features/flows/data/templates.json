@@ -1182,7 +1182,8 @@
           "executor": {
             "name": "SMSExecutor"
           },
-          "onSuccess": "prompt_otp"
+          "onSuccess": "prompt_otp",
+          "onFailure": "prompt_mobile"
         },
         {
           "id": "prompt_otp",
@@ -1506,7 +1507,8 @@
               }
             ]
           },
-          "onSuccess": "prompt_otp"
+          "onSuccess": "prompt_otp",
+          "onFailure": "prompt_email"
         },
         {
           "id": "prompt_otp",
@@ -6665,7 +6667,8 @@
           "executor": {
             "name": "SMSExecutor"
           },
-          "onSuccess": "prompt_otp"
+          "onSuccess": "prompt_otp",
+          "onFailure": "prompt_mobile"
         },
         {
           "id": "prompt_otp",
@@ -7142,7 +7145,8 @@
               }
             ]
           },
-          "onSuccess": "prompt_otp"
+          "onSuccess": "prompt_otp",
+          "onFailure": "prompt_email"
         },
         {
           "id": "prompt_otp",
@@ -9314,7 +9318,8 @@
           "executor": {
             "name": "SMSExecutor"
           },
-          "onSuccess": "prompt_otp"
+          "onSuccess": "prompt_otp",
+          "onFailure": "prompt_mobile"
         },
         {
           "id": "prompt_otp",
