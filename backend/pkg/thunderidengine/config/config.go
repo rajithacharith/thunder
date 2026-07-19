@@ -57,8 +57,8 @@ type SecurityConfig struct {
 	TrustedIssuer          TrustedIssuerConfig   `yaml:"trusted_issuer"           json:"trusted_issuer"`
 	SystemPermissionPrefix string                `yaml:"system_permission_prefix" json:"system_permission_prefix"`
 	TokenRevocation        TokenRevocationConfig `yaml:"token_revocation"         json:"token_revocation"`
-	// DirectAuthSecret gates the Direct API endpoints (/auth/**, /register/passkey/**). When
-	// set, callers must present this value in the Direct-Auth-Secret header; when empty, those
+	// DirectAuthSecret gates the Direct API endpoints (/auth/**, /register/passkey/**, /access/**).
+	// When set, callers must present this value in the Direct-Auth-Secret header; when empty, those
 	// endpoints are blocked (secure by default).
 	DirectAuthSecret string `yaml:"direct_auth_secret" json:"direct_auth_secret"`
 }

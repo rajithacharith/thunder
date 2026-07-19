@@ -212,7 +212,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	ouService.SetOURoleResolver(ouRoleResolver)
 
 	authZService := authz.Initialize(roleService)
-	authzen.Initialize(mux, authZService, entityProvider, resourceService)
 
 	idpService, err := idp.Initialize(cacheManager, entityTypeService)
 	fatalOnError(ctx, logger, err, "Failed to initialize IDPService")
@@ -272,9 +271,14 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	authAssertGen := authnAssert.Initialize()
 	consentEnforcer := authnConsent.Initialize(jwtService)
 
-	authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen, passkeyService,
-		otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService, oidcAuthnService,
-		googleAuthnService, githubAuthnService)
+	_, directAuthGuard := authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen,
+		passkeyService, otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService,
+		oidcAuthnService, googleAuthnService, githubAuthnService,
+		runtime.Config.Server.SecurityConfig.DirectAuthSecret)
+
+	// AuthZEN access-evaluation endpoints are Direct API endpoints, so they reuse the Direct Auth
+	// guard created by the authn service.
+	authzen.Initialize(mux, authZService, entityProvider, resourceService, directAuthGuard)
 
 	attributeCacheService := attributecache.Initialize(runtimeStoreProvider)
 
