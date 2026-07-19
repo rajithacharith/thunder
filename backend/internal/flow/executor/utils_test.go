@@ -27,11 +27,27 @@ import (
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
 )
+
+// expectEntityReferenceResolved stubs GetEntityReference to resolve authUser to an existing local
+// user, modeling account linking that matched an existing local account.
+func expectEntityReferenceResolved(m *managermock.AuthnProviderManagerMock, authUser providers.AuthUser) {
+	m.On("GetEntityReference", mock.Anything, mock.Anything).
+		Return(authUser, &providers.EntityReference{EntityID: "local-user-123"}, (*tidcommon.ServiceError)(nil))
+}
+
+// expectEntityReferenceNotFound stubs GetEntityReference to report no matching local user,
+// modeling account linking that did not resolve to an existing local account.
+func expectEntityReferenceNotFound(m *managermock.AuthnProviderManagerMock, authUser providers.AuthUser) {
+	m.On("GetEntityReference", mock.Anything, mock.Anything).
+		Return(authUser, (*providers.EntityReference)(nil),
+			&tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: "USER_NOT_FOUND"})
+}
 
 // setupSocialAuthExecutorMock creates the shared mocks for social auth executor constructor tests
 // (GitHub, Google) and wires the CreateExecutor expectation for the given executor name.

@@ -122,6 +122,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "user-sub-123", "email": "test@example.com", "name": "Test User",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceResolved(suite.mockAuthnProvider, authenticatedAuthUser)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -361,6 +362,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceNotFound(suite.mockAuthnProvider, providers.AuthUser{})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -391,6 +393,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNo
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return(providers.AuthUser{}, providers.AuthenticatedClaims{}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceNotFound(suite.mockAuthnProvider, providers.AuthUser{})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -416,13 +419,14 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoLocalUser_Ent
 		RuntimeData:    make(map[string]string),
 	}
 
-	// newOAuthAuthenticatedUser carries an entity-reference token but no resolved EntityReference,
-	// modeling account linking that found no matching local account.
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return(newOAuthAuthenticatedUser(), providers.AuthenticatedClaims{
 			"sub": "user-sub-123", "email": "new@example.com",
 		}, (*tidcommon.ServiceError)(nil))
+	// Entity reference resolution finds no matching local account, modeling account linking
+	// that did not resolve to an existing local user.
+	expectEntityReferenceNotFound(suite.mockAuthnProvider, newOAuthAuthenticatedUser())
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -449,14 +453,13 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_LocalUser_Entit
 		RuntimeData:    make(map[string]string),
 	}
 
-	// A resolved EntityReference models account linking matching an existing local user.
-	var authUser providers.AuthUser
-	authUser.SetEntityReference(&providers.EntityReference{EntityID: "local-user-123"})
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authUser, providers.AuthenticatedClaims{
+		Return(newOAuthAuthenticatedUser(), providers.AuthenticatedClaims{
 			"sub": "user-sub-123", "email": "existing@example.com",
 		}, (*tidcommon.ServiceError)(nil))
+	// A resolved EntityReference models account linking matching an existing local user.
+	expectEntityReferenceResolved(suite.mockAuthnProvider, newOAuthAuthenticatedUser())
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -489,6 +492,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "existing-user-sub",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceResolved(suite.mockAuthnProvider, authenticatedAuthUser)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -722,6 +726,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceNotFound(suite.mockAuthnProvider, providers.AuthUser{})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -781,6 +786,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceNotFound(suite.mockAuthnProvider, providers.AuthUser{})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -813,6 +819,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWith
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return(providers.AuthUser{}, providers.AuthenticatedClaims{}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceNotFound(suite.mockAuthnProvider, providers.AuthUser{})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -845,6 +852,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "existing-user-sub", "email": "existing@example.com", "name": "Existing User",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceResolved(suite.mockAuthnProvider, authenticatedAuthUser)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -879,6 +887,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "existing-user-sub",
 		}, (*tidcommon.ServiceError)(nil))
+	expectEntityReferenceResolved(suite.mockAuthnProvider, authenticatedAuthUser)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 

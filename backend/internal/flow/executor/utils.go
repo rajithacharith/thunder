@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -129,9 +130,12 @@ func isCrossOUProvisioningAllowed(ctx *providers.NodeContext) bool {
 
 // setFederatedEntityState records whether federated authentication resolved a concrete local user
 // (via account linking) into the entityState runtime key.
-func setFederatedEntityState(execResp *providers.ExecutorResponse) {
+func setFederatedEntityState(ctx context.Context, execResp *providers.ExecutorResponse,
+	authnProvider providers.AuthnProviderManager) {
 	execResp.RuntimeData[common.RuntimeKeyEntityState] = entityStateNotExists
-	if execResp.AuthUser.EntityReference() != nil {
+	authUser, entityRef, svcErr := authnProvider.GetEntityReference(ctx, execResp.AuthUser)
+	execResp.AuthUser = authUser
+	if svcErr == nil && entityRef != nil {
 		execResp.RuntimeData[common.RuntimeKeyEntityState] = entityStateExists
 	}
 }
