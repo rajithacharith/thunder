@@ -103,6 +103,8 @@ export default function ApplicationEditPage() {
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
   const [mcpAccessInvalid, setMcpAccessInvalid] = useState(false);
   const [advancedSettingsInvalid, setAdvancedSettingsInvalid] = useState(false);
+  const [customizationSettingsInvalid, setCustomizationSettingsInvalid] = useState(false);
+  const [generalSettingsInvalid, setGeneralSettingsInvalid] = useState(false);
 
   const handleBack = async () => {
     await navigate(RouteConfig.applications.list());
@@ -250,6 +252,7 @@ export default function ApplicationEditPage() {
                 application={application}
                 editedApp={editedApp}
                 onFieldChange={handleFieldChange}
+                onValidationChange={setCustomizationSettingsInvalid}
               />
             ),
             hidden: isMcpM2mOnly,
@@ -539,6 +542,7 @@ export default function ApplicationEditPage() {
                 onDeleteSuccess={() => {
                   handleBack().catch(() => null);
                 }}
+                onValidationChange={setGeneralSettingsInvalid}
               />
             </TabPanel>
 
@@ -553,6 +557,7 @@ export default function ApplicationEditPage() {
                 application={application}
                 editedApp={editedApp}
                 onFieldChange={handleFieldChange}
+                onValidationChange={setCustomizationSettingsInvalid}
               />
             </TabPanel>
 
@@ -591,9 +596,21 @@ export default function ApplicationEditPage() {
           savingLabel={t('applications:edit.page.saving')}
           isSaving={updateApplication.isPending}
           saveDisabled={
-            hasValidationErrors || mcpAccessInvalid || advancedSettingsInvalid || application.isReadOnly === true
+            hasValidationErrors ||
+            mcpAccessInvalid ||
+            customizationSettingsInvalid ||
+            advancedSettingsInvalid ||
+            generalSettingsInvalid ||
+            application.isReadOnly === true
           }
-          onReset={() => setEditedApp({})}
+          onReset={() => {
+            setEditedApp({});
+            setHasValidationErrors(false);
+            setMcpAccessInvalid(false);
+            setAdvancedSettingsInvalid(false);
+            setCustomizationSettingsInvalid(false);
+            setGeneralSettingsInvalid(false);
+          }}
           onSave={() => {
             handleSave().catch(() => null);
           }}
