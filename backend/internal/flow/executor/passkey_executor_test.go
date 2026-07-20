@@ -31,7 +31,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/passkeymock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
-	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
@@ -56,7 +55,6 @@ type PasskeyAuthExecutorTestSuite struct {
 	mockPasskeyService *passkeymock.WebAuthnAuthnServiceInterfaceMock
 	mockAuthnProvider  *managermock.AuthnProviderManagerMock
 	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
-	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
 	executor           *passkeyAuthExecutor
 }
 
@@ -68,12 +66,6 @@ func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
 	suite.mockPasskeyService = passkeymock.NewWebAuthnAuthnServiceInterfaceMock(suite.T())
 	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
-
-	// Create mock identifying executor
-	identifyingMock := createMockIdentifyingExecutor(suite.T())
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, providers.ExecutorTypeUtility,
-		mock.Anything, mock.Anything, mock.Anything).Return(identifyingMock).Maybe()
 
 	// Create mock passkey executor base
 	mockExec := createMockPasskeyAuthExecutor(suite.T())
@@ -81,7 +73,7 @@ func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
 		mock.Anything, mock.Anything, mock.Anything).Return(mockExec)
 
 	suite.executor = newPasskeyAuthExecutor(suite.mockFlowFactory,
-		suite.mockPasskeyService, suite.mockAuthnProvider, suite.mockEntityProvider)
+		suite.mockPasskeyService, suite.mockAuthnProvider)
 }
 
 func createMockPasskeyAuthExecutor(t *testing.T) providers.Executor {
@@ -152,7 +144,6 @@ func createPasskeyNodeContext(mode string, flowType providers.FlowType) *provide
 func (suite *PasskeyAuthExecutorTestSuite) TestNewPasskeyAuthExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.passkeyService)
-	assert.NotNil(suite.T(), suite.executor.entityProvider)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecute_InvalidMode() {

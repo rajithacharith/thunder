@@ -27,7 +27,6 @@ import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -69,22 +68,18 @@ const (
 // passkeyAuthExecutor implements the ExecutorInterface for passkey authentication.
 type passkeyAuthExecutor struct {
 	providers.Executor
-	identifyingExecutorInterface
 	passkeyService passkey.PasskeyServiceInterface
 	authnProvider  providers.AuthnProviderManager
-	entityProvider entityprovider.EntityProviderInterface
 	logger         *log.Logger
 }
 
 var _ providers.Executor = (*passkeyAuthExecutor)(nil)
-var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 
 // newPasskeyAuthExecutor creates a new instance of PasskeyAuthExecutor.
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	passkeyService passkey.PasskeyServiceInterface,
 	authnProvider providers.AuthnProviderManager,
-	entityProvider entityprovider.EntityProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []providers.Input{
 		{
@@ -125,8 +120,6 @@ func newPasskeyAuthExecutor(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PasskeyAuthExecutor"),
 		log.String(log.LoggerKeyExecutorName, ExecutorNamePasskeyAuth))
 
-	identifyExec := newIdentifyingExecutor(ExecutorNamePasskeyAuth, defaultInputs, prerequisites,
-		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNamePasskeyAuth, providers.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites, &providers.ExecutorMeta{
 			SupportedModes: []string{
@@ -146,12 +139,10 @@ func newPasskeyAuthExecutor(
 		})
 
 	return &passkeyAuthExecutor{
-		Executor:                     base,
-		identifyingExecutorInterface: identifyExec,
-		passkeyService:               passkeyService,
-		authnProvider:                authnProvider,
-		entityProvider:               entityProvider,
-		logger:                       logger,
+		Executor:       base,
+		passkeyService: passkeyService,
+		authnProvider:  authnProvider,
+		logger:         logger,
 	}
 }
 

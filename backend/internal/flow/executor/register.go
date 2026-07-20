@@ -168,7 +168,7 @@ func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 		},
 		ExecutorNamePasskeyAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
-				deps.FlowFactory, deps.PasskeyService, deps.AuthnProvider, deps.EntityProvider))
+				deps.FlowFactory, deps.PasskeyService, deps.AuthnProvider))
 		},
 		ExecutorNameMagicLink: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameMagicLink, newMagicLinkExecutor(
