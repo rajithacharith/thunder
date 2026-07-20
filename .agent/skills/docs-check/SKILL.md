@@ -1,6 +1,6 @@
 ---
 name: docs-check
-description: Validates a ThunderID doc MDX file against content standards (frontmatter, headings, code block tags, ProductName usage, links, Stepper config, sidebar registration). Use before merging any .mdx, or whenever asked to check, lint, or verify a doc page meets standards.
+description: Validates a ThunderID doc MDX file against content standards (frontmatter, headings, code block tags, nested list indentation, ordered vs. unordered lists, ProductName usage, links, Stepper config, sidebar registration). Use before merging any .mdx, or whenever asked to check, lint, or verify a doc page meets standards.
 allowed-tools: Read Bash
 ---
 
@@ -59,7 +59,49 @@ Report each unlabeled block's line number → WARN. New blocks always need a tag
 
 ---
 
-### 4. ProductName in Prose
+### 4. Nested List Indentation
+
+A sub-list (a list nested inside another list item, e.g. sub-steps under one bullet) must indent its marker by exactly 4 spaces from its parent bullet's marker column. Docusaurus's MDX/remark parser doesn't reliably nest a sub-list at 2-space or inconsistent indentation — it either collapses into a flat continuation paragraph (the sub-items silently disappear as a list) or breaks out into a separate top-level list.
+
+❌
+```
+- Parent item
+  - Sub item (2-space indent — fails to nest, renders as plain text or breaks the list)
+```
+✅
+```
+- Parent item
+    - Sub item (4-space indent — nests correctly)
+```
+
+Scan for a bulleted or numbered sub-item indented 1-3 spaces directly under a parent list item → FAIL. Report each occurrence's line number; this is easy to miss by eye but breaks rendering silently, so treat it as a hard check, not a style nit.
+
+---
+
+### 5. Ordered vs. Unordered Lists
+
+A sequence of actions the reader performs in order, especially Console or UI steps, must be a numbered list, not bullets. Bullets are only for unordered sets with no required order: options, characteristics, prerequisites, component descriptions.
+
+❌
+```
+- Sign in to the Console.
+- Navigate to Applications, and click Add Application.
+- Under Technology, select React.
+```
+✅
+```
+1. Sign in to the Console.
+2. Navigate to Applications, and click Add Application.
+3. Under Technology, select React.
+```
+
+This applies at every nesting level: a sub-list of sub-steps under one numbered step is itself numbered (restarting at 1), not bulleted.
+
+Flag any bulleted list whose items are actions performed in sequence (imperative verbs, dependent order, "first do X then Y") → FAIL. Report line numbers.
+
+---
+
+### 6. ProductName in Prose
 
 In prose (outside code blocks), use `<ProductName />`, not the hardcoded string "ThunderID".
 
@@ -69,7 +111,7 @@ Report each violation with line number → FAIL.
 
 ---
 
-### 5. Internal Links
+### 7. Internal Links
 
 No internal link may use an absolute path starting with `/docs/` — check Markdown links (`[text](/docs/...)`) and HTML `href="/docs/..."`. All internal links must be relative. Report each violation with line number → FAIL.
 
@@ -79,25 +121,25 @@ The only trustworthy check is running `make build_docs` (Docusaurus build with `
 
 ---
 
-### 6. Stepper Configuration
+### 8. Stepper Configuration
 
 If the file contains `<Stepper`, check `stepNode` and `as` match: `stepNode="h2" as="h2"` OK, `stepNode="h2" as="h3"` FAIL (mismatch; also risks a visual heading skip). `<Stepper>` with no attributes → WARN (should be explicit).
 
 ---
 
-### 7. Image Alt Text
+### 9. Image Alt Text
 
 For each `![` occurrence, empty alt (`![](...)`) → WARN; non-empty → OK. All images need descriptive alt text; only intentionally decorative images may use empty alt. Report each instance with line number.
 
 ---
 
-### 8. Line Dividers
+### 10. Line Dividers
 
 `---` is valid only as the frontmatter delimiter. Any `---` in the body (a horizontal-rule divider) is not acceptable — use section headings instead. Scan for exact `---` lines after the frontmatter close, excluding fenced code blocks (which may legitimately show YAML/frontmatter examples). Report each occurrence with line number → FAIL.
 
 ---
 
-### 9. Sidebar Registration and Placement
+### 11. Sidebar Registration and Placement
 
 Every page must appear in `docs/sidebars.ts` or the relevant `docs/content/sdks/<sdk>/sidebar.ts`. The doc ID is the file's path relative to `docs/content/`, minus `.mdx` (e.g. `docs/content/guides/guides/flows/build-a-flow.mdx` → `guides/guides/flows/build-a-flow`).
 
@@ -135,6 +177,12 @@ HEADINGS
 CODE BLOCKS
   ⚠️   line 43: unlabeled code block
   ⚠️   line 91: unlabeled code block
+
+NESTED LISTS
+  ✅  all sub-lists indented 4 spaces
+
+LIST TYPE
+  ✅  step sequences are numbered, bullets used only for unordered sets
 
 PRODUCT NAME
   ✅  no hardcoded "ThunderID" in prose
