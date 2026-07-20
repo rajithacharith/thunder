@@ -72,7 +72,7 @@ func newGrantHandlerProvider(
 			serverConfigService, refreshTokenRevoker, cfg),
 		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(
 			tokenBuilder, tokenValidator, rbacAuthzService, actorProvider, resourceService, serverConfigService),
-		cibaGrantHandler: newCIBAGrantHandler(cibaService, tokenBuilder, attrCacheService),
+		cibaGrantHandler: newCIBAGrantHandler(cibaService, tokenBuilder, attrCacheService, resourceService),
 		jwtBearerGrantHandler: newJWTBearerGrantHandler(
 			tokenBuilder, tokenValidator, resourceService, serverConfigService),
 	}
