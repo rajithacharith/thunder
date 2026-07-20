@@ -241,23 +241,18 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'category',
-              label: 'Identity for AI Agents',
+              label: 'Agent ID',
               collapsible: true,
               collapsed: true,
+              link: {type: 'doc', id: 'use-cases/ai-agents/overview'},
               items: [
-                {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Agent Identity'},
-                {
-                  type: 'doc',
-                  id: 'use-cases/ai-agents/solution-patterns',
-                  label: 'Solution Patterns',
-                  key: 'ai-agents-solution-patterns',
-                },
-                {
-                  type: 'doc',
-                  id: 'use-cases/ai-agents/identity-concepts',
-                  label: 'Identity Concepts',
-                  key: 'ai-agents-identity-concepts',
-                },
+                {type: 'doc', id: 'use-cases/ai-agents/managed-agent-identity', label: 'Managed Identity'},
+                {type: 'doc', id: 'use-cases/ai-agents/invoking-the-agent', label: 'Invoking the Agent'},
+                {type: 'doc', id: 'use-cases/ai-agents/agent-as-subject', label: 'Agent as Subject'},
+                {type: 'doc', id: 'use-cases/ai-agents/model-interaction', label: 'Model Interaction Controls'},
+                {type: 'doc', id: 'use-cases/ai-agents/internal-services', label: 'Internal Business Services'},
+                {type: 'doc', id: 'use-cases/ai-agents/external-integration', label: 'External Integration'},
+                {type: 'doc', id: 'use-cases/ai-agents/multi-agent', label: 'Multi-Agent Interactions'},
                 {
                   type: 'category',
                   label: 'Try It Out',
