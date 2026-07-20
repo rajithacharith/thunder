@@ -123,6 +123,7 @@ Use a colon to introduce an explanation, list, or result, only when the text bef
 5. Headings/labels ("Default value: localhost"); no trailing colon on a heading unless it's a label.
 6. Never split a verb/preposition from its object: ❌ "are: password, passkey" → ✅ "are password, passkey, and social login."
 7. Lowercase after a colon unless a proper noun, a quoted sentence, code, a UI label, or multiple complete sentences follow (prefer a bulleted list instead).
+8. No filler lead-in before a list: if the sentence before the list already stands alone, colon it directly instead of inventing a transition sentence. ❌ "...so you need to allow your app's origin. To do so, do the following:" (redundant, repeats "do" twice) → ✅ "...so you need to allow your app's origin:"
 
 Test: colon when the first part creates an expectation the second fulfills, not just because a list appears somewhere in the sentence.
 

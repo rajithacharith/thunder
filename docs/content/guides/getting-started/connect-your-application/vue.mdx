@@ -52,20 +52,23 @@ Once it's running, the console is available at [https://localhost:8090/console](
 
 ## Create an Application
 
-:::info Test User
-If you used the default setup, sign in to the Console as `admin` with the password generated during setup and printed to the setup output (unless you supplied your own).
-:::
+1. Sign in to the Console.
 
-Open the Console at <ConsoleUrl />, navigate to **Applications**, and click **Add Application**:
+    :::info Test User
+    If you used the default setup, sign in to the Console as `admin` with the password generated during setup and printed to the setup output (unless you supplied your own).
+    :::
 
-1. Under **Technology**, select **Vue**.
-2. Enter a name (e.g. `My Vue App`) and create an application. The rest of the settings can stay at their defaults.
-3. Copy the **Client ID** from the **General** tab. You'll need it when configuring the SDK.
-4. Under **General**, add `http://localhost:5173` to the list of **Authorized Redirect URIs**.
+2. Navigate to **Applications**, and click **Add Application**.
 
-:::warning Configure CORS
-The Vue SDK calls the <ProductName /> API directly from the browser, so you need to allow your app's origin. In the Console, go to **Settings**, and under the **System** section, open the **CORS** tab. Enter `http://localhost:5173` (or the relevant URL for your setup) and click **Add Origin**.
-:::
+3. Under **Technology**, select **Vue**.
+4. Enter a name (e.g. `My Vue App`) and create an application. The rest of the settings can stay at their defaults.
+5. Copy the **Client ID** from the **General** tab. You'll need it when configuring the SDK.
+6. Under **General**, add `http://localhost:5173` to the list of **Authorized Redirect URIs**.
+7. The Vue SDK calls the <ProductName /> API directly from the browser, so you need to allow your app's origin:
+    1. In the left navigation, navigate to **Settings**.
+    2. Under the **System** section, open the **CORS** tab.
+    3. Enter `http://localhost:5173` (or the relevant URL for your setup).
+    4. Click **Add Origin**.
 
 ## Create a Vue App
 
