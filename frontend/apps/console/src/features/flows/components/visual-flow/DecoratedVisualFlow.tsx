@@ -303,9 +303,8 @@ function DecoratedVisualFlow({
     const currentNodes = stripSimulationNodeClasses(getNodes());
     const currentEdges = getEdges();
     applyAutoLayout(currentNodes, currentEdges, {
-      direction: 'RIGHT',
-      nodeSpacing: 150,
-      rankSpacing: 300,
+      nodeSpacing: 100,
+      rankSpacing: 160,
       offsetX: 50,
       offsetY: 50,
     })
