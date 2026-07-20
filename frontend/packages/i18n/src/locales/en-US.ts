@@ -3548,6 +3548,8 @@ const translations = {
     'core.simulation.preview.title': 'End-user preview',
     'core.simulation.preview.noScreen': 'No screen is shown for this step',
     'core.simulation.preview.noScreenHint': 'This step runs in the background before the flow continues',
+    'core.simulation.preview.noScreenHintNamed': '{{id}} runs in the background before the flow continues',
+    'core.simulation.preview.callStepLabel': 'Calls another flow',
     'core.simulation.preview.applicationLabel': 'Preview as application',
     'core.simulation.preview.devices.mobile': 'Mobile',
     'core.simulation.preview.devices.tablet': 'Tablet',
