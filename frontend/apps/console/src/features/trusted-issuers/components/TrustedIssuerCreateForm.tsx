@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useConfig} from '@thunderid/contexts';
 import {
   Box,
   Button,
@@ -50,13 +51,14 @@ import {isConflictError} from '@thunderid/configure-connections';
 export default function TrustedIssuerCreateForm(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
+  const {config} = useConfig();
+  const productName = config.brand.product_name;
   const createTrustedIssuer = useCreateTrustedIssuer();
 
   const [name, setName] = useState('');
   const [issuer, setIssuer] = useState('');
   const [jwksEndpoint, setJwksEndpoint] = useState('');
   const [idJagEnabled, setIdJagEnabled] = useState(false);
-  const [clientId, setClientId] = useState('');
   const [tokenExchangeEnabled, setTokenExchangeEnabled] = useState(true);
   const [trustedTokenAudience, setTrustedTokenAudience] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -90,7 +92,6 @@ export default function TrustedIssuerCreateForm(): JSX.Element {
         issuer: issuer.trim(),
         jwksEndpoint: jwksEndpoint.trim(),
         idJagEnabled,
-        clientId: clientId.trim() || undefined,
         tokenExchangeEnabled,
         trustedTokenAudience: trustedTokenAudience.trim() || undefined,
       },
@@ -162,23 +163,6 @@ export default function TrustedIssuerCreateForm(): JSX.Element {
             />
           </FormControl>
 
-          <FormControl fullWidth>
-            <FormLabel htmlFor="trusted-issuer-client-id">
-              {t('trustedIssuers:create.form.clientId.label', 'Client ID')}
-            </FormLabel>
-            <TextField
-              id="trusted-issuer-client-id"
-              fullWidth
-              placeholder="your-thunderid-client-id"
-              value={clientId}
-              helperText={t(
-                'trustedIssuers:create.form.clientId.hint',
-                "ThunderID's client ID registered at this identity provider. Used for audience validation in incoming assertions.",
-              )}
-              onChange={(e) => setClientId(e.target.value)}
-            />
-          </FormControl>
-
           <FormControl fullWidth required error={Boolean(touched.jwksEndpoint && errors.jwksEndpoint)}>
             <FormLabel htmlFor="trusted-issuer-jwks-endpoint">
               {t('trustedIssuers:create.form.jwksEndpoint.label', 'JWKS endpoint')}
@@ -229,11 +213,12 @@ export default function TrustedIssuerCreateForm(): JSX.Element {
                 <TextField
                   id="trusted-issuer-token-audience"
                   fullWidth
-                  placeholder="my-external-client-id"
+                  placeholder="api://thunderid"
                   value={trustedTokenAudience}
                   helperText={t(
                     'trustedIssuers:detail.tokenExchange.audience.hint',
-                    'The audience value ThunderID expects in subject tokens from this issuer.',
+                    "An additional audience value {{productName}} will accept in subject tokens from this issuer. Tokens whose audience is {{productName}}'s own issuer URL are always accepted.",
+                    {productName},
                   )}
                   onChange={(e) => setTrustedTokenAudience(e.target.value)}
                 />

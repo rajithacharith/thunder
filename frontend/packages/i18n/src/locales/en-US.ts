@@ -1836,9 +1836,6 @@ const translations = {
     'create.form.name.label': 'Name',
     'create.form.issuer.label': 'Issuer URI',
     'create.form.issuer.hint': "The issuer URI from the external IdP's OpenID Connect discovery document.",
-    'create.form.clientId.label': 'Client ID',
-    'create.form.clientId.hint':
-      "ThunderID's client ID registered at this identity provider. Used for audience validation in incoming assertions.",
     'create.form.jwksEndpoint.label': 'JWKS endpoint',
     'create.form.jwksEndpoint.hint':
       'The JWKS endpoint used to validate the signature of incoming identity assertions.',
@@ -1857,7 +1854,8 @@ const translations = {
     'detail.tokenExchange.title': 'Token Exchange',
     'detail.tokenExchange.description': 'Exchange subject tokens from this issuer for access tokens.',
     'detail.tokenExchange.audience.label': 'Trusted token audience',
-    'detail.tokenExchange.audience.hint': 'The audience value ThunderID expects in subject tokens from this issuer.',
+    'detail.tokenExchange.audience.hint':
+      "An additional audience value {{productName}} will accept in subject tokens from this issuer. Tokens whose audience is {{productName}}'s own issuer URL are always accepted.",
     'detail.consumption.title': 'Identity Assertion JWT Authorization Grant (ID-JAG)',
     'detail.idJag.description': 'Accept and exchange signed identity assertions from this issuer for access tokens.',
     'detail.idJag.enabledNote': 'Identity assertions from this issuer are accepted via the ID-JAG protocol.',
