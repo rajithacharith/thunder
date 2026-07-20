@@ -13,7 +13,7 @@ The effect: a token issued for the payments API cannot be replayed against the b
 
 ## How It Works
 
-The `resource` parameter is accepted on authorization and PAR requests and on authorization code, client credentials, JWT bearer, refresh token, and token exchange requests. CIBA does not currently support resource indicators.
+The `resource` parameter is accepted on authorization and PAR requests, on authorization code, client credentials, JWT bearer, refresh token, and token exchange requests, and on CIBA backchannel authentication requests (`POST /oauth2/bc-authorize`). A CIBA request binds to its resource server at initiation, before the user authorizes it. A `resource` supplied when polling the token endpoint must match that binding.
 
 ```http
 GET /oauth2/authorize
@@ -49,11 +49,12 @@ The issued access token carries the resource identifier as its `aud`:
 
 | Aspect | Behavior |
 |---|---|
-| Accepted on | `/oauth2/authorize`, `/oauth2/par`, and `/oauth2/token` for authorization code, client credentials, JWT bearer, refresh token, and token exchange grants |
+| Accepted on | `/oauth2/authorize`, `/oauth2/par`, `/oauth2/bc-authorize`, and `/oauth2/token` for authorization code, client credentials, JWT bearer, refresh token, and token exchange grants |
 | Value rules | The `resource` must be an absolute URI with no fragment. A request with more than one `resource` parameter is rejected with `invalid_target`. |
 | Resolution | The URI is matched to a registered resource server's `identifier` |
 | Unknown identifier | Request rejected with `invalid_target` |
 | No `resource` | Permission-bearing requests use `defaultResourceServer` and return `invalid_target` if it is unset. OIDC-only and scopeless requests use `client_id` as the audience |
+| CIBA | The request binds to a resource server at `/oauth2/bc-authorize`, before user authorization. A `resource` supplied at token-endpoint polling must equal that binding, or the poll is rejected with `invalid_target` |
 | Scope filtering | Requested scopes are filtered to those defined on the targeted resource server. Scopes not owned by that resource server are silently dropped |
 | OIDC standard scopes | `openid`, `profile`, `email`, `phone`, `address` are **not** filtered by resource indicators |
 | Custom scope_claims | Scopes covered by an application's `scopeClaims` mapping also pass through unchanged |

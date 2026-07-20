@@ -46,6 +46,7 @@ type CIBAAuthRequest struct {
 	UserID           string
 	StandardScopes   string
 	AuthorizedScopes string
+	Resources        []string
 	State            CIBARequestState
 	AttributeCacheID string
 	CompletedACR     string
@@ -72,6 +73,7 @@ type BackchannelAuthRequest struct {
 	LoginHint       string
 	IDTokenHint     string
 	Scope           string
+	Resources       []string
 	BindingMessage  string
 	RequestedExpiry string
 	ACRValues       string

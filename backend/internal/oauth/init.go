@@ -86,7 +86,7 @@ func Initialize(
 	parService := par.Initialize(mux, actorProvider, authnProvider, jwtService, discoveryService,
 		resourceService, dpopVerifier, cfg)
 	cibaService := ciba.Initialize(mux, jwtService, actorProvider, authnProvider, flowExecService,
-		discoveryService, resourceService, cfg)
+		discoveryService, resourceService, serverConfigService, cfg)
 	oauth2AuthzService, err := oauth2authz.Initialize(mux, actorProvider, resourceService,
 		jwtService, flowExecService, parService, cfg)
 	if err != nil {
