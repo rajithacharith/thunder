@@ -43,7 +43,9 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
+	"github.com/thunder-id/thunderid/internal/authnprovider/defaultprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	"github.com/thunder-id/thunderid/internal/authnprovider/restprovider"
 	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/authzen"
 	"github.com/thunder-id/thunderid/internal/cert"
@@ -114,6 +116,9 @@ var observabilitySvc observability.ObservabilityServiceInterface
 // registerServices registers all the services with the provided HTTP multiplexer.
 // It also returns the import service so the bootstrap subcommand can create default
 // resources in-process through the same service instances.
+// nolint:gocyclo // This is the main service registration function, so its length is expected to be proportional
+// to the number of services. Eventhough it has many branching statements, almost all are early exits so cognitive
+// complexity is low.
 func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) (
 	jwt.JWTServiceInterface, kmprovider.RuntimeCryptoProvider, importer.ImportServiceInterface) {
 	logger := log.GetLogger()
@@ -263,9 +268,23 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		initializeVCServices(ctx, logger, mux, runtimeCryptoSvc, configCryptoSvc, jwtService, userService,
 			ouService, dpopVerifier, runtimeStoreProvider, exporters)
 
-	// Initialize authn provider
-	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
-		magicLinkService, openid4vpSvc, federatedAuths)
+	defaultProvider := defaultprovider.Initialize(entityService, passkeyService,
+		otpCoreService, magicLinkService, openid4vpSvc, federatedAuths)
+
+	customProviders := map[string]authnprovidermgr.AuthnProvider{}
+	restCfg := runtime.Config.AuthnProvider.Rest
+	if restCfg.Enabled {
+		restProvider, err := restprovider.Initialize(restCfg)
+		fatalOnError(ctx, logger, err, "Failed to initialize REST authn provider")
+		customProviders[restprovider.Name] = authnprovidermgr.AuthnProvider{
+			Instance: restProvider,
+			Creds:    restCfg.CredentialTypes,
+		}
+	}
+	authnProvider, err := authnprovidermgr.Initialize(defaultProvider, customProviders)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize authn provider manager", log.Error(err))
+	}
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()

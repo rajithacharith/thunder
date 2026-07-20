@@ -229,13 +229,11 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAlreadyExists() {
 
 	// Override GetRequiredInputs to return node inputs so the retry path is exercised
 	provMock := suite.executor.Executor.(*coremock.ExecutorInterfaceMock)
-	var filteredCalls []*mock.Call
 	for _, call := range provMock.ExpectedCalls {
-		if call.Method != methodGetRequiredInputs {
-			filteredCalls = append(filteredCalls, call)
+		if call.Method == methodGetRequiredInputs {
+			call.Unset()
 		}
 	}
-	provMock.ExpectedCalls = filteredCalls
 	provMock.On(methodGetRequiredInputs, mock.Anything).Return(nodeInputs).Maybe()
 
 	userID := "user-existing"
@@ -1574,13 +1572,11 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_RetryableProvisioningErr
 
 			// Override GetRequiredInputs to return node inputs for this test
 			provMock := suite.executor.Executor.(*coremock.ExecutorInterfaceMock)
-			var filteredCalls []*mock.Call
 			for _, call := range provMock.ExpectedCalls {
-				if call.Method != methodGetRequiredInputs {
-					filteredCalls = append(filteredCalls, call)
+				if call.Method == methodGetRequiredInputs {
+					call.Unset()
 				}
 			}
-			provMock.ExpectedCalls = filteredCalls
 			provMock.On(methodGetRequiredInputs, mock.Anything).Return(nodeInputs).Maybe()
 
 			existingID := tt.existingUserID
@@ -1656,13 +1652,11 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_NotEnabled_Regis
 
 	// Override GetRequiredInputs to return node inputs
 	provMock := suite.executor.Executor.(*coremock.ExecutorInterfaceMock)
-	var filteredCalls []*mock.Call
 	for _, call := range provMock.ExpectedCalls {
-		if call.Method != methodGetRequiredInputs {
-			filteredCalls = append(filteredCalls, call)
+		if call.Method == methodGetRequiredInputs {
+			call.Unset()
 		}
 	}
-	provMock.ExpectedCalls = filteredCalls
 	provMock.On(methodGetRequiredInputs, mock.Anything).Return(nodeInputs).Maybe()
 
 	suite.mockEntityProvider.On("IdentifyEntity", attrs).Return(&existingUserID, nil)
@@ -1744,13 +1738,11 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_SameOU_Registrat
 
 	// Override GetRequiredInputs to return node inputs
 	provMock := suite.executor.Executor.(*coremock.ExecutorInterfaceMock)
-	var filteredCalls []*mock.Call
 	for _, call := range provMock.ExpectedCalls {
-		if call.Method != methodGetRequiredInputs {
-			filteredCalls = append(filteredCalls, call)
+		if call.Method == methodGetRequiredInputs {
+			call.Unset()
 		}
 	}
-	provMock.ExpectedCalls = filteredCalls
 	provMock.On(methodGetRequiredInputs, mock.Anything).Return(nodeInputs).Maybe()
 
 	suite.mockEntityProvider.On("IdentifyEntity", attrs).Return(&existingUserID, nil)

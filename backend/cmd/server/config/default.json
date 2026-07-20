@@ -279,8 +279,9 @@
     "store": "composite"
   },
   "authn_provider": {
-    "type": "default",
     "rest": {
+      "enabled": false,
+      "credential_types": [],
       "base_url": "",
       "timeout": 10,
       "correlation_id_header": "X-Correlation-ID",

@@ -798,7 +798,8 @@ External authentication provider settings.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `authn_provider.type` | `default` | Provider type (`default` or `rest`) |
+| `authn_provider.rest.enabled` | `false` | Set to `true` to register the REST authentication provider. When `false`, the rest of the `rest.*` settings are ignored. |
+| `authn_provider.rest.credential_types` | `[]` | Credential keys routed to the REST provider instead of `default`. Valid keys: `provisionedEntityID`, `passkey`, `otp`, `federated`, `magiclink`, `openid4vp`, `password`, `clientSecret`, `flowSecret`. |
 | `authn_provider.rest.base_url` | `""` | Base URL for REST authentication provider |
 | `authn_provider.rest.timeout` | `10` | Request timeout in seconds |
 | `authn_provider.rest.correlation_id_header` | `X-Correlation-ID` | Header used to forward the request's correlation ID (trace ID) to the REST provider. Set a different name if the provider expects one. |
@@ -811,8 +812,8 @@ Each request is assigned a correlation ID (trace ID), which the server generates
 **Example:** forward the correlation ID under a custom header name:
 ```yaml
 authn_provider:
-  type: rest
   rest:
+    enabled: true
     base_url: "https://my-authn-service"
     correlation_id_header: "X-Trace-Token"
 ```
