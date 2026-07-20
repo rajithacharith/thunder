@@ -76,7 +76,8 @@
     "display": {
       "label": "Continue with Google",
       "description": "Login experience with Google",
-      "image": "assets/images/icons/google-generic.svg",
+      "image": "assets/images/icons/google.svg",
+      "preserveImageColor": true,
       "showOnResourcePanel": true
     },
     "config": {
@@ -1845,7 +1846,8 @@
           "replacers": [
             {
               "key": "SELF_SIGN_UP_CALL_STEP_ID",
-              "type": "ID"
+              "type": "ID",
+              "prefix": "self_sign_up_call"
             }
           ]
         },
@@ -1912,7 +1914,8 @@
           "replacers": [
             {
               "key": "SIGN_IN_CALL_STEP_ID",
-              "type": "ID"
+              "type": "ID",
+              "prefix": "sign_in_call"
             }
           ]
         },
@@ -1979,7 +1982,8 @@
           "replacers": [
             {
               "key": "RECOVERY_CALL_STEP_ID",
-              "type": "ID"
+              "type": "ID",
+              "prefix": "recovery_call"
             }
           ]
         },

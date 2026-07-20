@@ -306,7 +306,8 @@
     "display": {
       "label": "Password Login or Google",
       "description": "Login experience with Google as an additional option",
-      "image": "assets/images/icons/google-generic.svg",
+      "image": "assets/images/icons/google.svg",
+      "preserveImageColor": true,
       "showOnResourcePanel": true
     },
     "config": {

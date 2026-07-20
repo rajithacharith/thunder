@@ -116,7 +116,18 @@ function SidebarFooterButtons(): ReactNode {
   );
 }
 
-export default function DashboardLayout(): ReactNode {
+/**
+ * Props interface of {@link DashboardLayout}
+ */
+export interface DashboardLayoutProps {
+  /**
+   * Collapses the navigation sidebar to icon-only mode. Set by routes whose
+   * pages need the full screen width (e.g. the flow builder canvas).
+   */
+  collapseSidebar?: boolean;
+}
+
+export default function DashboardLayout({collapseSidebar = false}: DashboardLayoutProps): ReactNode {
   const {clearSession, discovery} = useThunderID();
   const {isTrustedIssuerGenericOidc, getTrustedIssuerClientId, getClientUrl} = useConfig();
   const {t} = useTranslation();
@@ -372,7 +383,12 @@ export default function DashboardLayout(): ReactNode {
       </AppShell.Navbar>
 
       <AppShell.Sidebar>
-        <Sidebar activeItem={activeItem} expandedMenus={expandedMenus} onToggleExpand={handleToggleExpand}>
+        <Sidebar
+          activeItem={activeItem}
+          expandedMenus={expandedMenus}
+          onToggleExpand={handleToggleExpand}
+          collapsed={collapseSidebar}
+        >
           <Sidebar.Nav>
             {appRoutes.map((categoryGroup) => (
               <Sidebar.Category key={categoryGroup.category}>

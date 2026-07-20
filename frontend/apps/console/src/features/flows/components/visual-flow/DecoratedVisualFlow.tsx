@@ -50,6 +50,7 @@ import SimulationStepPreview from './SimulationStepPreview';
 import ValidationBadge from './ValidationBadge';
 import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
+import StepPreviewContext from '../../context/StepPreviewContext';
 import useComponentDelete from '../../hooks/useComponentDelete';
 import useConfirmPasswordField from '../../hooks/useConfirmPasswordField';
 import useContainerDialogConfirm from '../../hooks/useContainerDialogConfirm';
@@ -158,7 +159,8 @@ function DecoratedVisualFlow({
   const {toObject, getNodes, getEdges, updateNodeData, fitView} = useReactFlow();
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
   const {deleteComponent} = useComponentDelete();
-  const {isResourcePanelOpen, isResourcePropertiesPanelOpen} = useUIPanelState();
+  const {isResourcePanelOpen, isResourcePropertiesPanelOpen, setIsResourcePanelOpen, setIsOpenResourcePropertiesPanel} =
+    useUIPanelState();
   const {notifyElementAdded, onAutoLayout} = useFlowEvents();
   const {isFlowMetadataLoading, metadata, setFlowNodes} = useFlowConfig();
   const {onResourceDropOnCanvas} = useInteractionState();
@@ -356,6 +358,16 @@ function DecoratedVisualFlow({
   }, [triggerAutoLayoutOnLoad, getNodes, handleAutoLayout]);
 
   const simulation = useFlowSimulation(nodes, edges);
+
+  // Entering the preview collapses the side panels so the canvas and the
+  // preview panel get the full width; they stay closed on exit until reopened.
+  const isSimulatingNow = simulation.isSimulating;
+  useEffect(() => {
+    if (isSimulatingNow) {
+      setIsResourcePanelOpen(false);
+      setIsOpenResourcePropertiesPanel(false);
+    }
+  }, [isSimulatingNow, setIsResourcePanelOpen, setIsOpenResourcePropertiesPanel]);
 
   const {isSimulating: isSimulationActive, start: startSimulation, stop: stopSimulation} = simulation;
   const handleToggleSimulation = useCallback((): void => {
@@ -819,69 +831,72 @@ function DecoratedVisualFlow({
 
       {/* ── Three-column builder area ── */}
       <Box sx={{position: 'relative', flex: 1, overflow: 'hidden', p: 1, pt: 0}}>
-        <DragDropProvider onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
-          <ResourcePanel
-            resources={resources}
-            open={isResourcePanelOpen}
-            onAdd={handleOnAdd}
-            disabled={isFlowMetadataLoading}
-            flowTitle={flowTitle}
-            flowHandle={flowHandle}
-            onFlowTitleChange={onFlowTitleChange}
-            rightPanel={rightPanel}
-          >
-            <Droppable
-              id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)}
-              type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_CANVAS_ID}
-              accept={[...VisualFlowConstants.FLOW_BUILDER_CANVAS_ALLOWED_RESOURCE_TYPES]}
-              hideDropZones
-              collisionPriority={CollisionPriority.Low}
+        {/* startAt is referentially stable, so providing it does not re-render nodes on simulation state changes */}
+        <StepPreviewContext.Provider value={simulation.startAt}>
+          <DragDropProvider onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
+            <ResourcePanel
+              resources={resources}
+              open={isResourcePanelOpen}
+              onAdd={handleOnAdd}
+              disabled={isFlowMetadataLoading}
+              flowTitle={flowTitle}
+              flowHandle={flowHandle}
+              onFlowTitleChange={onFlowTitleChange}
+              rightPanel={rightPanel}
             >
-              <VisualFlow
-                nodes={displayNodes}
-                onNodesChange={onNodesChange}
-                edges={displayEdges}
-                edgeTypes={edgeTypes}
-                onEdgesChange={onEdgesChange}
-                onConnect={handleConnect}
-                onNodesDelete={handleNodesDelete}
-                onEdgesDelete={handleEdgesDelete}
-                onNodeDragStop={handleNodeDragStop}
-                onNodeClick={handleNodeClick}
-                {...rest}
-              />
-            </Droppable>
-          </ResourcePanel>
-          <DragOverlay>
-            {(source) => {
-              const data = source?.data as DragSourceData | undefined;
+              <Droppable
+                id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)}
+                type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_CANVAS_ID}
+                accept={[...VisualFlowConstants.FLOW_BUILDER_CANVAS_ALLOWED_RESOURCE_TYPES]}
+                hideDropZones
+                collisionPriority={CollisionPriority.Low}
+              >
+                <VisualFlow
+                  nodes={displayNodes}
+                  onNodesChange={onNodesChange}
+                  edges={displayEdges}
+                  edgeTypes={edgeTypes}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={handleConnect}
+                  onNodesDelete={handleNodesDelete}
+                  onEdgesDelete={handleEdgesDelete}
+                  onNodeDragStop={handleNodeDragStop}
+                  onNodeClick={handleNodeClick}
+                  {...rest}
+                />
+              </Droppable>
+            </ResourcePanel>
+            <DragOverlay>
+              {(source) => {
+                const data = source?.data as DragSourceData | undefined;
 
-              if (!data?.isReordering || !data.resource) return null;
+                if (!data?.isReordering || !data.resource) return null;
 
-              const label = (data.resource as Resource)?.display?.label ?? (data.resource as Resource)?.type;
+                const label = (data.resource as Resource)?.display?.label ?? (data.resource as Resource)?.type;
 
-              return (
-                <Card
-                  elevation={3}
-                  sx={{
-                    px: 2,
-                    py: 1.5,
-                    minWidth: 120,
-                    maxWidth: 280,
-                    cursor: 'grabbing',
-                    bgcolor: 'background.paper',
-                  }}
-                >
-                  <CardContent sx={{p: 0, '&:last-child': {pb: 0}}}>
-                    <Typography variant="body2" fontWeight={500} noWrap>
-                      {label}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              );
-            }}
-          </DragOverlay>
-        </DragDropProvider>
+                return (
+                  <Card
+                    elevation={3}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      minWidth: 120,
+                      maxWidth: 280,
+                      cursor: 'grabbing',
+                      bgcolor: 'background.paper',
+                    }}
+                  >
+                    <CardContent sx={{p: 0, '&:last-child': {pb: 0}}}>
+                      <Typography variant="body2" fontWeight={500} noWrap>
+                        {label}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                );
+              }}
+            </DragOverlay>
+          </DragDropProvider>
+        </StepPreviewContext.Provider>
       </Box>
 
       <FormRequiresViewDialog

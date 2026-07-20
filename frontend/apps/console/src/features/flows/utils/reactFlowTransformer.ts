@@ -505,6 +505,12 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
     layout,
   };
 
+  // Persist node properties for every node type — they carry the user-set
+  // displayName and executor-specific options.
+  if (stepData?.properties && Object.keys(stepData.properties).length > 0) {
+    flowNode.properties = stepData.properties;
+  }
+
   // Handle PROMPT nodes (VIEW steps with UI components)
   // Clean components to remove internal properties like variants
   if (canvasNode.type === StepTypes.View && stepData?.components) {
@@ -539,11 +545,6 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
     // Add executor configuration
     if (stepData?.action?.executor?.name) {
       flowNode.executor = stepData.action.executor as {name: string; [key: string]: unknown};
-    }
-
-    // Add execution properties if present
-    if (stepData?.properties && Object.keys(stepData.properties).length > 0) {
-      flowNode.properties = stepData.properties as Record<string, unknown>;
     }
 
     // Add onSuccess connection
@@ -585,7 +586,7 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
 
     // Add decision properties if present (for conditions)
     if (stepData?.properties && Object.keys(stepData.properties).length > 0) {
-      flowNode.properties = stepData.properties as Record<string, unknown>;
+      flowNode.properties = stepData.properties;
     }
   }
 

@@ -575,6 +575,28 @@ describe('reactFlowTransformer', () => {
         });
       });
 
+      it('should persist properties for PROMPT nodes (e.g. the user-set display name)', () => {
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode(
+              'view-1',
+              StepTypes.View,
+              {x: 0, y: 0},
+              {
+                components: [],
+                properties: {displayName: 'Collect credentials'},
+              },
+            ),
+          ],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const promptNode = result.nodes.find((n) => n.id === 'view-1');
+        expect(promptNode?.properties).toEqual({displayName: 'Collect credentials'});
+      });
+
       it('should use first edge target when no default edge exists (all edges have sourceHandle)', () => {
         const canvasData: ReactFlowCanvasData = {
           nodes: [

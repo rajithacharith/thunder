@@ -95,6 +95,7 @@ describe('Call', () => {
 
   describe('Rendering', () => {
     it('falls back to the default "Call flow" label when no palette resource is provided', () => {
+      mockUseNodeId.mockReturnValue(null);
       const props = {
         resources: [],
         data: {} as never,
@@ -133,7 +134,13 @@ describe('Call', () => {
       expect(screen.getByTestId('call-node-flow-ref')).toHaveTextContent(/select a flow/i);
     });
 
-    it('shows the palette label in the header', () => {
+    it('shows the step id in the header', () => {
+      renderCall({});
+      expect(screen.getByText('call-node-id')).toBeInTheDocument();
+    });
+
+    it('shows the palette label in the header without a node context', () => {
+      mockUseNodeId.mockReturnValue(null);
       renderCall({});
       expect(screen.getAllByText('Call Flow').length).toBeGreaterThan(0);
     });

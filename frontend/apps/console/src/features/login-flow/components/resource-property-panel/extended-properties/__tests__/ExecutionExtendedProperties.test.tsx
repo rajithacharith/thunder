@@ -135,9 +135,11 @@ describe('ExecutionExtendedProperties', () => {
       render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
       expect(screen.getByText('Connection')).toBeInTheDocument();
+      // The verbose intro paragraph was removed to declutter the panel; the
+      // label and placeholder carry the context.
       expect(
-        screen.getByText('Select a connection from the following list to link it with the login flow.'),
-      ).toBeInTheDocument();
+        screen.queryByText('Select a connection from the following list to link it with the login flow.'),
+      ).not.toBeInTheDocument();
     });
 
     it('should show available Google connections in dropdown', async () => {
@@ -1031,7 +1033,7 @@ describe('ExecutionExtendedProperties', () => {
         data: {
           ...provisioningStepData,
           properties: {
-            ...(provisioningStepData.properties as Record<string, unknown>),
+            ...provisioningStepData.properties!,
             maxPerPrompt: 'invalid',
           },
         },
@@ -1048,7 +1050,7 @@ describe('ExecutionExtendedProperties', () => {
         data: {
           ...provisioningStepData,
           properties: {
-            ...(provisioningStepData.properties as Record<string, unknown>),
+            ...provisioningStepData.properties!,
             maxPerPrompt: 'Infinity',
           },
         },

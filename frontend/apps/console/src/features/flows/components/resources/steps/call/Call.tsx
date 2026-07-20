@@ -36,6 +36,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBoundary';
 import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
+import StepTitle from '../StepTitle';
 import useGetFlows from '@/features/flows/api/useGetFlows';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import useInteractionState from '@/features/flows/hooks/useInteractionState';
@@ -164,11 +165,9 @@ function Call({resources, data}: CallPropsInterface): ReactElement {
           justifyContent="space-between"
           alignItems="center"
           className="execution-minimal-step-action-panel"
-          sx={{backgroundColor: 'secondary.main', height: 44, px: 2, py: 1.25}}
+          sx={{backgroundColor: '#151515', height: 44, px: 2, py: 1.25, gap: 1.5}}
         >
-          <Typography variant="body2" sx={{color: 'common.white', fontWeight: 500}}>
-            {displayLabel}
-          </Typography>
+          <StepTitle label={displayLabel} />
           <Box display="flex" alignItems="center" gap={0.5}>
             <Tooltip title={t('flows:core.call.tooltip.configure', 'Configure')}>
               <IconButton size="small" onClick={handleConfigClick} sx={{color: 'common.white'}}>
