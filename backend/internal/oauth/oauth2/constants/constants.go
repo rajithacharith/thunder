@@ -43,6 +43,7 @@ const (
 	RequestParamCodeChallengeMethod string = "code_challenge_method"
 	RequestParamRefreshToken        string = "refresh_token"
 	RequestParamResponseType        string = "response_type"
+	RequestParamResponseMode        string = "response_mode"
 	RequestParamState               string = "state"
 	RequestParamIss                 string = "iss"
 	RequestParamResource            string = "resource"
@@ -78,6 +79,16 @@ const (
 const (
 	HeaderDPoP string = "DPoP"
 )
+
+// OAuth2 response modes.
+const (
+	ResponseModeQuery string = "query"
+)
+
+// IsSupportedResponseMode checks if the response mode is supported.
+func IsSupportedResponseMode(responseMode string) bool {
+	return responseMode == "" || responseMode == ResponseModeQuery
+}
 
 // OIDC prompt parameter values.
 const (

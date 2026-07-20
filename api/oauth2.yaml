@@ -55,6 +55,16 @@ paths:
             type: string
             enum: [code]
           description: Must be `code` for the authorization code flow.
+        - name: response_mode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [query]
+          description: >-
+            OAuth 2.0 response mode. When omitted, query mode is used by default.
+            Only query mode is supported. Requests with unsupported values such as
+            fragment or form_post are rejected with invalid_request.
         - name: client_id
           in: query
           required: true
