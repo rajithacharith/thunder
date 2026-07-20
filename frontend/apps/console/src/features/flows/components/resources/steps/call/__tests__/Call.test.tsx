@@ -69,7 +69,7 @@ const paletteResource: Step = {
   type: 'CALL',
   category: 'WORKFLOW',
   resourceType: 'STEP',
-  display: {label: 'Call Flow'},
+  display: {label: 'Flow'},
 } as unknown as Step;
 
 const renderCall = (data?: Record<string, unknown>) => {
@@ -107,7 +107,7 @@ describe('Call', () => {
         isConnectable: true,
       } as unknown as Parameters<typeof Call>[0];
       render(<Call {...props} />);
-      expect(screen.getAllByText(/call flow/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/^flow$/i).length).toBeGreaterThan(0);
     });
 
     it('records the last interacted resource when the card body is clicked', () => {
@@ -142,7 +142,7 @@ describe('Call', () => {
     it('shows the palette label in the header without a node context', () => {
       mockUseNodeId.mockReturnValue(null);
       renderCall({});
-      expect(screen.getAllByText('Call Flow').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Flow').length).toBeGreaterThan(0);
     });
   });
 

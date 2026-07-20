@@ -80,7 +80,7 @@ function Call({resources, data}: CallPropsInterface): ReactElement {
   const callData: CallStepData = (data as CallStepData) ?? {};
   const flowRef: string = callData.flow?.ref ?? '';
   const paletteEntry: Step | undefined = resources?.[0];
-  const displayLabel: string = paletteEntry?.display?.label ?? t('flows:core.call.unconfiguredLabel', 'Call flow');
+  const displayLabel: string = paletteEntry?.display?.label ?? t('flows:core.call.unconfiguredLabel', 'Flow');
 
   const referencedFlow: BasicFlowDefinition | undefined = useMemo<BasicFlowDefinition | undefined>(
     () => (flowsData?.flows ?? []).find((f: BasicFlowDefinition) => f.id === flowRef),
