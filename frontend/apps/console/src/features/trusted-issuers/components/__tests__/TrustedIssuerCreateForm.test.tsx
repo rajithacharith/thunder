@@ -129,7 +129,6 @@ describe('TrustedIssuerCreateForm', () => {
         issuer: 'https://acme.okta.com',
         jwksEndpoint: 'https://acme.okta.com/keys',
         idJagEnabled: false,
-        clientId: undefined,
         tokenExchangeEnabled: true,
         trustedTokenAudience: undefined,
       },
@@ -181,37 +180,9 @@ describe('TrustedIssuerCreateForm', () => {
     expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({idJagEnabled: true}), expect.any(Object));
   });
 
-  it('should render the client id field', () => {
+  it('should not render a client id field', () => {
     render(<TrustedIssuerCreateForm />);
 
-    expect(screen.getByLabelText(/^Client ID/)).toBeInTheDocument();
-  });
-
-  it('should include the client id in the create payload', async () => {
-    const user = userEvent.setup();
-    mockMutate.mockImplementation((_data, opts) => {
-      opts.onSuccess({
-        id: 'ti-3',
-        name: 'Acme Okta',
-        issuer: 'https://acme.okta.com',
-        jwksEndpoint: 'https://acme.okta.com/keys',
-        idJagEnabled: false,
-      });
-    });
-
-    render(<TrustedIssuerCreateForm />);
-
-    await user.type(screen.getByLabelText(/^Name/), 'Acme Okta');
-    await user.type(screen.getByLabelText(/^Issuer URI/), 'https://acme.okta.com');
-    await user.type(screen.getByLabelText(/^JWKS endpoint/), 'https://acme.okta.com/keys');
-    await user.type(screen.getByLabelText(/^Client ID/), 'thunderid-console');
-    await user.click(screen.getByTestId('trusted-issuer-create-submit'));
-
-    expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clientId: 'thunderid-console',
-      }),
-      expect.any(Object),
-    );
+    expect(screen.queryByLabelText(/^Client ID/)).not.toBeInTheDocument();
   });
 });
