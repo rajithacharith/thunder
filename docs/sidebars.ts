@@ -580,6 +580,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'guides/guides/flows/single-sign-on',
+              label: 'Single Sign-On',
+            },
+            {
+              type: 'doc',
               id: 'guides/guides/flows/advanced-configurations',
               label: 'Advanced Configurations',
             },
@@ -869,6 +874,11 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/key-concepts/authentication/integration-models',
               label: 'Integration Models',
+            },
+            {
+              type: 'doc',
+              id: 'guides/key-concepts/authentication/sessions',
+              label: 'Sessions and Single Sign-On',
             },
           ],
         },
