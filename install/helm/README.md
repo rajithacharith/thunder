@@ -85,13 +85,15 @@ helm install my-thunderid oci://ghcr.io/thunder-id/helm-charts/thunderid \
   --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime_transient.type=sqlite \
   --set configuration.database.entity.type=sqlite \
-  --set configuration.database.runtime_persistent.type=sqlite
+  --set configuration.database.runtime_persistent.type=sqlite \
+  --set deployment.securityContext.readOnlyRootFilesystem=false
 ```
 
 **Note:** When using SQLite:
 - **Persistence is automatically enabled** when any database is configured to use SQLite
 - The setup job's init container will automatically copy SQLite databases from the image to a PVC
 - Database files will persist across pod restarts
+- **`deployment.securityContext.readOnlyRootFilesystem` must be `false`** (the chart defaults it to `true`), otherwise the setup job and server cannot write to the container filesystem
 
 ### 2. Get the External IP
 
