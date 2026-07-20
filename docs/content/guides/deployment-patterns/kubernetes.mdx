@@ -298,7 +298,7 @@ persistence:
   size: 1Gi
 ```
 
-Also set `deployment.securityContext.readOnlyRootFilesystem: false` when using SQLite: the chart sets this to `true` by default, which prevents SQLite from writing its database files.
+Also set `deployment.securityContext.readOnlyRootFilesystem: false` when using SQLite. The chart defaults it to `true`, which blocks the setup job and server from writing to the container filesystem, including the temporary files created during initialization.
 
 Set `replicaCount: 1` when using SQLite: multiple replicas writing to the same SQLite files will corrupt the database.
 
