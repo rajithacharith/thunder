@@ -476,9 +476,11 @@ function prepare_backend_for_packaging() {
     mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
     # Never ship key material: strip any dev certs/keys that "cp -r config" above may have copied in.
     rm -f "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"/*.cert "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"/*.key
-    # Never ship runtime secrets: strip the dev Direct Auth Secret that "cp -r config" may have copied in.
-    # setup.sh generates a fresh per-deployment secret.
-    rm -rf "$DIST_DIR/$PRODUCT_FOLDER/config/secrets"
+    # Ship an empty config/secrets directory (like config/certs) so a named volume mounted there
+    # inherits the runtime user's ownership instead of being created as root. Never ship the dev
+    # Direct Auth Secret that "cp -r config" may have copied in; setup.sh generates a fresh one.
+    mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/config/secrets"
+    rm -f "$DIST_DIR/$PRODUCT_FOLDER/config/secrets/direct_auth_secret"
 
     # Copy bootstrap directory
     echo "Copying bootstrap scripts..."
