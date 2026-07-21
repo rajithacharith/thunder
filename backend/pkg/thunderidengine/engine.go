@@ -165,7 +165,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	err = oauth.Initialize(mux, engineCtx.actorProvider, engineCtx.authnProvider, engineCtx.jwtService,
 		engineCtx.jweService, flowExecService, engineCtx.observabilitySvc, engineCtx.runtimeCryptoSvc,
 		engineCtx.ouProvider, attributeCacheService, engineCtx.authzProvider, engineCtx.resourceProvider,
-		nil, engineCtx.i18nProvider, engineCtx.idpProvider, nil, runtimeStoreProvider, oauthConfig)
+		nil, engineCtx.i18nProvider, engineCtx.idpProvider, nil, runtimeStoreProvider, transactioner, oauthConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
 	}

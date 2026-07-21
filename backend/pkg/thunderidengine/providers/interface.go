@@ -210,6 +210,12 @@ type RuntimeStoreProvider interface {
 	// Put stores a value in the runtime store with the specified key and TTL (time-to-live) in seconds.
 	Put(ctx context.Context, namespace RuntimeStoreNamespace, key string, value []byte, ttlSeconds int64) error
 
+	// PutIfNotExists atomically stores a value only if the key does not already hold a non-expired
+	// value. Returns true if the value was stored, false if an unexpired value already exists.
+	PutIfNotExists(
+		ctx context.Context, namespace RuntimeStoreNamespace, key string, value []byte, ttlSeconds int64,
+	) (bool, error)
+
 	// Get retrieves a value from the runtime store by its key.
 	Get(ctx context.Context, namespace RuntimeStoreNamespace, key string) ([]byte, error)
 
