@@ -988,9 +988,9 @@ func validateGrantAndResponseTypes(p *providers.OAuthProfile) error {
 			return ErrOAuthAuthCodeRequiresCodeResponseType
 		}
 	}
-	if len(p.GrantTypes) == 1 &&
-		slices.Contains(p.GrantTypes, string(providers.GrantTypeRefreshToken)) {
-		return ErrOAuthRefreshTokenCannotBeSoleGrant
+	if slices.Contains(p.GrantTypes, string(providers.GrantTypeRefreshToken)) &&
+		!providers.AnyIssuesRefreshToken(p.GrantTypes) {
+		return ErrOAuthRefreshTokenRequiresTokenIssuingGrant
 	}
 	if p.PKCERequired &&
 		!slices.Contains(p.GrantTypes, string(providers.GrantTypeAuthorizationCode)) {
