@@ -203,9 +203,10 @@ configuration:
     clientId: "CONSOLE"
     scopes: "['openid', 'profile', 'email', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:usertype:view']"
     # Resource indicator (audience) the console sends on token requests. Must match the
-    # identifier of the System resource server seeded by the bootstrap defaults. The console
-    # omits the parameter when this is empty, which requires a configured defaultResourceServer.
-    resourceIdentifier: "https://localhost:8090/mcp"
+    # identifier of the System resource server seeded by the bootstrap defaults, which is
+    # "<server.publicUrl>/mcp". Leave empty to derive it from server.publicUrl (default);
+    # set an explicit value only if the resource server identifier is customized.
+    resourceIdentifier: ""
     # Trusted issuer for console authentication (for federated/DP deployments).
     # When set, the console authenticates against this external server instead of
     # the local server.
