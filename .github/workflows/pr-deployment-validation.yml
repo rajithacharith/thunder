@@ -244,9 +244,11 @@ jobs:
       - name: 🚀 Install Helm Chart (SQLite)
         run: |
           kubectl create namespace "${NAMESPACE}" || true
-          # Use SQLite so the stack is self-contained (no external Postgres needed).
-          # readOnlyRootFilesystem must be false for SQLite, and the image is preloaded
-          # into kind so the pull policy is overridden to avoid a registry fetch.
+          # Install the chart straight from the checked-out PR (install/helm), not the
+          # released OCI chart. Use SQLite so the stack is self-contained (no external
+          # Postgres). readOnlyRootFilesystem must be false for SQLite. Pin the image to
+          # the locally-built one loaded into kind (overriding any tag/digest a PR may
+          # have set in values.yaml) and set IfNotPresent so nothing is pulled from GHCR.
           helm install "${RELEASE_NAME}" install/helm \
             --namespace "${NAMESPACE}" \
             --set configuration.database.config.type=sqlite \
@@ -255,6 +257,10 @@ jobs:
             --set configuration.database.runtime_persistent.type=sqlite \
             --set deployment.securityContext.readOnlyRootFilesystem=false \
             --set deployment.replicaCount=1 \
+            --set deployment.image.registry=ghcr.io/thunder-id \
+            --set deployment.image.repository=thunderid \
+            --set deployment.image.tag=latest \
+            --set deployment.image.digest="" \
             --set deployment.image.pullPolicy=IfNotPresent \
             --wait --timeout 5m
 
