@@ -141,6 +141,8 @@ describe('BaseEdge', () => {
     setFlowEdgeTypes: vi.fn(),
     flowNodes: [],
     setFlowNodes: vi.fn(),
+    graphValidationRules: [],
+    setGraphValidationRules: vi.fn(),
   };
 
   const createWrapper = (overrides: Partial<FlowConfigContextProps> = {}) => {
