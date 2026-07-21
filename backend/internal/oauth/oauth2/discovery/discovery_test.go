@@ -119,8 +119,12 @@ func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
 	assert.NotEmpty(suite.T(), metadata.JWKSUri)
 	assert.NotEmpty(suite.T(), metadata.RegistrationEndpoint)
 	assert.NotEmpty(suite.T(), metadata.IntrospectionEndpoint)
-	assert.NotEmpty(suite.T(), metadata.UserInfoEndpoint)
 	assert.NotEmpty(suite.T(), metadata.RevocationEndpoint)
+
+	body, err := json.Marshal(metadata)
+	assert.NoError(suite.T(), err)
+	assert.NotContains(suite.T(), string(body), "userinfo_endpoint")
+	assert.NotContains(suite.T(), string(body), "scopes_supported")
 
 	// Verify only implemented grant types are present
 	assert.Contains(suite.T(), metadata.GrantTypesSupported, "authorization_code")
@@ -165,6 +169,9 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
 	assert.NotEmpty(suite.T(), metadata.SubjectTypesSupported)
 	assert.NotEmpty(suite.T(), metadata.ClaimsSupported)
 	assert.NotEmpty(suite.T(), metadata.IDTokenSigningAlgValuesSupported)
+	assert.NotEmpty(suite.T(), metadata.UserInfoEndpoint)
+	assert.NotEmpty(suite.T(), metadata.ScopesSupported)
+	assert.Contains(suite.T(), metadata.ScopesSupported, "openid")
 
 	// Verify OIDC-specific fields
 	assert.Contains(suite.T(), metadata.SubjectTypesSupported, constants.SubjectTypePublic)
