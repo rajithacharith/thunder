@@ -1272,7 +1272,7 @@ describe('ExecutionExtendedProperties', () => {
         target: {value: '15'},
       });
 
-      expect(mockOnChange).toHaveBeenCalledWith('data.properties.timeout', 15, httpResource, true);
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.timeout', 15, httpResource);
     });
 
     it('should clamp timeout to max 20', () => {
@@ -1282,7 +1282,7 @@ describe('ExecutionExtendedProperties', () => {
         target: {value: '99'},
       });
 
-      expect(mockOnChange).toHaveBeenCalledWith('data.properties.timeout', 20, httpResource, true);
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.timeout', 20, httpResource);
     });
 
     it('should call onChange with debounce when body changes', () => {
@@ -1292,7 +1292,7 @@ describe('ExecutionExtendedProperties', () => {
         target: {value: 'raw body text'},
       });
 
-      expect(mockOnChange).toHaveBeenCalledWith('data.properties.body', 'raw body text', httpResource, true);
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.body', 'raw body text', httpResource);
     });
 
     it('should parse valid JSON body', () => {
@@ -1302,7 +1302,7 @@ describe('ExecutionExtendedProperties', () => {
         target: {value: '{"key":"value"}'},
       });
 
-      expect(mockOnChange).toHaveBeenCalledWith('data.properties.body', {key: 'value'}, httpResource, true);
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.body', {key: 'value'}, httpResource);
     });
 
     it('should call onChange with debounce when retryCount changes', () => {
