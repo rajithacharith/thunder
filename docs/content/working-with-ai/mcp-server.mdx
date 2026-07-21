@@ -29,10 +29,11 @@ Access requires the `system` scope, and permissions come from the signed-in user
 - <ProductName /> server running (default: `https://localhost:8090`)
 - Access to the <ProductName /> Console with an administrator account
 - Node.js and npm installed (to run MCP Inspector via `npx`)
+- Claude Code CLI installed (only for the Claude Code option)
 
 ## Setup
 
-Pick your MCP client below. MCP Inspector works today; step-by-step guides for the other clients are on the way.
+Pick your MCP client below. MCP Inspector and Claude Code work with a local <ProductName /> instance today, and guides for more clients are on the way.
 
 <Tabs>
 <TabItem value="mcp-inspector" label="MCP Inspector" default>
@@ -108,17 +109,80 @@ If the connection fails, see the [Troubleshooting](#troubleshooting) section bel
 </Stepper>
 
 </TabItem>
+<TabItem value="claude-code" label="Claude Code">
+
+Claude Code connects to the MCP server over OAuth using Dynamic Client Registration. It registers its own OAuth client automatically, so you do not create an application in the Console for it.
+
+<Stepper stepNode="h4" as="h4">
+
+#### Enable Dynamic Client Registration
+
+Claude Code registers its own OAuth client through Dynamic Client Registration and cannot use a pre-registered client ID, so enable it for local development. Add the following to `deployment.yaml` in your <ProductName /> distribution:
+
+```yaml
+oauth:
+  dcr:
+    insecure: true
+```
+
+:::warning
+This setting is for local development only. It lets any client register with <ProductName /> without authentication. Do not enable it in production.
+:::
+
+Restart <ProductName /> after saving the file.
+
+#### Trust the Certificate for Claude Code
+
+Claude Code runs on Node.js. Point it at the <ProductName /> self-signed certificate so TLS connections to `https://localhost:8090` are trusted, without adding anything to your system trust store:
+
+```bash
+export NODE_EXTRA_CA_CERTS=<THUNDERID_HOME>/config/certs/server.cert
+```
+
+`<THUNDERID_HOME>` is the directory of your <ProductName /> distribution. The certificate generated during setup includes subject alternative names for `localhost` and `127.0.0.1`, so modern TLS clients accept it once it is trusted. Run the export in the same terminal session you launch `claude` from.
+
+#### Add the MCP Server to Claude Code
+
+```bash
+claude mcp add --transport http thunderid-mcp https://localhost:8090/mcp
+```
+
+Verify it was added:
+
+```bash
+claude mcp list
+```
+
+You should see `thunderid-mcp` in the list.
+
+#### Authenticate with <ProductName />
+
+1. Start Claude Code from the same terminal where you exported `NODE_EXTRA_CA_CERTS`:
+   ```bash
+   claude
+   ```
+2. Run `/mcp` inside the Claude Code prompt.
+3. Select `thunderid-mcp` and choose the authenticate option.
+4. A browser tab opens with the <ProductName /> sign-in page. Sign in with your administrator account.
+5. Review and approve the requested permissions on the consent screen.
+
+Claude Code obtains and refreshes tokens automatically from here on. It discovers the required `system` scope from the server's metadata, so there is nothing else to configure.
+
+#### Verify Claude Code Access
+
+Ask Claude Code to use a tool, for example:
+
+> "List the applications registered in <ProductName />"
+
+Claude Code calls the matching tool and returns the list of registered applications. To remove the server later, run `claude mcp remove "thunderid-mcp" -s local`.
+
+</Stepper>
+
+</TabItem>
 <TabItem value="claude-desktop" label="Claude Desktop">
 
 :::note Coming soon
 A step-by-step guide for connecting Claude Desktop to the <ProductName /> MCP server is on the way. Any MCP client that supports the MCP Authorization Specification with OAuth can connect today using the same application registered in the MCP Inspector guide above.
-:::
-
-</TabItem>
-<TabItem value="claude-code" label="Claude Code">
-
-:::note Coming soon
-A step-by-step guide for connecting Claude Code to the <ProductName /> MCP server is on the way. Any MCP client that supports the MCP Authorization Specification with OAuth can connect today using the same application registered in the MCP Inspector guide above.
 :::
 
 </TabItem>
@@ -191,6 +255,21 @@ The Inspector origin is missing from the CORS configuration.
 
 1. Export it again in the same terminal: `export NODE_EXTRA_CA_CERTS=<THUNDERID_HOME>/config/certs/server.cert`.
 2. Relaunch MCP Inspector from that terminal.
+
+### Claude Code cannot authenticate or reports it does not support dynamic client registration
+
+Dynamic Client Registration is not enabled.
+
+1. Set `oauth.dcr.insecure: true` in `deployment.yaml` (local development only) and restart <ProductName />.
+2. Confirm `NODE_EXTRA_CA_CERTS` is exported in the same terminal that launched `claude`.
+
+### Claude Code authentication fails with "An application with the same name already exists"
+
+Claude Code registers its OAuth client through Dynamic Client Registration each time it authenticates. If a previous registration already created an application with the same name, the new registration is rejected.
+
+1. In the <ProductName /> Console, go to **Applications**.
+2. Find the application named **Claude Code (thunderid-mcp)** (or similar) from the previous session and delete it.
+3. Re-authenticate from Claude Code by running `/mcp` and selecting the authenticate option.
 
 ### Redirect URI error during sign-in
 
