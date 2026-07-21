@@ -2035,7 +2035,17 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, 2)
+	// The response returns the effective scope-claims mapping: the standard OIDC defaults with the
+	// app's stored overrides applied on top, so all six standard scopes are present. The overridden
+	// scopes carry the stored values; the rest carry the exact standard defaults.
+	scopeClaims := retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims
+	ts.Assert().Len(scopeClaims, 6)
+	ts.Assert().Equal([]string{"name", "given_name", "family_name", "middle_name"}, scopeClaims["profile"])
+	ts.Assert().Equal([]string{"email", "email_verified"}, scopeClaims["email"])
+	ts.Assert().Equal([]string{"sub"}, scopeClaims["openid"])
+	ts.Assert().Equal([]string{"phone_number", "phone_number_verified"}, scopeClaims["phone"])
+	ts.Assert().Equal([]string{"address"}, scopeClaims["address"])
+	ts.Assert().Equal([]string{"roles"}, scopeClaims["roles"])
 }
 
 // TestApplicationWithBothTokenTypes tests creating application with both AccessToken and IDToken.
@@ -2267,9 +2277,13 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, 5)
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, "profile")
-	ts.Assert().GreaterOrEqual(len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"]), 10)
+	// The response returns the effective mapping: the six standard OIDC scopes (defaults with the
+	// app's overrides applied) plus the "custom" scope carried through.
+	scopeClaims := retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims
+	ts.Assert().Len(scopeClaims, 7)
+	ts.Assert().Contains(scopeClaims, "profile")
+	ts.Assert().GreaterOrEqual(len(scopeClaims["profile"]), 10)
+	ts.Assert().Equal([]string{"organization", "department", "employee_id"}, scopeClaims["custom"])
 }
 
 // TestApplicationCertificateRollbackOnOAuthFail tests certificate rollback when OAuth creation fails.

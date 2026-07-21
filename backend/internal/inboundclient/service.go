@@ -38,6 +38,7 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	oauthutils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	syshttp "github.com/thunder-id/thunderid/internal/system/http"
@@ -1346,7 +1347,8 @@ func applyInboundDefaults(c *inboundmodel.InboundClient, oauthProfile *providers
 		IDJAG:        resolveIDJAG(oauthProfile.Token),
 	}
 	oauthProfile.UserInfo = resolveUserInfo(oauthProfile.UserInfo, idToken)
-	oauthProfile.ScopeClaims = resolveScopeClaims(oauthProfile.ScopeClaims)
+	// Persist the effective scope-to-claims mapping: standard OIDC defaults merged with any overrides.
+	oauthProfile.ScopeClaims = oauthutils.ResolveEffectiveScopeClaims(oauthProfile.ScopeClaims)
 }
 
 // getDefaultAssertionFromDeployment returns the assertion config from the deployment-level JWT settings.
@@ -1511,14 +1513,6 @@ func resolveUserInfo(in *providers.UserInfoConfig,
 		out.UserAttributes = idToken.UserAttributes
 	}
 	return out
-}
-
-// resolveScopeClaims returns the input scope claims map, defaulting to an empty map if nil.
-func resolveScopeClaims(in map[string][]string) map[string][]string {
-	if in == nil {
-		return make(map[string][]string)
-	}
-	return in
 }
 
 // reconcileReferencedFlows walks call-node targets reachable from the inbound client's configured
