@@ -19,14 +19,23 @@ on:
         required: false
         default: "thunder-id/thunderid"
         type: string
+  # Lets this branch be exercised without merging to the default branch:
+  # pushing to it triggers a run using the TEST_PR_NUMBER / TEST_PR_REPO repo variables.
+  # Remove this trigger before merging; workflow_dispatch is the intended entry point.
+  push:
+    branches:
+      - ci/pr-deployment-validation
 
 # Avoid running multiple validations for the same target PR concurrently.
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr_repo }}-${{ inputs.pr_number }}
+  group: ${{ github.workflow }}-${{ inputs.pr_repo || vars.TEST_PR_REPO }}-${{ inputs.pr_number || vars.TEST_PR_NUMBER }}
   cancel-in-progress: true
 
 env:
   PRODUCT_NAME_LOWER: "thunderid"
+  # Resolve the target PR from dispatch inputs, falling back to repo variables (push trigger).
+  PR_NUMBER: ${{ inputs.pr_number || vars.TEST_PR_NUMBER }}
+  PR_REPO: ${{ inputs.pr_repo || vars.TEST_PR_REPO || 'thunder-id/thunderid' }}
   # Image reference used by both the Compose file and the Helm chart defaults.
   IMAGE_REF: "ghcr.io/thunder-id/thunderid:latest"
   IMAGE_ARTIFACT: "thunderid-image"
@@ -41,12 +50,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: 🔎 Validate Target PR
+        run: |
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "❌ No PR number resolved."
+            echo "   For workflow_dispatch: provide the 'pr_number' input."
+            echo "   For the push trigger: set the TEST_PR_NUMBER repo variable"
+            echo "     (gh variable set TEST_PR_NUMBER --body <PR#>)."
+            exit 1
+          fi
+          echo "✅ Validating PR #${PR_NUMBER} from ${PR_REPO}"
+
       - name: 📥 Checkout Upstream PR
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           # Build and test the code from the PR opened against the upstream repo.
-          repository: ${{ inputs.pr_repo }}
-          ref: refs/pull/${{ inputs.pr_number }}/head
+          repository: ${{ env.PR_REPO }}
+          ref: refs/pull/${{ env.PR_NUMBER }}/head
 
       - name: 🌱 Seed client_credentials App (bootstrap)
         run: |
@@ -110,8 +130,8 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           # Build and test the code from the PR opened against the upstream repo.
-          repository: ${{ inputs.pr_repo }}
-          ref: refs/pull/${{ inputs.pr_number }}/head
+          repository: ${{ env.PR_REPO }}
+          ref: refs/pull/${{ env.PR_NUMBER }}/head
 
       - name: 📥 Download Image Artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -187,8 +207,8 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           # Build and test the code from the PR opened against the upstream repo.
-          repository: ${{ inputs.pr_repo }}
-          ref: refs/pull/${{ inputs.pr_number }}/head
+          repository: ${{ env.PR_REPO }}
+          ref: refs/pull/${{ env.PR_NUMBER }}/head
 
       - name: 📥 Download Image Artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
