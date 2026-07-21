@@ -1,0 +1,301 @@
+# This workflow validates the deployment artifacts on pull requests:
+#   1. Builds the ThunderID Docker image from the PR (seeding a client_credentials
+#      app via a bootstrap resource so the OAuth2 flow can be exercised).
+#   2. Runs the Quick Start Docker Compose stack, verifies health, and obtains an
+#      access token via the client_credentials grant.
+#   3. Installs the Helm chart on a kind cluster and runs the same health + token checks.
+
+name: 🚢 PR Deployment Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number opened against the upstream repo to validate"
+        required: true
+        type: string
+      pr_repo:
+        description: "Upstream repository the PR is opened against"
+        required: false
+        default: "thunder-id/thunderid"
+        type: string
+
+# Avoid running multiple validations for the same target PR concurrently.
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.pr_repo }}-${{ inputs.pr_number }}
+  cancel-in-progress: true
+
+env:
+  PRODUCT_NAME_LOWER: "thunderid"
+  # Image reference used by both the Compose file and the Helm chart defaults.
+  IMAGE_REF: "ghcr.io/thunder-id/thunderid:latest"
+  IMAGE_ARTIFACT: "thunderid-image"
+  # Credentials for the client_credentials app seeded into the image via a bootstrap
+  # resource. Used only inside this ephemeral CI stack, never a real deployment.
+  CC_CLIENT_ID: "ci-smoke-test"
+  CC_CLIENT_SECRET: "ci-smoke-test-secret"
+
+jobs:
+  build-image:
+    name: 🐳 Build Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: 📥 Checkout Upstream PR
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Build and test the code from the PR opened against the upstream repo.
+          repository: ${{ inputs.pr_repo }}
+          ref: refs/pull/${{ inputs.pr_number }}/head
+
+      - name: 🌱 Seed client_credentials App (bootstrap)
+        run: |
+          # Drop a bootstrap resource into the tree so the in-process bootstrap seeds a
+          # confidential client_credentials app at setup time. build.sh copies
+          # backend/cmd/server/bootstrap/ into the image, and the default OU
+          # (01900000-0000-7000-8000-000000000001) already exists from 01-default-resources.yaml.
+          cat > backend/cmd/server/bootstrap/03-ci-smoke-test-client.yaml <<EOF
+          resource_type: application
+          id: 01900000-0000-7000-8000-0000000000c1
+          name: CI Smoke Test Client
+          description: Machine to machine client seeded for CI deployment validation.
+          ouId: 01900000-0000-7000-8000-000000000001
+          inboundAuthConfig:
+            - type: oauth2
+              config:
+                clientId: ${CC_CLIENT_ID}
+                clientSecret: ${CC_CLIENT_SECRET}
+                grantTypes:
+                  - client_credentials
+                tokenEndpointAuthMethod: client_secret_basic
+                publicClient: false
+          EOF
+          echo "Seeded bootstrap resource:"
+          cat backend/cmd/server/bootstrap/03-ci-smoke-test-client.yaml
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: 🏗️ Build Image (linux/amd64)
+        run: |
+          # Build a single-arch image and load it into the local daemon.
+          # buildx sets TARGETARCH, which the Dockerfile relies on to pick the right artifact.
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag "${IMAGE_REF}" \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            .
+
+      - name: 💾 Export Image as Tarball
+        run: |
+          docker save "${IMAGE_REF}" -o thunderid-image.tar
+          ls -lh thunderid-image.tar
+
+      - name: 📤 Upload Image Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ env.IMAGE_ARTIFACT }}
+          path: thunderid-image.tar
+          retention-days: 1
+
+  docker-compose-test:
+    name: 🧩 Docker Compose Validation
+    needs: build-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 📥 Checkout Upstream PR
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Build and test the code from the PR opened against the upstream repo.
+          repository: ${{ inputs.pr_repo }}
+          ref: refs/pull/${{ inputs.pr_number }}/head
+
+      - name: 📥 Download Image Artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ env.IMAGE_ARTIFACT }}
+
+      - name: 📦 Load Image into Docker
+        run: |
+          docker load -i thunderid-image.tar
+          docker image ls "${IMAGE_REF}"
+
+      - name: 🚀 Start Quick Start Stack
+        run: |
+          # The compose file references ${IMAGE_REF}; the loaded image is used because
+          # no pull policy forces a registry fetch when the image is present locally.
+          docker compose -f install/quick-start/docker-compose.yml up -d
+
+      - name: 🩺 Wait for ThunderID to Become Healthy
+        run: |
+          echo "⏳ Waiting for the server to respond on /health/readiness ..."
+          for i in $(seq 1 60); do
+            if curl -sk --fail https://localhost:8090/health/readiness > /dev/null; then
+              echo "✅ ThunderID is healthy (readiness OK)."
+              curl -sk https://localhost:8090/health/liveness && echo "✅ Liveness OK."
+              exit 0
+            fi
+            echo "  attempt ${i}/60: not ready yet, retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ ThunderID did not become healthy in time."
+          exit 1
+
+      - name: 🔑 Client Credentials Token Smoke Test
+        run: |
+          echo "🔑 Requesting a client_credentials access token ..."
+          HTTP_CODE=$(curl -sk -o /tmp/token.json -w '%{http_code}' \
+            -X POST https://localhost:8090/oauth2/token \
+            -u "${CC_CLIENT_ID}:${CC_CLIENT_SECRET}" \
+            -d 'grant_type=client_credentials')
+          echo "Token endpoint HTTP ${HTTP_CODE}"
+          cat /tmp/token.json; echo ""
+          if [ "${HTTP_CODE}" != "200" ]; then
+            echo "❌ Token endpoint returned ${HTTP_CODE}, expected 200."
+            exit 1
+          fi
+          ACCESS_TOKEN=$(jq -r '.access_token // empty' /tmp/token.json)
+          TOKEN_TYPE=$(jq -r '.token_type // empty' /tmp/token.json)
+          if [ -z "${ACCESS_TOKEN}" ]; then
+            echo "❌ Response did not contain an access_token."
+            exit 1
+          fi
+          echo "✅ Obtained ${TOKEN_TYPE} access token (${#ACCESS_TOKEN} chars)."
+
+      - name: 🧾 Dump Logs on Failure
+        if: failure()
+        run: docker compose -f install/quick-start/docker-compose.yml logs --no-color
+
+      - name: 🧹 Tear Down
+        if: always()
+        run: docker compose -f install/quick-start/docker-compose.yml down -v
+
+  helm-test:
+    name: ☸️ Helm Chart Validation
+    needs: build-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLUSTER_NAME: "thunderid-ci"
+      RELEASE_NAME: "thunderid-ci"
+      NAMESPACE: "thunderid"
+    steps:
+      - name: 📥 Checkout Upstream PR
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Build and test the code from the PR opened against the upstream repo.
+          repository: ${{ inputs.pr_repo }}
+          ref: refs/pull/${{ inputs.pr_number }}/head
+
+      - name: 📥 Download Image Artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ env.IMAGE_ARTIFACT }}
+
+      - name: ⚙️ Set up Helm
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3
+
+      - name: 🧰 Install kind
+        run: |
+          curl -sSLo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: ☸️ Create kind Cluster
+        run: kind create cluster --name "${CLUSTER_NAME}" --wait 120s
+
+      - name: 📦 Load Image into kind
+        run: |
+          docker load -i thunderid-image.tar
+          kind load docker-image "${IMAGE_REF}" --name "${CLUSTER_NAME}"
+
+      - name: 🔎 Lint Chart
+        run: helm lint install/helm
+
+      - name: 🚀 Install Helm Chart (SQLite)
+        run: |
+          kubectl create namespace "${NAMESPACE}" || true
+          # Use SQLite so the stack is self-contained (no external Postgres needed).
+          # readOnlyRootFilesystem must be false for SQLite, and the image is preloaded
+          # into kind so the pull policy is overridden to avoid a registry fetch.
+          helm install "${RELEASE_NAME}" install/helm \
+            --namespace "${NAMESPACE}" \
+            --set configuration.database.config.type=sqlite \
+            --set configuration.database.runtime_transient.type=sqlite \
+            --set configuration.database.entity.type=sqlite \
+            --set configuration.database.runtime_persistent.type=sqlite \
+            --set deployment.securityContext.readOnlyRootFilesystem=false \
+            --set deployment.replicaCount=1 \
+            --set deployment.image.pullPolicy=IfNotPresent \
+            --wait --timeout 5m
+
+      - name: 🩺 Verify Rollout, Health, and Token
+        run: |
+          kubectl -n "${NAMESPACE}" rollout status \
+            "deployment/${RELEASE_NAME}-deployment" --timeout=300s
+
+          echo "🔌 Port-forwarding service to localhost:8090 ..."
+          kubectl -n "${NAMESPACE}" port-forward \
+            "svc/${RELEASE_NAME}-service" 8090:8090 > /tmp/pf.log 2>&1 &
+          PF_PID=$!
+          trap 'kill "${PF_PID}" 2>/dev/null || true' EXIT
+          sleep 5
+
+          echo "⏳ Waiting for /health/readiness ..."
+          READY=false
+          for i in $(seq 1 30); do
+            if curl -sk --fail https://localhost:8090/health/readiness > /dev/null; then
+              READY=true
+              break
+            fi
+            echo "  attempt ${i}/30: not ready yet, retrying in 5s..."
+            sleep 5
+          done
+          if [ "${READY}" != "true" ]; then
+            echo "❌ ThunderID did not become healthy in time."
+            exit 1
+          fi
+          curl -sk https://localhost:8090/health/liveness && echo "✅ ThunderID is healthy."
+
+          echo "🔑 Requesting a client_credentials access token ..."
+          HTTP_CODE=$(curl -sk -o /tmp/token.json -w '%{http_code}' \
+            -X POST https://localhost:8090/oauth2/token \
+            -u "${CC_CLIENT_ID}:${CC_CLIENT_SECRET}" \
+            -d 'grant_type=client_credentials')
+          echo "Token endpoint HTTP ${HTTP_CODE}"
+          cat /tmp/token.json; echo ""
+          if [ "${HTTP_CODE}" != "200" ]; then
+            echo "❌ Token endpoint returned ${HTTP_CODE}, expected 200."
+            exit 1
+          fi
+          ACCESS_TOKEN=$(jq -r '.access_token // empty' /tmp/token.json)
+          TOKEN_TYPE=$(jq -r '.token_type // empty' /tmp/token.json)
+          if [ -z "${ACCESS_TOKEN}" ]; then
+            echo "❌ Response did not contain an access_token."
+            exit 1
+          fi
+          echo "✅ Obtained ${TOKEN_TYPE} access token (${#ACCESS_TOKEN} chars)."
+
+      - name: 🧾 Dump Diagnostics on Failure
+        if: failure()
+        run: |
+          echo "===== Pods ====="
+          kubectl -n "${NAMESPACE}" get pods -o wide || true
+          echo "===== Events ====="
+          kubectl -n "${NAMESPACE}" get events --sort-by=.lastTimestamp || true
+          echo "===== Describe Deployment ====="
+          kubectl -n "${NAMESPACE}" describe deployment "${RELEASE_NAME}-deployment" || true
+          echo "===== Server Logs ====="
+          kubectl -n "${NAMESPACE}" logs -l app.kubernetes.io/name=thunderid --all-containers --tail=200 || true
+          echo "===== Setup Job Logs ====="
+          kubectl -n "${NAMESPACE}" logs -l app.kubernetes.io/component=setup --all-containers --tail=200 || true
+          echo "===== Port-forward Log ====="
+          cat /tmp/pf.log 2>/dev/null || true
+
+      - name: 🧹 Delete kind Cluster
+        if: always()
+        run: kind delete cluster --name "${CLUSTER_NAME}" || true
