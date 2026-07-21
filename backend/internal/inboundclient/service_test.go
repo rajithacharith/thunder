@@ -1750,7 +1750,30 @@ func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_Re
 		GrantTypes: []string{"refresh_token"},
 	}
 	assert.ErrorIs(suite.T(), validateGrantAndResponseTypes(p),
-		ErrOAuthRefreshTokenCannotBeSoleGrant)
+		ErrOAuthRefreshTokenRequiresTokenIssuingGrant)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_RefreshTokenWithClientCredentials() {
+	p := &providers.OAuthProfile{
+		GrantTypes: []string{"client_credentials", "refresh_token"},
+	}
+	assert.ErrorIs(suite.T(), validateGrantAndResponseTypes(p),
+		ErrOAuthRefreshTokenRequiresTokenIssuingGrant)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_RefreshTokenWithAuthCode() {
+	p := &providers.OAuthProfile{
+		GrantTypes:    []string{"authorization_code", "refresh_token"},
+		ResponseTypes: []string{"code"},
+	}
+	assert.NoError(suite.T(), validateGrantAndResponseTypes(p))
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_RefreshTokenWithCIBA() {
+	p := &providers.OAuthProfile{
+		GrantTypes: []string{string(providers.GrantTypeCIBA), "refresh_token"},
+	}
+	assert.NoError(suite.T(), validateGrantAndResponseTypes(p))
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_PKCEWithoutAuthCode() {

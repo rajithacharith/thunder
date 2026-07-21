@@ -1316,10 +1316,10 @@ func translateOAuthValidationError(err error) *tidcommon.ServiceError {
 			Key:          "error.applicationservice.auth_code_requires_code_response_type_description",
 			DefaultValue: "authorization_code grant type requires 'code' response type",
 		})
-	case errors.Is(err, inboundclient.ErrOAuthRefreshTokenCannotBeSoleGrant):
+	case errors.Is(err, inboundclient.ErrOAuthRefreshTokenRequiresTokenIssuingGrant):
 		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{
-			Key:          "error.applicationservice.refresh_token_cannot_be_sole_grant_description",
-			DefaultValue: "refresh_token grant type cannot be used without another grant type",
+			Key:          "error.applicationservice.refresh_token_requires_token_issuing_grant_description",
+			DefaultValue: "refresh_token grant type requires a token-issuing grant type",
 		})
 	case errors.Is(err, inboundclient.ErrOAuthPKCERequiresAuthCode):
 		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{

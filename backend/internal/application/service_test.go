@@ -3345,10 +3345,10 @@ func (suite *ServiceTestSuite) TestTranslateOAuthValidationError() {
 			wantDescKey: "error.applicationservice.auth_code_requires_code_response_type_description",
 		},
 		{
-			name:        "RefreshTokenCannotBeSoleGrant",
-			err:         inboundclient.ErrOAuthRefreshTokenCannotBeSoleGrant,
+			name:        "RefreshTokenRequiresTokenIssuingGrant",
+			err:         inboundclient.ErrOAuthRefreshTokenRequiresTokenIssuingGrant,
 			wantCode:    ErrorInvalidOAuthConfiguration.Code,
-			wantDescKey: "error.applicationservice.refresh_token_cannot_be_sole_grant_description",
+			wantDescKey: "error.applicationservice.refresh_token_requires_token_issuing_grant_description",
 		},
 		{
 			name:        "PKCERequiresAuthCode",

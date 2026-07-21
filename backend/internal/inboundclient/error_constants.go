@@ -85,8 +85,10 @@ var (
 	ErrOAuthClientCredentialsCannotUseResponseTypes = errors.New("client_credentials grant cannot use response types")
 	// ErrOAuthAuthCodeRequiresCodeResponseType is returned when authorization_code grant lacks code response type.
 	ErrOAuthAuthCodeRequiresCodeResponseType = errors.New("authorization_code grant requires code response type")
-	// ErrOAuthRefreshTokenCannotBeSoleGrant is returned when refresh_token is the only grant type.
-	ErrOAuthRefreshTokenCannotBeSoleGrant = errors.New("refresh_token cannot be the sole grant type")
+	// ErrOAuthRefreshTokenRequiresTokenIssuingGrant is returned when refresh_token is set without a
+	// token-issuing grant (authorization_code or ciba).
+	ErrOAuthRefreshTokenRequiresTokenIssuingGrant = errors.New(
+		"refresh_token grant type requires a token-issuing grant type")
 	// ErrOAuthPKCERequiresAuthCode is returned when PKCE is enabled without authorization_code grant.
 	ErrOAuthPKCERequiresAuthCode = errors.New("PKCE requires authorization_code grant type")
 	// ErrOAuthResponseTypesRequireAuthCode is returned when response types are set without authorization_code grant.
