@@ -128,6 +128,23 @@ Size and time triggers are independent and can run together: with both enabled, 
 This is the <ProductName /> **application log** (the `INFO`/`WARN`/`ERROR` lines the server emits). It is separate from the observability event file sink described in the [Observability](../../deployment-patterns/observability) guide, which records structured domain events such as token issuance and flow execution.
 :::
 
+### Access Log
+
+<ProductName /> writes an access log line for every HTTP request. The Gate and Console frontend paths (`/gate/` and `/console/`) are always excluded.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `log.access.exclude_paths` | `[]` | Additional path prefixes to exclude, alongside the always-excluded `/gate/` and `/console/` paths |
+
+To exclude other paths, add their prefixes in `deployment.yaml`. For example, to also exclude the health probe endpoints:
+
+```yaml
+log:
+  access:
+    exclude_paths:
+      - "/health/"
+```
+
 ## Database Configuration
 
 <ProductName /> uses four separate databases for different purposes. Each database can be configured independently.

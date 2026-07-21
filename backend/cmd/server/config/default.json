@@ -200,6 +200,9 @@
           "compress": false
         }
       }
+    },
+    "access": {
+      "exclude_paths": []
     }
   },
   "observability": {
