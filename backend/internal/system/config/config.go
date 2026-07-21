@@ -262,7 +262,6 @@ type OpenID4VCIConfig struct {
 
 // AuthnProviderConfig holds the authentication provider configuration details.
 type AuthnProviderConfig struct {
-	Type string     `yaml:"type" json:"type"`
 	Rest RestConfig `yaml:"rest" json:"rest"`
 }
 
@@ -278,6 +277,9 @@ type EntityProviderConfig struct {
 
 // RestConfig holds the REST authentication provider configuration details.
 type RestConfig struct {
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	// CredentialTypes lists the credential keys routed to the REST provider.
+	CredentialTypes     []string           `yaml:"credential_types" json:"credential_types"`
 	BaseURL             string             `yaml:"base_url" json:"base_url"`
 	Timeout             int                `yaml:"timeout" json:"timeout"`
 	CorrelationIDHeader string             `yaml:"correlation_id_header" json:"correlation_id_header"`

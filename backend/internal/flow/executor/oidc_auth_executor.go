@@ -235,7 +235,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *providers.NodeContext,
 		}
 	}
 
-	setFederatedEntityState(execResp)
+	setFederatedEntityState(ctx.Context, execResp, o.authnProvider)
 
 	switch ctx.FlowType {
 	case providers.FlowTypeAuthentication:

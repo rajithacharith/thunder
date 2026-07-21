@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package provider
+package restprovider
 
 import (
 	"context"
@@ -54,32 +54,42 @@ func (suite *RestAuthnProviderTestSuite) setupMockClient() *httpmock.HTTPClientI
 	return client
 }
 
-func (suite *RestAuthnProviderTestSuite) initRuntime(rest config.RestConfig) {
-	cfg := &config.Config{
-		AuthnProvider: config.AuthnProviderConfig{Type: "rest", Rest: rest},
-	}
+// initRuntime installs a minimal server runtime so the REST registrar can build
+// an HTTP client (its TLS config reads GetServerRuntime).
+func (suite *RestAuthnProviderTestSuite) initRuntime() {
 	config.ResetServerRuntime()
-	suite.Require().NoError(config.InitializeServerRuntime("/tmp/test", cfg))
+	suite.Require().NoError(config.InitializeServerRuntime("/tmp/test", &config.Config{}))
 	suite.T().Cleanup(config.ResetServerRuntime)
 }
 
-func (suite *RestAuthnProviderTestSuite) TestInitializeRestAuthnProvider_DefaultCorrelationHeader() {
-	suite.initRuntime(config.RestConfig{BaseURL: "https://authn.example.com"})
+func (suite *RestAuthnProviderTestSuite) TestNewRestAuthnProvider_DefaultCorrelationHeader() {
+	suite.initRuntime()
+	p, err := Initialize(config.RestConfig{
+		BaseURL: "https://authn.example.com",
+	})
+	suite.Require().NoError(err)
 
-	provider := initializeRestAuthnProvider().(*restAuthnProvider)
-
+	provider := p.(*restAuthnProvider)
 	suite.Equal(serverconst.CorrelationIDHeaderName, provider.correlationIDHeader)
 }
 
-func (suite *RestAuthnProviderTestSuite) TestInitializeRestAuthnProvider_ConfiguredCorrelationHeader() {
-	suite.initRuntime(config.RestConfig{
+func (suite *RestAuthnProviderTestSuite) TestNewRestAuthnProvider_ConfiguredCorrelationHeader() {
+	suite.initRuntime()
+	p, err := Initialize(config.RestConfig{
 		BaseURL:             "https://authn.example.com",
 		CorrelationIDHeader: "X-Trace-Token",
 	})
+	suite.Require().NoError(err)
 
-	provider := initializeRestAuthnProvider().(*restAuthnProvider)
-
+	provider := p.(*restAuthnProvider)
 	suite.Equal("X-Trace-Token", provider.correlationIDHeader)
+}
+
+func (suite *RestAuthnProviderTestSuite) TestNewRestAuthnProvider_MissingBaseURL() {
+	suite.initRuntime()
+	p, err := Initialize(config.RestConfig{})
+	suite.Require().Error(err)
+	suite.Nil(p)
 }
 
 func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {

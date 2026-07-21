@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package provider
+package restprovider
 
 import (
 	"bytes"
@@ -29,6 +29,7 @@ import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
+	"github.com/thunder-id/thunderid/internal/authnprovider/provider"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	systemhttp "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -65,7 +66,7 @@ type apiErrorResponse struct {
 
 // newRestAuthnProvider creates a new REST authentication provider.
 func newRestAuthnProvider(baseURL, apiKey, correlationIDHeader string,
-	httpClient systemhttp.HTTPClientInterface) AuthnProviderInterface {
+	httpClient systemhttp.HTTPClientInterface) provider.AuthnProviderInterface {
 	return &restAuthnProvider{
 		baseURL:             baseURL,
 		apiKey:              apiKey,

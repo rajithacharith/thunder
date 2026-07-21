@@ -16,7 +16,8 @@
  * under the License.
  */
 
-// Package provider provides authentication provider implementations.
+// Package provider defines the authentication provider interface implemented by
+// each concrete authn provider.
 package provider
 
 import (
