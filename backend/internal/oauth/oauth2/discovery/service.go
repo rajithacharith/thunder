@@ -62,7 +62,6 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata(
 		Issuer:                                     ds.getIssuer(),
 		AuthorizationEndpoint:                      ds.getAuthorizationEndpoint(),
 		TokenEndpoint:                              ds.getTokenEndpoint(),
-		UserInfoEndpoint:                           ds.getUserInfoEndpoint(),
 		JWKSUri:                                    ds.getJWKSUri(),
 		RegistrationEndpoint:                       ds.getRegistrationEndpoint(),
 		IntrospectionEndpoint:                      ds.getIntrospectionEndpoint(),
@@ -72,7 +71,6 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata(
 		BackchannelAuthenticationEndpoint:          ds.getBackchannelAuthenticationEndpoint(),
 		BackchannelTokenDeliveryModesSupported:     []string{"poll"},
 		BackchannelUserCodeParameterSupported:      false,
-		ScopesSupported:                            ds.getSupportedScopes(),
 		ResponseTypesSupported:                     ds.getSupportedResponseTypes(),
 		GrantTypesSupported:                        ds.getSupportedGrantTypes(),
 		TokenEndpointAuthMethodsSupported:          ds.getSupportedTokenEndpointAuthMethods(),
@@ -94,6 +92,8 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) (*OIDCProviderM
 	}
 	return &OIDCProviderMetadata{
 		OAuth2AuthorizationServerMetadata:    *oauth2Meta,
+		UserInfoEndpoint:                     ds.getUserInfoEndpoint(),
+		ScopesSupported:                      ds.getSupportedOIDCScopes(),
 		SubjectTypesSupported:                ds.getSupportedSubjectTypes(),
 		IDTokenSigningAlgValuesSupported:     signingAlgs,
 		UserInfoSigningAlgValuesSupported:    signingAlgs,
@@ -144,7 +144,7 @@ func (ds *discoveryService) getRegistrationEndpoint() string {
 	return ds.cfg.BaseURL + constants.OAuth2DCREndpoint
 }
 
-func (ds *discoveryService) getSupportedScopes() []string {
+func (ds *discoveryService) getSupportedOIDCScopes() []string {
 	scopes := make([]string, 0, len(constants.StandardOIDCScopes))
 	for scope := range constants.StandardOIDCScopes {
 		scopes = append(scopes, scope)
