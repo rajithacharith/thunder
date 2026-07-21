@@ -21,7 +21,7 @@ import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
 import {codecovVitePlugin} from '@codecov/vite-plugin';
 import babel from '@rolldown/plugin-babel';
-import {prismjsInjectCore} from '@thunderid/build-plugins/vite';
+import {linkWorkspaceSource, prismjsInjectCore} from '@thunderid/build-plugins/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import react, {reactCompilerPreset} from '@vitejs/plugin-react';
 import {visualizer} from 'rollup-plugin-visualizer';
@@ -105,6 +105,7 @@ export default defineConfig(({command}) => ({
     ),
   },
   plugins: [
+    linkWorkspaceSource(),
     prismjsInjectCore(),
     basicSsl(),
     svgr(),
