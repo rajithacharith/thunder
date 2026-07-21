@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import ProductName from '@site/src/components/ProductName';
 import {Box, ColorSchemeImage, Container, Link, Typography, useTheme} from '@wso2/oxygen-ui';
 import {WSO2} from '@wso2/oxygen-ui-icons-react';
 import {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
+import ProductName from '@site/src/components/ProductName';
 
 export default function FooterSection(): JSX.Element {
   const isDark = useIsDarkMode();
@@ -88,7 +88,7 @@ export default function FooterSection(): JSX.Element {
             >
               Open Wallet Foundation (OWF)
             </Link>{' '}
-            project
+            Growth project
           </Typography>
 
           <Box

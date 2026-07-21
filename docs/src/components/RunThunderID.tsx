@@ -242,7 +242,7 @@ export default function RunThunderID({tabs, defaultTab}: RunThunderIDProps = {})
         <Typography sx={{color: 'text.disabled', fontSize: '0.75rem'}}>{hint}</Typography>
         <Box
           component="a"
-          href="/docs/next/guides/getting-started/get-thunderid"
+          href="/docs/next/getting-started/get-thunderid"
           sx={{
             color: 'text.disabled',
             flexShrink: 0,
