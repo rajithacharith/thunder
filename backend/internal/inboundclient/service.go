@@ -777,6 +777,24 @@ func validateOAuthProfile(p *providers.OAuthProfile, hasClientSecret bool) error
 	if err := validateIDTokenConfig(p); err != nil {
 		return err
 	}
+	if err := validateAccessTokenConfig(p); err != nil {
+		return err
+	}
+	return nil
+}
+
+// maxDefaultAudienceLength bounds the access token default audience, a single audience identifier
+// (typically a URI), to a sane length.
+const maxDefaultAudienceLength = 2048
+
+// validateAccessTokenConfig validates the access token configuration.
+func validateAccessTokenConfig(p *providers.OAuthProfile) error {
+	if p.Token == nil || p.Token.AccessToken == nil {
+		return nil
+	}
+	if len(p.Token.AccessToken.DefaultAudience) > maxDefaultAudienceLength {
+		return ErrOAuthDefaultAudienceTooLong
+	}
 	return nil
 }
 
@@ -1377,6 +1395,7 @@ func resolveOAuthTokens(in *providers.OAuthTokenConfig,
 	}
 	if in != nil && in.AccessToken != nil {
 		accessToken.ClientConfig = in.AccessToken.ClientConfig
+		accessToken.DefaultAudience = in.AccessToken.DefaultAudience
 	}
 
 	var idToken *providers.IDTokenConfig

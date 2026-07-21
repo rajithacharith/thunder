@@ -872,7 +872,7 @@ The `null` origin is shared by sandboxed iframes, `file://` and `data:` document
 
 ## Default Resource Server
 
-Sets the resource server for permission-bearing token requests that omit the `resource` parameter. It is stored in the server-config `defaultResourceServer` section, not in `deployment.yaml`. When no default is configured, a request that contains permission scopes but omits `resource` fails with `invalid_target`. OIDC-only and scopeless requests use the `client_id` audience instead.
+Sets the resource server for permission-bearing token requests that omit the `resource` parameter. It is stored in the server-config `defaultResourceServer` section, not in `deployment.yaml`. When no default is configured, a request that contains permission scopes but omits `resource` fails with `invalid_target`. OIDC-only and scopeless requests are not bound to a resource server, so they use the application's default audience (`token.accessToken.defaultAudience`), or the `client_id` when it is unset.
 
 | Field | Description |
 |-------|-------------|

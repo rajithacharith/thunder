@@ -297,8 +297,9 @@ func (h *cibaGrantHandler) issueTokens(ctx context.Context, record *ciba.CIBAAut
 
 // resolveIssuedAudiencesAndScopes derives the access-token audiences and scopes for a CIBA record.
 // A resource-bound record yields the RS identifier as the sole audience, with permission scopes
-// refiltered against that RS. An unbound OIDC-only record keeps the client audience; an unbound
-// record that unexpectedly carries permission scopes is rejected with invalid_grant.
+// refiltered against that RS. An unbound OIDC-only record uses the app's configured default
+// audience, falling back to the client_id; an unbound record that unexpectedly carries permission
+// scopes is rejected with invalid_grant.
 func (h *cibaGrantHandler) resolveIssuedAudiencesAndScopes(ctx context.Context,
 	record *ciba.CIBAAuthRequest, oauthApp *providers.OAuthClient, scopeStr string,
 ) ([]string, []string, *model.ErrorResponse) {
@@ -311,7 +312,7 @@ func (h *cibaGrantHandler) resolveIssuedAudiencesAndScopes(ctx context.Context,
 				ErrorDescription: "The authentication request is not bound to a resource server",
 			}
 		}
-		return []string{oauthApp.ClientID}, oidcScopes, nil
+		return []string{oauthApp.ResolveDefaultAudience(oauthApp.ClientID)}, oidcScopes, nil
 	}
 
 	resourceIdentifier := record.Resources[0]
