@@ -64,9 +64,11 @@ jobs:
       - name: 📥 Checkout Upstream PR
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          # Build and test the code from the PR opened against the upstream repo.
+          # Test the PR as it would look once merged into its base (merge ref), not the
+          # PR's own possibly-stale base (head ref). This picks up base-branch fixes and
+          # matches what actually lands. Requires the PR to be mergeable (no conflicts).
           repository: ${{ env.PR_REPO }}
-          ref: refs/pull/${{ env.PR_NUMBER }}/head
+          ref: refs/pull/${{ env.PR_NUMBER }}/merge
 
       - name: 🌱 Seed client_credentials App (bootstrap)
         run: |
@@ -129,9 +131,11 @@ jobs:
       - name: 📥 Checkout Upstream PR
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          # Build and test the code from the PR opened against the upstream repo.
+          # Test the PR as it would look once merged into its base (merge ref), not the
+          # PR's own possibly-stale base (head ref). This picks up base-branch fixes and
+          # matches what actually lands. Requires the PR to be mergeable (no conflicts).
           repository: ${{ env.PR_REPO }}
-          ref: refs/pull/${{ env.PR_NUMBER }}/head
+          ref: refs/pull/${{ env.PR_NUMBER }}/merge
 
       - name: 📥 Download Image Artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -215,9 +219,11 @@ jobs:
       - name: 📥 Checkout Upstream PR
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          # Build and test the code from the PR opened against the upstream repo.
+          # Test the PR as it would look once merged into its base (merge ref), not the
+          # PR's own possibly-stale base (head ref). This picks up base-branch fixes and
+          # matches what actually lands. Requires the PR to be mergeable (no conflicts).
           repository: ${{ env.PR_REPO }}
-          ref: refs/pull/${{ env.PR_NUMBER }}/head
+          ref: refs/pull/${{ env.PR_NUMBER }}/merge
 
       - name: 📥 Download Image Artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
