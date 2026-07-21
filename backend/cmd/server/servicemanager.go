@@ -250,14 +250,14 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		providers.IDPTypeGitHub: githubAuthnService,
 	}
 
-	// Shared DPoP verifier (and its JTI replay cache) so OAuth and OpenID4VCI
-	// share JTI replay protection.
-	oauthCfg := oauthconfig.FromServerRuntime()
-	dpopVerifier := dpop.Initialize(oauthCfg, jti.Initialize(oauthCfg))
-
 	runtimeStoreProvider, transactioner, err := runtimestore.Initialize(runtime.Config.Database.RuntimeTransient.Type,
 		runtime.Config.Server.Identifier)
 	fatalOnError(ctx, logger, err, "Failed to initialize runtime store")
+
+	// Shared DPoP verifier (and its JTI replay cache) so OAuth and OpenID4VCI
+	// share JTI replay protection.
+	oauthCfg := oauthconfig.FromServerRuntime()
+	dpopVerifier := dpop.Initialize(oauthCfg, jti.Initialize(runtimeStoreProvider))
 
 	openid4vpSvc, openid4vpDefSvc, openid4vciCredSvc, exporters :=
 		initializeVCServices(ctx, logger, mux, runtimeCryptoSvc, configCryptoSvc, jwtService, userService,
@@ -433,7 +433,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	err = oauth.Initialize(mux, actorProvider, authnProvider, jwtService, jweService,
 		flowExecService, observabilitySvc, runtimeCryptoSvc, ouService, attributeCacheService, authZService,
 		resourceService, serverConfigService, i18nService, idpService, dpopVerifier,
-		runtimeStoreProvider, oauthCfg)
+		runtimeStoreProvider, transactioner, oauthCfg)
 	fatalOnError(ctx, logger, err, "Failed to initialize OAuth services")
 
 	// Register OAuth2 DCR service.
