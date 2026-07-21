@@ -77,9 +77,8 @@ func registerRoutes(
 		MaxAge:           600,
 	}
 
-	metadata := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background())
-	endpointURL := metadata.PushedAuthorizationRequestEndpoint
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, endpointURL)
+	issuer := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).Issuer
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, issuer)
 	wrappedHandler := clientAuthMiddleware(http.HandlerFunc(handler.HandlePARRequest))
 
 	pattern, corsHandler := middleware.WithCORS(
