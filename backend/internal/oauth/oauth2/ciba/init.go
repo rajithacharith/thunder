@@ -72,9 +72,8 @@ func registerRoutes(
 		MaxAge:           600,
 	}
 
-	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(
-		context.Background()).BackchannelAuthenticationEndpoint
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, endpointURL)
+	issuer := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).Issuer
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, issuer)
 	authHandler := clientAuthMiddleware(http.HandlerFunc(cibaHandler.HandleBackchannelAuthRequest))
 
 	authPattern, wrappedAuthHandler := middleware.WithCORS(
