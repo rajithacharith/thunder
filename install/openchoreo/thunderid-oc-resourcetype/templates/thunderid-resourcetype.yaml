@@ -213,6 +213,10 @@ spec:
                 # Must cover the management scopes the Console requests —
                 # matches frontend/apps/console/public/config.js.
                 scopes: { type: string, default: "[\"openid\", \"profile\", \"email\", \"ou\", \"system\", \"system:user\", \"system:group\", \"system:ou:view\", \"system:usertype:view\"]" }
+                # Resource indicator (RFC 8707) the Console sends on token requests.
+                # Must match the System resource_server identifier in declarativeResources.
+                # Empty (default) derives it as "<serverPublicUrl>/mcp"; set to override.
+                resourceIdentifier: { type: string, default: "" }
             jwt:
               type: object
               default: {}
@@ -410,10 +414,6 @@ spec:
               port: ${environmentConfigs.gateClientPort}
               scheme: "${environmentConfigs.gateClientScheme}"
 
-            crypto:
-              encryption:
-                key: "{{ "{{.CRYPTO_ENCRYPTION_KEY}}" }}"
-
             database:
               config:
                 type: "sqlite"
@@ -528,10 +528,6 @@ spec:
               hostname: "${environmentConfigs.gateClientHostname}"
               port: ${environmentConfigs.gateClientPort}
               scheme: "${environmentConfigs.gateClientScheme}"
-
-            crypto:
-              encryption:
-                key: "{{ "{{.CRYPTO_ENCRYPTION_KEY}}" }}"
 
             database:
               config:
@@ -703,6 +699,7 @@ spec:
                 base: "${parameters.runtime.console.clientBase}",
                 client_id: "${parameters.runtime.console.clientId}",
                 scopes: ${parameters.runtime.console.scopes},
+                resource_identifier: "${parameters.runtime.console.resourceIdentifier != '' ? parameters.runtime.console.resourceIdentifier : environmentConfigs.serverPublicUrl + '/mcp'}",
               },
               server: {
                 public_url: "${environmentConfigs.consolePublicUrl != '' ? environmentConfigs.consolePublicUrl : environmentConfigs.serverPublicUrl}",
@@ -778,7 +775,7 @@ spec:
                       {"name": "gate-config", "mountPath": "/opt/thunderid/apps/gate/config.js", "subPath": "config.js"},
                       {"name": "console-config", "mountPath": "/opt/thunderid/apps/console/config.js", "subPath": "config.js"},
                       {"name": "declarative-resources", "mountPath": "/opt/thunderid/config/resources.yaml", "subPath": "resources.yaml"}
-                    ] + (["signing.cert", "signing.key", "ecdsa-signing.cert", "ecdsa-signing.key"]
+                    ] + (["crypto.key", "signing.cert", "signing.key", "ecdsa-signing.cert", "ecdsa-signing.key"]
                       + (parameters.runtime.tls.enabled ? ["server.cert", "server.key"] : [])
                       + parameters.runtime.certs.extraFiles)
                       .map(f, {"name": "certs-override", "mountPath": "/opt/thunderid/config/certs/" + f, "subPath": f, "readOnly": true})}

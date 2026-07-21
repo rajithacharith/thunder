@@ -81,6 +81,10 @@ spec:
         value: CONSOLE
       - name: CONSOLE_REDIRECT_URIS_0
         value: "<SERVER_PUBLIC_URL>/console"
+      # Resolves the System resource_server identifier below. Keep equal to the
+      # binding's serverPublicUrl so the Console's resource_identifier matches.
+      - name: SERVER_PUBLIC_URL
+        value: "<SERVER_PUBLIC_URL>"
 
     # ─── Optional parameters (defaults shown) ─────────────────────────────
 
@@ -175,7 +179,7 @@ spec:
     # Declarative resources (required) — the sole provisioning mechanism.
     declarativeResources: |
       # File: Console.yaml
-      # resource_type: application
+      resource_type: application
       id: 01900000-0000-7000-8000-000000000060
       ouId: 01900000-0000-7000-8000-000000000001
       name: Console
@@ -261,7 +265,7 @@ spec:
 
       ---
       # File: Default_Basic_Authentication_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000061
       handle: default-basic-flow
       name: Default Basic Authentication Flow
@@ -311,7 +315,7 @@ spec:
 
       ---
       # File: Default_CIBA_Email_Notification_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000062
       handle: default-ciba-email-flow
       name: Default CIBA Email Notification Flow
@@ -414,7 +418,7 @@ spec:
 
       ---
       # File: Console_App_Authentication_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000068
       handle: console-app-flow
       name: Console App Authentication Flow
@@ -464,7 +468,7 @@ spec:
 
       ---
       # File: Disambiguation_Login_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000063
       handle: default-disambiguation-login-flow
       name: Disambiguation Login Flow
@@ -561,7 +565,7 @@ spec:
 
       ---
       # File: Email_Link_Password_Recovery_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000067
       handle: email-link-based-password-recovery
       name: Email Link Password Recovery Flow
@@ -737,7 +741,7 @@ spec:
 
       ---
       # File: Default_Basic_Registration_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000064
       handle: default-basic-flow
       name: Default Basic Registration Flow
@@ -821,7 +825,7 @@ spec:
 
       ---
       # File: Default_SMS_Self-Invite_Registration_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000065
       handle: default-self-invite-sms-flow
       name: Default SMS Self-Invite Registration Flow
@@ -941,7 +945,7 @@ spec:
 
       ---
       # File: Console_App_Registration_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000069
       handle: console-app-flow
       name: Console App Registration Flow
@@ -1042,7 +1046,7 @@ spec:
 
       ---
       # File: User_Onboarding_Flow.yaml
-      # resource_type: flow
+      resource_type: flow
       id: 01900000-0000-7000-8000-000000000066
       handle: default-user-onboarding
       name: User Onboarding Flow
@@ -1399,7 +1403,7 @@ spec:
 
       ---
       # File: Administrators.yaml
-      # resource_type: group
+      resource_type: group
       id: 01900000-0000-7000-8000-000000000040
       name: Administrators
       description: System administrators group
@@ -1410,7 +1414,7 @@ spec:
 
       ---
       # File: Default.yaml
-      # resource_type: organization_unit
+      resource_type: organization_unit
       id: 01900000-0000-7000-8000-000000000001
       handle: default
       name: Default
@@ -1422,12 +1426,12 @@ spec:
 
       ---
       # File: System.yaml
-      # resource_type: resource_server
+      resource_type: resource_server
       id: 01900000-0000-7000-8000-000000000020
       name: System
       description: System resource server
       handle: ""
-      identifier: https://localhost:8090/mcp
+      identifier: {{.SERVER_PUBLIC_URL}}/mcp
       type: CUSTOM
       ouId: 01900000-0000-7000-8000-000000000001
       delimiter: ":"
@@ -1470,7 +1474,7 @@ spec:
 
       ---
       # File: Administrator.yaml
-      # resource_type: role
+      resource_type: role
       id: 01900000-0000-7000-8000-000000000050
       name: Administrator
       description: System administrator role with full permissions
@@ -1485,7 +1489,7 @@ spec:
 
       ---
       # File: cors.yaml
-      # resource_type: server_config
+      resource_type: server_config
       name: cors
       # Origins allowed to call the APIs from the browser. Must list every
       # origin the Console/Gate are served from when it differs from the API
@@ -1495,7 +1499,7 @@ spec:
 
       ---
       # File: Acrylic_Orange.yaml
-      # resource_type: theme
+      resource_type: theme
       id: 01900000-0000-7000-8000-000000000071
       handle: acrylic-orange
       displayName: Acrylic Orange
@@ -1507,7 +1511,7 @@ spec:
 
       ---
       # File: Acrylic_Purple.yaml
-      # resource_type: theme
+      resource_type: theme
       id: 01900000-0000-7000-8000-000000000072
       handle: acrylic-purple
       displayName: Acrylic Purple
@@ -1519,7 +1523,7 @@ spec:
 
       ---
       # File: Classic.yaml
-      # resource_type: theme
+      resource_type: theme
       id: 01900000-0000-7000-8000-000000000073
       handle: classic
       displayName: Classic
@@ -1531,7 +1535,7 @@ spec:
 
       ---
       # File: High_Contrast.yaml
-      # resource_type: theme
+      resource_type: theme
       id: 01900000-0000-7000-8000-000000000074
       handle: high-contrast
       displayName: High Contrast
@@ -1543,7 +1547,7 @@ spec:
 
       ---
       # File: Pale_Gray.yaml
-      # resource_type: theme
+      resource_type: theme
       id: 01900000-0000-7000-8000-000000000075
       handle: pale-gray
       displayName: Pale Gray
@@ -1555,7 +1559,7 @@ spec:
 
       ---
       # File: Pale_Indigo.yaml
-      # resource_type: theme
+      resource_type: theme
       id: 01900000-0000-7000-8000-000000000076
       handle: pale-indigo
       displayName: Pale Indigo
@@ -1567,7 +1571,7 @@ spec:
 
       ---
       # File: en-US.yaml
-      # resource_type: translation
+      resource_type: translation
       language: en-US
       translations:
         recovery:
@@ -1856,7 +1860,7 @@ spec:
 
       ---
       # File: admin.yaml
-      # resource_type: user
+      resource_type: user
       id: 01900000-0000-7000-8000-000000000030
       type: Person
       ouId: 01900000-0000-7000-8000-000000000001
@@ -1874,7 +1878,7 @@ spec:
 
       ---
       # File: Person.yaml
-      # resource_type: user_type
+      resource_type: user_type
       id: 01900000-0000-7000-8000-000000000010
       category: user
       name: Person
