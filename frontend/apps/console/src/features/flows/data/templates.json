@@ -12958,10 +12958,19 @@
                 "align": "center",
                 "category": "DISPLAY",
                 "id": "text_signout_title",
-                "label": "Sign out of your account?",
+                "label": "{{ t(signout:forms.confirm.title) }}",
                 "resourceType": "ELEMENT",
                 "type": "TEXT",
-                "variant": "HEADING_3"
+                "variant": "HEADING_1"
+              },
+              {
+                "align": "center",
+                "category": "DISPLAY",
+                "id": "text_signout_desc",
+                "label": "{{ t(signout:forms.confirm.description) }}",
+                "resourceType": "ELEMENT",
+                "type": "TEXT",
+                "variant": "BODY_1"
               },
               {
                 "category": "BLOCK",
@@ -12970,7 +12979,7 @@
                     "category": "ACTION",
                     "eventType": "SUBMIT",
                     "id": "action_confirm",
-                    "label": "Sign out",
+                    "label": "{{ t(signout:forms.confirm.actions.submit.label) }}",
                     "resourceType": "ELEMENT",
                     "type": "ACTION",
                     "variant": "PRIMARY"
