@@ -13,85 +13,46 @@ This guide explains how to register a generic OAuth 2.0 identity provider (IdP) 
 ## Prerequisites
 
 - <ProductName /> is running. See [Get Started](../../../getting-started/get-thunderid).
-- An access token with the `system` scope.
+- You can sign in to the <ProductName /> Console.
 - A client application registered in the external OAuth 2.0 provider with a **Client ID**, **Client Secret**, and **redirect URI**.
 - The provider's authorization endpoint, token endpoint, and userinfo endpoint URLs.
 
-## Create the OAuth 2.0 IdP
+## Create the OAuth 2.0 Connection
 
-Send a `POST` request to `/connections/oauth` with your OAuth 2.0 provider credentials and endpoints:
+<Stepper stepNode="h3" as="h3">
 
-```bash
-curl -kL -X POST https://localhost:8090/connections/oauth \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <access-token>' \
-  -d '{
-    "name": "My OAuth Provider",
-    "description": "Custom OAuth 2.0 provider",
-    "clientId": "<client-id>",
-    "clientSecret": "<client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/gate/callback",
-    "authorizationEndpoint": "https://<provider>/oauth/authorize",
-    "tokenEndpoint": "https://<provider>/oauth/token",
-    "userInfoEndpoint": "https://<provider>/api/userinfo"
-  }'
-```
+### Step 1: Add a Custom Connection
 
-**Response (201 Created):**
+1. Sign in to the <ProductName /> Console.
+2. Navigate to **Connections**.
+3. Click the **Add custom connection** card.
 
-```json
-{
-  "id": "880e8400-e29b-41d4-a716-446655440003",
-  "name": "My OAuth Provider",
-  "type": "oauth",
-  "clientId": "<client-id>",
-  "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/gate/callback",
-  "authorizationEndpoint": "https://<provider>/oauth/authorize",
-  "tokenEndpoint": "https://<provider>/oauth/token",
-  "userInfoEndpoint": "https://<provider>/api/userinfo"
-}
-```
+### Step 2: Choose the Connection Type
 
-## Required Fields
+1. On the **Connection type** step, click **OAuth 2.0 Provider**.
+2. Click **Continue**.
 
-| Field | Description |
-|----------|-------------|
-| `clientId` | The client ID issued by the OAuth 2.0 provider. |
-| `clientSecret` | The client secret issued by the OAuth 2.0 provider. |
-| `redirectUri` | The callback URL registered in the provider. |
-| `authorizationEndpoint` | The provider's authorization endpoint URL. |
-| `tokenEndpoint` | The provider's token endpoint URL. |
-| `userInfoEndpoint` | The provider's userinfo endpoint URL. <ProductName /> calls this endpoint to fetch the authenticated user's profile. |
+### Step 3: Configure the Connection
 
-## Optional Fields
+Enter the following fields, then click **Create connection**:
 
-| Field | Description |
-|----------|-------------|
-| `scopes` | Array of OAuth scopes to request. |
-| `logoutEndpoint` | The provider's logout endpoint URL. |
-| `prompt` | The `prompt` parameter to send in authorization requests. |
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Connection name** | Yes | A friendly name used to identify this connection. |
+| **Client ID** | Yes | The client ID issued by the OAuth 2.0 provider. |
+| **Client secret** | Yes | The client secret issued by the OAuth 2.0 provider. |
+| **Authorization endpoint** | Yes | The provider's authorization endpoint, used to start the sign-in flow. |
+| **Token endpoint** | Yes | The provider's token endpoint, used to exchange the authorization code for tokens. |
+| **UserInfo endpoint** | Yes | The provider's userinfo endpoint. <ProductName /> calls this endpoint to fetch the authenticated user's profile. |
+| **Scopes** | No | Space-separated OAuth scopes to request. |
 
-To map this provider's claims to local user attributes, set the top-level `attributeConfiguration` field. See [Attribute Configuration](../add-oidc-provider#attribute-configuration).
+The **Redirect URI** field is read-only. Copy its value and register it as the callback URL with your provider.
 
-Example with optional fields:
+</Stepper>
 
-```bash
-curl -kL -X POST https://localhost:8090/connections/oauth \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <access-token>' \
-  -d '{
-    "name": "My OAuth Provider",
-    "clientId": "<client-id>",
-    "clientSecret": "<client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/gate/callback",
-    "authorizationEndpoint": "https://<provider>/oauth/authorize",
-    "tokenEndpoint": "https://<provider>/oauth/token",
-    "userInfoEndpoint": "https://<provider>/api/userinfo",
-    "scopes": ["profile", "email"],
-    "logoutEndpoint": "https://<provider>/oauth/logout"
-  }'
-```
+:::note
+The connection also accepts `logoutEndpoint` and `prompt` fields, and an `attributeConfiguration` field to map this provider's claims to local user attributes. These are not available in the Console and can only be set through the [Connections API](../../../../apis#tag/connections). See [Attribute Configuration](../add-oidc-provider#attribute-configuration) for the mapping concepts, which apply the same way to OAuth 2.0 connections.
+:::
 
 ## Next Steps
 

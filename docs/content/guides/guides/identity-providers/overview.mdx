@@ -19,15 +19,11 @@ An identity provider (IdP) in <ProductName /> represents an external system that
 | **OIDC** | Connect any standard OpenID Connect-compliant provider. You supply the endpoints. |
 | **OAuth** | Connect any OAuth 2.0 provider that does not support OIDC discovery. You supply all endpoint URLs. |
 
-:::note
-Identity provider management through the <ProductName /> Console is not yet available. Use the Identity Provider REST API to create and manage identity providers.
-:::
-
 ## How IdPs Connect to Applications
 
 Applications in <ProductName /> do not reference IdPs directly. The connection runs through authentication flows:
 
-1. You create an IdP using the API and configure its credentials.
+1. You configure the IdP as a connection on the Console's **Connections** page.
 2. You add a social login executor to an authentication flow and configure it with the IdP.
 3. You assign that flow to your application.
 
@@ -46,7 +42,7 @@ Choose the guide for your provider type:
 
 ## Manage Identity Providers
 
-- [Manage Identity Providers](../manage-identity-providers): Create, update, and delete identity providers using the API.
+- [Manage Identity Providers](../manage-identity-providers): View, update, and delete identity providers from the <ProductName /> Console.
 
 ## Next Steps
 

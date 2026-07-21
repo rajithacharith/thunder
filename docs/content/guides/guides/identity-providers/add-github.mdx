@@ -13,8 +13,10 @@ This guide walks you through registering a GitHub identity provider (IdP) in <Pr
 ## Prerequisites
 
 - <ProductName /> is running. See [Get Started](../../../getting-started/get-thunderid).
-- An access token with the `system` scope.
+- You can sign in to the <ProductName /> Console.
 - A GitHub account.
+
+<Stepper stepNode="h2" as="h2">
 
 ## Step 1: Register an OAuth App in GitHub
 
@@ -29,68 +31,31 @@ This guide walks you through registering a GitHub identity provider (IdP) in <Pr
      https://<your-thunderid-host>/gate/callback
      ```
 
+     You can copy this value exactly from the Console in the next step, so it does not need to match character for character here.
+
 4. Click **Register application**.
 5. On the app page, copy the **Client ID**.
 6. Click **Generate a new client secret** and copy the **Client Secret**. GitHub shows it only once.
 
-## Step 2: Create the GitHub IdP
+## Step 2: Configure the GitHub Connection in the Console
 
-Send a `POST` request to `/connections/github` with your GitHub credentials:
-
-```bash
-curl -kL -X POST https://localhost:8090/connections/github \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <access-token>' \
-  -d '{
-    "name": "GitHub",
-    "description": "GitHub social login",
-    "clientId": "<github-client-id>",
-    "clientSecret": "<github-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/gate/callback"
-  }'
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "name": "GitHub",
-  "description": "GitHub social login",
-  "type": "github",
-  "clientId": "<github-client-id>",
-  "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/gate/callback"
-}
-```
+1. Sign in to the <ProductName /> Console.
+2. Navigate to **Connections**.
+3. Click the **GitHub** card. If the card shows **Not configured**, this opens a form to create the connection. If it already shows **Configured**, this opens the existing connection instead.
+4. Enter your **Client ID** and **Client secret** from the previous step.
+5. Copy the **Redirect URI** shown on the form and add it to your GitHub OAuth app if you have not already done so.
+6. Optionally, set **Scopes**. Include `user:email` to ensure the user's email address is accessible. Leave this blank to use GitHub's own default scope.
+7. Click **Create connection**.
 
 <ProductName /> automatically uses the GitHub authorization, token, and userinfo endpoints. You do not need to supply them.
 
-## Optional Fields
+</Stepper>
 
-You can include the following optional fields in the request body:
+To map GitHub's profile fields (for example, `login` or `avatar_url`) to local user attributes, open the connection and go to the **Attribute Configuration** tab. See [Attribute Configuration](../add-oidc-provider#attribute-configuration).
 
-| Field | Description |
-|----------|-------------|
-| `scopes` | Array of OAuth scopes to request. Include `user:email` to ensure the user's email address is accessible. |
-| `prompt` | Controls GitHub's consent screen behavior. |
-
-To map GitHub's profile fields (e.g. `login`, `avatar_url`) to local user attributes, set the top-level `attributeConfiguration` field. See [Attribute Configuration](../add-oidc-provider#attribute-configuration).
-
-Example with optional fields:
-
-```bash
-curl -kL -X POST https://localhost:8090/connections/github \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <access-token>' \
-  -d '{
-    "name": "GitHub",
-    "clientId": "<github-client-id>",
-    "clientSecret": "<github-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/gate/callback",
-    "scopes": ["user:email"]
-  }'
-```
+:::note
+The GitHub connection also accepts a `prompt` field, forwarded as a query parameter on the authorization request. GitHub's OAuth flow does not define a `prompt` parameter, so this typically has no effect. This field is not available in the Console and can only be set through the [Connections API](../../../../apis#tag/connections).
+:::
 
 ## Next Steps
 

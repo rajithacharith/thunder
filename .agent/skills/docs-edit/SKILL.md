@@ -70,18 +70,3 @@ Don't draw one just because a section theoretically could have one.
 When going ahead: use a fenced ` ```mermaid ` block, never raw SVG/ASCII art, and no per-diagram color overrides (brand colors apply site-wide via `docusaurus.config.ts` → `themeConfig.mermaid`). Full rule: `/docs-review-style`.
 
 No emojis anywhere you write, including table cells and headings. Full rule: `/docs-review-style`.
-
-### Checking step count and screen locality before finalizing
-
-Before writing a final Stepper or numbered sequence, count steps and check each one's UI location. Neither blocks writing — both resolve by asking the user. If both apply to the same sequence, ask together in one message.
-
-- **10+ steps in one sequence**: propose a restructuring (split across pages, group into labeled phases, fold trivial steps into a neighbor) and ask whether the flat structure or the proposal works better. Write whichever they confirm.
-- **Back-and-forth between UI locations with no dependency forcing it**: if two same-screen steps are separated by a different-screen step with nothing depending on the order, propose the regrouped sequence and ask. Write whichever they confirm.
-
-Both are drafting-time applications of what `/docs-review-style` checks later (Step Count and Decomposition, Step Locality) — surfacing them now means the user decides once, not again on review.
-
-Unlike `/docs-review-style`, this skill writes directly, so add the matching confirmation marker as part of the same edit, immediately above the Stepper/list:
-- `<!-- docs-review-style: step-count-confirmed steps={N} -->`
-- `<!-- docs-review-style: step-locality-confirmed screens={ordered list, e.g. Applications,Settings} -->`
-
-A page confirmed here won't get re-asked by `/docs-review-style` or `/docs-review` later, as long as the step count or screen order hasn't changed.

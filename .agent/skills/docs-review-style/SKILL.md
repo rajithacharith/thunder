@@ -245,24 +245,20 @@ For quickstart/guide steps:
 ### Step Count and Decomposition
 Count steps in a single Stepper/numbered sequence.
 
-**Confirmation marker**: `<!-- docs-review-style: step-count-confirmed steps=N -->` immediately above, with matching N → skip to ✅. Stale (N mismatched) → treat as absent.
-
-Not a hard gate. No valid marker and 10+ steps:
+Not a hard gate. 10+ steps:
 1. Propose a specific restructuring: split into multiple pages (genuinely separate tasks), group into labeled phases (one continuous task with natural internal structure), or fold trivial steps ("click Save") into a neighbor.
 2. Ask the user directly whether the flat structure or the restructuring is better (batch with Step Locality below if both apply).
-3. If confirmed intentional: mark ✅ passed, tell them the exact marker to add (`steps={N}`) — this skill is read-only, so `/docs-edit` or a manual edit adds it. If they want to restructure: mark `[needs writer input]`.
+3. If confirmed intentional: mark ✅ passed. If they want to restructure: mark `[needs writer input]`.
 
 "Too many steps, shorten it" alone is not a finding — the count only triggers the conversation.
 
 ### Step Locality (Minimize Screen Switching)
 Identify each step's UI location (tab/page/screen named or clearly implied).
 
-**Confirmation marker**: `<!-- docs-review-style: step-locality-confirmed screens=A,B,C -->` above the sequence, matching the current screen order exactly → skip to ✅. Stale → treat as absent.
-
-Not a hard gate. No valid marker, and 2+ steps at the same location are separated by an unrelated-location step with no dependency either way:
+Not a hard gate. 2+ steps at the same location are separated by an unrelated-location step with no dependency either way:
 - ❌ Settings → Applications → back to Settings → ✅ Applications first, then both Settings actions merged.
 
-Before flagging, check for a genuine dependency (an intervening step produces something the return step needs) — if so, skip the flag. When it applies: propose the reordered/regrouped sequence, ask the user directly (batch with Step Count if both fire). If confirmed intentional: mark ✅, give the marker (`screens={ordered list}`). Otherwise `[needs writer input]`.
+Before flagging, check for a genuine dependency (an intervening step produces something the return step needs) — if so, skip the flag. When it applies: propose the reordered/regrouped sequence, ask the user directly (batch with Step Count if both fire). If confirmed intentional: mark ✅. Otherwise `[needs writer input]`.
 
 ### Batching Step Count and Step Locality Questions
 If both need to ask on the same page, combine into one message (matching how `/docs-new-page` batches its questions):
