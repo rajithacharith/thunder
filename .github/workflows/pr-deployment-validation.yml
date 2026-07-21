@@ -264,6 +264,8 @@ jobs:
           # Postgres). readOnlyRootFilesystem must be false for SQLite. Pin the image to
           # the locally-built one loaded into kind (overriding any tag/digest a PR may
           # have set in values.yaml) and set IfNotPresent so nothing is pulled from GHCR.
+          # The setup job runs as a pre-install hook; stream its logs live so a failure is
+          # visible even after the job controller cleans up the pod.
           helm install "${RELEASE_NAME}" install/helm \
             --namespace "${NAMESPACE}" \
             --set configuration.database.config.type=sqlite \
@@ -277,7 +279,28 @@ jobs:
             --set deployment.image.tag=latest \
             --set deployment.image.digest="" \
             --set deployment.image.pullPolicy=IfNotPresent \
-            --wait --timeout 5m
+            --set setup.backoffLimit=1 \
+            --wait --timeout 5m > /tmp/helm-install.log 2>&1 &
+          HELM_PID=$!
+
+          # Follow the setup job's logs as soon as its pod appears.
+          ( for i in $(seq 1 90); do
+              POD=$(kubectl -n "${NAMESPACE}" get pods -l app.kubernetes.io/component=setup \
+                    -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+              if [ -n "${POD}" ]; then
+                kubectl -n "${NAMESPACE}" logs -f "${POD}" -c setup >> /tmp/setup.log 2>&1 && break
+              fi
+              sleep 2
+            done ) &
+          LOG_PID=$!
+
+          wait "${HELM_PID}"; RC=$?
+          kill "${LOG_PID}" 2>/dev/null || true
+          echo "===== helm install output ====="
+          cat /tmp/helm-install.log
+          echo "===== setup job logs ====="
+          cat /tmp/setup.log 2>/dev/null || echo "(no setup logs captured)"
+          exit "${RC}"
 
       - name: 🩺 Verify Rollout, Health, and Token
         run: |
