@@ -294,10 +294,12 @@ jobs:
             done ) &
           LOG_PID=$!
 
-          wait "${HELM_PID}"; RC=$?
+          # Don't let set -e abort on a non-zero helm exit before we print the logs.
+          RC=0
+          wait "${HELM_PID}" || RC=$?
           kill "${LOG_PID}" 2>/dev/null || true
           echo "===== helm install output ====="
-          cat /tmp/helm-install.log
+          cat /tmp/helm-install.log 2>/dev/null || true
           echo "===== setup job logs ====="
           cat /tmp/setup.log 2>/dev/null || echo "(no setup logs captured)"
           exit "${RC}"
