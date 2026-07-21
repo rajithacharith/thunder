@@ -21,6 +21,7 @@ package inboundclient
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -554,6 +555,21 @@ func (suite *InboundClientServiceTestSuite) TestValidate_ValidProfile() {
 
 	err := svc.Validate(context.Background(), ptrInboundClient(), validOAuthProfile(), true)
 	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidate_DefaultAudienceTooLong() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	svc := newServiceForTest(store)
+
+	p := validOAuthProfile()
+	p.Token = &providers.OAuthTokenConfig{
+		AccessToken: &providers.AccessTokenConfig{
+			DefaultAudience: strings.Repeat("a", maxDefaultAudienceLength+1),
+		},
+	}
+
+	err := svc.Validate(context.Background(), ptrInboundClient(), p, false)
+	assert.ErrorIs(suite.T(), err, ErrOAuthDefaultAudienceTooLong)
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidate_InvalidGrantType() {
@@ -1214,6 +1230,14 @@ func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_ZeroValidityF
 	assert.Equal(suite.T(), int64(1800), at.UserConfig.ValidityPeriod)
 	assert.Equal(suite.T(), int64(1800), idt.ValidityPeriod)
 	assert.Equal(suite.T(), int64(86400), rt.ValidityPeriod)
+}
+
+func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_CarriesDefaultAudience() {
+	in := &providers.OAuthTokenConfig{
+		AccessToken: &providers.AccessTokenConfig{DefaultAudience: "https://api.example.com"},
+	}
+	at, _, _ := resolveOAuthTokens(in, &inboundmodel.AssertionConfig{ValidityPeriod: 900})
+	assert.Equal(suite.T(), "https://api.example.com", at.DefaultAudience)
 }
 
 // ----- resolveScopeClaims -----

@@ -92,6 +92,8 @@ var (
 	ErrOAuthResponseTypesRequireAuthCode = errors.New("response types require authorization_code grant type")
 	// ErrOAuthInvalidTokenEndpointAuthMethod is returned when an unsupported auth method is specified.
 	ErrOAuthInvalidTokenEndpointAuthMethod = errors.New("invalid token endpoint auth method")
+	// ErrOAuthDefaultAudienceTooLong is returned when the access token default audience exceeds the maximum length.
+	ErrOAuthDefaultAudienceTooLong = errors.New("default audience exceeds the maximum allowed length")
 	// ErrOAuthPrivateKeyJWTRequiresCertificate is returned when private_key_jwt is used without a certificate.
 	ErrOAuthPrivateKeyJWTRequiresCertificate = errors.New("private_key_jwt requires a certificate")
 	// ErrOAuthCertificateRequiresClientID is returned when a certificate is provided without an OAuth client ID.

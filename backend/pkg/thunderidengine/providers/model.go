@@ -596,8 +596,9 @@ type IDJAGConfig struct {
 // (UserConfig) or the OAuth client itself, issued only via the client_credentials grant
 // (ClientConfig).
 type AccessTokenConfig struct {
-	UserConfig   *AccessTokenSubConfig `json:"userConfig,omitempty"   yaml:"userConfig,omitempty"   jsonschema:"Access token configuration applied when the token subject is an end user."`
-	ClientConfig *AccessTokenSubConfig `json:"clientConfig,omitempty" yaml:"clientConfig,omitempty" jsonschema:"Access token configuration applied when the token subject is the OAuth client itself, issued only via the client_credentials grant."`
+	UserConfig      *AccessTokenSubConfig `json:"userConfig,omitempty"   yaml:"userConfig,omitempty"   jsonschema:"Access token configuration applied when the token subject is an end user."`
+	ClientConfig    *AccessTokenSubConfig `json:"clientConfig,omitempty" yaml:"clientConfig,omitempty" jsonschema:"Access token configuration applied when the token subject is the OAuth client itself, issued only via the client_credentials grant."`
+	DefaultAudience string                `json:"defaultAudience,omitempty" yaml:"defaultAudience,omitempty" jsonschema:"Audience for access tokens not bound to a resource server (OIDC-only or scopeless requests). Falls back to the client_id when empty."`
 }
 
 // AccessTokenSubConfig holds the validity period and attribute selection for one access

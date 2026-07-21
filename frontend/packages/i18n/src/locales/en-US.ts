@@ -2650,6 +2650,12 @@ const translations = {
     'edit.token.scopes.add_custom.error.duplicate': 'This scope is already added',
     'edit.token.scopes.add_custom.error.invalid': 'Scope name must not contain spaces',
     'edit.token.scopes.openid_required': 'The openid scope is required and cannot be removed',
+    'edit.advanced.audience.title': 'Default Audience',
+    'edit.advanced.audience.description':
+      "The default aud for access tokens that don't target a resource server (OIDC only or scopeless).",
+    'edit.advanced.audience.label': 'Default audience (aud)',
+    'edit.advanced.audience.placeholder': 'e.g. https://api.example.com',
+    'edit.advanced.audience.hint': 'Leave empty to use the {{entity}} client ID.',
     'edit.token.scope_mapper.title': 'User Attribute Mapping',
     'edit.token.scope_mapper.hint':
       'Select a scope to configure which user attributes are exposed when it is requested.',
