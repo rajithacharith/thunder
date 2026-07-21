@@ -1,12 +1,13 @@
 ---
 title: Configure an SMS Provider
 docType: guide
-description: Set up an SMS notification sender to deliver One-Time Passwords and other SMS messages in {{ProductName}}.
+persona: iam
+description: Connect a messaging provider from the {{ProductName}} Console to deliver One-Time Passwords and other SMS messages.
 ---
 
 # Configure an SMS Provider
 
-<ProductName /> sends SMS messages, such as One-Time Passwords (OTPs), through a notification sender. A notification sender connects <ProductName /> to a messaging provider that delivers SMS to end users.
+<ProductName /> sends SMS messages, such as One-Time Passwords (OTPs), through an SMS connection. An SMS connection links <ProductName /> to a messaging provider that delivers SMS to end users.
 
 Three messaging providers are supported:
 
@@ -17,6 +18,7 @@ Three messaging providers are supported:
 ## Prerequisites
 
 - A <ProductName /> instance running and accessible
+- You can sign in to the <ProductName /> Console
 - An active account with your chosen messaging provider
 
 ## Add an SMS Provider
@@ -24,56 +26,28 @@ Three messaging providers are supported:
 ### Twilio
 
 1. Log in to [Twilio](https://www.twilio.com) and retrieve your **Account SID**, **Auth Token**, and the phone number or messaging service SID to use as the sender.
+2. Sign in to the <ProductName /> Console and navigate to **Connections**.
+3. Click the **Twilio** card. If the card shows **Not configured**, this opens a form to create the connection. If it already shows **Configured**, this opens the existing connection instead.
+4. Enter the following fields, then click **Create connection**:
 
-2. Send a `POST` request to the Twilio connection API:
-
-```bash
-curl -X POST https://localhost:8090/connections/twilio \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "name": "TwilioSMSSender",
-    "description": "Twilio SMS provider for OTP delivery",
-    "accountSid": "<your-account-sid>",
-    "authToken": "<your-auth-token>",
-    "senderId": "<your-phone-number>"
-  }'
-```
-
-#### Twilio Fields
-
-| Field | Required | Secret | Description |
-| :--- | :---: | :---: | :--- |
-| `accountSid` | ✅ | ❌ | Twilio Account SID. Must start with `AC`. |
-| `authToken` | ✅ | ✅ | Twilio Auth Token used to authenticate API requests. |
-| `senderId` | ✅ | ❌ | The Twilio phone number or messaging service SID used as the sender. |
+   | Field | Description |
+   | :--- | :--- |
+   | **Account SID** | Twilio Account SID, starting with `AC` followed by 32 hex characters. |
+   | **Auth token** | Twilio auth token used to authenticate API requests. |
+   | **Sender ID** | The Twilio phone number or messaging service SID used as the sender. |
 
 ### Vonage
 
 1. Log in to the [Vonage API Dashboard](https://dashboard.nexmo.com) and retrieve your **API Key**, **API Secret**, and sender name or virtual number.
+2. Sign in to the <ProductName /> Console and navigate to **Connections**.
+3. Click the **Vonage** card. If the card shows **Not configured**, this opens a form to create the connection. If it already shows **Configured**, this opens the existing connection instead.
+4. Enter the following fields, then click **Create connection**:
 
-2. Send a `POST` request to the Vonage connection API:
-
-```bash
-curl -X POST https://localhost:8090/connections/vonage \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "name": "VonageSMSSender",
-    "description": "Vonage SMS provider for OTP delivery",
-    "apiKey": "<your-api-key>",
-    "apiSecret": "<your-api-secret>",
-    "senderId": "<your-sender-name>"
-  }'
-```
-
-#### Vonage Fields
-
-| Field | Required | Secret | Description |
-| :--- | :---: | :---: | :--- |
-| `apiKey` | ✅ | ❌ | Vonage API Key from the API Dashboard. |
-| `apiSecret` | ✅ | ✅ | Vonage API Secret used to authenticate API requests. |
-| `senderId` | ✅ | ❌ | Sender name or virtual number displayed to recipients. |
+   | Field | Description |
+   | :--- | :--- |
+   | **API key** | Vonage API key from your Vonage dashboard. |
+   | **API secret** | Vonage API secret used to authenticate API requests. |
+   | **Sender ID** | Phone number or alphanumeric sender ID messages are sent from. |
 
 :::note
 Vonage requires the recipient phone number in E.164 format without a leading `+` or `00`. <ProductName /> strips these prefixes automatically before sending.
@@ -81,7 +55,11 @@ Vonage requires the recipient phone number in E.164 format without a leading `+`
 
 ### Custom Provider
 
-Use the `sms-gateway` connection to connect <ProductName /> to any SMS gateway that accepts HTTP requests.
+:::note
+The Console's **SMS gateway** connection type is coming soon. Until it ships, create a custom SMS gateway connection through the API.
+:::
+
+Use the `sms-gateway` connection to connect <ProductName /> to any SMS gateway that accepts HTTP requests. Send a `POST` request to `/connections/sms-gateway` with an access token that has the `system` scope:
 
 ```bash
 curl -X POST https://localhost:8090/connections/sms-gateway \
@@ -106,41 +84,26 @@ curl -X POST https://localhost:8090/connections/sms-gateway \
 | `contentType` | ❌ | ❌ | Request body format. Supported values: `JSON`, `FORM`. |
 | `httpHeaders` | ❌ | ❌ | Comma-separated list of additional HTTP headers in `Key: Value` format. |
 
+See the [Connections API Reference](../../../../apis#tag/connections) for the full request and response shapes.
+
 ## Update an SMS Provider
 
-To update an existing sender, send a `PUT` request to `/connections/{vendor}/{id}` with the sender's ID:
-
-```bash
-curl -X PUT https://localhost:8090/connections/twilio/<sender-id> \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "name": "TwilioSMSSender",
-    "accountSid": "<your-account-sid>",
-    "authToken": "<new-auth-token>",
-    "senderId": "<your-phone-number>"
-  }'
-```
+1. Open the connection from the Connections page.
+2. On the **General** tab, edit the fields under **Credentials**.
+3. Stored secrets, such as **Auth token** or **API secret**, are write-only: the field stays locked until you click **Update**. Leave it unchanged to keep the stored secret.
+4. Click **Save changes** in the bar at the bottom of the page. You can click **Discard** instead to abandon your edits.
 
 :::note
-A connection's vendor cannot be changed after creation. To switch providers, delete the existing connection and create a new one under the new vendor's path.
+A connection's vendor cannot be changed after creation. To switch providers, delete the existing connection and create a new one for the new vendor.
 :::
 
-## List and Remove SMS Providers
+## Remove an SMS Provider
 
-**List all SMS providers:**
+1. Open the connection from the Connections page.
+2. On the **General** tab, go to **Danger zone** and click **Delete connection**.
+3. Confirm the deletion in the dialog.
 
-```bash
-curl https://localhost:8090/connections?category=sms-provider \
-  -H "Authorization: Bearer <access_token>"
-```
-
-**Delete an SMS provider:**
-
-```bash
-curl -X DELETE https://localhost:8090/connections/twilio/<sender-id> \
-  -H "Authorization: Bearer <access_token>"
-```
+If another resource still references this SMS provider, the dialog lists the resources and blocks the deletion until you remove or update them.
 
 ## Next Steps
 

@@ -13,8 +13,10 @@ This guide walks you through registering a Google identity provider (IdP) in <Pr
 ## Prerequisites
 
 - <ProductName /> is running. See [Get Started](../../../getting-started/get-thunderid).
-- An access token with the `system` scope.
+- You can sign in to the <ProductName /> Console.
 - A Google account with access to [Google Cloud Console](https://console.cloud.google.com).
+
+<Stepper stepNode="h2" as="h2">
 
 ## Step 1: Register an OAuth App in Google Cloud Console
 
@@ -29,65 +31,27 @@ This guide walks you through registering a Google identity provider (IdP) in <Pr
    https://<your-thunderid-host>/gate/callback
    ```
 
+   You can copy this value exactly from the Console in the next step, so it does not need to match character for character here.
+
 7. Click **Create**. Google displays your **Client ID** and **Client Secret**. Copy both values. You need them in the next step.
 
-## Step 2: Create the Google IdP
+## Step 2: Configure the Google Connection in the Console
 
-Send a `POST` request to `/connections/google` with your Google credentials:
-
-```bash
-curl -kL -X POST https://localhost:8090/connections/google \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <access-token>' \
-  -d '{
-    "name": "Google",
-    "description": "Google social login",
-    "clientId": "<google-client-id>",
-    "clientSecret": "<google-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/gate/callback"
-  }'
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Google",
-  "description": "Google social login",
-  "type": "google",
-  "clientId": "<google-client-id>",
-  "clientSecret": "******",
-  "redirectUri": "https://<your-thunderid-host>/gate/callback"
-}
-```
+1. Sign in to the <ProductName /> Console.
+2. Navigate to **Connections**.
+3. Click the **Google** card. If the card shows **Not configured**, this opens a form to create the connection. If it already shows **Configured**, this opens the existing connection instead.
+4. Enter your **Client ID** and **Client secret** from the previous step.
+5. Copy the **Redirect URI** shown on the form and add it to your Google OAuth client if you have not already done so.
+6. Optionally, set **Scopes**. This defaults to `openid email profile` if left blank.
+7. Click **Create connection**.
 
 <ProductName /> automatically uses the Google authorization, token, userinfo, and JWKS endpoints. You do not need to supply them.
 
-## Optional Fields
+</Stepper>
 
-You can include the following optional fields in the request body:
-
-| Field | Description |
-|----------|-------------|
-| `scopes` | Array of OAuth scopes to request. Defaults to `["openid", "email", "profile"]` if not set. |
-| `prompt` | Controls the Google consent screen behavior. Common values: `consent`, `select_account`. |
-
-Example with optional fields:
-
-```bash
-curl -kL -X POST https://localhost:8090/connections/google \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <access-token>' \
-  -d '{
-    "name": "Google",
-    "clientId": "<google-client-id>",
-    "clientSecret": "<google-client-secret>",
-    "redirectUri": "https://<your-thunderid-host>/gate/callback",
-    "scopes": ["openid", "email", "profile"],
-    "prompt": "select_account"
-  }'
-```
+:::note
+The Google connection also accepts a `prompt` field to control the Google consent screen behavior (for example, `consent` or `select_account`). This field is not available in the Console and can only be set through the [Connections API](../../../../apis#tag/connections).
+:::
 
 ## Next Steps
 
