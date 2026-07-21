@@ -131,7 +131,9 @@ func (e *executor) ValidatePrerequisites(ctx *providers.NodeContext, execResp *p
 				authenticatedUserAttributes[userAttributeUserID] = entityRef.EntityID
 			}
 		}
-		providerAuthUser, authAttributes, err := authnProvider.GetUserAttributes(ctx.Context, nil, nil, authUser)
+
+		metadata := BuildGetAttributesMetadata(ctx)
+		providerAuthUser, authAttributes, err := authnProvider.GetUserAttributes(ctx.Context, nil, metadata, authUser)
 		if err != nil {
 			logger.Debug(ctx.Context,
 				"Failed to get attributes for authenticated user, proceeding without user attributes")

@@ -197,3 +197,70 @@ func MergePresentedOptionalInputIdentifiers(raw string, identifiers []string) st
 	}
 	return strings.Join(parts, " ")
 }
+
+// buildAppMetadataFromContext constructs application metadata from the node context,
+// including application metadata and OAuth client IDs.
+func buildAppMetadataFromContext(ctx *providers.NodeContext) map[string]interface{} {
+	appMetadata := make(map[string]interface{})
+
+	if ctx.Application.Metadata != nil {
+		for key, value := range ctx.Application.Metadata {
+			appMetadata[key] = value
+		}
+	}
+
+	var clientIDs []string
+	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
+		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
+		}
+	}
+
+	if len(clientIDs) > 0 {
+		appMetadata[providers.MetadataKeyClientIDs] = clientIDs
+	}
+
+	return appMetadata
+}
+
+// BuildRuntimeMetadata constructs the runtime metadata for authentication.
+func BuildRuntimeMetadata(ctx *providers.NodeContext) map[string]string {
+	runtimeMetadata := map[string]string{
+		providers.MetadataKeyAuthorizationRequestID: ctx.RuntimeData[common.RuntimeKeyAuthorizationRequestID],
+		providers.MetadataKeyCurrentClientID:        ctx.RuntimeData[common.RuntimeKeyClientID],
+		providers.MetadataKeyEssentialAttributes:    ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes],
+		providers.MetadataKeyOptionalAttributes:     ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes],
+	}
+
+	if ctx.RuntimeData != nil {
+		for key, value := range ctx.RuntimeData {
+			// Only the ext_* runtime data keys are passed to the authn provider.
+			if strings.HasPrefix(key, "ext_") {
+				runtimeMetadata[key] = value
+			}
+		}
+	}
+	return runtimeMetadata
+}
+
+// BuildAuthnMetadata constructs the metadata for authentication.
+func BuildAuthnMetadata(ctx *providers.NodeContext) *providers.AuthnMetadata {
+	return &providers.AuthnMetadata{
+		AppMetadata:     buildAppMetadataFromContext(ctx),
+		RuntimeMetadata: BuildRuntimeMetadata(ctx),
+	}
+}
+
+// BuildGetAttributesMetadata constructs the metadata for fetching user attributes.
+func BuildGetAttributesMetadata(ctx *providers.NodeContext) *providers.GetAttributesMetadata {
+	metadata := &providers.GetAttributesMetadata{
+		AppMetadata:     buildAppMetadataFromContext(ctx),
+		RuntimeMetadata: BuildRuntimeMetadata(ctx),
+	}
+
+	if locale, exists := ctx.RuntimeData[common.RuntimeKeyRequiredLocales]; exists && locale != "" {
+		metadata.Locale = locale
+	}
+
+	return metadata
+}
