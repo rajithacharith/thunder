@@ -68,7 +68,7 @@ export default function buildConnectionCards(
       displayName: instance.name,
       descriptionKey: TRUSTED_IDP_DESCRIPTION_KEY,
       logo: <ResourceAvatar variant="rounded" size={44} fallback={ConnectionConstants.DEFAULT_TRUSTED_IDP_AVATAR} />,
-      categories: ['trusted-idp'],
+      categories: ['trusted-idp', 'custom'],
       status: 'configured',
       comingSoon: false,
       navTarget: `/trusted-issuers/${instance.id}`,

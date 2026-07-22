@@ -22,9 +22,10 @@ import {type JSX, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
 import useCreateConnection from '../api/useCreateConnection';
+import ConnectionCreateHint from '../components/ConnectionCreateHint';
 import ConnectionForm from '../components/ConnectionForm';
 import ConnectionFullPageLayout from '../components/ConnectionFullPageLayout';
-import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
+import {CONNECTION_FORM_FIELDS, fieldsForMode} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
 import type {ConnectionResponse, ConnectionType} from '../models/connection';
 import {
@@ -69,7 +70,7 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
 
   const values: ConnectionFormValues = {...emptyValues, ...editedValues};
   // The connection name is fixed to the vendor display name, so it is hidden and excluded from validation.
-  const visibleFields = fields.filter((field) => field.name !== 'name');
+  const visibleFields = fieldsForMode(connectionType, 'create').filter((field) => field.name !== 'name');
   const formValid: boolean = Object.keys(validateConnectionForm(values, visibleFields, 'create')).length === 0;
 
   const close = (): void => {
@@ -109,13 +110,24 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
     >
       <Stack direction="column" spacing={3}>
         <Stack direction="column" spacing={1}>
-          <Typography variant="h4" fontWeight={700}>
+          <Typography variant="h1" gutterBottom>
             {t('configure.heading', {vendor: meta.displayName})}
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="subtitle1" gutterBottom>
             {t('configure.subheading')}
           </Typography>
         </Stack>
+
+        {meta.createHintKey && (
+          <ConnectionCreateHint
+            instruction={t(meta.createHintKey, {
+              vendor: meta.displayName,
+              defaultValue:
+                'Create an OAuth client for {{vendor}}, then register the redirect URI below and enter the client ID and client secret it gives you.',
+            })}
+            redirectUri={redirectUri}
+          />
+        )}
 
         <Paper variant="outlined" sx={{p: 3}}>
           <ConnectionForm

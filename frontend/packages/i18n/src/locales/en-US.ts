@@ -1614,7 +1614,7 @@ const translations = {
     // Listing page
     'listing.title': 'Connections',
     'listing.subtitle': 'Configure the external services ThunderID connects to.',
-    'listing.search.placeholder': 'Search ..',
+    'listing.search.placeholder': 'Search connections',
     'listing.showingCount': 'Showing {{count}} connections',
     'listing.loading': 'Loading connections...',
     'listing.clearFilters': 'Clear filters',
@@ -1623,7 +1623,6 @@ const translations = {
       'Try a different search term, or clear the active filters to see all available connections.',
 
     // Filters / categories
-    'filters.label': 'Filter',
     'categories.all': 'All',
     'categories.social-login': 'Social Login',
     'categories.enterprise': 'Enterprise',
@@ -1633,6 +1632,7 @@ const translations = {
     'categories.crm': 'CRM',
     'categories.data-store': 'Data store',
     'categories.trusted-idp': 'Trusted Token Issuer',
+    'categories.custom': 'Custom',
 
     // Card
     'card.configured': 'Configured',
@@ -1654,6 +1654,7 @@ const translations = {
     // Add custom connection wizard
     'wizard.title': 'Add custom connection',
     'wizard.steps.type': 'Connection type',
+    'wizard.steps.name': 'Name',
     'wizard.steps.configure': 'Configure',
     'wizard.type.heading': 'What kind of connection do you want to add?',
     'wizard.type.subheading':
@@ -1671,17 +1672,26 @@ const translations = {
     'wizard.type.trustedIdp.description':
       "Trust an external IdP's identity assertions and exchange them for access tokens.",
     'wizard.type.trustedIdp.tag': 'Token exchange · ID-JAG',
+    'wizard.name.title': "Let's give a name to your connection",
+    'wizard.name.fieldLabel': 'Connection name',
+    'wizard.name.placeholder': 'Enter your connection name',
+    'wizard.name.suggestions.label': 'In a hurry? Pick a random name:',
     'wizard.configure.heading': 'Configure your connection',
     'wizard.configure.subheading':
       'Enter the credentials and endpoints for your custom connection. Secrets are stored write-only.',
+    'wizard.configure.redirectHint':
+      'Register the redirect URI below with your identity provider as an allowed callback URL, then enter the credentials and endpoints it gives you.',
 
     // Branded configure wizard
     'configure.heading': 'Configure your {{vendor}} connection',
     'configure.subheading': 'Enter the credentials and endpoints for this connection. Secrets are stored write-only.',
+    'configure.hint.google':
+      'Create an OAuth client for your app in the Google Cloud Console under APIs and Services, Credentials. Register the redirect URI below as an authorized redirect URI, then enter the client ID and client secret Google gives you.',
+    'configure.hint.github':
+      'Create an OAuth app in GitHub under Settings, Developer settings, OAuth Apps. Set the authorization callback URL to the redirect URI below, then enter the client ID and client secret GitHub gives you.',
 
     // Connection detail / edit page
     'detail.backToConnections': 'Back to Connections',
-    'detail.subtitle': '{{name}} connection',
     'detail.tabs.general': 'General',
     'detail.tabs.attributeMapping': 'Attribute Configuration',
     'detail.quickCopy.title': 'Quick copy',
