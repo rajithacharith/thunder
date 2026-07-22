@@ -404,7 +404,7 @@ func IsValidURI(uri string) bool {
 }
 
 // IsValidLogoURI checks if the provided URI is valid for use as a logo URL.
-// It enforces a scheme allowlist: http/https require a non-empty host, data/blob/emoji
+// It enforces a scheme allowlist: http/https require a non-empty host, data/blob/emoji/avatar
 // schemes are always accepted, and relative paths (no scheme, non-empty path) are accepted.
 // All other schemes (e.g. javascript, file) are rejected.
 func IsValidLogoURI(uri string) bool {
@@ -418,7 +418,7 @@ func IsValidLogoURI(uri string) bool {
 	switch parsed.Scheme {
 	case "http", "https":
 		return parsed.Host != ""
-	case "data", "blob", "emoji":
+	case "data", "blob", "emoji", "avatar":
 		return true
 	case "":
 		// Accept relative paths (no scheme, but path must start with /)

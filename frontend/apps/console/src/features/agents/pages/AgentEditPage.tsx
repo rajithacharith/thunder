@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {PageLoadingAnimation, UnsavedChangesBar} from '@thunderid/components';
+import {PageLoadingAnimation, ResourceAvatar, UnsavedChangesBar} from '@thunderid/components';
 import {useLogger} from '@thunderid/logger/react';
 import {
   Alert,
@@ -44,6 +44,7 @@ import EditCredentialsSettings from '../components/edit-agent/credentials/EditCr
 import EditFlowsSettings from '../components/edit-agent/flows/EditFlowsSettings';
 import EditGeneralSettings from '../components/edit-agent/general/EditGeneralSettings';
 import EditTokensSettings from '../components/edit-agent/tokens/EditTokensSettings';
+import AgentConstants from '../constants/agent-constants';
 import type {Agent, OAuthAgentConfig} from '../models/agent';
 
 interface TabPanelProps {
@@ -342,20 +343,7 @@ export default function AgentEditPage(): JSX.Element {
           {t('agents:edit.page.back', 'Back to agents')}
         </PageTitle.BackButton>
         <PageTitle.Avatar sx={{overflow: 'visible'}}>
-          <Box
-            sx={{
-              width: 55,
-              height: 55,
-              borderRadius: '50%',
-              bgcolor: 'primary.light',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.75rem',
-            }}
-          >
-            🤖
-          </Box>
+          <ResourceAvatar size={55} fallback={AgentConstants.DEFAULT_AVATAR} />
         </PageTitle.Avatar>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>

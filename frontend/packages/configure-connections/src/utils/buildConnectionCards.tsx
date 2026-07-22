@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import {ShieldCheck} from '@wso2/oxygen-ui-icons-react';
+import {ResourceAvatar} from '@thunderid/components';
+import ConnectionConstants from '../constants/connection-constants';
 import {
   ConnectionTypes,
   type ConnectionCardModel,
@@ -66,7 +67,7 @@ export default function buildConnectionCards(
       backendType: ConnectionTypes.OIDC,
       displayName: instance.name,
       descriptionKey: TRUSTED_IDP_DESCRIPTION_KEY,
-      logo: <ShieldCheck />,
+      logo: <ResourceAvatar variant="rounded" size={44} fallback={ConnectionConstants.DEFAULT_TRUSTED_IDP_AVATAR} />,
       categories: ['trusted-idp'],
       status: 'configured',
       comingSoon: false,

@@ -3016,14 +3016,56 @@ const translations = {
     'emoji_picker.categories.symbols': 'Symbols',
     'emoji_picker.categories.flags': 'Flags',
 
+    // Avatar picker
+    'avatar_picker.variants.anonymous_animal': 'Anonymous animal',
+    'avatar_picker.variants.anonymous_entity': 'Entity',
+    'avatar_picker.background.label': 'Background color',
+    'avatar_picker.background.reset': 'Auto',
+    'avatar_picker.seed_text.label': 'Seed text',
+    'avatar_picker.seed_text.placeholder': 'e.g. your app name',
+    'avatar_picker.shuffle': 'Shuffle colors',
+    'avatar_swatch_grid.shuffle': 'Shuffle',
+    'avatar_swatch_grid.swatch': 'Background option',
+
+    // Icon grid picker
+    'icon_grid_picker.shuffle': 'Shuffle',
+
+    // Logo picker
+    'logo_picker.url.placeholder': 'Paste an image URL, e.g. https://example.com/logo.png',
+    'logo_picker.url.helper_text':
+      'Direct link to a PNG, SVG or JPG. For best results, use a square image less than 1MB in size.',
+    'logo_picker.divider': 'OR PICK ONE',
+    'logo_picker.groups.emoji': 'Emoji',
+    'logo_picker.flyouts.emoji': 'Choose an emoji',
+    'logo_picker.groups.more_emojis': 'More emojis',
+    'logo_picker.content_type.avatar': 'Avatar',
+    'logo_picker.content_type.text_avatar': 'Text Avatar',
+    'logo_picker.shapes.rounded': 'Rounded',
+    'logo_picker.shapes.circle': 'Circle',
+    'logo_picker.flyouts.rounded_blank': 'Pick a background',
+    'logo_picker.flyouts.rounded_text': 'Rounded avatar',
+    'logo_picker.flyouts.circle_blank': 'Pick a background',
+    'logo_picker.flyouts.circle_text': 'Circular avatar',
+    'logo_picker.groups.animal': 'Animal',
+    'logo_picker.flyouts.animal': 'Choose an animal',
+    'logo_picker.groups.entity': 'Entity',
+    'logo_picker.flyouts.entity': 'Choose an icon',
+    'logo_picker.emoji_dialog.title': 'Choose an emoji',
+    'logo_picker.shuffle': 'Shuffle',
+
     // Resource logo dialog
     'resource_logo_dialog.title': 'Choose a Logo',
     'resource_logo_dialog.divider.or': 'Or',
+    'resource_logo_dialog.tabs.label': 'Logo source',
+    'resource_logo_dialog.tabs.emoji': 'Emoji',
+    'resource_logo_dialog.tabs.avatar': 'Avatar',
     'resource_logo_dialog.url_section.label': 'Use a custom image URL',
     'resource_logo_dialog.url_section.placeholder': 'https://example.com/logo.png',
     'resource_logo_dialog.url_section.helper_text': 'Enter a direct URL to a custom logo image',
     'resource_logo_dialog.actions.cancel': 'Cancel',
+    'resource_logo_dialog.actions.close': 'Close',
     'resource_logo_dialog.actions.select': 'Select',
+    'resource_logo_dialog.actions.save': 'Save',
   },
 
   // ============================================================================

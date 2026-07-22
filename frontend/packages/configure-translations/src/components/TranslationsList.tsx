@@ -25,6 +25,7 @@ import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import TranslationConstants from '../constants/translation-constants';
 import TranslationDeleteDialog from '@/components/TranslationDeleteDialog';
 
 export default function TranslationsList(): JSX.Element {
@@ -72,7 +73,14 @@ export default function TranslationsList(): JSX.Element {
         renderCell: (params: DataGrid.GridRenderCellParams<{id: string; code: string}>): JSX.Element => (
           <ListingTable.CellIcon
             sx={{width: '100%'}}
-            icon={<ResourceAvatar value={toFlagEmoji(params.row.code)} size={30} fallback="emoji:🌍" />}
+            icon={
+              <ResourceAvatar
+                variant="rounded"
+                value={toFlagEmoji(params.row.code)}
+                size={30}
+                fallback={TranslationConstants.DEFAULT_AVATAR}
+              />
+            }
             primary={getDisplayNameForCode(params.row.code)}
             secondary={
               <Chip
