@@ -49,10 +49,10 @@ type AuthenticationContext struct {
 
 // AuthenticationResponse represents the response after successful authentication.
 type AuthenticationResponse struct {
-	ID        string
-	Type      string
-	OUID      string
-	Assertion string
+	ID        string `json:"id"`
+	Type      string `json:"type"`
+	OUID      string `json:"ouId"`
+	Assertion string `json:"assertion,omitempty"`
 }
 
 // AuthenticatorMeta represents an authenticator's metadata including authentication factors.

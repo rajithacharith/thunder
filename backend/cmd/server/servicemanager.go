@@ -291,7 +291,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	consentEnforcer := authnConsent.Initialize(jwtService)
 
 	_, directAuthGuard := authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen,
-		passkeyService, otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService,
+		otpCoreService, notifSenderSvc, templateService, magicLinkService, oauthAuthnService,
 		oidcAuthnService, googleAuthnService, githubAuthnService,
 		runtime.Config.Server.SecurityConfig.DirectAuthSecret)
 
@@ -329,7 +329,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			ConsentEnforcer:       consentEnforcer,
 			AuthnProvider:         authnProvider,
 			OTPService:            otpCoreService,
-			PasskeyService:        passkeyService,
 			MagicLinkService:      magicLinkService,
 			AuthZService:          authZService,
 			EntityTypeService:     entityTypeService,

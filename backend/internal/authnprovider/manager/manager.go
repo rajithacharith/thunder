@@ -98,6 +98,17 @@ func buildCredentialRouting(customProviders map[string]AuthnProvider) (map[strin
 	return routing, nil
 }
 
+// InitiateAuthentication routes an authentication-initiation request
+// to the provider that handles the given credential type.
+func (m *authnProviderManager) InitiateAuthentication(ctx context.Context, credentialType string,
+	initData any, metadata *providers.AuthnMetadata) (any, *tidcommon.ServiceError) {
+	_, selectedProvider, svcErr := m.selectProvider(ctx, []string{credentialType})
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	return selectedProvider.InitiateAuthentication(ctx, credentialType, initData, metadata)
+}
+
 // AuthenticateUser routes a credential to the matching provider and merges the
 // provider's auth result into the AuthUser under the provider's name.
 func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers, credentials map[string]interface{},
@@ -172,25 +183,9 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 		return authUser, nil, nil
 	}
 
-	// Determine the provider from the credential key. The contract is exactly one credential
-	// key per request; if more than one is supplied, the request is ambiguous rejected.
-	credKeys := slices.Sorted(maps.Keys(credentials))
-	if len(credKeys) > 1 {
-		m.logger.Debug(ctx, "multiple credential keys provided; rejecting ambiguous request",
-			log.Any("credentialKeys", credKeys))
-		return authUser, nil, &ErrorInvalidRequest
-	}
-	credKey := credKeys[0]
-	selectedProviderName, ok := m.credToProviderMapping[credKey]
-	if !ok {
-		// Credentials not claimed by a custom provider fall through to the default provider.
-		selectedProviderName = defaultProviderName
-	}
-	selectedProvider, ok := m.providers[selectedProviderName]
-	if !ok || selectedProvider == nil {
-		m.logger.Error(ctx, "credential key mapped to a provider that is not registered",
-			log.String("credentialKey", credKey), log.String("providerName", selectedProviderName))
-		return authUser, nil, &tidcommon.InternalServerError
+	selectedProviderName, selectedProvider, svcErr := m.selectProvider(ctx, slices.Sorted(maps.Keys(credentials)))
+	if svcErr != nil {
+		return authUser, nil, svcErr
 	}
 
 	authResult, svcErr := selectedProvider.Authenticate(ctx, identifiers, credentials, metadata)
@@ -215,32 +210,17 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 			return authUser, nil, &ErrorAuthenticationFailed
 		}
 	}
-	if (authResult.AttributeToken == nil && authResult.Attributes == nil) ||
-		(authResult.EntityReferenceToken == nil && authResult.EntityReference == nil) {
-		m.logger.Error(ctx, "provider Authenticate result is missing both entity reference and attribute values")
-		return authUser, nil, &tidcommon.InternalServerError
+	authUser, svcErr = m.updateAuthUser(ctx, authResult, authUser, selectedProviderName)
+	if svcErr != nil {
+		return authUser, nil, svcErr
 	}
-
-	state := providers.AuthState{}
-	if authResult.EntityReferenceToken != nil {
-		state.EntityReferenceToken = authResult.EntityReferenceToken
-	} else {
-		state.EntityReference = authResult.EntityReference
-	}
-	if authResult.AttributeToken != nil {
-		state.AttributeToken = authResult.AttributeToken
-	} else {
-		state.Attributes = authResult.Attributes
-	}
-	authUser.SetStateFor(selectedProviderName, state)
 
 	return authUser, authResult.AuthenticatedClaims, nil
 }
 
 // GetEntityReference resolves a single entity reference across all providers
 // in the AuthUser. Each provider's pending entity-reference token is resolved
-// through that provider; the resolved references must agree (modulo
-// EntityCategory) or the call fails.
+// through that provider; the resolved references must agree or the call fails.
 func (m *authnProviderManager) GetEntityReference(ctx context.Context, authUser providers.AuthUser) (
 	providers.AuthUser, *providers.EntityReference, *tidcommon.ServiceError) {
 	if !authUser.IsAuthenticated() {
@@ -365,6 +345,107 @@ func (m *authnProviderManager) GetUserAttributes(ctx context.Context,
 		authUser.SetStateFor(name, state)
 	}
 	return authUser, attributes, nil
+}
+
+// InitiateEnrollment routes an enrollment-initiation request to the provider that handles the given credential type.
+func (m *authnProviderManager) InitiateEnrollment(ctx context.Context, credentialType string,
+	initData any, metadata *providers.AuthnMetadata) (any, *tidcommon.ServiceError) {
+	_, selectedProvider, svcErr := m.selectProvider(ctx, []string{credentialType})
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	return selectedProvider.InitiateEnrollment(ctx, credentialType, initData, metadata)
+}
+
+// Enroll routes a credential to the matching provider to complete enrollment and merges
+// the provider's result into the AuthUser under the provider's name.
+func (m *authnProviderManager) Enroll(ctx context.Context, identifiers, credentials map[string]interface{},
+	requestedAttributes *providers.RequestedAttributes,
+	metadata *providers.AuthnMetadata,
+	authUser providers.AuthUser) (providers.AuthUser, providers.AuthenticatedClaims, *tidcommon.ServiceError) {
+	selectedProviderName, selectedProvider, svcErr := m.selectProvider(ctx, slices.Sorted(maps.Keys(credentials)))
+	if svcErr != nil {
+		return authUser, nil, svcErr
+	}
+
+	authResult, svcErr := selectedProvider.Enroll(ctx, identifiers, credentials, metadata)
+	if svcErr != nil {
+		if svcErr.Type == tidcommon.ServerErrorType {
+			m.logger.Error(ctx, "provider returned server error during enrollment",
+				log.String("error", svcErr.ErrorDescription.DefaultValue))
+			return authUser, nil, &tidcommon.InternalServerError
+		}
+		switch svcErr.Code {
+		case authnprovidercm.ErrorCodeUserNotFound:
+			m.logger.Debug(ctx, "enrollment failed with user not found error from provider",
+				log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
+			return authUser, nil, &ErrorUserNotFound
+		case authnprovidercm.ErrorCodeInvalidRequest:
+			m.logger.Debug(ctx, "enrollment failed with invalid request error from provider",
+				log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
+			return authUser, nil, &ErrorInvalidRequest
+		default:
+			m.logger.Debug(ctx, "enrollment failed with client error from provider",
+				log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
+			return authUser, nil, &ErrorEnrollmentFailed
+		}
+	}
+	authUser, svcErr = m.updateAuthUser(ctx, authResult, authUser, selectedProviderName)
+	if svcErr != nil {
+		return authUser, nil, svcErr
+	}
+
+	return authUser, authResult.AuthenticatedClaims, nil
+}
+
+// updateAuthUser records a provider's authentication or enrollment result in the AuthUser
+// under the selected provider's name.
+func (m *authnProviderManager) updateAuthUser(ctx context.Context, authResult *providers.AuthnResult,
+	authUser providers.AuthUser, selectedProviderName string) (providers.AuthUser, *tidcommon.ServiceError) {
+	if (authResult.AttributeToken == nil && authResult.Attributes == nil) ||
+		(authResult.EntityReferenceToken == nil && authResult.EntityReference == nil) {
+		m.logger.Error(ctx, "provider result is missing a required entity reference or attribute value")
+		return authUser, &tidcommon.InternalServerError
+	}
+
+	state := providers.AuthState{}
+	if authResult.EntityReferenceToken != nil {
+		state.EntityReferenceToken = authResult.EntityReferenceToken
+	} else {
+		state.EntityReference = authResult.EntityReference
+	}
+	if authResult.AttributeToken != nil {
+		state.AttributeToken = authResult.AttributeToken
+	} else {
+		state.Attributes = authResult.Attributes
+	}
+	authUser.SetStateFor(selectedProviderName, state)
+	return authUser, nil
+}
+
+// selectProvider resolves the single credential key to its provider, falling back to the
+// default provider for keys not claimed by a custom provider. Callers must supply exactly one
+// credential key; zero or multiple keys indicates an internal fault and is treated as a server error.
+func (m *authnProviderManager) selectProvider(ctx context.Context, credentialTypes []string) (
+	string, provider.AuthnProviderInterface, *tidcommon.ServiceError) {
+	if len(credentialTypes) != 1 {
+		m.logger.Error(ctx, "expected exactly one credential key; rejecting ambiguous request",
+			log.Any("credentialKeys", credentialTypes))
+		return "", nil, &tidcommon.InternalServerError
+	}
+	credentialType := credentialTypes[0]
+	selectedProviderName, ok := m.credToProviderMapping[credentialType]
+	if !ok {
+		// Credentials not claimed by a custom provider fall through to the default provider.
+		selectedProviderName = defaultProviderName
+	}
+	selectedProvider, ok := m.providers[selectedProviderName]
+	if !ok || selectedProvider == nil {
+		m.logger.Error(ctx, "credential key mapped to a provider that is not registered",
+			log.String("credentialType", credentialType), log.String("providerName", selectedProviderName))
+		return "", nil, &tidcommon.InternalServerError
+	}
+	return selectedProviderName, selectedProvider, nil
 }
 
 func newAttributesResponse() *providers.AttributesResponse {

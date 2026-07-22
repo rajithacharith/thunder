@@ -118,7 +118,8 @@ type PasskeyCredentialResponseDTO struct {
 type PasskeyRegisterFinishRequestDTO struct {
 	PublicKeyCredential PasskeyPublicKeyCredentialDTO `json:"publicKeyCredential"`
 	SessionToken        string                        `json:"sessionToken"`
-	CredentialName      string                        `json:"credentialName,omitempty"`
+	SkipAssertion       bool                          `json:"skipAssertion"`
+	Assertion           string                        `json:"assertion,omitempty"`
 }
 
 // PasskeyStartRequestDTO is the request to start passkey authentication.

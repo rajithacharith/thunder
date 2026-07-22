@@ -27,7 +27,15 @@ import (
 
 // AuthnProviderManager defines the interface for the authentication provider manager.
 type AuthnProviderManager interface {
+	InitiateAuthentication(ctx context.Context, credentialType string, initData any,
+		metadata *AuthnMetadata) (any, *common.ServiceError)
 	AuthenticateUser(ctx context.Context, identifiers, credentials map[string]interface{},
+		requestedAttributes *RequestedAttributes,
+		metadata *AuthnMetadata,
+		authUser AuthUser) (AuthUser, AuthenticatedClaims, *common.ServiceError)
+	InitiateEnrollment(ctx context.Context, credentialType string, initData any,
+		metadata *AuthnMetadata) (any, *common.ServiceError)
+	Enroll(ctx context.Context, identifiers, credentials map[string]interface{},
 		requestedAttributes *RequestedAttributes,
 		metadata *AuthnMetadata,
 		authUser AuthUser) (AuthUser, AuthenticatedClaims, *common.ServiceError)
