@@ -66,6 +66,29 @@ jobs:
           base-ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
           head-ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
 
+  codecov-merge-queue-status:
+    name: 📊 Codecov Merge Queue Status
+    # Codecov does not reliably process merge queue (merge_group) commits, leaving the
+    # required codecov/patch status stuck at "Expected" and timing the queue entry out.
+    # Patch coverage is already enforced on the pull request before it can enter the
+    # queue, and the queue commit carries the same diff rebased onto main, so this job
+    # marks codecov/patch as passed on the queue commit instead of re-running Codecov.
+    # Tracker: https://github.com/codecov/codecov-action/issues/1796
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      statuses: write
+    steps:
+      - name: 📊 Mark codecov/patch as passed on the merge queue commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state=success \
+            -f context=codecov/patch \
+            -f description="Patch coverage was enforced on the pull request"
+
   verify-mocks:
     name: 🔍 Verify Mock Files
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
@@ -222,6 +245,9 @@ jobs:
           if-no-files-found: error
 
       - name: 📊 Upload Unit Test Coverage Report to Codecov
+        # Skipped on merge queue commits: Codecov cannot process them, and the
+        # codecov-merge-queue-status job stamps the required status instead.
+        if: github.event_name != 'merge_group'
         uses: codecov/codecov-action@v5
         timeout-minutes: 5
         continue-on-error: true
@@ -437,6 +463,7 @@ jobs:
           path: coverage/gate
 
       - name: 📊 Upload `@thunderid/console` Unit Test Coverage Report to Codecov
+        if: github.event_name != 'merge_group'
         uses: codecov/codecov-action@v5
         timeout-minutes: 5
         continue-on-error: true
@@ -449,6 +476,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: 📊 Upload `@thunderid/gate` Unit Test Coverage Report to Codecov
+        if: github.event_name != 'merge_group'
         uses: codecov/codecov-action@v5
         timeout-minutes: 5
         continue-on-error: true
@@ -459,6 +487,145 @@ jobs:
           flags: frontend-apps-gate-unit
           name: Frontend Gate App Unit Tests
           fail_ci_if_error: false
+
+  patch-coverage-gate:
+    name: 🛡️ Patch Coverage Gate
+    # Deterministic patch coverage check that always reports, unlike the external
+    # codecov/patch status which can hang at "Expected" (fork PRs, merge queue
+    # commits, Codecov processing stalls). Enforces Codecov's own patch coverage
+    # number via its public API when available, and computes patch coverage
+    # locally from the coverage artifacts when Codecov has not processed the
+    # report in time. Mirrors coverage.status.patch.default in codecov.yml
+    # (target 80%, threshold 1%).
+    needs: [build, test-integration, test-frontend-console-app, test-frontend-gate-app]
+    if: ${{ always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') && needs.build.result == 'success' && needs.test-integration.result == 'success' && needs.test-frontend-console-app.result == 'success' && needs.test-frontend-gate-app.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      FAIL_UNDER: "79"
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🔎 Enforce Codecov patch coverage via API
+        id: codecov-api
+        # Fork PRs upload tokenlessly, so their reports can exist on Codecov
+        # too; poll for every PR and fall back to the local computation only
+        # when Codecov has not processed the report in time.
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          OWNER="${GITHUB_REPOSITORY%/*}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          API="https://api.codecov.io/api/v2/github/${OWNER}/repos/${REPO}"
+          echo "resolved=false" >> "$GITHUB_OUTPUT"
+          for attempt in $(seq 1 10); do
+            PROCESSED=$(curl -sf --max-time 15 "${API}/commits/${HEAD_SHA}" | jq -r '.totals.coverage // empty' || true)
+            if [ -n "$PROCESSED" ]; then
+              # The head report exists; read patch coverage from the comparison.
+              # A fetch or parse failure here must NOT pass the gate: leave it
+              # unresolved so the local computation runs instead.
+              COMPARE=$(curl -sf --max-time 15 "${API}/compare/?pullid=${PR_NUMBER}") || COMPARE=""
+              if [ -z "$COMPARE" ]; then
+                echo "⚠️ Could not fetch the Codecov comparison; falling back to local patch coverage." | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              PATCH=$(printf '%s' "$COMPARE" | jq -r '.totals.patch.coverage' 2>/dev/null) || PATCH=""
+              if [ "$PATCH" = "null" ]; then
+                echo "resolved=true" >> "$GITHUB_OUTPUT"
+                echo "✅ Codecov reports no coverable lines in this diff." | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              if ! printf '%s' "$PATCH" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
+                echo "⚠️ Unexpected Codecov comparison response; falling back to local patch coverage." | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              echo "resolved=true" >> "$GITHUB_OUTPUT"
+              echo "Codecov patch coverage: ${PATCH}% (required: ≥ ${FAIL_UNDER}%)" | tee -a "$GITHUB_STEP_SUMMARY"
+              awk "BEGIN{exit !(${PATCH} >= ${FAIL_UNDER})}" || {
+                echo "❌ Patch coverage is below the required threshold." | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 1
+              }
+              exit 0
+            fi
+            echo "Codecov has not processed the report yet (attempt ${attempt}/10); retrying in 30s..."
+            sleep 30
+          done
+          echo "⚠️ Codecov did not process the report in time; falling back to local patch coverage." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: 📥 Download coverage artifacts
+        if: ${{ success() && (github.event_name == 'merge_group' || steps.codecov-api.outcome == 'skipped' || steps.codecov-api.outputs.resolved != 'true') }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: "*coverage*"
+          path: coverage-artifacts
+
+      - name: ⚙️ Set up Go Environment
+        if: ${{ success() && (github.event_name == 'merge_group' || steps.codecov-api.outcome == 'skipped' || steps.codecov-api.outputs.resolved != 'true') }}
+        uses: ./.github/actions/setup-go
+
+      - name: 🛡️ Compute patch coverage locally
+        if: ${{ success() && (github.event_name == 'merge_group' || steps.codecov-api.outcome == 'skipped' || steps.codecov-api.outputs.resolved != 'true') }}
+        env:
+          BASE_REF: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}
+        run: |
+          set -e
+          pipx install "diff_cover==10.4.0"
+          pipx install "lcov_cobertura==2.1.1"
+          FILES=()
+          # Convert Go cover profiles to Cobertura XML and map Go import paths
+          # to repo-relative paths so diff-cover can match them to the git diff.
+          # Locate profiles with find so the gate does not depend on the
+          # artifacts' internal directory layout.
+          GO_XML_INDEX=0
+          while IFS= read -r profile; do
+            GO_XML_INDEX=$((GO_XML_INDEX + 1))
+            xml="go-coverage-${GO_XML_INDEX}.xml"
+            (cd backend && go run github.com/boumenot/gocover-cobertura@v1.5.0) < "$profile" > "$xml"
+            sed -i -E 's#filename="(github\.com/thunder-id/thunderid/|backend/)?#filename="backend/#g' "$xml"
+            FILES+=("$xml")
+          done < <(find coverage-artifacts -type f \( -name 'coverage_unit.out' -o -name 'coverage_integration.out' \) 2>/dev/null | sort)
+          # Rewrite LCOV SF paths (absolute or app-relative) to repo-relative
+          # paths, then convert to Cobertura XML: diff-cover cannot mix LCOV
+          # and XML reports in a single invocation, and a single invocation is
+          # required for combined patch coverage semantics matching Codecov.
+          for app in console gate; do
+            src=$(find "coverage-artifacts/${app}-coverage" -type f -name 'lcov.info' 2>/dev/null | head -1)
+            [ -n "$src" ] || continue
+            normalized="${app}-lcov.info"
+            sed -E "s|^SF:(.*/)?frontend/apps/${app}/|SF:frontend/apps/${app}/|; t; s|^SF:|SF:frontend/apps/${app}/|" "$src" > "$normalized"
+            lcov_cobertura "$normalized" --base-dir . --output "${app}-coverage.xml"
+            FILES+=("${app}-coverage.xml")
+          done
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            # Fail rather than pass silently when coverable code changed but no
+            # coverage data reached the gate; passing would defeat its purpose.
+            COVERABLE=$(git diff --name-only "${BASE_REF}...HEAD" \
+              | { grep -E '^(backend/.*\.go|frontend/apps/(console|gate)/src/)' || true; } \
+              | { grep -vE '(^backend/tests/|_test\.go$|\.test\.(ts|tsx)$|__tests__/|__mocks__/)' || true; })
+            if [ -n "$COVERABLE" ]; then
+              echo "❌ Coverable files changed but no coverage artifacts were found." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            echo "✅ No coverage artifacts and no coverable changes; nothing to gate." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          STATUS=0
+          diff-cover "${FILES[@]}" \
+            --compare-branch "$BASE_REF" \
+            --fail-under "$FAIL_UNDER" \
+            --exclude 'backend/tests/**' '**/*_test.go' 'tests/**' 'samples/**' 'docs/**' 'api/**' \
+                      '**/*.test.ts' '**/*.test.tsx' '**/__tests__/**' '**/__mocks__/**' \
+            --format markdown:patch-coverage.md || STATUS=$?
+          cat patch-coverage.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          exit "$STATUS"
 
   build_samples:
     name: 🛠️ Build Sample Apps
@@ -568,7 +735,15 @@ jobs:
           database-type: ${{ matrix.database }}
           coverage-enabled: true
 
+      - name: 📦 Archive Integration Coverage Report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: integration-coverage-${{ matrix.database }}
+          path: target/coverage_integration.out
+          if-no-files-found: error
+
       - name: 📊 Upload Integration Test Coverage Report to Codecov
+        if: github.event_name != 'merge_group'
         uses: codecov/codecov-action@v5
         timeout-minutes: 5
         continue-on-error: true
