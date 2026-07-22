@@ -19,7 +19,9 @@
 // Package ciba implements the OpenID Connect CIBA (Client-Initiated Backchannel Authentication) grant.
 package ciba
 
-import "time"
+import (
+	"time"
+)
 
 // CIBARequestState represents the lifecycle state of a CIBA authentication request.
 type CIBARequestState string
@@ -77,6 +79,8 @@ type BackchannelAuthRequest struct {
 	BindingMessage  string
 	RequestedExpiry string
 	ACRValues       string
+	Headers         map[string][]string
+	QueryParams     map[string][]string
 }
 
 // assertionClaims represents the claims extracted from the flow assertion JWT.

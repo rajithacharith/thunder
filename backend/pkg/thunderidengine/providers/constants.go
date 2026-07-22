@@ -533,12 +533,3 @@ var (
 	// ErrRuntimeStoreKeyNotFound to identify key not found error in the runtime store providers
 	ErrRuntimeStoreKeyNotFound = errors.New("RuntimeStore key not found")
 )
-
-// Key constants used in the runtime metadata map
-const (
-	MetadataKeyAuthorizationRequestID string = "authorization_request_id"
-	MetadataKeyCurrentClientID        string = "current_client_id"
-	MetadataKeyEssentialAttributes    string = "essential_attributes"
-	MetadataKeyOptionalAttributes     string = "optional_attributes"
-	MetadataKeyClientIDs              string = "client_ids"
-)
