@@ -538,7 +538,10 @@ jobs:
                 exit 0
               fi
               PATCH=$(printf '%s' "$COMPARE" | jq -r '.totals.patch.coverage' 2>/dev/null) || PATCH=""
-              if [ "$PATCH" = "null" ]; then
+              PATCH_LINES=$(printf '%s' "$COMPARE" | jq -r '.totals.patch.lines // 0' 2>/dev/null) || PATCH_LINES="0"
+              # A diff with no coverable lines (comment/config/CI-only changes) has nothing to gate.
+              # Codecov signals this either as coverage null or as coverage 0 with zero patch lines.
+              if [ "$PATCH" = "null" ] || [ "$PATCH_LINES" = "0" ]; then
                 echo "resolved=true" >> "$GITHUB_OUTPUT"
                 echo "✅ Codecov reports no coverable lines in this diff." | tee -a "$GITHUB_STEP_SUMMARY"
                 exit 0
@@ -892,9 +895,17 @@ jobs:
             exit 1
           fi
 
+          # The console login flow runs an SSO check before the credentials prompt. This bootstrap is a
+          # fresh, cookie-less login (no SSO session), so the first execute advances the flow past the
+          # SSO check to the credentials prompt and mints a challenge token; the second submits the admin
+          # credentials with that token.
+          PROMPT_RESP=$(curl -sk -X POST "$SERVER_URL/flow/execute" \
+            -H "Content-Type: application/json" \
+            -d "{\"executionId\": \"$EXEC_ID\"}")
+          CHALLENGE_TOKEN=$(echo "$PROMPT_RESP" | jq -r '.challengeToken // empty')
           FLOW_RESP=$(curl -sk -X POST "$SERVER_URL/flow/execute" \
             -H "Content-Type: application/json" \
-            -d "{\"executionId\": \"$EXEC_ID\", \"inputs\": {\"username\": \"admin\", \"password\": \"admin\"}, \"action\": \"action_001\"}")
+            -d "{\"executionId\": \"$EXEC_ID\", \"challengeToken\": \"$CHALLENGE_TOKEN\", \"inputs\": {\"username\": \"admin\", \"password\": \"admin\"}, \"action\": \"action_001\"}")
           ASSERTION=$(echo "$FLOW_RESP" | jq -r '.assertion // empty')
           if [ -z "$ASSERTION" ]; then
             echo "❌ Flow execution did not return an assertion: $FLOW_RESP"
