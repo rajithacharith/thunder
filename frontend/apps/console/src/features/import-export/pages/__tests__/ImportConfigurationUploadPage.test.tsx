@@ -185,7 +185,7 @@ describe('ImportConfigurationUploadPage', () => {
     const user = userEvent.setup();
     render(<ImportConfigurationUploadPage />);
 
-    const yamlContent = '---\n# resource_type: application\nname: test-app\n';
+    const yamlContent = 'resource_type: application\nname: test-app\n';
     const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
     Object.defineProperty(yamlFile, 'text', {value: () => Promise.resolve(yamlContent)});
 
@@ -213,7 +213,7 @@ describe('ImportConfigurationUploadPage', () => {
     const user = userEvent.setup();
     render(<ImportConfigurationUploadPage />);
 
-    const yamlContent = '---\n# resource_type: application\nname: test-app\n';
+    const yamlContent = 'resource_type: application\nname: test-app\n';
     const envContent = 'KEY=VALUE';
     const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
     const envFile = new File([envContent], '.env', {type: 'text/plain'});
@@ -242,7 +242,7 @@ describe('ImportConfigurationUploadPage', () => {
     render(<ImportConfigurationUploadPage />);
 
     const yamlContent =
-      '---\n# resource_type: server_config\nname: cors\nvalue:\n  allowedOrigins:\n    - https://example.com\n';
+      'resource_type: server_config\nname: cors\nvalue:\n  allowedOrigins:\n    - https://example.com\n';
     const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
     Object.defineProperty(yamlFile, 'text', {value: () => Promise.resolve(yamlContent)});
 
@@ -264,6 +264,49 @@ describe('ImportConfigurationUploadPage', () => {
       },
       {timeout: 5000},
     );
+  });
+
+  it('detects resource types from the resource_type YAML field (not comments)', async () => {
+    const user = userEvent.setup();
+    render(<ImportConfigurationUploadPage />);
+
+    const yamlContent =
+      'resource_type: application\n' +
+      'id: claims-demo-m2m-app\n' +
+      'name: Claims Demo M2M Application\n' +
+      'ouHandle: default\n' +
+      '---\n' +
+      'resource_type: agent\n' +
+      'id: claims-demo-agent\n' +
+      'name: Claims Demo Agent\n' +
+      'ouHandle: default\n' +
+      'type: default\n';
+    const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
+    Object.defineProperty(yamlFile, 'text', {value: () => Promise.resolve(yamlContent)});
+
+    await user.upload(document.getElementById('file-upload') as HTMLInputElement, yamlFile);
+    await user.click(screen.getByRole('button', {name: 'common:actions.continue'}));
+
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          '/welcome/import-configuration/validate',
+          expect.objectContaining({
+            state: expect.objectContaining({
+              method: 'file',
+              parseErrors: [],
+              parseStats: {successCount: 2, failCount: 0},
+            }) as Record<string, unknown>,
+          }),
+        );
+      },
+      {timeout: 5000},
+    );
+
+    const {state} = (mockNavigate.mock.calls[0] as [string, {state: {configData: Record<string, unknown[]>}}])[1];
+    expect(Object.keys(state.configData)).toEqual(['application', 'agent']);
+    expect(state.configData.application).toHaveLength(1);
+    expect(state.configData.agent).toHaveLength(1);
   });
 
   it('shows error when file.text() throws during continue', async () => {

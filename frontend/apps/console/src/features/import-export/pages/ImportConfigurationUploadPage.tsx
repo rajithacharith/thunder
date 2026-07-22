@@ -165,17 +165,12 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
           let resourceType = 'unknown';
           let fileName = 'unknown';
 
-          // First pass: extract metadata from comment lines
+          // First pass: extract the file name from comment lines
           for (const line of lines) {
             if (line.startsWith('#')) {
-              const resourceTypeRegex = /resource_type:\s*(\w+)/;
               const fileNameRegex = /File:\s*(.+\.yaml)/i;
-              const resourceTypeMatch = resourceTypeRegex.exec(line);
               const fileNameMatch = fileNameRegex.exec(line);
 
-              if (resourceTypeMatch) {
-                resourceType = resourceTypeMatch[1];
-              }
               if (fileNameMatch) {
                 fileName = fileNameMatch[1].trim();
               }
@@ -220,6 +215,13 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
             const resource = yaml.parse(yamlContent) as unknown;
 
             if (resource && typeof resource === 'object') {
+              // Determine the resource type from the `resource_type` YAML field, the documented,
+              // spec-compliant format also emitted by export.
+              const fieldResourceType = (resource as {resource_type?: unknown}).resource_type;
+              if (typeof fieldResourceType === 'string' && fieldResourceType.trim() !== '') {
+                resourceType = fieldResourceType.trim();
+              }
+
               if (!resourcesByType[resourceType]) {
                 resourcesByType[resourceType] = [];
               }
