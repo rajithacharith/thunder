@@ -552,8 +552,8 @@ export default function ApplicationCreatePage(): JSX.Element {
         return (
           <ConfigureDesign
             appLogo={appLogo}
+            appName={appName}
             themeId={themeId}
-            selectedTheme={selectedTheme}
             onLogoSelect={handleLogoSelect}
             onThemeSelect={(id, config) => {
               setThemeId(id);

@@ -57,6 +57,7 @@ import CredentialsTabPanel, {type CredentialFieldInfo} from '../components/edit-
 import EditUserAttributes from '../components/edit-user/EditUserAttributes';
 import QuickCopySection from '../components/edit-user/QuickCopySection';
 import UserDeleteDialog from '../components/UserDeleteDialog';
+import UserConstants from '../constants/user-constants';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -409,7 +410,11 @@ export default function UserEditPage() {
           {t('users:manageUser.back', 'Back to Users')}
         </PageTitle.BackButton>
         <PageTitle.Avatar>
-          <ResourceAvatar value={picture} fallback={getInitials(displayName)} size={55} />
+          <ResourceAvatar
+            value={picture}
+            fallback={`${UserConstants.DEFAULT_AVATAR_PREFIX}${getInitials(displayName)}`}
+            size={55}
+          />
         </PageTitle.Avatar>
         <PageTitle.Header>
           <Typography variant="h3">{displayName}</Typography>

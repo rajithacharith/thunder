@@ -43,7 +43,7 @@ import validateTrustedIssuerForm, {
   type TrustedIssuerFieldErrorKind,
   type TrustedIssuerFormErrors,
 } from '../utils/validateTrustedIssuerForm';
-import {isConflictError} from '@thunderid/configure-connections';
+import {ConnectionConstants, isConflictError} from '@thunderid/configure-connections';
 
 export default function TrustedIssuerDetailPage(): JSX.Element {
   const {t} = useTranslation();
@@ -152,7 +152,7 @@ export default function TrustedIssuerDetailPage(): JSX.Element {
                 flexShrink: 0,
               }}
             >
-              <ResourceAvatar size={32} fallback="emoji:🤝" />
+              <ResourceAvatar variant="rounded" size={55} fallback={ConnectionConstants.DEFAULT_TRUSTED_IDP_AVATAR} />
             </Box>
             <Stack direction="column" spacing={0.5}>
               <Typography variant="h5" fontWeight={700}>

@@ -45,6 +45,7 @@ import EditGeneralSettings from '../components/edit-application/general-settings
 import IntegrationGuides from '../components/edit-application/integration-guides/IntegrationGuides';
 import McpConnectTab from '../components/edit-application/mcp/McpConnectTab';
 import EditTokenSettings from '../components/edit-application/token-settings/EditTokenSettings';
+import ApplicationConstants from '../constants/application-constants';
 import TemplateConstants from '../constants/template-constants';
 import type {Application} from '../models/application';
 import {McpClientTypes} from '../models/mcp-client';
@@ -300,14 +301,26 @@ export default function ApplicationEditPage() {
         <PageTitle.BackButton component={<Link to="/applications" />}>
           {t('applications:edit.page.back')}
         </PageTitle.BackButton>
-        <PageTitle.Avatar sx={{overflow: 'visible'}}>
+        <PageTitle.Avatar variant="rounded" sx={{overflow: 'visible'}}>
           <ResourceAvatar
+            size={55}
+            variant="rounded"
+            supportedShapes={['rounded']}
             editable={!application.isReadOnly}
             value={editedApp.logoUrl ?? application.logoUrl}
-            fallback="emoji:🖥️"
-            editAriaLabel={t('applications:edit.page.logoUpdate.label')}
-            onSelect={(newLogoUrl: string) => setEditedApp((prev) => ({...prev, logoUrl: newLogoUrl}))}
-            size={55}
+            fallback={ApplicationConstants.DEFAULT_AVATAR}
+            editAriaLabel={t('applications:edit.page.logoUpdate.label', 'Update Logo')}
+            onSelect={(newLogoUrl: string) =>
+              setEditedApp((prev) => {
+                if (newLogoUrl === application.logoUrl) {
+                  const {logoUrl, ...rest} = prev;
+                  void logoUrl;
+                  return rest;
+                }
+                return {...prev, logoUrl: newLogoUrl};
+              })
+            }
+            onSave={handleSave}
           />
         </PageTitle.Avatar>
         <PageTitle.Header>

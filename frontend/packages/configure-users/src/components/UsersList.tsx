@@ -26,6 +26,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import UserDeleteDialog from './UserDeleteDialog';
 import useGetUsers from '../api/useGetUsers';
+import UserConstants from '../constants/user-constants';
 import type {UserWithDetails} from '../models/users';
 
 export default function UsersList() {
@@ -91,7 +92,13 @@ export default function UsersList() {
           return (
             <ListingTable.CellIcon
               sx={{width: '100%'}}
-              icon={<ResourceAvatar value={picture} size={30} fallback={getInitials(displayVal)} />}
+              icon={
+                <ResourceAvatar
+                  value={picture}
+                  size={30}
+                  fallback={`${UserConstants.DEFAULT_AVATAR_PREFIX}${getInitials(displayVal)}`}
+                />
+              }
               primary={displayVal}
             />
           );

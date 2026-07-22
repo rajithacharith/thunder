@@ -231,6 +231,11 @@ func (suite *HTTPUtilTestSuite) TestIsValidLogoURI() {
 			expected: true,
 		},
 		{
+			name:     "AvatarURI",
+			uri:      "avatar:1",
+			expected: true,
+		},
+		{
 			name:     "HTTPWithoutHost",
 			uri:      "http:///no-host",
 			expected: false,

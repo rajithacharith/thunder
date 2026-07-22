@@ -1420,7 +1420,7 @@ spec:
       name: Default
       description: Default organization unit
       parent: null
-      logoUrl: emoji:🏛️
+      logoUrl: avatar:shape=rounded,variant=anonymous_entity,content=pavilion,colors=0,bg=#2c4ed4
       createdAt:
       updatedAt:
 

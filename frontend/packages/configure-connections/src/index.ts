@@ -47,6 +47,7 @@ export * from './config/connectionFormFields';
 export * from './config/connectionVendorMeta';
 
 // Constants
+export {default as ConnectionConstants} from './constants/connection-constants';
 export {default as ConnectionQueryKeys} from './constants/query-keys';
 export * from './constants/connection-categories';
 

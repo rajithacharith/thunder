@@ -3,7 +3,7 @@ id: 01900000-0000-7000-8000-000000000001
 handle: default
 name: Default
 description: Default organization unit
-logoUrl: "emoji:🏛️"
+logoUrl: "avatar:shape=rounded,variant=anonymous_entity,content=pavilion,colors=0,bg=#2c4ed4"
 ---
 resource_type: user_type
 id: 01900000-0000-7000-8000-000000000010
@@ -4693,7 +4693,7 @@ name: Console
 description: Management application for ThunderID
 ouId: 01900000-0000-7000-8000-000000000001
 url: "{{ .PUBLIC_URL }}/console"
-logoUrl: "emoji:👨‍💻"
+logoUrl: "avatar:shape=rounded,variant=anonymous_entity,content=cube,colors=0,bg=#64be90"
 authFlowId: 01900000-0000-7000-8000-000000000068
 registrationFlowId: 01900000-0000-7000-8000-000000000069
 isRegistrationFlowEnabled: false
@@ -4764,7 +4764,6 @@ attributes:
   name: Administrator
   given_name: Admin
   family_name: User
-  picture: https://example.com/avatar.jpg
   phone_number: "+12345678920"
 credentials:
   password: "{{ .ADMIN_PASSWORD }}"

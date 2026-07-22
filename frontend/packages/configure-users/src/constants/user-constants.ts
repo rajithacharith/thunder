@@ -16,16 +16,14 @@
  * under the License.
  */
 
-const OrganizationUnitTreeConstants = {
-  PLACEHOLDER_SUFFIX: '__placeholder',
-  EMPTY_SUFFIX: '__empty',
-  ERROR_SUFFIX: '__error',
-  ADD_CHILD_SUFFIX: '__addChild',
-  LOAD_MORE_SUFFIX: '__loadMore',
-  ROOT_PARENT_ID: '__root',
-  ROOT_LOAD_MORE_ID: '__root__loadMore',
-  PAGE_SIZE: 30,
-  DEFAULT_AVATAR: 'avatar:shape=rounded,variant=anonymous_entity,content=pavilion,colors=0',
+/**
+ * General user constants.
+ */
+const UserConstants = {
+  /**
+   * Fallback avatar prefix rendered when a user has no picture set. Append the user's initials as `content`.
+   */
+  DEFAULT_AVATAR_PREFIX: 'avatar:shape=circle,variant=two_letter,colors=0,content=',
 } as const;
 
-export default OrganizationUnitTreeConstants;
+export default UserConstants;
