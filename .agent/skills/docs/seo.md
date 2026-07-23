@@ -1,9 +1,3 @@
----
-name: docs-seo
-description: SEO review for ThunderID docs: checks title search-intent match, meta description click-worthiness, H2 phrasing, and topic focus. Use whenever asked to check a doc's discoverability, searchability, or SEO, especially for new pages or major rewrites. Not writing quality or tech accuracy (see docs-review-style/docs-review-tech).
-allowed-tools: Read Bash
----
-
 # ThunderID Docs — SEO Review
 
 Reviewing a page for search discoverability: would a developer searching for this topic find it, click it, and land in the right place?
@@ -16,7 +10,7 @@ All findings are warnings — no hard gates, SEO is advisory. **You flag and sug
 
 ## Usage
 
-Invoked as `/docs-seo [file-path]`. If no path is given, ask which file. If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop: it's never rendered as a webpage, so it has no search relevance to evaluate.
+Read when the user asks to check a doc's discoverability, searchability, or SEO, especially for new pages or major rewrites. If no path is given, ask which file.
 
 ---
 
@@ -55,7 +49,7 @@ Flag any title that's a generic label with no specificity, would match dozens of
 
 **Goal:** the `description` frontmatter appears as the Google snippet under the title; a developer scans it in under 3 seconds to decide whether to click.
 
-`docs-check` already warns on length (under 70/over 200 chars, a rough heuristic not a ranking factor) and fails on "This page/guide/document" openers. This check goes further: is it *useful for deciding to click*?
+`check.md` already warns on length (under 70/over 200 chars, a rough heuristic not a ranking factor) and fails on "This page/guide/document" openers. This check goes further: is it *useful for deciding to click*?
 
 A good description states the outcome ("Add sign-in to a React app using the ThunderID JavaScript SDK in under 10 minutes"), uses the terms being searched for (technology, protocol, task), and answers "why click this result instead of others?"
 
@@ -71,7 +65,7 @@ For each failure: quote it, state what's missing (outcome, technology, specifici
 
 Flag any non-Stepper H2 using a generic label or close variant: `Overview`, `Introduction`, `Background`, `Summary`, `Notes`, `Details`, `Configuration`/`Setup`/`Usage`/`Options` (alone, no subject). Structurally fine, ranks for nothing — "configure redirect URI ThunderID" won't match a heading called "Configuration."
 
-**Exceptions**: Stepper pages (H2s are already imperative step headings enforced by `docs-review-style` — don't flag); "Prerequisites" (structural, not a search target).
+**Exceptions**: Stepper pages (H2s are already imperative step headings enforced by `style.md` — don't flag); "Prerequisites" (structural, not a search target).
 
 | ❌ Generic | ✅ Specific |
 |---|---|
@@ -90,7 +84,7 @@ For each generic heading: quote it with line number, explain what subject it sho
 
 Read the H2 structure end-to-end. One task = describable in one sentence ("I want to add Google Sign-In to my ThunderID app"). Multiple tasks = needs "and also."
 
-Failure patterns: a guide that creates, edits, deletes, and configures a resource all on one page (four intents); a concept page that also provides a full how-to (concept bleed, also caught by `docs-review-style`); a quickstart covering three frameworks on one page.
+Failure patterns: a guide that creates, edits, deletes, and configures a resource all on one page (four intents); a concept page that also provides a full how-to (concept bleed, also caught by `style.md`); a quickstart covering three frameworks on one page.
 
 If 2+ H2 sections serve completely different search intents, flag it: state the competing intents, and whether the page should split or one intent should become the clear primary focus. Judgment call — flag confidently when intents are clearly different, note uncertainty when they're related sub-tasks of one workflow.
 
@@ -99,7 +93,7 @@ If 2+ H2 sections serve completely different search intents, flag it: state the 
 ## Output Format
 
 ```
-Reviewing: docs/content/guides/guides/applications/manage-applications.mdx
+Reviewing: docs/content/guides/applications/manage-applications.mdx
 Doc type: guide
 Primary task: creating and configuring applications in the Console
 Likely search query: "create application ThunderID", "configure OAuth application ThunderID"
@@ -133,13 +127,13 @@ If all checks pass:
 
 ## Scope Boundary
 
-| Check | This skill | Other skill |
+| Check | This reference | Other reference |
 |---|---|---|
 | Title search intent | ✅ | |
 | Meta description click-worthiness | ✅ | |
 | Heading phrasing for discoverability | ✅ | |
 | Topic focus for ranking | ✅ | |
-| Description length and format | | `/docs-check` |
-| Heading hierarchy and structure | | `/docs-check` |
-| Writing quality, AI vocabulary, voice, terminology, formatting | | `/docs-review-style` |
-| Technical accuracy | | `/docs-review-tech` |
+| Description length and format | | `check.md` |
+| Heading hierarchy and structure | | `check.md` |
+| Writing quality, AI vocabulary, voice, terminology, formatting | | `style.md` |
+| Technical accuracy | | `tech.md` |

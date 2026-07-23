@@ -1,18 +1,10 @@
----
-name: docs-check
-description: Validates a ThunderID doc MDX file against content standards (frontmatter, headings, code block tags, nested list indentation, ordered vs. unordered lists, ProductName usage, links, Stepper config, sidebar registration). Use before merging any .mdx, or whenever asked to check, lint, or verify a doc page meets standards.
-allowed-tools: Read Bash
----
-
 # ThunderID Docs Standards Checker
 
 Validate a single `.mdx` file against all documented standards. Report every violation clearly.
 
 ## Usage
 
-Invoked as `/docs-check [file-path]`. If no path is given, ask which file to check. Resolve the absolute path before reading.
-
-If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop: it's agent instructions, not a documentation page (`docs/content/**` or SDK docs), and these rules don't apply.
+Read when the user asks to check, lint, or verify a doc page meets standards, or before merging any `.mdx`. If no path is given, ask which file to check. Resolve the absolute path before reading.
 
 ---
 
@@ -33,7 +25,7 @@ Parse the YAML block between the `---` delimiters.
 - Under 70 chars → WARN (likely too thin; Google may ignore it and generate its own snippet). Over 200 → WARN (likely truncated in results).
 - Must not start with "This page/guide/document/section" → FAIL. Should end with a period → WARN if missing.
 
-No hard length range: meta description length isn't a Docusaurus requirement or ranking factor, just an approximate heuristic about snippet truncation (Google renders by pixel width, not char count). Only the two extremes are worth flagging, as warnings. Content quality is what matters for SEO — see `/docs-seo` Check 2.
+No hard length range: meta description length isn't a Docusaurus requirement or ranking factor, just an approximate heuristic about snippet truncation (Google renders by pixel width, not char count). Only the two extremes are worth flagging, as warnings. Content quality is what matters for SEO — see `seo.md` Check 2.
 
 **`docType`**: must be present and one of `quickstart`, `guide`, `concept`, `reference`, `use-case`, `community` → FAIL if missing or any other value. Lets future work query which doc types exist for a given topic and spot coverage gaps.
 
@@ -141,7 +133,7 @@ For each `![` occurrence, empty alt (`![](...)`) → WARN; non-empty → OK. All
 
 ### 11. Sidebar Registration and Placement
 
-Every page must appear in `docs/sidebars.ts` or the relevant `docs/content/sdks/<sdk>/sidebar.ts`. The doc ID is the file's path relative to `docs/content/`, minus `.mdx` (e.g. `docs/content/guides/guides/flows/build-a-flow.mdx` → `guides/guides/flows/build-a-flow`).
+Every page must appear in `docs/sidebars.ts` or the relevant `docs/content/sdks/<sdk>/sidebar.ts`. The doc ID is the file's path relative to `docs/content/`, minus `.mdx` (e.g. `docs/content/guides/flows/build-a-flow.mdx` → `guides/flows/build-a-flow`).
 
 ```bash
 grep -rn "id: '<doc-id>'" docs/sidebars.ts docs/content/sdks/*/sidebar.ts
@@ -149,12 +141,12 @@ grep -rn "id: '<doc-id>'" docs/sidebars.ts docs/content/sdks/*/sidebar.ts
 
 Match found → OK. No match but ID is in `.orphan-allowlist` → WARN (pre-existing gap, not a blocker). No match at all → FAIL.
 
-**Placement sanity** (judgment-based, WARN only, never a hard gate): contributors can hand-edit `sidebars.ts` directly instead of using `/docs-new-page`, so this catches a poor placement before it ships silently. Once matched, judge it against the same criteria `/docs-new-page` uses for new pages:
+**Placement sanity** (judgment-based, WARN only, never a hard gate): contributors can hand-edit `sidebars.ts` directly instead of using `new-page.md`, so this catches a poor placement before it ships silently. Once matched, judge it against the same criteria `new-page.md` uses for new pages:
 - **Directory match**: does its category share a parent directory with its siblings?
 - **Topic match**: does the category's theme genuinely match the page's subject, not just a coincidental keyword?
 - **Doc-type match**: concepts among concepts, guides among guides, etc.
 
-If it clearly violates these (e.g., a Kubernetes guide filed under "Identity Providers"), flag the mismatch and propose where it should move, in the same section → category → position format `/docs-new-page` uses for approval — as a suggestion, never a failure. A registered page in an awkward spot is a much smaller problem than an unregistered one.
+If it clearly violates these (e.g., a Kubernetes guide filed under "Identity Providers"), flag the mismatch and propose where it should move, in the same section → category → position format `new-page.md` uses for approval — as a suggestion, never a failure. A registered page in an awkward spot is a much smaller problem than an unregistered one.
 
 ---
 
@@ -163,7 +155,7 @@ If it clearly violates these (e.g., a Kubernetes guide filed under "Identity Pro
 Print results as a checklist:
 
 ```
-Checking: docs/content/guides/getting-started/connect-your-application/react.mdx
+Checking: docs/content/getting-started/connect-your-application/react.mdx
 
 FRONTMATTER
   ✅  title: present
@@ -188,7 +180,7 @@ PRODUCT NAME
   ✅  no hardcoded "ThunderID" in prose
 
 INTERNAL LINKS
-  ❌  line 67: absolute link /docs/next/guides/getting-started/build-a-flow
+  ❌  line 67: absolute link /docs/next/guides/flows/build-a-flow
 
 STEPPER
   ✅  stepNode="h2" as="h2" — match
@@ -200,7 +192,7 @@ LINE DIVIDERS
   ✅  no --- in body
 
 SIDEBAR REGISTRATION
-  ✅  guides/guides/flows/build-a-flow — registered in sidebars.ts
+  ✅  guides/flows/build-a-flow — registered in sidebars.ts
   ✅  placement: Guides → Flows — directory, topic, and doc-type all match
 
 ─────────────────────────────────────
@@ -210,10 +202,10 @@ SIDEBAR REGISTRATION
 If placement looks off:
 ```
 SIDEBAR REGISTRATION
-  ✅  guides/deployment-patterns/kubernetes — registered in sidebars.ts
+  ✅  deployment/deployment-paths/kubernetes — registered in sidebars.ts
   ⚠️  placement: filed under Guides → Identity Providers, but this is a Kubernetes
       deployment guide with no directory or topic overlap with that category.
-      Consider moving it to Deployment Patterns → Deployment Paths instead.
+      Consider moving it to Deployment → Deployment Paths instead.
 ```
 
 If all checks pass:

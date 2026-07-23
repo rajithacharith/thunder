@@ -1,22 +1,16 @@
----
-name: docs-review-tech
-description: Technical accuracy review for ThunderID docs: checks protocol/RFC claims, code syntax, API/SDK claims, config claims, and security claims against sources. Use before merging docs with new technical claims or code examples, or whenever asked to verify a doc's technical accuracy.
-allowed-tools: Read Bash WebFetch WebSearch
----
-
 # ThunderID Docs — Technical Accuracy Review
 
 You are a senior engineer reviewing ThunderID documentation for technical correctness: catch claims that are wrong, subtly wrong, outdated, or oversimplified to the point of being wrong, before they ship to a reader who will try to follow them.
 
 This catches errors a reader would hit trying to follow the doc: a code example that doesn't compile, an API call with wrong parameters, a config option that doesn't exist, an OAuth flow described incorrectly. These errors make readers distrust the product.
 
-Not in scope: writing quality (`/docs-review-style`), structure/frontmatter/link format (`/docs-check`). Only whether the technical content is correct.
+Not in scope: writing quality (`style.md`), structure/frontmatter/link format (`check.md`). Only whether the technical content is correct.
 
 ---
 
 ## Usage
 
-Invoked as `/docs-review-tech [file-path]`. If no path is given, ask which file. If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop: it's agent instructions, not a documentation page.
+Read when the user asks to verify a doc's technical accuracy, or before merging docs with new technical claims or code examples. If no path is given, ask which file.
 
 ---
 
@@ -62,7 +56,7 @@ For every code block, check: **syntax** (compiles/parses, brackets, imports); **
 Common failures: wrong method name (`client.login()` vs. actual `client.signIn()`); missing required parameters; deprecated API surface; env var names that don't match what the SDK reads; unflagged placeholder values (`<YOUR_CLIENT_ID>`) left in runnable code.
 
 ### 4. API Endpoint and Parameter Claims
-Verify against the codebase: endpoint path exists (search route definitions), HTTP method correct, required headers (`Authorization`, `Content-Type`), request body param names/types, response structure/field names, stated error codes. Never assume an endpoint exists because the doc describes it.
+Verify against the codebase: endpoint path exists, HTTP method correct, required headers (`Authorization`, `Content-Type`), request body param names/types, response structure/field names, stated error codes. Never assume an endpoint exists because the doc describes it. Routes are registered via `mux.HandleFunc` in `backend/internal/<domain>/init.go` (e.g. `mux.HandleFunc(middleware.WithCORS("GET /users", ...))`) — that's the concrete pattern to grep for. For a dedicated OpenAPI spec or SDK reference page rather than an incidental API mention elsewhere, use `api.md` instead — it covers this in far more depth (full endpoint/schema coverage, not just spot-checking one claim).
 
 ### 5. Configuration Claims
 Verify against the config schema/struct: option name, default value, valid range/enum, and that the described behavior matches what the option actually controls.
@@ -75,7 +69,7 @@ For any "prevents/mitigates/protects against/secure against" claim: verify again
 Watch-list: "Tokens can't be forged" (signed tokens can't be *undetectably* forged; a key-holder can forge anything); "PKCE prevents CSRF" (PKCE prevents auth-code interception; CSRF is prevented by `state`); "The SDK handles token refresh automatically" (verify against the current SDK version); "Refresh tokens can be revoked" (verify against the actual revocation implementation); "This flow is secure for mobile" (only with PKCE — Implicit is not secure for mobile).
 
 ### 7. SDK Method Claims
-Search `sdks/javascript/` for the method definition. Verify name, parameter names/types, return type, existence in the targeted version, and any claimed default parameter values.
+SDK source no longer lives in this repo. If a `dist/` build exists locally for the relevant SDK (e.g. `sdks/node/dist/`) — check with `ls sdks/<sdk>/dist 2>/dev/null`, since it's untracked and not guaranteed to be present — use its `.d.ts` files for signatures/types and its bundled `.js` for runtime defaults/behavior. If it's not present, mark the claim UNVERIFIED with that reason rather than assuming correctness. For a dedicated SDK reference page rather than an incidental SDK mention elsewhere, use `api.md` instead — it covers this in far more depth (full member coverage, error-registry cross-checks, cross-SDK consistency), not just spot-checking one claim.
 
 ### 8. Step-by-Step Instruction Accuracy
 For quickstart/guide pages, every numbered step is a claim the action works. Verify: **prerequisites** (all actual ones listed, nothing unstated required); **step order** (must it be exact — if a non-obvious ordering matters, the doc should say so); **completeness** (each step gives everything needed for the next — a missing step is a false claim by omission); **expected outcomes** (stated results match actual product behavior); **ThunderID startup** (matches `get-thunderid.mdx`; a cloud-hosted-ThunderID page shouldn't include a local startup step).
@@ -87,7 +81,7 @@ Search `docs/content/` via `Bash` for the same topic elsewhere. If this page say
 Read end-to-end for internal contradictions: a term defined one way then used differently; two steps that contradict; prerequisites promising X while instructions assume not-X; "optional" in one place and "required" in another.
 
 ### 11. Diagram-to-Text Consistency
-For any Mermaid diagram, annotated screenshot, or other visual: **format** — must be a fenced ` ```mermaid ` block, not raw SVG/ASCII art (flag hand-built diagrams for `/docs-review-style` to rewrite; HIGH not CRITICAL unless the layout genuinely needs a non-Mermaid form). **No per-diagram color overrides** (`%%{init...}%%` or inline style/classDef — brand palette applies globally via `docusaurus.config.ts` → `themeConfig.mermaid`). **Step counts**, **labels**, **order**, and **step numbering** in the diagram must exactly match the prose (e.g. "Authorization Server" in the diagram vs. "auth server" in text is a mismatch; "Step 2" must be called "Step 2," not "the second step").
+For any Mermaid diagram, annotated screenshot, or other visual: **format** — must be a fenced ` ```mermaid ` block, not raw SVG/ASCII art (flag hand-built diagrams for `style.md` to rewrite; HIGH not CRITICAL unless the layout genuinely needs a non-Mermaid form). **No per-diagram color overrides** (`%%{init...}%%` or inline style/classDef — brand palette applies globally via `docusaurus.config.ts` → `themeConfig.mermaid`). **Step counts**, **labels**, **order**, and **step numbering** in the diagram must exactly match the prose (e.g. "Authorization Server" in the diagram vs. "auth server" in text is a mismatch; "Step 2" must be called "Step 2," not "the second step").
 
 For each mismatch: flag it, identify whether the diagram or the text is authoritative, and suggest which to update.
 
@@ -116,7 +110,7 @@ Read the page end-to-end as if following it for the first time. Ask: Would follo
 ## Output Format
 
 ```
-Reviewing: docs/content/guides/getting-started/connect-your-application/react.mdx
+Reviewing: docs/content/getting-started/connect-your-application/react.mdx
 Doc type: quickstart
 
 Claims identified: [N]
@@ -182,14 +176,15 @@ The review **FAILS** if any of:
 
 ## Scope Boundary
 
-| Check | This skill | Other skill |
+| Check | This reference | Other reference |
 |---|---|---|
 | Protocol/spec accuracy | ✅ | |
 | Code example correctness | ✅ | |
-| API/SDK accuracy | ✅ | |
+| API/SDK accuracy (a claim outside a dedicated reference page) | ✅ | |
+| Full API/SDK reference page review (endpoint coverage, schema accuracy, error registry, cross-SDK consistency) | | `api.md` |
 | Config option accuracy | ✅ | |
 | Security claim accuracy | ✅ | |
 | Cross-page consistency | ✅ | |
-| Writing quality, voice, AI vocab | | `/docs-review-style` |
-| Frontmatter, heading hierarchy, links | | `/docs-check` |
-| Doc-type writing patterns (voice, phrasing, section style) | | `/docs-review-style` |
+| Writing quality, voice, AI vocab | | `style.md` |
+| Frontmatter, heading hierarchy, links | | `check.md` |
+| Doc-type writing patterns (voice, phrasing, section style) | | `style.md` |
