@@ -89,7 +89,7 @@ overrides:
   # JUSTIFICATION: Fixes GHSA-xv26-6w52-cph6 — websocket-driver message corruption via protocol length headers, transitive via Docusaurus dev server sockjs/faye-websocket.
   websocket-driver: '>=0.7.5'
   # JUSTIFICATION: Packed through next@15.5.18. Could be resolved once next is updated to 16 versions.
-  postcss: 8.5.10
+  postcss: 8.5.12
   openapi-to-postmanv2>ajv: 8.18.0
   ajv-draft-04>ajv: 8.18.0
   ajv-formats>ajv: 8.18.0
