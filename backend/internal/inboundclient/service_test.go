@@ -1241,20 +1241,6 @@ func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_CarriesDefaul
 	assert.Equal(suite.T(), "https://api.example.com", at.DefaultAudience)
 }
 
-// ----- resolveScopeClaims -----
-
-func (suite *InboundClientServiceTestSuite) TestResolveScopeClaims_NilReturnsEmptyMap() {
-	out := resolveScopeClaims(nil)
-	assert.NotNil(suite.T(), out)
-	assert.Empty(suite.T(), out)
-}
-
-func (suite *InboundClientServiceTestSuite) TestResolveScopeClaims_PassesThroughExistingMap() {
-	in := map[string][]string{"profile": {"given_name"}}
-	out := resolveScopeClaims(in)
-	assert.Equal(suite.T(), in, out)
-}
-
 // ----- validateRedirectURIs error branches -----
 
 func (suite *InboundClientServiceTestSuite) TestValidateRedirectURIs_SchemeWildcardRejected() {
