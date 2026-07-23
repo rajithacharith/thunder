@@ -32,7 +32,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
-import {useState, useCallback, useMemo} from 'react';
+import {useState, useCallback, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useCreateUser from '../api/useCreateUser';
@@ -65,7 +65,7 @@ export default function UserCreatePage(): JSX.Element {
     setError,
   } = useUserCreate();
 
-  const {data: userTypesData} = useGetUserTypes();
+  const {data: userTypesData, isLoading: isUserTypesLoading, isFetching: isUserTypesFetching} = useGetUserTypes();
   const {data: userTypeDetails, isLoading: isSchemaLoading} = useGetUserType(selectedSchema?.id);
   const {
     data: childOuData,
@@ -81,26 +81,31 @@ export default function UserCreatePage(): JSX.Element {
   const isChildOuProbeFailed = !!childOuError && !isChildOuForbidden;
   const userTypes = useMemo(() => userTypesData?.types ?? [], [userTypesData]);
   const hasChildOUs = !isChildOuLoading && !childOuError && (childOuData?.totalResults ?? 0) > 0;
+  const isSingleUserType = !isUserTypesLoading && !isUserTypesFetching && userTypes.length === 1;
 
   const activeSteps = useMemo((): UserCreateFlowStep[] => {
-    const base: UserCreateFlowStep[] = [UserCreateFlowStep.USER_TYPE];
+    const base: UserCreateFlowStep[] = [];
+    if (!isSingleUserType) {
+      base.push(UserCreateFlowStep.USER_TYPE);
+    }
     if (hasChildOUs) {
       base.push(UserCreateFlowStep.ORGANIZATION_UNIT);
     }
     base.push(UserCreateFlowStep.USER_DETAILS);
     return base;
-  }, [hasChildOUs]);
+  }, [isSingleUserType, hasChildOUs]);
 
   const steps: Partial<Record<UserCreateFlowStep, {label: string}>> = useMemo(() => {
-    const map: Partial<Record<UserCreateFlowStep, {label: string}>> = {
-      USER_TYPE: {label: t('users:createWizard.steps.userType')},
-    };
+    const map: Partial<Record<UserCreateFlowStep, {label: string}>> = {};
+    if (!isSingleUserType) {
+      map.USER_TYPE = {label: t('users:createWizard.steps.userType')};
+    }
     if (hasChildOUs) {
       map.ORGANIZATION_UNIT = {label: t('users:createWizard.steps.organizationUnit')};
     }
     map.USER_DETAILS = {label: t('users:createWizard.steps.userDetails')};
     return map;
-  }, [t, hasChildOUs]);
+  }, [t, isSingleUserType, hasChildOUs]);
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -165,6 +170,58 @@ export default function UserCreatePage(): JSX.Element {
     [selectedSchema, setSelectedSchema, setSelectedOuId, setFormValues],
   );
 
+  // Resolve the OU for the selected type and move to the next step.
+  const advanceFromUserTypeStep = useCallback((): void => {
+    if (selectedSchema?.ouId && isChildOuLoading) {
+      // Wait for child OU probe to resolve before deciding
+      return;
+    }
+    if (isChildOuProbeFailed) {
+      setError(t('users:createWizard.errors.childOuProbeFailed'));
+      return;
+    }
+    if (hasChildOUs) {
+      setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
+      return;
+    }
+    if (isChildOuForbidden) {
+      // User doesn't have permission to list child OUs — fall back to the OU from the access token
+      if (tokenOuId) {
+        setSelectedOuId(tokenOuId);
+        setCurrentStep(UserCreateFlowStep.USER_DETAILS);
+      } else {
+        setError(t('users:createWizard.errors.noOuAccess'));
+      }
+      return;
+    }
+    // No child OUs - skip OU step and use the schema's OU directly
+    setSelectedOuId(selectedSchema?.ouId ?? null);
+    setCurrentStep(UserCreateFlowStep.USER_DETAILS);
+  }, [
+    selectedSchema,
+    isChildOuLoading,
+    isChildOuProbeFailed,
+    hasChildOUs,
+    isChildOuForbidden,
+    tokenOuId,
+    setError,
+    setSelectedOuId,
+    setCurrentStep,
+    t,
+  ]);
+
+  // With only one user type, auto-select it and skip the selection step.
+  useEffect((): void => {
+    if (!isSingleUserType || currentStep !== UserCreateFlowStep.USER_TYPE) {
+      return;
+    }
+    if (!selectedSchema) {
+      setSelectedSchema(userTypes[0]);
+      return;
+    }
+    advanceFromUserTypeStep();
+  }, [isSingleUserType, currentStep, selectedSchema, userTypes, setSelectedSchema, advanceFromUserTypeStep]);
+
   const handleSubmit = async (): Promise<void> => {
     setValidationError(null);
     setError(null);
@@ -207,29 +264,7 @@ export default function UserCreatePage(): JSX.Element {
   const handleNextStep = (): void => {
     switch (currentStep) {
       case UserCreateFlowStep.USER_TYPE:
-        if (selectedSchema?.ouId && isChildOuLoading) {
-          // Wait for child OU probe to resolve before deciding
-          return;
-        }
-        if (isChildOuProbeFailed) {
-          setError(t('users:createWizard.errors.childOuProbeFailed'));
-          return;
-        }
-        if (hasChildOUs) {
-          setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
-        } else if (isChildOuForbidden) {
-          // User doesn't have permission to list child OUs — fall back to the OU from the access token
-          if (tokenOuId) {
-            setSelectedOuId(tokenOuId);
-            setCurrentStep(UserCreateFlowStep.USER_DETAILS);
-          } else {
-            setError(t('users:createWizard.errors.noOuAccess'));
-          }
-        } else {
-          // No child OUs - skip OU step and use the schema's OU directly
-          setSelectedOuId(selectedSchema?.ouId ?? null);
-          setCurrentStep(UserCreateFlowStep.USER_DETAILS);
-        }
+        advanceFromUserTypeStep();
         break;
       case UserCreateFlowStep.ORGANIZATION_UNIT:
         setCurrentStep(UserCreateFlowStep.USER_DETAILS);
@@ -264,6 +299,16 @@ export default function UserCreatePage(): JSX.Element {
   const renderStepContent = (): JSX.Element | null => {
     switch (currentStep) {
       case UserCreateFlowStep.USER_TYPE:
+        if ((isUserTypesLoading || isUserTypesFetching || isSingleUserType) && !error) {
+          // Show loading while resolving types; on auto-resolution failure, allow retry.
+          return (
+            <Box sx={{textAlign: 'center', py: 4}}>
+              <Typography variant="body2" color="text.secondary">
+                {t('common:status.loading')}
+              </Typography>
+            </Box>
+          );
+        }
         return (
           <ConfigureUserType
             schemas={userTypes}
@@ -412,7 +457,7 @@ export default function UserCreatePage(): JSX.Element {
 
               {/* Navigation buttons */}
               <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{mt: 4}}>
-                {currentStep !== UserCreateFlowStep.USER_TYPE && (
+                {currentStep !== activeSteps[0] && (
                   <Button variant="text" onClick={handlePrevStep} disabled={createUserMutation.isPending}>
                     {t('common:actions.back')}
                   </Button>
