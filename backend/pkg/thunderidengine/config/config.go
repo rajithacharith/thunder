@@ -294,3 +294,12 @@ type ObservabilityOTelConfig struct {
 	// Insecure disables TLS for OTLP (not recommended for production)
 	Insecure bool `yaml:"insecure"        json:"insecure"`
 }
+
+// LogConfig configures the engine's internal logger.
+type LogConfig struct {
+	// Level is the minimum log level: "debug", "info", "warn", or "error".
+	// Empty keeps the engine's built-in default.
+	Level string `yaml:"level" json:"level"`
+	// Format selects the record format: "json" or "text" (default).
+	Format string `yaml:"format" json:"format"`
+}
