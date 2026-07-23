@@ -32,7 +32,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/oauth"
 	"github.com/thunder-id/thunderid/internal/authn/oidc"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
-	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	"github.com/thunder-id/thunderid/internal/authn/reactsdk"
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/notification"
@@ -52,7 +51,6 @@ func Initialize(
 	jwtSvc jwt.JWTServiceInterface,
 	authnProvider providers.AuthnProviderManager,
 	authAssertGen assert.AuthAssertGeneratorInterface,
-	passkeySvc passkey.PasskeyServiceInterface,
 	otpSvc otp.OTPAuthnServiceInterface,
 	notifSenderSvc notification.NotificationSenderServiceInterface,
 	templateSvc template.TemplateServiceInterface,
@@ -117,7 +115,6 @@ func Initialize(
 		oidcSvc,
 		googleSvc,
 		githubSvc,
-		passkeySvc,
 	)
 
 	directAuthGuard := newDirectAuthGuard(directAuthSecret)

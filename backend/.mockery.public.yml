@@ -289,9 +289,9 @@ packages:
       PasskeyServiceInterface:
         config:
           dir: tests/mocks/authn/passkeymock
-          structname: 'WebAuthnAuthnServiceInterfaceMock'
+          structname: 'PasskeyServiceInterfaceMock'
           pkgname: passkeymock
-          filename: "WebAuthnAuthnServiceInterface_mock.go"
+          filename: "PasskeyServiceInterface_mock.go"
 
   github.com/thunder-id/thunderid/internal/authn/common:
     config:

@@ -77,8 +77,9 @@ type AuthenticationServiceInterface interface {
 	StartPasskeyRegistration(ctx context.Context, userID, relyingPartyID, relyingPartyName string,
 		authSelection *PasskeyAuthenticatorSelectionDTO, attestation string,
 	) (interface{}, *tidcommon.ServiceError)
-	FinishPasskeyRegistration(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken,
-		credentialName string) (interface{}, *tidcommon.ServiceError)
+	FinishPasskeyRegistration(ctx context.Context, credential PasskeyPublicKeyCredentialDTO,
+		sessionToken string, skipAssertion bool, existingAssertion string,
+	) (*common.AuthenticationResponse, *tidcommon.ServiceError)
 	StartPasskeyAuthentication(
 		ctx context.Context, userID, relyingPartyID string,
 	) (interface{}, *tidcommon.ServiceError)
@@ -106,7 +107,6 @@ type authenticationService struct {
 	oidcService            oidc.OIDCAuthnServiceInterface
 	googleService          google.GoogleOIDCAuthnServiceInterface
 	githubService          github.GithubOAuthAuthnServiceInterface
-	passkeyService         passkey.PasskeyServiceInterface
 }
 
 // newAuthenticationService creates a new instance of AuthenticationService.
@@ -123,7 +123,6 @@ func newAuthenticationService(
 	oidcAuthnSvc oidc.OIDCAuthnServiceInterface,
 	googleAuthnSvc google.GoogleOIDCAuthnServiceInterface,
 	githubAuthnSvc github.GithubOAuthAuthnServiceInterface,
-	passkeySvc passkey.PasskeyServiceInterface,
 ) AuthenticationServiceInterface {
 	return &authenticationService{
 		idpService:             idpSvc,
@@ -138,7 +137,6 @@ func newAuthenticationService(
 		oidcService:            oidcAuthnSvc,
 		googleService:          googleAuthnSvc,
 		githubService:          githubAuthnSvc,
-		passkeyService:         passkeySvc,
 	}
 }
 
@@ -754,14 +752,22 @@ func (as *authenticationService) StartPasskeyRegistration(
 		Attestation:            attestation,
 	}
 
-	return as.passkeyService.StartRegistration(ctx, req)
+	result, svcErr := as.authnProvider.InitiateEnrollment(ctx, passkey.CredentialType, req, nil)
+	if svcErr != nil {
+		if svcErr.Type == tidcommon.ServerErrorType {
+			return nil, &tidcommon.InternalServerError
+		}
+		return nil, &ErrorPasskeyEnrollmentFailed
+	}
+	return result, nil
 }
 
 // FinishPasskeyRegistration completes the passkey registration process.
 func (as *authenticationService) FinishPasskeyRegistration(
 	ctx context.Context, credential PasskeyPublicKeyCredentialDTO,
-	sessionToken, credentialName string,
-) (interface{}, *tidcommon.ServiceError) {
+	sessionToken string, skipAssertion bool,
+	existingAssertion string,
+) (*common.AuthenticationResponse, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug(ctx, "Finishing Passkey registration")
 
@@ -771,10 +777,18 @@ func (as *authenticationService) FinishPasskeyRegistration(
 		ClientDataJSON:    credential.Response.ClientDataJSON,
 		AttestationObject: credential.Response.AttestationObject,
 		SessionToken:      sessionToken,
-		CredentialName:    credentialName,
+	}
+	credentials := map[string]interface{}{passkey.CredentialType: req}
+	authUser, _, svcErr := as.authnProvider.Enroll(
+		ctx, nil, credentials, nil, nil, providers.AuthUser{})
+	if svcErr != nil {
+		if svcErr.Type == tidcommon.ServerErrorType {
+			return nil, &tidcommon.InternalServerError
+		}
+		return nil, &ErrorPasskeyEnrollmentFailed
 	}
 
-	return as.passkeyService.FinishRegistration(ctx, req)
+	return as.buildPasskeyAuthenticationResponse(ctx, authUser, skipAssertion, existingAssertion, logger)
 }
 
 // StartPasskeyAuthentication starts the passkey authentication process.
@@ -787,7 +801,14 @@ func (as *authenticationService) StartPasskeyAuthentication(ctx context.Context,
 		UserID:         userID,
 		RelyingPartyID: relyingPartyID,
 	}
-	return as.passkeyService.StartAuthentication(ctx, req)
+	result, svcErr := as.authnProvider.InitiateAuthentication(ctx, passkey.CredentialType, req, nil)
+	if svcErr != nil {
+		if svcErr.Type == tidcommon.ServerErrorType {
+			return nil, &tidcommon.InternalServerError
+		}
+		return nil, &ErrorPasskeyAuthenticationFailed
+	}
+	return result, nil
 }
 
 // FinishPasskeyAuthentication completes the passkey authentication process.
@@ -806,19 +827,24 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		UserHandle:        response.UserHandle,
 		SessionToken:      sessionToken,
 	}
-	credentials := map[string]interface{}{"passkey": passkeyCredential}
+	credentials := map[string]interface{}{passkey.CredentialType: passkeyCredential}
 	authUser, _, svcErr := as.authnProvider.AuthenticateUser(
 		ctx, nil, credentials, nil, nil, providers.AuthUser{})
 	if svcErr != nil {
 		if svcErr.Type == tidcommon.ServerErrorType {
 			return nil, &tidcommon.InternalServerError
 		}
-		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
-			return nil, &ErrorPasskeyAuthenticationFailed
-		}
-		return nil, svcErr
+		return nil, &ErrorPasskeyAuthenticationFailed
 	}
 
+	return as.buildPasskeyAuthenticationResponse(ctx, authUser, skipAssertion, existingAssertion, logger)
+}
+
+// buildPasskeyAuthenticationResponse resolves the entity reference for an authenticated
+// AuthUser and builds the authentication response.
+func (as *authenticationService) buildPasskeyAuthenticationResponse(ctx context.Context,
+	authUser providers.AuthUser, skipAssertion bool, existingAssertion string, logger *log.Logger,
+) (*common.AuthenticationResponse, *tidcommon.ServiceError) {
 	_, entityRef, svcErr := as.authnProvider.GetEntityReference(ctx, authUser)
 	if svcErr != nil {
 		return nil, as.mapCredentialsGetAttributesError(ctx, svcErr, logger)
@@ -830,21 +856,18 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		OUID: entityRef.OUID,
 	}
 
-	// Generate assertion if not skipped
-	if !skipAssertion {
-		// Create entity object from authResponse for assertion generation
-		userForAssertion := &providers.Entity{
-			ID:   entityRef.EntityID,
-			Type: entityRef.EntityType,
-			OUID: entityRef.OUID,
-		}
-
-		svcErr = as.validateAndAppendAuthAssertion(ctx, authResponse, userForAssertion, common.AuthenticatorPasskey,
-			existingAssertion, logger)
-		if svcErr != nil {
-			return nil, svcErr
-		}
+	if skipAssertion {
+		return authResponse, nil
 	}
 
+	userForAssertion := &providers.Entity{
+		ID:   entityRef.EntityID,
+		Type: entityRef.EntityType,
+		OUID: entityRef.OUID,
+	}
+	if svcErr := as.validateAndAppendAuthAssertion(ctx, authResponse, userForAssertion,
+		common.AuthenticatorPasskey, existingAssertion, logger); svcErr != nil {
+		return nil, svcErr
+	}
 	return authResponse, nil
 }

@@ -58,6 +58,20 @@ type GetAttributesRequest struct {
 	Metadata            *providers.GetAttributesMetadata `json:"metadata"`
 }
 
+// InitiateRequest is the request body for the initiate-authentication and initiate-enrollment endpoints.
+type InitiateRequest struct {
+	CredentialType string                   `json:"credentialType"`
+	InitData       any                      `json:"initData"`
+	Metadata       *providers.AuthnMetadata `json:"metadata"`
+}
+
+// EnrollRequest is the request body for the enrollment endpoint.
+type EnrollRequest struct {
+	Identifiers map[string]interface{}   `json:"identifiers"`
+	Credentials map[string]interface{}   `json:"credentials"`
+	Metadata    *providers.AuthnMetadata `json:"metadata"`
+}
+
 type apiErrorResponse struct {
 	Code        string `json:"code"`
 	Message     string `json:"message"`
@@ -74,6 +88,22 @@ func newRestAuthnProvider(baseURL, apiKey, correlationIDHeader string,
 		httpClient:          httpClient,
 		logger:              log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RestAuthnProvider")),
 	}
+}
+
+// InitiateAuthentication initiates authentication for a credential type via the external service.
+// The response payload is provider-defined, so it is passed through as raw JSON for the caller to decode.
+func (p *restAuthnProvider) InitiateAuthentication(ctx context.Context, credentialType string, initData any,
+	metadata *providers.AuthnMetadata) (any, *tidcommon.ServiceError) {
+	reqBody := InitiateRequest{
+		CredentialType: credentialType,
+		InitData:       initData,
+		Metadata:       metadata,
+	}
+	result, svcErr := postAndDecode[json.RawMessage](p, ctx, p.baseURL+"/initiate-authentication", reqBody)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	return *result, nil
 }
 
 // Authenticate authenticates a user.
@@ -105,6 +135,33 @@ func (p *restAuthnProvider) GetAttributes(ctx context.Context, token any,
 		Metadata:            metadata,
 	}
 	return postAndDecode[providers.AttributesResponse](p, ctx, p.baseURL+"/attributes", reqBody)
+}
+
+// InitiateEnrollment initiates credential enrollment for a credential type via the external service.
+// The response payload is provider-defined, so it is passed through as raw JSON for the caller to decode.
+func (p *restAuthnProvider) InitiateEnrollment(ctx context.Context, credentialType string, initData any,
+	metadata *providers.AuthnMetadata) (any, *tidcommon.ServiceError) {
+	reqBody := InitiateRequest{
+		CredentialType: credentialType,
+		InitData:       initData,
+		Metadata:       metadata,
+	}
+	result, svcErr := postAndDecode[json.RawMessage](p, ctx, p.baseURL+"/initiate-enrollment", reqBody)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	return *result, nil
+}
+
+// Enroll enrolls a credential for a user via the external service.
+func (p *restAuthnProvider) Enroll(ctx context.Context, identifiers, credentials map[string]interface{},
+	metadata *providers.AuthnMetadata) (*providers.AuthnResult, *tidcommon.ServiceError) {
+	reqBody := EnrollRequest{
+		Identifiers: identifiers,
+		Credentials: credentials,
+		Metadata:    metadata,
+	}
+	return postAndDecode[providers.AuthnResult](p, ctx, p.baseURL+"/enroll", reqBody)
 }
 
 // postAndDecode marshals reqBody as JSON, posts it to url, and decodes the response into T.
@@ -144,6 +201,7 @@ func (p *restAuthnProvider) logAndReturnServerError(
 func isClientError(statusCode int, code string) bool {
 	return (statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError) ||
 		code == authnprovidercm.ErrorCodeAuthenticationFailed ||
+		code == authnprovidercm.ErrorCodeEnrollmentFailed ||
 		code == authnprovidercm.ErrorCodeUserNotFound ||
 		code == authnprovidercm.ErrorCodeInvalidToken ||
 		code == authnprovidercm.ErrorCodeInvalidRequest

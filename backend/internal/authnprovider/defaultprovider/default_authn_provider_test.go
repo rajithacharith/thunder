@@ -46,14 +46,14 @@ import (
 type DefaultAuthnProviderTestSuite struct {
 	suite.Suite
 	mockService   *entitymock.EntityServiceInterfaceMock
-	mockPasskey   *passkeymock.WebAuthnAuthnServiceInterfaceMock
+	mockPasskey   *passkeymock.PasskeyServiceInterfaceMock
 	mockFederated *commonmock.FederatedAuthenticatorMock
 	provider      authnprovider.AuthnProviderInterface
 }
 
 func (suite *DefaultAuthnProviderTestSuite) SetupTest() {
 	suite.mockService = entitymock.NewEntityServiceInterfaceMock(suite.T())
-	suite.mockPasskey = passkeymock.NewWebAuthnAuthnServiceInterfaceMock(suite.T())
+	suite.mockPasskey = passkeymock.NewPasskeyServiceInterfaceMock(suite.T())
 	suite.mockFederated = commonmock.NewFederatedAuthenticatorMock(suite.T())
 	suite.provider = Initialize(suite.mockService, nil, nil, nil, nil, nil)
 }
@@ -1384,4 +1384,111 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Federated_ServerErr
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestInitiateAuthentication_Passkey() {
+	provider := Initialize(suite.mockService, suite.mockPasskey, nil, nil, nil, nil)
+	req := &passkey.PasskeyAuthenticationStartRequest{UserID: "user123", RelyingPartyID: "example.com"}
+	startData := &passkey.PasskeyAuthenticationStartData{SessionToken: "sess-1"}
+	suite.mockPasskey.On("StartAuthentication", mock.Anything, req).Return(startData, nil).Once()
+
+	result, err := provider.InitiateAuthentication(context.Background(), passkey.CredentialType, req, nil)
+
+	suite.Nil(err)
+	suite.Equal(startData, result)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestInitiateAuthentication_UnsupportedType() {
+	result, err := suite.provider.InitiateAuthentication(context.Background(), "otp", nil, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(tidcommon.ServerErrorType, err.Type)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestInitiateAuthentication_InvalidPayload() {
+	provider := Initialize(suite.mockService, suite.mockPasskey, nil, nil, nil, nil)
+
+	result, err := provider.InitiateAuthentication(context.Background(), passkey.CredentialType, "bad", nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidRequest, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestInitiateEnrollment_Passkey() {
+	provider := Initialize(suite.mockService, suite.mockPasskey, nil, nil, nil, nil)
+	req := &passkey.PasskeyRegistrationStartRequest{UserID: "user123", RelyingPartyID: "example.com"}
+	startData := &passkey.PasskeyRegistrationStartData{SessionToken: "sess-1"}
+	suite.mockPasskey.On("StartRegistration", mock.Anything, req).Return(startData, nil).Once()
+
+	result, err := provider.InitiateEnrollment(context.Background(), passkey.CredentialType, req, nil)
+
+	suite.Nil(err)
+	suite.Equal(startData, result)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestInitiateEnrollment_InvalidPayload() {
+	provider := Initialize(suite.mockService, suite.mockPasskey, nil, nil, nil, nil)
+
+	result, err := provider.InitiateEnrollment(context.Background(), passkey.CredentialType, 42, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidRequest, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestEnroll_Passkey_Success() {
+	provider := Initialize(suite.mockService, suite.mockPasskey, nil, nil, nil, nil)
+	req := &passkey.PasskeyRegistrationFinishRequest{CredentialID: "cred-1"}
+	credentials := map[string]interface{}{"passkey": req}
+	suite.mockPasskey.On("FinishRegistration", mock.Anything, req).
+		Return(&authncommon.AuthnResult{
+			Token:               map[string]interface{}{"userID": "user123"},
+			AuthenticatedClaims: map[string]interface{}{"userID": "user123"},
+		}, nil).Once()
+
+	entityObj := &providers.Entity{
+		ID:         "user123",
+		Category:   providers.EntityCategoryUser,
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{}`),
+	}
+	suite.mockService.On("GetEntity", mock.Anything, "user123").Return(entityObj, nil).Once()
+
+	result, err := provider.Enroll(context.Background(), nil, credentials, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result.EntityReference)
+	suite.Equal("user123", result.EntityReference.EntityID)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestEnroll_NilCredentials() {
+	result, err := suite.provider.Enroll(context.Background(), nil, nil, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeEnrollmentFailed, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestEnroll_Passkey_InvalidPayload() {
+	provider := Initialize(suite.mockService, suite.mockPasskey, nil, nil, nil, nil)
+	credentials := map[string]interface{}{"passkey": "not-a-request-struct"}
+
+	result, err := provider.Enroll(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidRequest, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestEnroll_UnsupportedCredential() {
+	credentials := map[string]interface{}{"unsupported": "x"}
+
+	result, err := suite.provider.Enroll(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(tidcommon.ServerErrorType, err.Type)
 }

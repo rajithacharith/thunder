@@ -300,3 +300,111 @@ func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
 	suite.Equal(tidcommon.ServerErrorType, err.Type)
 }
+
+func (suite *RestAuthnProviderTestSuite) TestInitiateAuthentication_Success() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		suite.Equal("/initiate-authentication", r.URL.Path)
+		suite.Equal(http.MethodPost, r.Method)
+
+		var req InitiateRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		suite.Equal("passkey", req.CredentialType)
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"challenge":"abc"}`))
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "", "X-Correlation-ID", suite.setupMockClient())
+	result, err := provider.InitiateAuthentication(context.Background(), "passkey",
+		map[string]interface{}{"relyingPartyId": "example.com"}, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	raw, ok := result.(json.RawMessage)
+	suite.True(ok)
+	suite.JSONEq(`{"challenge":"abc"}`, string(raw))
+}
+
+func (suite *RestAuthnProviderTestSuite) TestInitiateAuthentication_Failure() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(apiErrorResponse{Code: authnprovidercm.ErrorCodeInvalidRequest,
+			Message: "bad", Description: "bad request"})
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "", "X-Correlation-ID", suite.setupMockClient())
+	result, err := provider.InitiateAuthentication(context.Background(), "passkey", nil, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(tidcommon.ClientErrorType, err.Type)
+}
+
+func (suite *RestAuthnProviderTestSuite) TestInitiateEnrollment_Success() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		suite.Equal("/initiate-enrollment", r.URL.Path)
+
+		var req InitiateRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		suite.Equal("passkey", req.CredentialType)
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"creationOptions":"xyz"}`))
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "", "X-Correlation-ID", suite.setupMockClient())
+	result, err := provider.InitiateEnrollment(context.Background(), "passkey",
+		map[string]interface{}{"userId": "user-1"}, nil)
+
+	suite.Nil(err)
+	raw, ok := result.(json.RawMessage)
+	suite.True(ok)
+	suite.JSONEq(`{"creationOptions":"xyz"}`, string(raw))
+}
+
+func (suite *RestAuthnProviderTestSuite) TestEnroll_Success() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		suite.Equal("/enroll", r.URL.Path)
+		suite.Equal(http.MethodPost, r.Method)
+
+		var req EnrollRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		suite.Equal("cred", req.Credentials["passkey"])
+
+		resp := providers.AuthnResult{
+			EntityReference: &providers.EntityReference{EntityID: "user123", EntityType: "customer", OUID: "ou1"},
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "", "X-Correlation-ID", suite.setupMockClient())
+	credentials := map[string]interface{}{"passkey": "cred"}
+
+	result, err := provider.Enroll(context.Background(), nil, credentials, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result.EntityReference)
+	suite.Equal("user123", result.EntityReference.EntityID)
+}
+
+func (suite *RestAuthnProviderTestSuite) TestEnroll_Failure() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(apiErrorResponse{Code: authnprovidercm.ErrorCodeEnrollmentFailed,
+			Message: "failed", Description: "enrollment failed"})
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "", "X-Correlation-ID", suite.setupMockClient())
+	result, err := provider.Enroll(context.Background(), nil, map[string]interface{}{"passkey": "cred"}, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(tidcommon.ClientErrorType, err.Type)
+	suite.Equal(authnprovidercm.ErrorCodeEnrollmentFailed, err.Code)
+}

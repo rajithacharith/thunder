@@ -22,6 +22,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
@@ -826,8 +827,8 @@ func TestNewAuthnProviderManager_NamedProviderHandlesClaimedCredential(t *testin
 
 func (s *ManagerTestSuite) TestAuthenticateUser_MultipleCredentialKeys() {
 	identifiers := map[string]interface{}{"username": "alice"}
-	// Multiple credential keys make the request ambiguous and must be rejected
-	// rather than routed to an arbitrarily chosen provider.
+	// Multiple credential keys make the request ambiguous. Callers must supply exactly one
+	// key, so this is treated as an internal fault (server error) rather than a client error.
 	credentials := map[string]interface{}{"password": "secret", "otp": "123456"}
 	meta := &providers.AuthnMetadata{}
 
@@ -835,9 +836,126 @@ func (s *ManagerTestSuite) TestAuthenticateUser_MultipleCredentialKeys() {
 		nil, meta, providers.AuthUser{})
 
 	s.NotNil(svcErr)
-	s.Equal(ErrorInvalidRequest.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 	s.False(authUser.IsAuthenticated())
 	s.mockProvider.AssertNotCalled(s.T(), "Authenticate")
+}
+
+func (s *ManagerTestSuite) TestInitiateAuthentication_RoutesToDefaultProvider() {
+	initData := map[string]interface{}{"relyingPartyId": "example.com"}
+	meta := &providers.AuthnMetadata{}
+	expected := map[string]interface{}{"challenge": "abc"}
+
+	s.mockProvider.On("InitiateAuthentication", context.Background(), "passkey", initData, meta).
+		Return(expected, (*tidcommon.ServiceError)(nil))
+
+	result, svcErr := s.mgr.InitiateAuthentication(context.Background(), "passkey", initData, meta)
+
+	s.Nil(svcErr)
+	s.Equal(expected, result)
+}
+
+func (s *ManagerTestSuite) TestInitiateAuthentication_ProviderError() {
+	provErr := &tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: "X"}
+	s.mockProvider.On("InitiateAuthentication", context.Background(), "passkey", mock.Anything, mock.Anything).
+		Return(nil, provErr)
+
+	result, svcErr := s.mgr.InitiateAuthentication(context.Background(), "passkey", nil, nil)
+
+	s.Nil(result)
+	s.Equal(provErr, svcErr)
+}
+
+func (s *ManagerTestSuite) TestInitiateEnrollment_RoutesToDefaultProvider() {
+	initData := map[string]interface{}{"userId": "user-1"}
+	expected := map[string]interface{}{"creationOptions": "xyz"}
+
+	s.mockProvider.On("InitiateEnrollment", context.Background(), "passkey", initData, mock.Anything).
+		Return(expected, (*tidcommon.ServiceError)(nil))
+
+	result, svcErr := s.mgr.InitiateEnrollment(context.Background(), "passkey", initData, nil)
+
+	s.Nil(svcErr)
+	s.Equal(expected, result)
+}
+
+func (s *ManagerTestSuite) TestEnroll_Success() {
+	credentials := map[string]interface{}{"passkey": "cred"}
+	meta := &providers.AuthnMetadata{}
+	entityRefToken := map[string]interface{}{"userID": "user-1"}
+	claims := providers.AuthenticatedClaims{"userID": "user-1"}
+
+	s.mockProvider.On("Enroll", context.Background(), map[string]interface{}(nil), credentials, meta).
+		Return(&providers.AuthnResult{
+			EntityReferenceToken: entityRefToken,
+			AttributeToken:       entityRefToken,
+			AuthenticatedClaims:  claims,
+		}, (*tidcommon.ServiceError)(nil))
+
+	authUser, rtClaims, svcErr := s.mgr.Enroll(context.Background(), nil, credentials, nil, meta, providers.AuthUser{})
+
+	s.Nil(svcErr)
+	s.Equal(claims, rtClaims)
+	s.True(authUser.IsAuthenticated())
+	st, ok := authUser.StateFor(defaultProviderName)
+	s.True(ok)
+	s.Equal(entityRefToken, st.EntityReferenceToken)
+}
+
+func (s *ManagerTestSuite) TestEnroll_ServerError() {
+	credentials := map[string]interface{}{"passkey": "cred"}
+	s.mockProvider.On("Enroll", context.Background(), mock.Anything, credentials, mock.Anything).
+		Return(nil, &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "boom"})
+
+	authUser, _, svcErr := s.mgr.Enroll(context.Background(), nil, credentials, nil, nil, providers.AuthUser{})
+
+	s.NotNil(svcErr)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
+	s.False(authUser.IsAuthenticated())
+}
+
+func (s *ManagerTestSuite) TestEnroll_ClientErrorMapping() {
+	cases := []struct {
+		providerCode string
+		expectedCode string
+	}{
+		{authnprovidercm.ErrorCodeUserNotFound, ErrorUserNotFound.Code},
+		{authnprovidercm.ErrorCodeInvalidRequest, ErrorInvalidRequest.Code},
+		{authnprovidercm.ErrorCodeEnrollmentFailed, ErrorEnrollmentFailed.Code},
+		{"SOMETHING_ELSE", ErrorEnrollmentFailed.Code},
+	}
+	for _, tc := range cases {
+		s.SetupTest()
+		credentials := map[string]interface{}{"passkey": "cred"}
+		s.mockProvider.On("Enroll", context.Background(), mock.Anything, credentials, mock.Anything).
+			Return(nil, &tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: tc.providerCode})
+
+		_, _, svcErr := s.mgr.Enroll(context.Background(), nil, credentials, nil, nil, providers.AuthUser{})
+
+		s.NotNil(svcErr)
+		s.Equal(tc.expectedCode, svcErr.Code, "provider code %s", tc.providerCode)
+	}
+}
+
+func (s *ManagerTestSuite) TestEnroll_EmptyCredentials() {
+	// Empty credentials must not panic (selectProvider guards len != 1) and is a server error.
+	authUser, _, svcErr := s.mgr.Enroll(context.Background(), nil, map[string]interface{}{},
+		nil, nil, providers.AuthUser{})
+
+	s.NotNil(svcErr)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
+	s.False(authUser.IsAuthenticated())
+	s.mockProvider.AssertNotCalled(s.T(), "Enroll")
+}
+
+func (s *ManagerTestSuite) TestEnroll_MultipleCredentialKeys() {
+	credentials := map[string]interface{}{"passkey": "cred", "otp": "123456"}
+	authUser, _, svcErr := s.mgr.Enroll(context.Background(), nil, credentials, nil, nil, providers.AuthUser{})
+
+	s.NotNil(svcErr)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
+	s.False(authUser.IsAuthenticated())
+	s.mockProvider.AssertNotCalled(s.T(), "Enroll")
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_Disambiguation_NoDefaultProviderState() {
