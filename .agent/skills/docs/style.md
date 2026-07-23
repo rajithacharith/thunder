@@ -1,22 +1,16 @@
----
-name: docs-review-style
-description: Reviews existing ThunderID doc MDX content for writing quality: AI vocabulary, passive voice, condescension, em/en dashes, contractions, rhetorical scaffolding, promotional tone, step structure, and voice drift vs sibling pages. Reports issues with quotes and rewrites; never fixes silently. Use whenever asked to review, polish, improve, or fix the writing or tone of a doc, or make it sound less AI-generated. For new content, use `/docs-edit`.
-allowed-tools: Read Bash
----
-
 # ThunderID Docs Writing Quality Review
 
-Review an existing `.mdx` file for writing quality, linguistic consistency, and AI-writing-pattern detection. Report every issue with the exact quote and a suggested rewrite; never fix silently. Structure, frontmatter, and links are `/docs-check`'s job; technical accuracy is `/docs-review-tech`'s; new content is `/docs-edit`'s.
+Review an existing `.mdx` file for writing quality, linguistic consistency, and AI-writing-pattern detection. Report every issue with the exact quote and a suggested rewrite; never fix silently. Structure, frontmatter, and links are `check.md`'s job; technical accuracy is `tech.md`'s; new content is `edit.md`'s.
 
 ## Usage
 
-Invoked as `/docs-review-style [file-path]`. If no path is given, ask which file. If the path is a `SKILL.md` under `.agent/skills/` or `.claude/skills/`, stop: these are agent instructions, not documentation, and style rules don't apply.
+Read when the user asks to review, polish, improve, or fix the writing or tone of a doc, or make it sound less AI-generated. If no path is given, ask which file.
 
 ---
 
 ## Step 1: Identify the Doc Type
 
-Read the full file. Read the `docType` frontmatter field — every page has one (`quickstart`, `guide`, `concept`, `reference`, `use-case`, or `community`) and `docs-check` gates on it being present and valid, so this is the source of truth, not a guess from structure.
+Read the full file. Read the `docType` frontmatter field — every page has one (`quickstart`, `guide`, `concept`, `reference`, `use-case`, or `community`) and `check.md` gates on it being present and valid, so this is the source of truth, not a guess from structure.
 
 - **quickstart** — step-by-step guide connecting a technology to ThunderID; `<Stepper>` with imperative H2 steps
 - **guide** — task-oriented how-to, no Stepper
@@ -248,7 +242,7 @@ Count steps in a single Stepper/numbered sequence.
 Not a hard gate. 10+ steps:
 1. Propose a specific restructuring: split into multiple pages (genuinely separate tasks), group into labeled phases (one continuous task with natural internal structure), or fold trivial steps ("click Save") into a neighbor.
 2. Ask the user directly whether the flat structure or the restructuring is better (batch with Step Locality below if both apply).
-3. If confirmed intentional: mark ✅ passed. If they want to restructure: mark `[needs writer input]`.
+3. If confirmed intentional: mark ✅ passed, tell them the exact marker to add (`steps={N}`) — write it via `edit.md` or a manual edit. If they want to restructure: mark `[needs writer input]`.
 
 "Too many steps, shorten it" alone is not a finding — the count only triggers the conversation.
 
@@ -261,7 +255,7 @@ Not a hard gate. 2+ steps at the same location are separated by an unrelated-loc
 Before flagging, check for a genuine dependency (an intervening step produces something the return step needs) — if so, skip the flag. When it applies: propose the reordered/regrouped sequence, ask the user directly (batch with Step Count if both fire). If confirmed intentional: mark ✅. Otherwise `[needs writer input]`.
 
 ### Batching Step Count and Step Locality Questions
-If both need to ask on the same page, combine into one message (matching how `/docs-new-page` batches its questions):
+If both need to ask on the same page, combine into one message (matching how `new-page.md` batches its questions):
 
 > This page has two structural things worth confirming:
 > 1. **Step count** — {N} steps. {proposal or "no restructuring needed"}
@@ -303,7 +297,7 @@ Apply after universal checks; these override Step 2/3 where they conflict. For r
 ### Guide
 **Intro**: leads with the task/outcome, not a page description. ❌ "This guide is about configuring X." / "This guide walks you through X." → ✅ "Configure X to enable Y in your application."
 
-**No "This page/guide/document" openers in body** (docs-check only checks this in frontmatter `description`).
+**No "This page/guide/document" openers in body** (`check.md` only checks this in frontmatter `description`).
 
 **Page ending**: `## Next Steps` or `## Related Guides`. Flag `## Go Further`, `## What's Next?`, or others.
 
@@ -338,7 +332,7 @@ Apply after universal checks; these override Step 2/3 where they conflict. For r
 Group findings by check category; omit categories with no issues. Per finding: quote the text (with line number), state what's wrong in one line, suggest a rewrite or mark `[needs writer input]`.
 
 ```
-Reviewing: docs/content/guides/guides/applications/manage-applications.mdx
+Reviewing: docs/content/guides/applications/manage-applications.mdx
 Doc type: guide
 Sibling pages read: manage-users.mdx, manage-roles.mdx
 

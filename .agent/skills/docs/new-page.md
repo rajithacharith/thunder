@@ -1,16 +1,10 @@
----
-name: docs-new-page
-description: Scaffolds a new ThunderID doc MDX file, registers it in the sidebar, and verifies no orphan is created. Use whenever asked to create, add, or write documentation for a new guide, quickstart, concept, reference, or use-case page — including requests like "document this feature" or "write docs for X" when no existing page covers the topic.
-allowed-tools: Read Write Bash Edit
----
-
 # ThunderID New Doc Page Scaffold
 
 Create a new `.mdx` file, register it in the sidebar in the best available position, and verify the result. The file should be ready to fill in with content and CI should pass — no follow-up steps required.
 
 ## Usage
 
-Invoked as `/docs-new-page`
+Read when the user asks to create, add, or write documentation for a new guide, quickstart, concept, reference, or use-case page — including requests like "document this feature" or "write docs for X" when no existing page covers the topic.
 
 ## Phase 1: Collect Information
 
@@ -19,7 +13,7 @@ Collect everything upfront; if anything is missing, ask for all of it in one mes
 1. **Page type** — one of `quickstart`, `guide`, `concept`, `reference`, `use-case`. Written to frontmatter as `docType`.
 2. **Title** — for `title:` frontmatter and the H1.
 3. **Description** — the meta description, roughly 70-200 chars (neither is a hard limit; too thin and Google may ignore it, too long and it truncates), must not start with "This page/guide/document". Draft one and confirm if the user hasn't provided it.
-4. **File path** — relative to `docs/content/`. Infer from context if obvious ("a new React quickstart" → `guides/getting-started/connect-your-application/react.mdx`).
+4. **File path** — relative to `docs/content/`. Infer from context if obvious ("a new React quickstart" → `getting-started/connect-your-application/react.mdx`).
 
 Don't ask for `sidebar_position` — derive it in Phase 2.
 
@@ -42,7 +36,7 @@ For each result, read enough (title, description, headings) to judge genuine top
 If a genuine match is found, stop and ask:
 > I found an existing page that may already cover this: **{EXISTING_TITLE}** (`{EXISTING_PATH}`). Do you want to edit that page instead of creating a new one, or is this a genuinely different page?
 
-Include the title, path, and a one-line summary. Wait for the answer: **edit existing** → stop this skill, suggest `/docs-edit {EXISTING_PATH}`; **different page** → continue to Phase 2.
+Include the title, path, and a one-line summary. Wait for the answer: **edit existing** → stop this skill, edit that page instead following `edit.md`; **different page** → continue to Phase 2.
 
 If no genuine match, say so briefly and continue.
 
@@ -62,7 +56,7 @@ Use the highest existing value + 1, or `1` if no siblings have one.
 - Don't add extra links/further reading/`Next Steps` entries beyond the template default unless provided.
 - A well-founded guess (e.g. from a sibling page's structure) goes in your reply as a suggestion to confirm, never written directly into the file.
 
-**Diagrams:** use a fenced ` ```mermaid ` block; never raw SVG/ASCII art; no per-diagram color overrides (brand colors apply site-wide via `docusaurus.config.ts` → `themeConfig.mermaid`). Full rule: `/docs-review-style`.
+**Diagrams:** use a fenced ` ```mermaid ` block; never raw SVG/ASCII art; no per-diagram color overrides (brand colors apply site-wide via `docusaurus.config.ts` → `themeConfig.mermaid`). Full rule: `style.md`.
 
 ## Phase 3: Place in Sidebar
 
@@ -91,12 +85,12 @@ Read `docs/sidebars.ts` in full; for `docs/content/sdks/<sdk>/` pages, also read
 For `docsSidebar`:
 | File path starts with | Section |
 |---|---|
-| `guides/getting-started/` | **Get Started** |
-| `guides/working-with-ai/` | **Working with AI** |
+| `getting-started/` | **Get Started** |
+| `working-with-ai/` | **Working with AI** |
 | `use-cases/` | **Use Cases** |
-| `guides/guides/` | **Guides** |
-| `guides/key-concepts/` | **Key Concepts** |
-| `guides/deployment-patterns/` | **Deployment Patterns** |
+| `guides/` | **Guides** |
+| `key-concepts/` | **Key Concepts** |
+| `deployment/` | **Deployment** |
 
 No prefix match → pick the section whose existing pages are most topically related.
 
@@ -144,7 +138,7 @@ Before touching `docs/sidebars.ts` (or the SDK's `sidebar.ts`), present and wait
 If the user wants a different section/category/position/label, revise and re-present. Don't proceed to Step 8 without explicit approval.
 
 ### Step 8: Apply the sidebar edit
-Doc ID = file path relative to `docs/content/`, minus `.mdx` (e.g. `docs/content/guides/guides/flows/build-a-flow.mdx` → `guides/guides/flows/build-a-flow`).
+Doc ID = file path relative to `docs/content/`, minus `.mdx` (e.g. `docs/content/guides/flows/build-a-flow.mdx` → `guides/flows/build-a-flow`).
 
 ```ts
 {type: 'doc', id: '{DOC_ID}', label: '{LABEL}'},
@@ -167,12 +161,12 @@ Or wrapped in a new category (Step 4):
 Example, inserting after the last item in a category:
 ```
 old_string:
-            {type: 'doc', id: 'guides/guides/flows/advanced-configurations', label: 'Advanced Configurations'},
+            {type: 'doc', id: 'guides/flows/advanced-configurations', label: 'Advanced Configurations'},
           ],
 
 new_string:
-            {type: 'doc', id: 'guides/guides/flows/advanced-configurations', label: 'Advanced Configurations'},
-            {type: 'doc', id: 'guides/guides/flows/build-a-flow', label: 'Build a Flow'},
+            {type: 'doc', id: 'guides/flows/advanced-configurations', label: 'Advanced Configurations'},
+            {type: 'doc', id: 'guides/flows/build-a-flow', label: 'Build a Flow'},
           ],
 ```
 
@@ -187,7 +181,7 @@ Check "Sidebar orphans" — no new `❌` for the new page. If it's still flagged
 
 ## Phase 5: Report to the User
 
-Tell the user: file created (`docs/content/{FILE_PATH}`); sidebar entry added (section → category → label, plus the exact TypeScript snippet); lint result (PASS or warnings); remaining `{PLACEHOLDER}`s that need content; the command to run a full quality check once filled in: `/docs-review docs/content/{FILE_PATH}`.
+Tell the user: file created (`docs/content/{FILE_PATH}`); sidebar entry added (section → category → label, plus the exact TypeScript snippet); lint result (PASS or warnings); remaining `{PLACEHOLDER}`s that need content; that a full quality check (`review.md`) is available once it's filled in.
 
 ## Templates
 
