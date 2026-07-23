@@ -27,8 +27,8 @@ import {useNavigate} from 'react-router';
 import UserDeleteDialog from './UserDeleteDialog';
 import useGetUsers from '../api/useGetUsers';
 import UserConstants from '../constants/user-constants';
+import useUserRoutes from '../hooks/useUserRoutes';
 import type {UserWithDetails} from '../models/users';
-import useUserRoutes from '../routes/useUserRoutes';
 
 export default function UsersList() {
   const navigate = useNavigate();

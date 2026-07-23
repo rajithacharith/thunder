@@ -26,8 +26,8 @@ import ConnectionForm from '../components/ConnectionForm';
 import ConnectionFullPageLayout from '../components/ConnectionFullPageLayout';
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
+import useConnectionRoutes from '../hooks/useConnectionRoutes';
 import type {ConnectionResponse, ConnectionType} from '../models/connection';
-import useConnectionRoutes from '../routes/useConnectionRoutes';
 import {
   type ConnectionFormValues,
   emptyFormValues,

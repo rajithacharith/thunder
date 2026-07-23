@@ -42,8 +42,8 @@ import ConfigureOrganizationUnit from '../components/create-user/ConfigureOrgani
 import ConfigureUserDetails from '../components/create-user/ConfigureUserDetails';
 import ConfigureUserType from '../components/create-user/ConfigureUserType';
 import useUserCreate from '../contexts/UserCreate/useUserCreate';
+import useUserRoutes from '../hooks/useUserRoutes';
 import {UserCreateFlowStep} from '../models/user-create-flow';
-import useUserRoutes from '../routes/useUserRoutes';
 
 export default function UserCreatePage(): JSX.Element {
   const {t} = useTranslation();

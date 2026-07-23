@@ -25,7 +25,7 @@ import {useNavigate, useParams} from 'react-router';
 import NamespaceSelector from '@/components/edit-translation/NamespaceSelector';
 import TranslationEditorCard from '@/components/edit-translation/TranslationEditorCard';
 import TranslationEditorHeader from '@/components/edit-translation/TranslationEditorHeader';
-import useTranslationRoutes from '@/routes/useTranslationRoutes';
+import useTranslationRoutes from '@/hooks/useTranslationRoutes';
 
 interface ToastState {
   open: boolean;

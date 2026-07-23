@@ -26,8 +26,8 @@ import ConnectionCard from './ConnectionCard';
 import ConnectionCategoryFilters, {type CategoryFilterValue} from './ConnectionCategoryFilters';
 import useConnections from '../api/useConnections';
 import {CONNECTION_VENDOR_META} from '../config/connectionVendorMeta';
+import useConnectionRoutes from '../hooks/useConnectionRoutes';
 import type {ConnectionCardModel} from '../models/connection';
-import useConnectionRoutes from '../routes/useConnectionRoutes';
 import buildConnectionCards from '../utils/buildConnectionCards';
 
 const SKELETON_COUNT = 6;

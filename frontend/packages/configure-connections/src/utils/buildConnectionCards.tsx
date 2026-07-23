@@ -18,13 +18,13 @@
 
 import {ResourceAvatar} from '@thunderid/components';
 import ConnectionConstants from '../constants/connection-constants';
+import {defaultConnectionRoutePaths, type ConnectionRoutePaths} from '../hooks/useConnectionRoutes';
 import {
   ConnectionTypes,
   type ConnectionCardModel,
   type ConnectionInstance,
   type ConnectionVendorMeta,
 } from '../models/connection';
-import {defaultConnectionRoutePaths, type ConnectionRoutePaths} from '../routes/types';
 
 /** i18n key for the trusted issuer card's description, resolved by the rendering component. */
 const TRUSTED_IDP_DESCRIPTION_KEY = 'connections:vendor.trustedIdp.description';

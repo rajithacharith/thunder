@@ -22,7 +22,7 @@ import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import UserTypesList from '../components/UserTypesList';
-import useUserTypeRoutes from '../routes/useUserTypeRoutes';
+import useUserTypeRoutes from '../hooks/useUserTypeRoutes';
 
 export default function UserTypesListPage() {
   const navigate = useNavigate();

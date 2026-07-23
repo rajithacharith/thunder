@@ -25,6 +25,5 @@ export {default as TranslationsEditPage} from './pages/TranslationsEditPage';
 export {default as TranslationsListPage} from './pages/TranslationsListPage';
 
 // Routes
-export type {TranslationRoutePaths} from './routes/types';
-export {defaultTranslationRoutePaths} from './routes/types';
-export {default as useTranslationRoutes} from './routes/useTranslationRoutes';
+export type {TranslationRoutePaths} from './hooks/useTranslationRoutes';
+export {defaultTranslationRoutePaths, default as useTranslationRoutes} from './hooks/useTranslationRoutes';

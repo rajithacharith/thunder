@@ -27,7 +27,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import TranslationConstants from '../constants/translation-constants';
 import TranslationDeleteDialog from '@/components/TranslationDeleteDialog';
-import useTranslationRoutes from '@/routes/useTranslationRoutes';
+import useTranslationRoutes from '@/hooks/useTranslationRoutes';
 
 export default function TranslationsList(): JSX.Element {
   const theme = useTheme();

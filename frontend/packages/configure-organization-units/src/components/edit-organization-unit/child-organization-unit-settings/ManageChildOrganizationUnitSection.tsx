@@ -25,9 +25,9 @@ import {useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useGetChildOrganizationUnits from '../../../api/useGetChildOrganizationUnits';
+import useOrganizationUnitRoutes from '../../../hooks/useOrganizationUnitRoutes';
 import type {OUNavigationState} from '../../../models/navigation';
 import type {OrganizationUnit} from '../../../models/organization-unit';
-import useOrganizationUnitRoutes from '../../../routes/useOrganizationUnitRoutes';
 
 /**
  * Props for the {@link ManageChildOrganizationUnitSection} component.

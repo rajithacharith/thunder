@@ -22,9 +22,9 @@ import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
 import useGetOrganizationUnit from '../../../api/useGetOrganizationUnit';
+import useOrganizationUnitRoutes from '../../../hooks/useOrganizationUnitRoutes';
 import type {OUNavigationState} from '../../../models/navigation';
 import type {OrganizationUnit} from '../../../models/organization-unit';
-import useOrganizationUnitRoutes from '../../../routes/useOrganizationUnitRoutes';
 
 /**
  * Props for the {@link ParentSettingsSection} component.

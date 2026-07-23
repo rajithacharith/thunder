@@ -20,6 +20,7 @@ import {render, screen, userEvent, waitFor, fireEvent} from '@thunderid/test-uti
 import {afterEach, describe, expect, it, vi} from 'vitest';
 
 const mockNavigate = vi.fn();
+let mockPathname = '/import-configuration';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: (key: string) => key}),
@@ -27,7 +28,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
-  return {...actual, useNavigate: () => mockNavigate};
+  return {...actual, useNavigate: () => mockNavigate, useLocation: () => ({pathname: mockPathname})};
 });
 
 vi.mock('@thunderid/logger/react', () => ({
@@ -62,6 +63,7 @@ import ImportConfigurationUploadPage from '../ImportConfigurationUploadPage';
 
 afterEach(() => {
   vi.clearAllMocks();
+  mockPathname = '/import-configuration';
 });
 
 describe('ImportConfigurationUploadPage', () => {
@@ -112,6 +114,25 @@ describe('ImportConfigurationUploadPage', () => {
     await user.click(screen.getByRole('button', {name: 'common:actions.close'}));
 
     expect(mockNavigate).toHaveBeenCalledWith('/home');
+  });
+
+  it('navigates to /import-export when the default breadcrumb is clicked outside the welcome flow', async () => {
+    const user = userEvent.setup();
+    render(<ImportConfigurationUploadPage />);
+
+    await user.click(screen.getByText('landing.title'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/import-export');
+  });
+
+  it('navigates to /welcome when the welcome breadcrumb is clicked from the welcome flow', async () => {
+    mockPathname = '/welcome/import-configuration';
+    const user = userEvent.setup();
+    render(<ImportConfigurationUploadPage />);
+
+    await user.click(screen.getByText('common:welcome.header'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome');
   });
 
   it('shows error when non-yaml file is selected', () => {

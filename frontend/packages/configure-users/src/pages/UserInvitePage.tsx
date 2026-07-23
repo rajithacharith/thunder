@@ -57,7 +57,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import {z} from 'zod';
 import CredentialFieldInput from '../components/CredentialFieldInput';
-import useUserRoutes from '../routes/useUserRoutes';
+import useUserRoutes from '../hooks/useUserRoutes';
 
 /** Typed shape for flow sub-components */
 type FlowSubComponent = EmbeddedFlowComponent & {

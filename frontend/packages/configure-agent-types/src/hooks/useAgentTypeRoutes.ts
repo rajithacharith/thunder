@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {useRoutes} from '@thunderid/contexts';
+
 /**
  * Route paths this package needs from the host application.
  *
@@ -51,3 +53,20 @@ export const defaultAgentTypeRoutePaths: AgentTypeRoutePaths = {
     list: () => '/agents',
   },
 };
+
+/**
+ * Resolves the agent type (and agent listing) route paths, preferring the host application's
+ * configuration (supplied via `RoutesProvider`) and falling back to this package's own defaults.
+ *
+ * Components should never hardcode these destination paths; they should call this hook and
+ * build the destination from the returned functions instead.
+ *
+ * @public
+ */
+export default function useAgentTypeRoutes(): AgentTypeRoutePaths {
+  const routes = useRoutes<Partial<AgentTypeRoutePaths>>();
+  return {
+    agentTypes: routes.agentTypes ?? defaultAgentTypeRoutePaths.agentTypes,
+    agents: routes.agents ?? defaultAgentTypeRoutePaths.agents,
+  };
+}

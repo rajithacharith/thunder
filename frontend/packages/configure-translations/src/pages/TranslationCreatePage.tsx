@@ -28,8 +28,8 @@ import ReviewLocaleCode from '@/components/create-translation/ReviewLocaleCode';
 import SelectCountry from '@/components/create-translation/SelectCountry';
 import SelectLanguage from '@/components/create-translation/SelectLanguage';
 import useTranslationCreate from '@/contexts/TranslationCreate/useTranslationCreate';
+import useTranslationRoutes from '@/hooks/useTranslationRoutes';
 import {TranslationCreateFlowStep} from '@/models/translation-create-flow';
-import useTranslationRoutes from '@/routes/useTranslationRoutes';
 
 const STEPS: TranslationCreateFlowStep[] = [
   TranslationCreateFlowStep.COUNTRY,

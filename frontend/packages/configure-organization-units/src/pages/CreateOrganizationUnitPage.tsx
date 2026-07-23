@@ -41,8 +41,8 @@ import {useNavigate, useLocation} from 'react-router';
 import {z} from 'zod';
 import useCreateOrganizationUnit from '../api/useCreateOrganizationUnit';
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
+import useOrganizationUnitRoutes from '../hooks/useOrganizationUnitRoutes';
 import type {CreateOrganizationUnitRequest} from '../models/requests';
-import useOrganizationUnitRoutes from '../routes/useOrganizationUnitRoutes';
 
 /**
  * Creates a Zod schema for the create organization unit form with i18n support.

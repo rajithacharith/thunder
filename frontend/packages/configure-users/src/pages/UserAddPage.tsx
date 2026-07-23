@@ -32,7 +32,7 @@ import {Send, UserPlus, X} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useUserRoutes from '../routes/useUserRoutes';
+import useUserRoutes from '../hooks/useUserRoutes';
 
 interface AddUserOption {
   route: string;

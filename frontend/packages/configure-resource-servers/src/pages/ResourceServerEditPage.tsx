@@ -46,7 +46,7 @@ import ResourceTree from '../components/resource-tree/ResourceTree';
 import ResourceServerDeleteDialog from '../components/ResourceServerDeleteDialog';
 import SetDefaultResourceServerDialog from '../components/SetDefaultResourceServerDialog';
 import {getResourceServerTypeLabel} from '../config/resource-server-types';
-import useResourceServerRoutes from '../routes/useResourceServerRoutes';
+import useResourceServerRoutes from '../hooks/useResourceServerRoutes';
 
 interface TabPanelProps {
   children?: React.ReactNode;

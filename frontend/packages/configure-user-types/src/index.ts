@@ -84,6 +84,5 @@ export {default as UserTypesListPage} from './pages/UserTypesListPage';
 export {default as ViewUserTypePage} from './pages/ViewUserTypePage';
 
 // Routes
-export type {UserTypeRoutePaths} from './routes/types';
-export {defaultUserTypeRoutePaths} from './routes/types';
-export {default as useUserTypeRoutes} from './routes/useUserTypeRoutes';
+export type {UserTypeRoutePaths} from './hooks/useUserTypeRoutes';
+export {defaultUserTypeRoutePaths, default as useUserTypeRoutes} from './hooks/useUserTypeRoutes';

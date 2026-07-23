@@ -58,7 +58,7 @@ import EditUserAttributes from '../components/edit-user/EditUserAttributes';
 import QuickCopySection from '../components/edit-user/QuickCopySection';
 import UserDeleteDialog from '../components/UserDeleteDialog';
 import UserConstants from '../constants/user-constants';
-import useUserRoutes from '../routes/useUserRoutes';
+import useUserRoutes from '../hooks/useUserRoutes';
 
 interface TabPanelProps {
   children?: ReactNode;

@@ -17,7 +17,36 @@
  */
 
 import {useRoutes} from '@thunderid/contexts';
-import {defaultUserTypeRoutePaths, type UserTypeRoutePaths} from './types';
+
+/**
+ * Route paths this package needs from the host application.
+ *
+ * The host supplies these via `@thunderid/contexts`'s `RoutesProvider`. When absent (e.g. this
+ * package rendered standalone in Storybook or a unit test), `useUserTypeRoutes` falls back
+ * to `defaultUserTypeRoutePaths` below.
+ *
+ * @public
+ */
+export interface UserTypeRoutePaths {
+  userTypes: {
+    list: () => string;
+    detail: (id: string) => string;
+    create: () => string;
+  };
+}
+
+/**
+ * Default user type paths, used when no host-supplied override is present.
+ *
+ * @public
+ */
+export const defaultUserTypeRoutePaths: UserTypeRoutePaths = {
+  userTypes: {
+    list: () => '/user-types',
+    detail: (id) => `/user-types/${id}`,
+    create: () => '/user-types/create',
+  },
+};
 
 /**
  * Resolves the user type route paths, preferring the host application's configuration

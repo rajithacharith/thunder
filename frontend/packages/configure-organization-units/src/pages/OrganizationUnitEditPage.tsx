@@ -47,9 +47,9 @@ import EditUsers from '../components/edit-organization-unit/user-settings/EditUs
 import OrganizationUnitDeleteDialog from '../components/OrganizationUnitDeleteDialog';
 import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
+import useOrganizationUnitRoutes from '../hooks/useOrganizationUnitRoutes';
 import type {OUNavigationState} from '../models/navigation';
 import type {OrganizationUnit} from '../models/organization-unit';
-import useOrganizationUnitRoutes from '../routes/useOrganizationUnitRoutes';
 
 interface TabPanelProps {
   children?: ReactNode;

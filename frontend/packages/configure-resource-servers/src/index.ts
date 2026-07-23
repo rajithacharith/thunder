@@ -85,6 +85,5 @@ export {default as ResourceServerEditPage} from './pages/ResourceServerEditPage'
 export {default as CreateResourceServerPage} from './pages/CreateResourceServerPage';
 
 // Routes
-export type {ResourceServerRoutePaths} from './routes/types';
-export {defaultResourceServerRoutePaths} from './routes/types';
-export {default as useResourceServerRoutes} from './routes/useResourceServerRoutes';
+export type {ResourceServerRoutePaths} from './hooks/useResourceServerRoutes';
+export {defaultResourceServerRoutePaths, default as useResourceServerRoutes} from './hooks/useResourceServerRoutes';

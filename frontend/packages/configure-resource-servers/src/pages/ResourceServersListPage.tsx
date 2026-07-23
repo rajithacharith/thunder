@@ -23,7 +23,7 @@ import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ResourceServersList from '../components/ResourceServersList';
-import useResourceServerRoutes from '../routes/useResourceServerRoutes';
+import useResourceServerRoutes from '../hooks/useResourceServerRoutes';
 
 export default function ResourceServersListPage(): JSX.Element {
   const navigate = useNavigate();

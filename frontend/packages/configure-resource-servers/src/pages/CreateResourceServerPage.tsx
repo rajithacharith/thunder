@@ -40,9 +40,9 @@ import ConfigureOrgUnit from '../components/create-resource-server/ConfigureOrgU
 import ConfigureSeparator from '../components/create-resource-server/ConfigureSeparator';
 import ConfigureType from '../components/create-resource-server/ConfigureType';
 import {DEFAULT_PERMISSION_DELIMITER} from '../constants/permission-constants';
+import useResourceServerRoutes from '../hooks/useResourceServerRoutes';
 import type {PermissionDelimiter} from '../models/permissions';
 import type {ResourceServerType} from '../models/resource-server';
-import useResourceServerRoutes from '../routes/useResourceServerRoutes';
 
 const ResourceServerCreateStep = {
   TYPE: 'TYPE',

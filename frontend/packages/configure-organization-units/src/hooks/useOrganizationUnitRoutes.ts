@@ -17,7 +17,36 @@
  */
 
 import {useRoutes} from '@thunderid/contexts';
-import {defaultOrganizationUnitRoutePaths, type OrganizationUnitRoutePaths} from './types';
+
+/**
+ * Route paths this package needs from the host application.
+ *
+ * The host supplies these via `@thunderid/contexts`'s `RoutesProvider`. When absent (e.g. this
+ * package rendered standalone in Storybook or a unit test), `useOrganizationUnitRoutes` falls
+ * back to `defaultOrganizationUnitRoutePaths` below.
+ *
+ * @public
+ */
+export interface OrganizationUnitRoutePaths {
+  organizationUnits: {
+    list: () => string;
+    detail: (id: string) => string;
+    create: () => string;
+  };
+}
+
+/**
+ * Default organization unit paths, used when no host-supplied override is present.
+ *
+ * @public
+ */
+export const defaultOrganizationUnitRoutePaths: OrganizationUnitRoutePaths = {
+  organizationUnits: {
+    list: () => '/organization-units',
+    detail: (id) => `/organization-units/${id}`,
+    create: () => '/organization-units/create',
+  },
+};
 
 /**
  * Resolves the organization unit route paths, preferring the host application's configuration

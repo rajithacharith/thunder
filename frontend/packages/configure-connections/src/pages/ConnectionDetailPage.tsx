@@ -33,8 +33,8 @@ import ConnectionForm from '../components/ConnectionForm';
 import ReadOnlyCopyField from '../components/ReadOnlyCopyField';
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
+import useConnectionRoutes from '../hooks/useConnectionRoutes';
 import type {AttributeConfiguration, ConnectionType} from '../models/connection';
-import useConnectionRoutes from '../routes/useConnectionRoutes';
 import {
   type ConnectionFormValues,
   formValuesToRequest,

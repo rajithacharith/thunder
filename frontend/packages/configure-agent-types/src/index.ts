@@ -34,6 +34,5 @@ export * from './models/responses';
 export {default as ViewAgentTypePage} from './pages/ViewAgentTypePage';
 
 // Routes
-export type {AgentTypeRoutePaths} from './routes/types';
-export {defaultAgentTypeRoutePaths} from './routes/types';
-export {default as useAgentTypeRoutes} from './routes/useAgentTypeRoutes';
+export type {AgentTypeRoutePaths} from './hooks/useAgentTypeRoutes';
+export {defaultAgentTypeRoutePaths, default as useAgentTypeRoutes} from './hooks/useAgentTypeRoutes';

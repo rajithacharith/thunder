@@ -27,8 +27,8 @@ import ResourceServerDeleteDialog from './ResourceServerDeleteDialog';
 import useGetDefaultResourceServer from '../api/useGetDefaultResourceServer';
 import useGetResourceServers from '../api/useGetResourceServers';
 import {getResourceServerTypeLabel} from '../config/resource-server-types';
+import useResourceServerRoutes from '../hooks/useResourceServerRoutes';
 import type {ResourceServer} from '../models/resource-server';
-import useResourceServerRoutes from '../routes/useResourceServerRoutes';
 
 export default function ResourceServersList(): JSX.Element {
   const navigate = useNavigate();

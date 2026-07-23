@@ -38,8 +38,8 @@ import ConfigureGeneral from '../components/create-user-type/ConfigureGeneral';
 import ConfigureName from '../components/create-user-type/ConfigureName';
 import ConfigureProperties from '../components/create-user-type/ConfigureProperties';
 import useUserTypeCreate from '../contexts/UserTypeCreate/useUserTypeCreate';
+import useUserTypeRoutes from '../hooks/useUserTypeRoutes';
 import {UserTypeCreateFlowStep} from '../models/user-type-create-flow';
-import useUserTypeRoutes from '../routes/useUserTypeRoutes';
 import type {PropertyDefinition, UserTypeDefinition, CreateUserTypeRequest} from '../types/user-types';
 
 export default function CreateUserTypePage(): JSX.Element {

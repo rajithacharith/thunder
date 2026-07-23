@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {useRoutes} from '@thunderid/contexts';
+
 /**
  * Route paths this package needs from the host application.
  *
@@ -45,3 +47,17 @@ export const defaultResourceServerRoutePaths: ResourceServerRoutePaths = {
     create: () => '/resource-servers/create',
   },
 };
+
+/**
+ * Resolves the resource server route paths, preferring the host application's configuration
+ * (supplied via `RoutesProvider`) and falling back to this package's own defaults.
+ *
+ * Components should never hardcode resource server destination paths; they should call this
+ * hook and build the destination from the returned functions instead.
+ *
+ * @public
+ */
+export default function useResourceServerRoutes(): ResourceServerRoutePaths['resourceServers'] {
+  const routes = useRoutes<Partial<ResourceServerRoutePaths>>();
+  return routes.resourceServers ?? defaultResourceServerRoutePaths.resourceServers;
+}

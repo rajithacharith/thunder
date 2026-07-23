@@ -65,9 +65,8 @@ export {default as ConnectionDetailPage} from './pages/ConnectionDetailPage';
 export {default as ConnectionsListPage} from './pages/ConnectionsListPage';
 
 // Routes
-export type {ConnectionRoutePaths} from './routes/types';
-export {defaultConnectionRoutePaths} from './routes/types';
-export {default as useConnectionRoutes} from './routes/useConnectionRoutes';
+export type {ConnectionRoutePaths} from './hooks/useConnectionRoutes';
+export {defaultConnectionRoutePaths, default as useConnectionRoutes} from './hooks/useConnectionRoutes';
 
 // Utils
 export * from './utils/attributeConfiguration';

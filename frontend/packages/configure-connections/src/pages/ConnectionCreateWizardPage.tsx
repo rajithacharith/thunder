@@ -30,8 +30,8 @@ import SelectConnectionType, {
 } from '../components/create-connection/SelectConnectionType';
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
+import useConnectionRoutes from '../hooks/useConnectionRoutes';
 import {type ConnectionResponse, type ConnectionType, ConnectionTypes} from '../models/connection';
-import useConnectionRoutes from '../routes/useConnectionRoutes';
 import {
   type ConnectionFormValues,
   emptyFormValues,

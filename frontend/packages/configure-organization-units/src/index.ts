@@ -76,9 +76,11 @@ export {default as OrganizationUnitEditPage} from './pages/OrganizationUnitEditP
 export {default as OrganizationUnitsListPage} from './pages/OrganizationUnitsListPage';
 
 // Routes
-export type {OrganizationUnitRoutePaths} from './routes/types';
-export {defaultOrganizationUnitRoutePaths} from './routes/types';
-export {default as useOrganizationUnitRoutes} from './routes/useOrganizationUnitRoutes';
+export type {OrganizationUnitRoutePaths} from './hooks/useOrganizationUnitRoutes';
+export {
+  defaultOrganizationUnitRoutePaths,
+  default as useOrganizationUnitRoutes,
+} from './hooks/useOrganizationUnitRoutes';
 
 // Utils
 export {default as appendTreeItemChildren} from './utils/appendTreeItemChildren';

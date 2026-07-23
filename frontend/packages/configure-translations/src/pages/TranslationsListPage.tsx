@@ -23,7 +23,7 @@ import {useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import TranslationsList from '@/components/TranslationsList';
-import useTranslationRoutes from '@/routes/useTranslationRoutes';
+import useTranslationRoutes from '@/hooks/useTranslationRoutes';
 
 /**
  * Page that lists all configured translation languages in a data grid.

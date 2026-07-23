@@ -40,7 +40,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useDeleteUserType from '../api/useDeleteUserType';
 import useGetUserTypes from '../api/useGetUserTypes';
-import useUserTypeRoutes from '../routes/useUserTypeRoutes';
+import useUserTypeRoutes from '../hooks/useUserTypeRoutes';
 import type {UserTypeListItem} from '../types/user-types';
 
 type GridColDef<R extends DataGrid.GridValidRowModel = DataGrid.GridValidRowModel> = DataGrid.GridColDef<R>;

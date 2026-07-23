@@ -28,13 +28,13 @@ import {Link, useNavigate, useParams} from 'react-router';
 import useGetAgentType from '../api/useGetAgentType';
 import useUpdateAgentType from '../api/useUpdateAgentType';
 import EditSchemaSettings from '../components/edit-agent-type/schema-settings/EditSchemaSettings';
+import useAgentTypeRoutes from '../hooks/useAgentTypeRoutes';
 import type {
   AgentTypeDefinition,
   PropertyDefinition,
   PropertyType,
   SchemaPropertyInput,
 } from '../models/property-definition';
-import useAgentTypeRoutes from '../routes/useAgentTypeRoutes';
 
 /**
  * Convert API schema to editable property inputs.
