@@ -307,7 +307,15 @@ flowType: AUTHENTICATION
 nodes:
 - id: start
   type: START
-  onSuccess: prompt_credentials
+  onSuccess: sso_check
+- id: sso_check
+  type: TASK_EXECUTION
+  executor:
+    name: SSOCheckExecutor
+  properties:
+    checkpointRef: session
+  onSuccess: session
+  onFailure: prompt_credentials
 - id: prompt_credentials
   type: PROMPT
   meta:
@@ -363,8 +371,13 @@ nodes:
   type: TASK_EXECUTION
   executor:
     name: CredentialsAuthExecutor
-  onSuccess: authorization_check
+  onSuccess: session
   onIncomplete: prompt_credentials
+- id: session
+  type: TASK_EXECUTION
+  executor:
+    name: SessionExecutor
+  onSuccess: authorization_check
 - id: authorization_check
   type: TASK_EXECUTION
   executor:
@@ -377,6 +390,75 @@ nodes:
   onSuccess: end
 - id: end
   type: END
+---
+resource_type: flow
+id: 01900000-0000-7000-8000-00000000006a
+name: Default Sign Out Flow
+handle: console-signout-flow
+flowType: SIGNOUT
+nodes:
+- id: start
+  type: START
+  onSuccess: prompt_confirm
+  layout:
+    size:
+      width: 101
+      height: 34
+    position:
+      x: 62
+      y: 278
+- id: prompt_confirm
+  type: PROMPT
+  layout:
+    size:
+      width: 350
+      height: 300
+    position:
+      x: 463
+      y: 150
+  meta:
+    components:
+    - type: TEXT
+      id: text_signout_title
+      label: '{{ t(signout:forms.confirm.title) }}'
+      variant: HEADING_1
+    - type: TEXT
+      id: text_signout_desc
+      label: '{{ t(signout:forms.confirm.description) }}'
+      variant: BODY_1
+    - type: BLOCK
+      id: block_signout
+      components:
+      - type: ACTION
+        id: action_confirm
+        label: '{{ t(signout:forms.confirm.actions.submit.label) }}'
+        variant: PRIMARY
+        eventType: SUBMIT
+  prompts:
+  - action:
+      ref: action_confirm
+      nextNode: session_signout
+- id: session_signout
+  type: TASK_EXECUTION
+  layout:
+    size:
+      width: 217
+      height: 113
+    position:
+      x: 960
+      y: 240
+  executor:
+    name: SessionSignOutExecutor
+  onSuccess: end
+- id: end
+  type: END
+  layout:
+    size:
+      width: 85
+      height: 34
+    position:
+      x: 1400
+      y: 278
 ---
 resource_type: flow
 id: 01900000-0000-7000-8000-000000000067
@@ -4697,6 +4779,8 @@ logoUrl: "avatar:shape=rounded,variant=anonymous_entity,content=cube,colors=0,bg
 authFlowId: 01900000-0000-7000-8000-000000000068
 registrationFlowId: 01900000-0000-7000-8000-000000000069
 isRegistrationFlowEnabled: false
+signOutFlowId: 01900000-0000-7000-8000-00000000006a
+isSignOutFlowEnabled: true
 allowedUserTypes:
   - Person
 inboundAuthConfig:
@@ -4704,6 +4788,11 @@ inboundAuthConfig:
     config:
       clientId: CONSOLE
       redirectUris:
+        - "{{ .PUBLIC_URL }}/console"
+        {{- range .CONSOLE_REDIRECT_URIS }}
+        - "{{ . }}"
+        {{- end }}
+      postLogoutRedirectUris:
         - "{{ .PUBLIC_URL }}/console"
         {{- range .CONSOLE_REDIRECT_URIS }}
         - "{{ . }}"

@@ -158,6 +158,11 @@ export default function DashboardLayout({collapseSidebar = false}: DashboardLayo
       return;
     }
 
+    // Native ThunderID session: signOut() performs OIDC RP-Initiated Logout, the SDK's default
+    // behavior (no client config required). It clears the local session and redirects to ThunderID's
+    // end_session_endpoint, which confirms the sign-out, terminates the SSO session server-side, and
+    // returns to the console. It falls back to a local-only sign out when no end_session_endpoint is
+    // advertised.
     signOut().catch((error: unknown) => {
       logger.error('Sign out failed', {error});
     });
