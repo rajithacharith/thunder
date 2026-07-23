@@ -130,14 +130,14 @@ type ConsentProvider interface {
 	ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
 		essentialAttributes, optionalAttributes, authorizedPermissions []string,
 		availableAttributes *AttributesResponse, forceReprompt bool,
-		runtimeMetadata map[string]string) (
+		runtimeMetadata map[string][]string) (
 		*ConsentPromptData, *common.ServiceError)
 
 	// RecordConsent records the user's consent decisions and returns the persisted consent record.
 	// If the user denied any essential attribute, ErrorEssentialConsentDenied is returned.
 	RecordConsent(ctx context.Context, ouID, appID, userID string,
 		decisions *ConsentDecisions, sessionToken string, validityPeriod int64,
-		runtimeMetadata map[string]string) (
+		runtimeMetadata map[string][]string) (
 		*Consent, *common.ServiceError)
 }
 

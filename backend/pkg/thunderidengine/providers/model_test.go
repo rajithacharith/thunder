@@ -242,6 +242,38 @@ func (suite *ModelTestSuite) TestNodeContext_ConsumeInput_AccumulatesAcrossCalls
 	assert.Equal(suite.T(), []string{"a", "c", "b"}, nc.GetConsumedInputs())
 }
 
+// ----- NodeContext initiator request -----
+
+func (suite *ModelTestSuite) TestNodeContext_GetInitiatorRequest_NilByDefault() {
+	nc := &NodeContext{}
+
+	assert.Nil(suite.T(), nc.GetInitiatorRequest())
+}
+
+func (suite *ModelTestSuite) TestNodeContext_SetAndGetInitiatorRequest() {
+	nc := &NodeContext{}
+	req := &InitiatorRequest{
+		Headers:     map[string][]string{"X-Custom": {"val"}},
+		QueryParams: map[string][]string{"client_id": {"my-client"}},
+	}
+
+	nc.SetInitiatorRequest(req)
+
+	got := nc.GetInitiatorRequest()
+	assert.Equal(suite.T(), req, got)
+	assert.Equal(suite.T(), []string{"val"}, got.Headers["X-Custom"])
+	assert.Equal(suite.T(), []string{"my-client"}, got.QueryParams["client_id"])
+}
+
+func (suite *ModelTestSuite) TestNodeContext_SetInitiatorRequest_Nil() {
+	nc := &NodeContext{}
+	nc.SetInitiatorRequest(&InitiatorRequest{})
+
+	nc.SetInitiatorRequest(nil)
+
+	assert.Nil(suite.T(), nc.GetInitiatorRequest())
+}
+
 // ----- AttestationConfig -----
 
 func (suite *ModelTestSuite) TestAttestationConfig_WithoutCredentials_NilReceiver() {

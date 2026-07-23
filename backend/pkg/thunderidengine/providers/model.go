@@ -359,8 +359,7 @@ type ConditionDefinition struct {
 
 // AuthnMetadata contains metadata for authentication.
 type AuthnMetadata struct {
-	AppMetadata     map[string]interface{} `json:"appMetadata,omitempty"`
-	RuntimeMetadata map[string]string      `json:"runtimeMetadata,omitempty"`
+	RuntimeMetadata map[string][]string `json:"runtimeMetadata,omitempty"`
 }
 
 // AuthenticatedClaims holds claims produced by an authentication mechanism.
@@ -452,9 +451,8 @@ type EntityReference struct {
 
 // GetAttributesMetadata holds metadata used when retrieving entity attributes.
 type GetAttributesMetadata struct {
-	AppMetadata     map[string]interface{} `json:"appMetadata,omitempty"`
-	Locale          string                 `json:"locale"`
-	RuntimeMetadata map[string]string      `json:"runtimeMetadata,omitempty"`
+	Locale          string              `json:"locale"`
+	RuntimeMetadata map[string][]string `json:"runtimeMetadata,omitempty"`
 }
 
 // AuthState is the per-provider authentication state held inside an AuthUser.
@@ -1055,12 +1053,19 @@ type InboundAuthConfigWithSecret struct {
 	OAuthConfig *OAuthConfigWithSecret `json:"config,omitempty" yaml:"config,omitempty" jsonschema:"OAuth/OIDC configuration. Required when type is 'oauth2'. Defines OAuth grant types, redirect URIs, client authentication, and PKCE settings."`
 }
 
+// InitiatorRequest holds the original HTTP request data that triggered the flow.
+type InitiatorRequest struct {
+	Headers     map[string][]string `json:"headers,omitempty"     yaml:"headers,omitempty"`
+	QueryParams map[string][]string `json:"queryParams,omitempty" yaml:"queryParams,omitempty"`
+}
+
 // NodeContext holds the context for a specific node in the flow execution.
 //
 // TODO: fields on NodeContext are currently exposed directly. Convert to unexported
 // fields accessed via getters and setters so that mutation can be encapsulated.
 type NodeContext struct {
-	Context context.Context
+	Context          context.Context
+	initiatorRequest *InitiatorRequest
 
 	ExecutionID   string
 	FlowType      FlowType
@@ -1109,6 +1114,16 @@ func (nc *NodeContext) AppendConsumedInputs(keys []string) {
 // during this call.
 func (nc *NodeContext) GetConsumedInputs() []string {
 	return nc.consumedInputs
+}
+
+// GetInitiatorRequest returns the original HTTP request that triggered the flow.
+func (nc *NodeContext) GetInitiatorRequest() *InitiatorRequest {
+	return nc.initiatorRequest
+}
+
+// SetInitiatorRequest sets the original HTTP request that triggered the flow.
+func (nc *NodeContext) SetInitiatorRequest(req *InitiatorRequest) {
+	nc.initiatorRequest = req
 }
 
 // NodeExecutionRecord represents a record of a node execution in the flow.

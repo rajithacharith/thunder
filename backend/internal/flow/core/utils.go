@@ -198,64 +198,19 @@ func MergePresentedOptionalInputIdentifiers(raw string, identifiers []string) st
 	return strings.Join(parts, " ")
 }
 
-// buildAppMetadataFromContext constructs application metadata from the node context,
-// including application metadata and OAuth client IDs.
-func buildAppMetadataFromContext(ctx *providers.NodeContext) map[string]interface{} {
-	appMetadata := make(map[string]interface{})
-
-	if ctx.Application.Metadata != nil {
-		for key, value := range ctx.Application.Metadata {
-			appMetadata[key] = value
-		}
-	}
-
-	var clientIDs []string
-	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
-		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
-			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
-		}
-	}
-
-	if len(clientIDs) > 0 {
-		appMetadata[providers.MetadataKeyClientIDs] = clientIDs
-	}
-
-	return appMetadata
-}
-
-// BuildRuntimeMetadata constructs the runtime metadata for authentication.
-func BuildRuntimeMetadata(ctx *providers.NodeContext) map[string]string {
-	runtimeMetadata := map[string]string{
-		providers.MetadataKeyAuthorizationRequestID: ctx.RuntimeData[common.RuntimeKeyAuthorizationRequestID],
-		providers.MetadataKeyCurrentClientID:        ctx.RuntimeData[common.RuntimeKeyClientID],
-		providers.MetadataKeyEssentialAttributes:    ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes],
-		providers.MetadataKeyOptionalAttributes:     ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes],
-	}
-
-	if ctx.RuntimeData != nil {
-		for key, value := range ctx.RuntimeData {
-			// Only the ext_* runtime data keys are passed to the authn provider.
-			if strings.HasPrefix(key, "ext_") {
-				runtimeMetadata[key] = value
-			}
-		}
-	}
-	return runtimeMetadata
-}
-
-// BuildAuthnMetadata constructs the metadata for authentication.
-func BuildAuthnMetadata(ctx *providers.NodeContext) *providers.AuthnMetadata {
+// BuildProviderMetadata constructs the metadata for providers. It includes
+// provider_ext_* runtime keys and the initiator request data (headers and query params).
+func BuildProviderMetadata(ctx *providers.NodeContext) *providers.AuthnMetadata {
 	return &providers.AuthnMetadata{
-		AppMetadata:     buildAppMetadataFromContext(ctx),
-		RuntimeMetadata: BuildRuntimeMetadata(ctx),
+		RuntimeMetadata: buildRuntimeMetadata(ctx),
 	}
 }
 
-// BuildGetAttributesMetadata constructs the metadata for fetching user attributes.
+// BuildGetAttributesMetadata constructs the metadata for fetching user attributes. It includes
+// provider_ext_* runtime keys and the initiator request data (headers and query params).
 func BuildGetAttributesMetadata(ctx *providers.NodeContext) *providers.GetAttributesMetadata {
 	metadata := &providers.GetAttributesMetadata{
-		AppMetadata:     buildAppMetadataFromContext(ctx),
-		RuntimeMetadata: BuildRuntimeMetadata(ctx),
+		RuntimeMetadata: buildRuntimeMetadata(ctx),
 	}
 
 	if locale, exists := ctx.RuntimeData[common.RuntimeKeyRequiredLocales]; exists && locale != "" {
@@ -263,4 +218,34 @@ func BuildGetAttributesMetadata(ctx *providers.NodeContext) *providers.GetAttrib
 	}
 
 	return metadata
+}
+
+// buildRuntimeMetadata collects provider_ext_* runtime keys and flattens initiator request
+// headers/query params into the metadata map.
+func buildRuntimeMetadata(ctx *providers.NodeContext) map[string][]string {
+	runtimeMetadata := make(map[string][]string)
+
+	if ctx.RuntimeData != nil {
+		for key, value := range ctx.RuntimeData {
+			if strings.HasPrefix(key, "provider_ext_") {
+				runtimeMetadata[key] = []string{value}
+			}
+		}
+	}
+
+	if req := ctx.GetInitiatorRequest(); req != nil {
+		// Header names are case-insensitive per RFC 7230, so lowercase the key to give consumers
+		// a stable form. Since distinct-casing entries (e.g. "Foo" and "foo") normalize to the
+		// same key, merge the value slices instead of overwriting so nothing is silently dropped.
+		for name, values := range req.Headers {
+			key := "initiator_header_" + strings.ToLower(name)
+			runtimeMetadata[key] = append(runtimeMetadata[key], values...)
+		}
+		// Query parameter names are case-sensitive; preserve original casing verbatim.
+		for name, values := range req.QueryParams {
+			runtimeMetadata["initiator_query_"+name] = values
+		}
+	}
+
+	return runtimeMetadata
 }

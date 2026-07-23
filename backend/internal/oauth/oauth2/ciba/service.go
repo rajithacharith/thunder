@@ -193,6 +193,10 @@ func (s *cibaService) InitiateBackchannelAuth(
 		InitialInputs: map[string]string{
 			oauth2const.RequestParamLoginHint: loginHint,
 		},
+		InitiatorRequest: &providers.InitiatorRequest{
+			Headers:     utils.FilterSensitiveHeaders(request.Headers),
+			QueryParams: request.QueryParams,
+		},
 	})
 	if flowErr != nil {
 		s.logger.Error(ctx, "Failed to initiate and execute CIBA authentication flow",

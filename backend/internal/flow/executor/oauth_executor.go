@@ -254,7 +254,7 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *providers.NodeContext,
 		},
 	}
 
-	metadata := core.BuildAuthnMetadata(ctx)
+	metadata := core.BuildProviderMetadata(ctx)
 	authUser, federatedAttributes, svcErr := o.authnProvider.AuthenticateUser(
 		ctx.Context, nil, credentials, nil, metadata, execResp.AuthUser)
 	if svcErr != nil {

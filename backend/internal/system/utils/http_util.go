@@ -502,6 +502,69 @@ func SanitizeStringMap(inputs map[string]string) map[string]string {
 	return sanitized
 }
 
+// sanitizeRaw trims whitespace and removes control characters but does NOT HTML-escape.
+// Use this for values that must remain structurally intact (e.g. JSON, URIs, JWTs)
+// and are not rendered in an HTML context.
+func sanitizeRaw(input string) string {
+	if input == "" {
+		return input
+	}
+
+	trimmed := strings.TrimSpace(input)
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, trimmed)
+}
+
+// SanitizeRawMultiValueStringMap sanitizes a map[string][]string by trimming whitespace and
+// removing control characters from values but does NOT HTML-escape and does NOT modify keys.
+// Keys are preserved verbatim to prevent normalization collisions (e.g. " X " and "X" trimming
+// to the same key). Use this for structured HTTP values such as JSON, URIs, and JWTs.
+func SanitizeRawMultiValueStringMap(inputs map[string][]string) map[string][]string {
+	if len(inputs) == 0 {
+		return inputs
+	}
+
+	sanitized := make(map[string][]string, len(inputs))
+	for key, values := range inputs {
+		sanitizedValues := make([]string, len(values))
+		for i, v := range values {
+			sanitizedValues[i] = sanitizeRaw(v)
+		}
+		sanitized[key] = sanitizedValues
+	}
+
+	return sanitized
+}
+
+// sensitiveHeaders is the deny-list of header names (lowercase) that must not be forwarded
+// beyond the HTTP boundary into provider metadata or initiator requests.
+var sensitiveHeaders = map[string]bool{
+	strings.ToLower(constants.AuthorizationHeaderName):      true,
+	strings.ToLower(constants.CookieHeaderName):             true,
+	strings.ToLower(constants.SetCookieHeaderName):          true,
+	strings.ToLower(constants.ProxyAuthorizationHeaderName): true,
+}
+
+// FilterSensitiveHeaders returns a copy of the header map with credential-bearing headers removed.
+func FilterSensitiveHeaders(h map[string][]string) map[string][]string {
+	if len(h) == 0 {
+		return h
+	}
+
+	filtered := make(map[string][]string, len(h))
+	for name, values := range h {
+		if !sensitiveHeaders[strings.ToLower(name)] {
+			filtered[name] = values
+		}
+	}
+
+	return filtered
+}
+
 // IsBearerAuth checks if the Authorization header uses the Bearer scheme (case-insensitive).
 func IsBearerAuth(authHeader string) bool {
 	parts := strings.SplitN(authHeader, " ", 2)
