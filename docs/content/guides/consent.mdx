@@ -26,15 +26,20 @@ Attribute consent requirements are driven by the requested attributes during app
 
 ## Configuring Consent in Flows
 
-To enable the consent prompt during authentication flows, configure it within the <ProductName /> flow builder:
+The **User Consent** widget adds a pre-wired consent executor and consent screen and connects them into your flow automatically:
 
 1. Navigate to the **Flows** section in the <ProductName /> console and select the flow you want to update (e.g., the default login flow).
-2. In the flow builder, expand the **Executors** section and add the **User Consent** executor node. It should be placed after the necessary authentication steps and before the **Auth Assert Generator** node.
-3. Connect the `onSuccess` edge of the preceding node to the input of the **User Consent** node, and then connect the `onSuccess` edge of the **User Consent** node to the next node in the flow (e.g., **Auth Assert Generator**).
-4. Expand the **Steps** section and add the **Consent View** step to the flow. This step will render the consent page to the user during the login process.
-5. Connect the `onIncomplete` edge of the **User Consent** node to the input of the **Consent View** step.
-6. Then connect both **Allow** and **Deny** buttons in the **Consent View** step back to the **User Consent** node to handle user responses.
-7. Save the flow configuration.
+2. In the flow builder, expand the **Widgets** section and add the **User Consent** widget. The consent screen and the **Allow** and **Deny** responses come pre-connected. The widget also connects its output to the **Auth Assert Generator** node and its input to the **Authorization** node when those are present in the flow. If either is missing, that edge is left open for you to connect to the node you want.
+3. Save the flow configuration.
+
+To assemble the consent step manually, add and connect the individual nodes instead:
+
+1. In the flow builder, expand the **Executors** section and add the **User Consent** executor node. It should be placed after the necessary authentication steps and before the **Auth Assert Generator** node.
+2. Connect the `onSuccess` edge of the preceding node to the input of the **User Consent** node, and then connect the `onSuccess` edge of the **User Consent** node to the next node in the flow (e.g., **Auth Assert Generator**).
+3. Expand the **Steps** section and add the **Consent View** step to the flow. This step will render the consent page to the user during the login process.
+4. Connect the `onIncomplete` edge of the **User Consent** node to the input of the **Consent View** step.
+5. Then connect both **Allow** and **Deny** buttons in the **Consent View** step back to the **User Consent** node to handle user responses.
+6. Save the flow configuration.
 
 {/* Placeholder for the flow graph image */}
 <ThemedImage
