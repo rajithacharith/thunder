@@ -125,6 +125,14 @@ describe('ConnectionDetailPage', () => {
     expect(screen.getByTestId('connection-delete-button')).toBeInTheDocument();
   });
 
+  it('shows the Configured status under the name in the card style, with no redundant subtitle', () => {
+    render(<ConnectionDetailPage />);
+    expect(screen.getByText('Google')).toBeInTheDocument();
+    expect(screen.getByText('Configured')).toBeInTheDocument();
+    expect(screen.queryByText('Google connection')).not.toBeInTheDocument();
+    expect(document.querySelector('.MuiChip-root')).not.toBeInTheDocument();
+  });
+
   it('hides the save bar until a field is edited', () => {
     render(<ConnectionDetailPage />);
     expect(screen.queryByTestId('save-bar')).not.toBeInTheDocument();

@@ -40,16 +40,17 @@ This guide walks you through registering a Google identity provider (IdP) in <Pr
 1. Sign in to the <ProductName /> Console.
 2. Navigate to **Connections**.
 3. Click the **Google** card. If the card shows **Not configured**, this opens a form to create the connection. If it already shows **Configured**, this opens the existing connection instead.
-4. Enter your **Client ID** and **Client secret** from the previous step.
-5. Copy the **Redirect URI** shown on the form and add it to your Google OAuth client if you have not already done so.
-6. Optionally, set **Scopes**. This defaults to `openid email profile` if left blank.
-7. Click **Create connection**.
+4. The form shows a setup hint with the **Redirect URI**. Copy it and add it to your Google OAuth client's authorized redirect URIs if you have not already done so.
+5. Enter your **Client ID** and **Client secret** from the previous step.
+6. Click **Create connection**. If you opened an existing **Configured** connection instead, update the credentials and click **Save changes**.
 
 <ProductName /> automatically uses the Google authorization, token, userinfo, and JWKS endpoints. You do not need to supply them.
 
 </Stepper>
 
 :::note
+The connection requests the `openid email profile` scopes by default. To change this, open the connection after creation and set **Scopes** on its edit page.
+
 The Google connection also accepts a `prompt` field to control the Google consent screen behavior (for example, `consent` or `select_account`). This field is not available in the Console and can only be set through the [Connections API](../../../apis#tag/connections).
 :::
 
