@@ -27,6 +27,7 @@ import ConnectionForm from '../components/ConnectionForm';
 import ConnectionFullPageLayout from '../components/ConnectionFullPageLayout';
 import {CONNECTION_FORM_FIELDS, fieldsForMode} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
+import useConnectionRoutes from '../hooks/useConnectionRoutes';
 import type {ConnectionResponse, ConnectionType} from '../models/connection';
 import {
   type ConnectionFormValues,
@@ -43,6 +44,7 @@ import isConflictError from '../utils/isConflictError';
 export default function ConnectionConfigureWizardPage(): JSX.Element | null {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
+  const routes = useConnectionRoutes();
   const {getGateCallbackUrl} = useConfig();
   const {type} = useParams<{type: string}>();
 
@@ -56,9 +58,9 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
 
   useEffect(() => {
     if (!meta) {
-      void navigate('/connections');
+      void navigate(routes.connections.list());
     }
-  }, [meta, navigate]);
+  }, [meta, navigate, routes]);
 
   const fields = useMemo(() => (meta ? CONNECTION_FORM_FIELDS[connectionType] : []), [meta, connectionType]);
   const redirectUri = getGateCallbackUrl();
@@ -74,7 +76,7 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
   const formValid: boolean = Object.keys(validateConnectionForm(values, visibleFields, 'create')).length === 0;
 
   const close = (): void => {
-    void navigate('/connections');
+    void navigate(routes.connections.list());
   };
 
   const handleCreate = (): void => {
@@ -87,7 +89,7 @@ export default function ConnectionConfigureWizardPage(): JSX.Element | null {
       name: meta.displayName,
     };
     createMutation.mutate(payload, {
-      onSuccess: (created: ConnectionResponse) => void navigate(`/connections/${connectionType}/${created.id}`),
+      onSuccess: (created: ConnectionResponse) => void navigate(routes.connections.detail(connectionType, created.id)),
       onError: (error: Error) => {
         if (isConflictError(error)) {
           setNameError(t('error.duplicateName'));

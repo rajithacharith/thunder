@@ -64,6 +64,10 @@ export {default as ConnectionCreateWizardPage, type CustomConfigureStepProps} fr
 export {default as ConnectionDetailPage} from './pages/ConnectionDetailPage';
 export {default as ConnectionsListPage} from './pages/ConnectionsListPage';
 
+// Routes
+export type {ConnectionRoutePaths} from './hooks/useConnectionRoutes';
+export {defaultConnectionRoutePaths, default as useConnectionRoutes} from './hooks/useConnectionRoutes';
+
 // Utils
 export * from './utils/attributeConfiguration';
 export {default as buildConnectionCards} from './utils/buildConnectionCards';

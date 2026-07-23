@@ -27,6 +27,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import TranslationConstants from '../constants/translation-constants';
 import TranslationDeleteDialog from '@/components/TranslationDeleteDialog';
+import useTranslationRoutes from '@/hooks/useTranslationRoutes';
 
 export default function TranslationsList(): JSX.Element {
   const theme = useTheme();
@@ -34,6 +35,7 @@ export default function TranslationsList(): JSX.Element {
   const navigate = useNavigate();
   const logger = useLogger('TranslationsList');
   const dataGridLocaleText = useDataGridLocaleText();
+  const routes = useTranslationRoutes();
 
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
@@ -43,12 +45,12 @@ export default function TranslationsList(): JSX.Element {
   const handleEditClick = useCallback(
     (language: string): void => {
       (async (): Promise<void> => {
-        await navigate(`/translations/${language}`);
+        await navigate(routes.detail(language));
       })().catch((_error: unknown) => {
         logger.error('Failed to navigate to translation editor', {error: _error, language});
       });
     },
-    [logger, navigate],
+    [logger, navigate, routes],
   );
 
   const handleDeleteClick = useCallback((language: string): void => {

@@ -25,6 +25,16 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {Resources} from '../../../models/resources';
 import DecoratedVisualFlow from '../DecoratedVisualFlow';
 
+const mockNavigate = vi.fn();
+
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 // Mock hooks
 vi.mock('../../../hooks/useUIPanelState', () => ({
   default: () => ({
@@ -455,6 +465,16 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('form-requires-view-dialog')).toBeInTheDocument();
+    });
+  });
+
+  describe('Navigation', () => {
+    it('should navigate to the flows list when the back button is clicked', () => {
+      renderComponent(<DecoratedVisualFlow {...defaultProps} />);
+
+      fireEvent.click(screen.getByRole('button', {name: /back/i}));
+
+      expect(mockNavigate).toHaveBeenCalledWith('/flows');
     });
   });
 

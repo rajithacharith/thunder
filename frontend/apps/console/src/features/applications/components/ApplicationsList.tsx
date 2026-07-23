@@ -26,6 +26,7 @@ import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ApplicationDeleteDialog from './ApplicationDeleteDialog';
+import RouteConfig from '../../../configs/RouteConfig';
 import useGetApplications from '../api/useGetApplications';
 import ApplicationConstants from '../constants/application-constants';
 import type {BasicApplication} from '../models/application';
@@ -51,7 +52,7 @@ export default function ApplicationsList(): JSX.Element {
   const handleEditClick = useCallback(
     (appId: string): void => {
       (async (): Promise<void> => {
-        await navigate(`/applications/${appId}`);
+        await navigate(RouteConfig.applications.detail(appId));
       })().catch((_error: unknown) => {
         logger.error('Failed to navigate to application', {error: _error, applicationId: appId});
       });

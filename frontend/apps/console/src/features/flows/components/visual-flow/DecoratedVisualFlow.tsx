@@ -49,6 +49,7 @@ import FormRequiresViewDialog from './FormRequiresViewDialog';
 import SimulationStepPreview from './SimulationStepPreview';
 import ValidationBadge from './ValidationBadge';
 import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
+import RouteConfig from '../../../../configs/RouteConfig';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
 import StepPreviewContext from '../../context/StepPreviewContext';
 import useComponentDelete from '../../hooks/useComponentDelete';
@@ -677,7 +678,7 @@ function DecoratedVisualFlow({
 
   const handleBackToFlows = useCallback((): void => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    navigate('/flows');
+    navigate(RouteConfig.flows.list());
   }, [navigate]);
 
   const simulationNode = useMemo(

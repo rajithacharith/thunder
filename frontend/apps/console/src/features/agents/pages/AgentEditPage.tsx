@@ -35,6 +35,7 @@ import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo, type SyntheticEvent, type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
+import RouteConfig from '../../../configs/RouteConfig';
 import useGetAgent from '../api/useGetAgent';
 import useUpdateAgent from '../api/useUpdateAgent';
 import EditAccessSettings from '../components/edit-agent/access/EditAccessSettings';
@@ -100,7 +101,7 @@ export default function AgentEditPage(): JSX.Element {
   const hasAnyOtherValidationError = Object.values(validationErrorSources).some(Boolean);
 
   const handleBack = async () => {
-    await navigate('/agents');
+    await navigate(RouteConfig.agents.list());
   };
 
   const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
@@ -339,7 +340,7 @@ export default function AgentEditPage(): JSX.Element {
         </Alert>
       )}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to="/agents" />}>
+        <PageTitle.BackButton component={<Link to={RouteConfig.agents.list()} />}>
           {t('agents:edit.page.back', 'Back to agents')}
         </PageTitle.BackButton>
         <PageTitle.Avatar sx={{overflow: 'visible'}}>

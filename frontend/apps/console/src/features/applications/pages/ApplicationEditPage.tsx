@@ -36,6 +36,7 @@ import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
+import RouteConfig from '../../../configs/RouteConfig';
 import useGetApplication from '../api/useGetApplication';
 import useUpdateApplication from '../api/useUpdateApplication';
 import EditAdvancedSettings from '../components/edit-application/advanced-settings/EditAdvancedSettings';
@@ -104,7 +105,7 @@ export default function ApplicationEditPage() {
   const [advancedSettingsInvalid, setAdvancedSettingsInvalid] = useState(false);
 
   const handleBack = async () => {
-    await navigate('/applications');
+    await navigate(RouteConfig.applications.list());
   };
 
   const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
@@ -298,7 +299,7 @@ export default function ApplicationEditPage() {
       )}
       {/* Header */}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to="/applications" />}>
+        <PageTitle.BackButton component={<Link to={RouteConfig.applications.list()} />}>
           {t('applications:edit.page.back')}
         </PageTitle.BackButton>
         <PageTitle.Avatar variant="rounded" sx={{overflow: 'visible'}}>

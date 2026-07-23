@@ -17,6 +17,7 @@
  */
 
 import {ResourceAvatar, SettingsCard, UnsavedChangesBar} from '@thunderid/components';
+import {ConnectionConstants, isConflictError} from '@thunderid/configure-connections';
 import {useConfig} from '@thunderid/contexts';
 import {
   Alert,
@@ -34,6 +35,7 @@ import {ChevronLeft, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
+import RouteConfig from '../../../configs/RouteConfig';
 import useTrustedIssuer from '../api/useTrustedIssuer';
 import useUpdateTrustedIssuer from '../api/useUpdateTrustedIssuer';
 import TrustedIssuerDeleteDialog from '../components/TrustedIssuerDeleteDialog';
@@ -43,7 +45,6 @@ import validateTrustedIssuerForm, {
   type TrustedIssuerFieldErrorKind,
   type TrustedIssuerFormErrors,
 } from '../utils/validateTrustedIssuerForm';
-import {ConnectionConstants, isConflictError} from '@thunderid/configure-connections';
 
 export default function TrustedIssuerDetailPage(): JSX.Element {
   const {t} = useTranslation();
@@ -127,7 +128,7 @@ export default function TrustedIssuerDetailPage(): JSX.Element {
       <Button
         variant="text"
         startIcon={<ChevronLeft size={16} />}
-        onClick={() => void navigate('/connections')}
+        onClick={() => void navigate(RouteConfig.connections.list())}
         sx={{mb: 2, alignSelf: 'flex-start'}}
       >
         {t('trustedIssuers:detail.back', 'Back to connections')}
@@ -308,7 +309,7 @@ export default function TrustedIssuerDetailPage(): JSX.Element {
             trustedIssuerId={id ?? null}
             trustedIssuerName={data?.name ?? ''}
             onClose={() => setDeleteOpen(false)}
-            onSuccess={() => void navigate('/connections')}
+            onSuccess={() => void navigate(RouteConfig.connections.list())}
           />
         </>
       )}

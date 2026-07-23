@@ -33,6 +33,7 @@ import ConnectionForm from '../components/ConnectionForm';
 import ReadOnlyCopyField from '../components/ReadOnlyCopyField';
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
+import useConnectionRoutes from '../hooks/useConnectionRoutes';
 import type {AttributeConfiguration, ConnectionType} from '../models/connection';
 import {
   type ConnectionFormValues,
@@ -79,6 +80,7 @@ function canonicalAttr(config: AttributeConfiguration | undefined): string {
 export default function ConnectionDetailPage(): JSX.Element | null {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
+  const routes = useConnectionRoutes();
   const {getGateCallbackUrl} = useConfig();
   const {type, id} = useParams<{type: string; id?: string}>();
 
@@ -105,9 +107,9 @@ export default function ConnectionDetailPage(): JSX.Element | null {
 
   useEffect(() => {
     if (!meta) {
-      void navigate('/connections');
+      void navigate(routes.connections.list());
     }
-  }, [meta, navigate]);
+  }, [meta, navigate, routes]);
 
   const fields = useMemo(() => (meta ? CONNECTION_FORM_FIELDS[connectionType] : []), [meta, connectionType]);
   const redirectUri = getGateCallbackUrl();
@@ -165,7 +167,7 @@ export default function ConnectionDetailPage(): JSX.Element | null {
     deleteMutation.mutate(resolvedId, {
       onSuccess: () => {
         setDeleteOpen(false);
-        void navigate('/connections');
+        void navigate(routes.connections.list());
       },
     });
   };
@@ -175,7 +177,7 @@ export default function ConnectionDetailPage(): JSX.Element | null {
       <Button
         variant="text"
         startIcon={<ChevronLeft size={16} />}
-        onClick={() => void navigate('/connections')}
+        onClick={() => void navigate(routes.connections.list())}
         sx={{mb: 2, alignSelf: 'flex-start'}}
       >
         {t('detail.backToConnections')}
