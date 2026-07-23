@@ -83,3 +83,8 @@ export type {SelectionState} from './utils/permissionSelection';
 export {default as ResourceServersListPage} from './pages/ResourceServersListPage';
 export {default as ResourceServerEditPage} from './pages/ResourceServerEditPage';
 export {default as CreateResourceServerPage} from './pages/CreateResourceServerPage';
+
+// Routes
+export type {ResourceServerRoutePaths} from './routes/types';
+export {defaultResourceServerRoutePaths} from './routes/types';
+export {default as useResourceServerRoutes} from './routes/useResourceServerRoutes';

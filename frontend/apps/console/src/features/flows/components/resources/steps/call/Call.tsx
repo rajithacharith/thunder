@@ -34,6 +34,7 @@ import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import {memo, useMemo, useState, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import RouteConfig from '../../../../../../configs/RouteConfig';
 import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBoundary';
 import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import StepTitle from '../StepTitle';
@@ -146,7 +147,7 @@ function Call({resources, data}: CallPropsInterface): ReactElement {
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    navigate(`/flows/${segment}/${referencedFlow.id}`);
+    navigate(RouteConfig.flows.detail(segment, referencedFlow.id));
   };
 
   const bodyLabel: string = referencedFlow

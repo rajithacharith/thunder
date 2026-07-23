@@ -24,6 +24,7 @@ import {
   type ConnectionInstance,
   type ConnectionVendorMeta,
 } from '../models/connection';
+import {defaultConnectionRoutePaths, type ConnectionRoutePaths} from '../routes/types';
 
 /** i18n key for the trusted issuer card's description, resolved by the rendering component. */
 const TRUSTED_IDP_DESCRIPTION_KEY = 'connections:vendor.trustedIdp.description';
@@ -59,6 +60,7 @@ function isTrustedIdpInstance(instance: ConnectionInstance): boolean {
 export default function buildConnectionCards(
   instances: ConnectionInstance[],
   vendorMetas: ConnectionVendorMeta[],
+  routes: ConnectionRoutePaths = defaultConnectionRoutePaths,
 ): ConnectionCardModel[] {
   const trustedIdpCards: ConnectionCardModel[] = instances.filter(isTrustedIdpInstance).map(
     (instance): ConnectionCardModel => ({
@@ -71,7 +73,7 @@ export default function buildConnectionCards(
       categories: ['trusted-idp'],
       status: 'configured',
       comingSoon: false,
-      navTarget: `/trusted-issuers/${instance.id}`,
+      navTarget: routes.trustedIssuers.detail(instance.id),
     }),
   );
 
@@ -98,7 +100,7 @@ export default function buildConnectionCards(
           categories: meta.categories,
           status: 'configured',
           comingSoon: false,
-          navTarget: `/connections/${meta.backendType}/${instance.id}`,
+          navTarget: routes.connections.detail(meta.backendType, instance.id),
         });
       }
 
@@ -113,7 +115,7 @@ export default function buildConnectionCards(
           categories: meta.categories,
           status: 'not-configured',
           comingSoon: false,
-          navTarget: `/connections/${meta.backendType}/configure`,
+          navTarget: routes.connections.configure(meta.backendType),
         });
       }
       continue;

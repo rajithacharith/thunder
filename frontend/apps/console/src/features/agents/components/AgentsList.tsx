@@ -25,6 +25,7 @@ import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import AgentDeleteDialog from './AgentDeleteDialog';
+import RouteConfig from '../../../configs/RouteConfig';
 import useGetAgents from '../api/useGetAgents';
 import AgentConstants from '../constants/agent-constants';
 import type {BasicAgent} from '../models/agent';
@@ -47,7 +48,7 @@ export default function AgentsList(): JSX.Element {
   const handleEditClick = useCallback(
     (agentId: string): void => {
       (async (): Promise<void> => {
-        await navigate(`/agents/${agentId}`);
+        await navigate(RouteConfig.agents.detail(agentId));
       })().catch((_error: unknown) => {
         logger.error('Failed to navigate to agent', {error: _error, agentId});
       });

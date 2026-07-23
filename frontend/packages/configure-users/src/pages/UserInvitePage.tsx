@@ -57,6 +57,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import {z} from 'zod';
 import CredentialFieldInput from '../components/CredentialFieldInput';
+import useUserRoutes from '../routes/useUserRoutes';
 
 /** Typed shape for flow sub-components */
 type FlowSubComponent = EmbeddedFlowComponent & {
@@ -862,6 +863,7 @@ export default function UserInvitePage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
   const logger = useLogger('UserInvitePage');
+  const routes = useUserRoutes();
   const [flowError, setFlowError] = useState<string | null>(null);
 
   // Track breadcrumb trail of visited step labels
@@ -872,28 +874,28 @@ export default function UserInvitePage(): JSX.Element {
 
   const handleClose = useCallback(() => {
     (async () => {
-      await navigate('/users');
+      await navigate(routes.list());
     })().catch((err: unknown) => {
       logger.error('Failed to navigate to users page', {error: err});
     });
-  }, [navigate, logger]);
+  }, [navigate, logger, routes]);
 
   const handleBreadcrumbHome = useCallback(() => {
     (async () => {
-      await navigate('/users/add');
+      await navigate(routes.add());
     })().catch((err: unknown) => {
       logger.error('Failed to navigate to add user page', {error: err});
     });
-  }, [navigate, logger]);
+  }, [navigate, logger, routes]);
 
   const handleManualCreateFallback = useCallback(() => {
     logger.info('Falling back to manual user creation because the onboarding flow is unavailable');
     (async () => {
-      await navigate('/users/add/create');
+      await navigate(routes.addCreate());
     })().catch((err: unknown) => {
       logger.error('Failed to navigate to fallback user creation page', {error: err});
     });
-  }, [navigate, logger]);
+  }, [navigate, logger, routes]);
 
   const handleStepLabelChange = useCallback(
     (label: string) => {

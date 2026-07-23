@@ -31,6 +31,7 @@ import SelectConnectionType, {
 import {CONNECTION_FORM_FIELDS} from '../config/connectionFormFields';
 import {VENDOR_META_BY_TYPE} from '../config/connectionVendorMeta';
 import {type ConnectionResponse, type ConnectionType, ConnectionTypes} from '../models/connection';
+import useConnectionRoutes from '../routes/useConnectionRoutes';
 import {
   type ConnectionFormValues,
   emptyFormValues,
@@ -64,6 +65,7 @@ export default function ConnectionCreateWizardPage({
 }: ConnectionCreateWizardPageProps): JSX.Element {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
+  const routes = useConnectionRoutes();
   const {getGateCallbackUrl} = useConfig();
 
   const [step, setStep] = useState<Step>(Step.TYPE);
@@ -89,7 +91,7 @@ export default function ConnectionCreateWizardPage({
   const formValid: boolean = Object.keys(validateConnectionForm(values, fields, 'create')).length === 0;
 
   const close = (): void => {
-    void navigate('/connections');
+    void navigate(routes.connections.list());
   };
 
   const progress: number = ((ALL_STEPS.indexOf(step) + 1) / ALL_STEPS.length) * 100;
@@ -101,7 +103,7 @@ export default function ConnectionCreateWizardPage({
     setNameError(null);
     const payload = formValuesToRequest(values, fields, {mode: 'create', secretReplaced: true});
     createMutation.mutate(payload, {
-      onSuccess: (created: ConnectionResponse) => void navigate(`/connections/${activeType}/${created.id}`),
+      onSuccess: (created: ConnectionResponse) => void navigate(routes.connections.detail(activeType, created.id)),
       onError: (error: Error) => {
         if (isConflictError(error)) {
           setNameError(t('error.duplicateName'));

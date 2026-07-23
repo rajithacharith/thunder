@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import ROUTES from '../constants/routes';
+import RouteConfig from '../configs/RouteConfig';
 
 /**
  * Generate a fallback sign-in URL preserving the current query string.
@@ -31,7 +31,7 @@ import ROUTES from '../constants/routes';
  */
 export default function generateFallbackSignInUrl(searchParams: URLSearchParams): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-  const signInPath = `${base}${ROUTES.AUTH.SIGN_IN}`;
+  const signInPath = `${base}${RouteConfig.signIn()}`;
   const cleanParams = new URLSearchParams(searchParams.toString());
   cleanParams.delete('authId');
   cleanParams.delete('executionId');

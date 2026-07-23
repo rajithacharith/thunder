@@ -49,6 +49,7 @@ import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-c
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
 import type {OUNavigationState} from '../models/navigation';
 import type {OrganizationUnit} from '../models/organization-unit';
+import useOrganizationUnitRoutes from '../routes/useOrganizationUnitRoutes';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -74,6 +75,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
   const {id} = useParams<{id: string}>();
   const navigate = useNavigate();
   const location = useLocation();
+  const routes = useOrganizationUnitRoutes();
   const {t} = useTranslation();
   const logger = useLogger('OrganizationUnitEditPage');
 
@@ -93,11 +95,11 @@ export default function OrganizationUnitEditPage(): JSX.Element {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempDescription, setTempDescription] = useState('');
-  const listUrl = '/organization-units';
+  const listUrl = routes.list();
 
   const handleBack = async (): Promise<void> => {
     if (fromOU) {
-      await navigate(`/organization-units/${fromOU.id}`);
+      await navigate(routes.detail(fromOU.id));
     } else {
       await navigate(listUrl);
     }
@@ -208,7 +210,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
       )}
       {/* Header */}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to={fromOU ? `/organization-units/${fromOU.id}` : listUrl} />}>
+        <PageTitle.BackButton component={<Link to={fromOU ? routes.detail(fromOU.id) : listUrl} />}>
           {backButtonText}
         </PageTitle.BackButton>
         <PageTitle.Avatar variant="rounded" sx={{overflow: 'visible'}}>

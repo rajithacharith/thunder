@@ -28,12 +28,14 @@ import UserDeleteDialog from './UserDeleteDialog';
 import useGetUsers from '../api/useGetUsers';
 import UserConstants from '../constants/user-constants';
 import type {UserWithDetails} from '../models/users';
+import useUserRoutes from '../routes/useUserRoutes';
 
 export default function UsersList() {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UsersList');
   const dataGridLocaleText = useDataGridLocaleText();
+  const routes = useUserRoutes();
 
   const {data: userData, isLoading, error: usersRequestError} = useGetUsers();
 
@@ -64,12 +66,12 @@ export default function UsersList() {
   const handleEditClick = useCallback(
     (userId: string): void => {
       (async (): Promise<void> => {
-        await navigate(`/users/${userId}`);
+        await navigate(routes.detail(userId));
       })().catch((_error: unknown) => {
         logger.error('Failed to navigate to user details', {error: _error, userId});
       });
     },
-    [logger, navigate],
+    [logger, navigate, routes],
   );
 
   const handleDeleteCancel = () => {

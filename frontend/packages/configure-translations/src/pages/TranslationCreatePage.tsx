@@ -29,6 +29,7 @@ import SelectCountry from '@/components/create-translation/SelectCountry';
 import SelectLanguage from '@/components/create-translation/SelectLanguage';
 import useTranslationCreate from '@/contexts/TranslationCreate/useTranslationCreate';
 import {TranslationCreateFlowStep} from '@/models/translation-create-flow';
+import useTranslationRoutes from '@/routes/useTranslationRoutes';
 
 const STEPS: TranslationCreateFlowStep[] = [
   TranslationCreateFlowStep.COUNTRY,
@@ -63,6 +64,7 @@ export default function TranslationCreatePage(): JSX.Element {
   const {t} = useTranslation('translations');
   const navigate = useNavigate();
   const logger = useLogger('TranslationCreatePage');
+  const routes = useTranslationRoutes();
   const {refetch: fetchEnTranslations} = useGetTranslations({
     language: I18nDefaultConstants.FALLBACK_LANGUAGE,
     enabled: false,
@@ -129,7 +131,7 @@ export default function TranslationCreatePage(): JSX.Element {
 
   const handleClose = (): void => {
     (async () => {
-      await navigate('/translations');
+      await navigate(routes.list());
     })().catch((_error: unknown) => {
       logger.error('Failed to navigate to translations page', {error: _error});
     });
@@ -168,7 +170,7 @@ export default function TranslationCreatePage(): JSX.Element {
     }
 
     try {
-      await navigate(`/translations/${localeCode}`);
+      await navigate(routes.detail(localeCode));
     } catch (_err: unknown) {
       logger.error('Translations created but navigation failed', {error: _err, localeCode});
       setIsCreating(false);

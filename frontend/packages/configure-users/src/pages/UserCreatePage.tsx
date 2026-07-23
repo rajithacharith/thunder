@@ -43,12 +43,14 @@ import ConfigureUserDetails from '../components/create-user/ConfigureUserDetails
 import ConfigureUserType from '../components/create-user/ConfigureUserType';
 import useUserCreate from '../contexts/UserCreate/useUserCreate';
 import {UserCreateFlowStep} from '../models/user-create-flow';
+import useUserRoutes from '../routes/useUserRoutes';
 
 export default function UserCreatePage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
   const logger = useLogger('UserCreatePage');
   const createUserMutation = useCreateUser();
+  const routes = useUserRoutes();
 
   const {
     currentStep,
@@ -111,14 +113,14 @@ export default function UserCreatePage(): JSX.Element {
 
   const handleClose = (): void => {
     if (createUserMutation.isPending) return;
-    Promise.resolve(navigate('/users')).catch((_error: unknown) => {
+    Promise.resolve(navigate(routes.list())).catch((_error: unknown) => {
       logger.error('Failed to navigate to users page', {error: _error});
     });
   };
 
   const handleBreadcrumbHome = (): void => {
     if (createUserMutation.isPending) return;
-    Promise.resolve(navigate('/users/add')).catch((_error: unknown) => {
+    Promise.resolve(navigate(routes.add())).catch((_error: unknown) => {
       logger.error('Failed to navigate to add user page', {error: _error});
     });
   };
@@ -196,7 +198,7 @@ export default function UserCreatePage(): JSX.Element {
 
     try {
       await createUserMutation.mutateAsync(requestBody);
-      await navigate('/users');
+      await navigate(routes.list());
     } catch (submitError) {
       logger.error('Failed to create user or navigate', {error: submitError});
     }

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import ROUTES from '../constants/routes';
+import RouteConfig from '../configs/RouteConfig';
 
 /**
  * Generate a fallback sign-up URL preserving the current query string.
@@ -44,7 +44,7 @@ export default function generateFallbackSignUpUrl(searchParams: URLSearchParams)
   // import.meta.env.BASE_URL is injected by Vite (e.g. '/gate/' or '/').
   // Strip the trailing slash so concatenation with the route path works cleanly.
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-  const signUpPath = `${base}${ROUTES.AUTH.SIGN_UP}`;
+  const signUpPath = `${base}${RouteConfig.signUp()}`;
   const cleanParams = new URLSearchParams(searchParams.toString());
   cleanParams.delete('authId');
   cleanParams.delete('executionId');

@@ -64,6 +64,11 @@ export {default as ConnectionCreateWizardPage} from './pages/ConnectionCreateWiz
 export {default as ConnectionDetailPage} from './pages/ConnectionDetailPage';
 export {default as ConnectionsListPage} from './pages/ConnectionsListPage';
 
+// Routes
+export type {ConnectionRoutePaths} from './routes/types';
+export {defaultConnectionRoutePaths} from './routes/types';
+export {default as useConnectionRoutes} from './routes/useConnectionRoutes';
+
 // Utils
 export * from './utils/attributeConfiguration';
 export {default as buildConnectionCards} from './utils/buildConnectionCards';

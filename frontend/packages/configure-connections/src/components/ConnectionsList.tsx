@@ -27,6 +27,7 @@ import ConnectionCategoryFilters, {type CategoryFilterValue} from './ConnectionC
 import useConnections from '../api/useConnections';
 import {CONNECTION_VENDOR_META} from '../config/connectionVendorMeta';
 import type {ConnectionCardModel} from '../models/connection';
+import useConnectionRoutes from '../routes/useConnectionRoutes';
 import buildConnectionCards from '../utils/buildConnectionCards';
 
 const SKELETON_COUNT = 6;
@@ -34,6 +35,7 @@ const SKELETON_COUNT = 6;
 export default function ConnectionsList(): JSX.Element {
   const {t} = useTranslation('connections');
   const navigate = useNavigate();
+  const routes = useConnectionRoutes();
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<CategoryFilterValue>('all');
@@ -41,8 +43,8 @@ export default function ConnectionsList(): JSX.Element {
   const connectionsQuery = useConnections();
 
   const cards: ConnectionCardModel[] = useMemo(
-    () => buildConnectionCards(connectionsQuery.data?.connections ?? [], CONNECTION_VENDOR_META),
-    [connectionsQuery.data?.connections],
+    () => buildConnectionCards(connectionsQuery.data?.connections ?? [], CONNECTION_VENDOR_META, routes),
+    [connectionsQuery.data?.connections, routes],
   );
 
   const filteredCards: ConnectionCardModel[] = useMemo(() => {
@@ -142,7 +144,7 @@ export default function ConnectionsList(): JSX.Element {
           ))}
           {!hasFilters && (
             <Grid size={{xs: 12, sm: 6, md: 4}}>
-              <AddCustomConnectionCard onClick={() => void navigate('/connections/create')} />
+              <AddCustomConnectionCard onClick={() => void navigate(routes.connections.create())} />
             </Grid>
           )}
         </Grid>

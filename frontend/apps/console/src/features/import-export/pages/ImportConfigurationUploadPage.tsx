@@ -24,6 +24,7 @@ import {useState, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLocation, useNavigate} from 'react-router';
 import yaml from 'yaml';
+import RouteConfig from '../../../configs/RouteConfig';
 import {ALLOWED_RESOURCE_TYPES, type ResourceType} from '../constants/resource-types';
 import getConfigFileName from '../utils/getConfigFileName';
 import getEnvFileName from '../utils/getEnvFileName';
@@ -36,7 +37,7 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
   const configFileName = getConfigFileName(config.brand.product_name);
   const envFileName = getEnvFileName(config.brand.product_name);
   const {pathname} = useLocation();
-  const isWelcomeFlow = pathname.startsWith('/welcome');
+  const isWelcomeFlow = pathname.startsWith(RouteConfig.welcome.root());
   const [dragActive, setDragActive] = useState(false);
   const [envDragActive, setEnvDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -44,11 +45,11 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   const handleClose = (): void => {
-    void navigate('/home');
+    void navigate(RouteConfig.home.list());
   };
 
   const handleCancel = (): void => {
-    void navigate('/home');
+    void navigate(RouteConfig.home.list());
   };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -290,7 +291,7 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
       }
 
       // Navigate to validation page
-      await navigate('/welcome/import-configuration/validate', {
+      await navigate(RouteConfig.welcome.importConfigurationValidate(), {
         state: {
           method: 'file',
           file: selectedFile,
@@ -336,12 +337,18 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
           <AppBreadcrumbs
             items={[
               ...(isWelcomeFlow
-                ? [{key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')}]
+                ? [
+                    {
+                      key: 'welcome',
+                      label: t('common:welcome.header'),
+                      onClick: () => void navigate(RouteConfig.welcome.root()),
+                    },
+                  ]
                 : [
                     {
                       key: 'import-export',
                       label: t('landing.title', 'Import / Export'),
-                      onClick: () => void navigate('/import-export'),
+                      onClick: () => void navigate(RouteConfig.importExport.list()),
                     },
                   ]),
               {key: 'import-configuration', label: t('upload.breadcrumb.openProject')},

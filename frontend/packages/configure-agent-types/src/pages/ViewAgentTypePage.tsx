@@ -34,6 +34,7 @@ import type {
   PropertyType,
   SchemaPropertyInput,
 } from '../models/property-definition';
+import useAgentTypeRoutes from '../routes/useAgentTypeRoutes';
 
 /**
  * Convert API schema to editable property inputs.
@@ -105,13 +106,14 @@ function convertPropertiesToSchema(properties: SchemaPropertyInput[]): AgentType
 
 export default function ViewAgentTypePage(): JSX.Element {
   const navigate = useNavigate();
+  const routes = useAgentTypeRoutes();
   const {t} = useTranslation();
   const logger = useLogger('ViewAgentTypePage');
   const {showToast} = useToast();
   const {id} = useParams<{id: string}>();
   // Agent types are restricted to a single `default` schema; there is no agent-types listing
   // page anymore, so the back button returns to the agent listing.
-  const listUrl = '/agents';
+  const listUrl = routes.agents.list();
 
   const {data: agentType, isLoading, error: fetchError} = useGetAgentType(id);
   const updateAgentTypeMutation = useUpdateAgentType();

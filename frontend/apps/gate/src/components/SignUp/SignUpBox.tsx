@@ -28,7 +28,7 @@ import type {JSX} from 'react';
 import {useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import ROUTES from '../../constants/routes';
+import RouteConfig from '../../configs/RouteConfig';
 
 export default function SignUpBox(): JSX.Element {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ export default function SignUpBox(): JSX.Element {
   const [flowError, setFlowError] = useState<string | null>(null);
 
   // For React Router navigate() — basename is handled by the router.
-  const signInPath = ROUTES.AUTH.SIGN_IN;
+  const signInPath = RouteConfig.signIn();
   // For window.location.href and new URL() (via afterSignUpUrl) — React Router basename is
   // bypassed, so an absolute URL with origin + base path must be constructed explicitly.
   // Vite appends a trailing slash to BASE_URL.

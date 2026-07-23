@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {isConflictError} from '@thunderid/configure-connections';
 import {useConfig} from '@thunderid/contexts';
 import {
   Box,
@@ -34,12 +35,12 @@ import {
 import {useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import RouteConfig from '../../../configs/RouteConfig';
 import useCreateTrustedIssuer from '../api/useCreateTrustedIssuer';
 import validateTrustedIssuerForm, {
   type TrustedIssuerFieldErrorKind,
   type TrustedIssuerFormErrors,
 } from '../utils/validateTrustedIssuerForm';
-import {isConflictError} from '@thunderid/configure-connections';
 
 /**
  * The trusted-issuer create form: fields, validation, and submission via
@@ -97,7 +98,7 @@ export default function TrustedIssuerCreateForm(): JSX.Element {
       },
       {
         onSuccess: (created) => {
-          void navigate(`/trusted-issuers/${created.id}`);
+          void navigate(RouteConfig.trustedIssuers.detail(created.id));
         },
         onError: (error) => {
           if (isConflictError(error)) {
