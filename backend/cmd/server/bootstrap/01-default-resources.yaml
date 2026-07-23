@@ -67,7 +67,7 @@ schema:
   modelProvider:
     type: string
     displayName: Model Provider
-    required: true
+    required: false
     enum:
       - openai
       - anthropic
@@ -77,7 +77,7 @@ schema:
   model:
     type: string
     displayName: Model
-    required: true
+    required: false
   function:
     type: string
     displayName: Function

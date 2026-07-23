@@ -1482,11 +1482,11 @@ paths:
               schema:
                 modelProvider:
                   type: "string"
-                  required: true
+                  required: false
                   enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                 model:
                   type: "string"
-                  required: true
+                  required: false
                 function:
                   type: "string"
                   required: false
@@ -1508,11 +1508,11 @@ paths:
                 schema:
                   modelProvider:
                     type: "string"
-                    required: true
+                    required: false
                     enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                   model:
                     type: "string"
-                    required: true
+                    required: false
                   function:
                     type: "string"
                     required: false
@@ -1608,11 +1608,11 @@ paths:
                 schema:
                   modelProvider:
                     type: "string"
-                    required: true
+                    required: false
                     enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                   model:
                     type: "string"
-                    required: true
+                    required: false
                   function:
                     type: "string"
                     required: false
@@ -1669,11 +1669,11 @@ paths:
               schema:
                 modelProvider:
                   type: "string"
-                  required: true
+                  required: false
                   enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                 model:
                   type: "string"
-                  required: true
+                  required: false
                 function:
                   type: "string"
                   required: false
@@ -2802,11 +2802,11 @@ components:
           example:
             modelProvider:
               type: "string"
-              required: true
+              required: false
               enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
             model:
               type: "string"
-              required: true
+              required: false
             function:
               type: "string"
               required: false
