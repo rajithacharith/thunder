@@ -985,15 +985,13 @@ func containsInvalidWildcardSegment(p string) bool {
 
 // validateGrantAndResponseTypes validates grant types, response types, and their combinations.
 func validateGrantAndResponseTypes(p *providers.OAuthProfile) error {
-	for _, grantType := range p.GrantTypes {
-		if !providers.GrantType(grantType).IsValid() {
-			return ErrOAuthInvalidGrantType
-		}
+	err := validateWithAllowedGrantTypes(p.GrantTypes)
+	if err != nil {
+		return err
 	}
-	for _, responseType := range p.ResponseTypes {
-		if !providers.ResponseType(responseType).IsValid() {
-			return ErrOAuthInvalidResponseType
-		}
+	err = validateWithAllowedResponseTypes(p.ResponseTypes)
+	if err != nil {
+		return err
 	}
 	if len(p.GrantTypes) == 1 &&
 		slices.Contains(p.GrantTypes, string(providers.GrantTypeClientCredentials)) &&
@@ -1023,9 +1021,9 @@ func validateGrantAndResponseTypes(p *providers.OAuthProfile) error {
 
 // validateTokenEndpointAuthMethod validates the token endpoint auth method against cert and secret state.
 func validateTokenEndpointAuthMethod(p *providers.OAuthProfile, hasClientSecret bool) error {
-	method := providers.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod)
-	if !method.IsValid() {
-		return ErrOAuthInvalidTokenEndpointAuthMethod
+	err := validateWithAllowedTokenEndpointAuthMethod(p.TokenEndpointAuthMethod)
+	if err != nil {
+		return err
 	}
 	hasCert := p.Certificate != nil && p.Certificate.Type != ""
 	userInfoNeedsCert := p.UserInfo != nil && p.UserInfo.EncryptionAlg != ""
@@ -1034,7 +1032,7 @@ func validateTokenEndpointAuthMethod(p *providers.OAuthProfile, hasClientSecret 
 			p.Token.IDToken.ResponseType == providers.IDTokenResponseTypeNESTEDJWT)
 	needsCert := userInfoNeedsCert || idTokenNeedsCert
 
-	switch method {
+	switch providers.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod) {
 	case providers.TokenEndpointAuthMethodPrivateKeyJWT:
 		if !hasCert {
 			return ErrOAuthPrivateKeyJWTRequiresCertificate
@@ -1067,6 +1065,49 @@ func validateTokenEndpointAuthMethod(p *providers.OAuthProfile, hasClientSecret 
 		}
 	}
 	return nil
+}
+
+// validateAllowedGrantTypes rejects grant types not permitted by the deployment's configured
+// oauth.allowed_grant_types allow-list. An empty allow-list permits all grant types.
+func validateWithAllowedGrantTypes(grantTypes []string) error {
+	allowed := config.GetServerRuntime().Config.OAuth.AllowedGrantTypes
+	for _, grantType := range grantTypes {
+		if !providers.GrantType(grantType).IsValid() {
+			return ErrOAuthInvalidGrantType
+		}
+		if len(allowed) > 0 && !slices.Contains(allowed, grantType) {
+			return ErrOAuthInvalidGrantType
+		}
+	}
+	return nil
+}
+
+// validateAllowedResponseTypes rejects response types not permitted by the deployment's configured
+// oauth.allowed_response_types allow-list. An empty allow-list permits all response types.
+func validateWithAllowedResponseTypes(responseTypes []string) error {
+	allowed := config.GetServerRuntime().Config.OAuth.AllowedResponseTypes
+	for _, responseType := range responseTypes {
+		if !providers.ResponseType(responseType).IsValid() {
+			return ErrOAuthInvalidResponseType
+		}
+		if len(allowed) > 0 && !slices.Contains(allowed, responseType) {
+			return ErrOAuthInvalidResponseType
+		}
+	}
+	return nil
+}
+
+// validateAllowedTokenEndpointAuthMethod rejects a token endpoint auth method not permitted by the
+// deployment's configured oauth.allowed_auth_methods allow-list. An empty allow-list permits all methods.
+func validateWithAllowedTokenEndpointAuthMethod(method string) error {
+	if !providers.TokenEndpointAuthMethod(method).IsValid() {
+		return ErrOAuthInvalidTokenEndpointAuthMethod
+	}
+	allowed := config.GetServerRuntime().Config.OAuth.AllowedAuthMethods
+	if len(allowed) == 0 || slices.Contains(allowed, method) {
+		return nil
+	}
+	return ErrOAuthInvalidTokenEndpointAuthMethod
 }
 
 // validatePublicClient validates constraints required for public clients.

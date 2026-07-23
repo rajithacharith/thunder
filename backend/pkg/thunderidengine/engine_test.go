@@ -39,11 +39,19 @@ import (
 	joseconfig "github.com/thunder-id/thunderid/internal/system/jose/config"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+	"github.com/thunder-id/thunderid/tests/mocks/actorprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
+	"github.com/thunder-id/thunderid/tests/mocks/consentprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/designprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/executormock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/flowexecmock"
+	"github.com/thunder-id/thunderid/tests/mocks/i18nprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/idpprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/observabilityprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/ouprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/resourceserverprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/runtimestoreprovidermock"
 )
 
@@ -82,10 +90,19 @@ func newTestRuntimeStoreProvider(t *testing.T) providers.RuntimeStoreProvider {
 
 func validEngineContext(t *testing.T) *engineContext {
 	return &engineContext{
-		serverHome:       "/tmp/server",
-		serverConfig:     engineconfig.ServerConfig{Identifier: "test-server"},
-		observabilitySvc: newTestObservabilityProvider(t),
-		authzProvider:    newTestAuthzProvider(t),
+		serverHome:            "/tmp/server",
+		serverConfig:          engineconfig.ServerConfig{Identifier: "test-server"},
+		observabilitySvc:      newTestObservabilityProvider(t),
+		authzProvider:         newTestAuthzProvider(t),
+		actorProvider:         actorprovidermock.NewActorProviderMock(t),
+		authnProvider:         managermock.NewAuthnProviderManagerMock(t),
+		resourceProvider:      resourceserverprovidermock.NewResourceServerProviderMock(t),
+		ouProvider:            ouprovidermock.NewOrganizationUnitProviderMock(t),
+		designResolveProvider: designprovidermock.NewDesignProviderMock(t),
+		flowProvider:          flowexecmock.NewFlowProviderMock(t),
+		i18nProvider:          i18nprovidermock.NewI18nProviderMock(t),
+		idpProvider:           idpprovidermock.NewIDPProviderMock(t),
+		consentProvider:       consentprovidermock.NewConsentProviderMock(t),
 	}
 }
 
@@ -116,6 +133,60 @@ func (suite *EngineTestSuite) TestValidateEngineContext() {
 		ctx := validEngineContext(t)
 		ctx.authzProvider = nil
 		assert.ErrorContains(t, validateEngineContext(ctx), "authorization provider")
+	})
+
+	suite.T().Run("missing actor provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.actorProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "actor provider")
+	})
+
+	suite.T().Run("missing authn provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.authnProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "authn provider")
+	})
+
+	suite.T().Run("missing resource provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.resourceProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "resource server provider")
+	})
+
+	suite.T().Run("missing organization unit provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.ouProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "organization unit provider")
+	})
+
+	suite.T().Run("missing design provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.designResolveProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "design provider")
+	})
+
+	suite.T().Run("missing flow provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.flowProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "flow provider")
+	})
+
+	suite.T().Run("missing i18n provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.i18nProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "i18n provider")
+	})
+
+	suite.T().Run("missing idp provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.idpProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "idp provider")
+	})
+
+	suite.T().Run("missing consent provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.consentProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "consent provider")
 	})
 }
 
@@ -331,6 +402,14 @@ func (suite *EngineTestSuite) TestNew_HappyPath() {
 		WithCacheConfig(engineconfig.CacheConfig{Disabled: true}),
 		WithLogConfig(engineconfig.LogConfig{Level: "info", Format: "json"}),
 		WithIDPProvider(newTestIDPProvider(t)),
+		WithActorProvider(actorprovidermock.NewActorProviderMock(t)),
+		WithAuthnProvider(managermock.NewAuthnProviderManagerMock(t)),
+		WithResourceProvider(resourceserverprovidermock.NewResourceServerProviderMock(t)),
+		WithOUProvider(ouprovidermock.NewOrganizationUnitProviderMock(t)),
+		WithDesignResolveProvider(designprovidermock.NewDesignProviderMock(t)),
+		WithFlowProvider(flowexecmock.NewFlowProviderMock(t)),
+		WithI18nProvider(i18nprovidermock.NewI18nProviderMock(t)),
+		WithConsentProvider(consentprovidermock.NewConsentProviderMock(t)),
 		// Restrict to built-in executors that only depend on FlowFactory; the others assume
 		// non-nil typed provider dependencies (e.g. the GitHub/Google/OIDC auth executors) that
 		// this minimal test setup does not wire up.
@@ -396,6 +475,14 @@ func (suite *EngineTestSuite) TestNew_InitializesRuntimeStoreWhenNotInjected() {
 		WithGateClientConfig(engineconfig.GateClientConfig{Hostname: "localhost", Port: 8080, Scheme: "https"}),
 		WithCacheConfig(engineconfig.CacheConfig{Disabled: true}),
 		WithIDPProvider(newTestIDPProvider(t)),
+		WithActorProvider(actorprovidermock.NewActorProviderMock(t)),
+		WithAuthnProvider(managermock.NewAuthnProviderManagerMock(t)),
+		WithResourceProvider(resourceserverprovidermock.NewResourceServerProviderMock(t)),
+		WithOUProvider(ouprovidermock.NewOrganizationUnitProviderMock(t)),
+		WithDesignResolveProvider(designprovidermock.NewDesignProviderMock(t)),
+		WithFlowProvider(flowexecmock.NewFlowProviderMock(t)),
+		WithI18nProvider(i18nprovidermock.NewI18nProviderMock(t)),
+		WithConsentProvider(consentprovidermock.NewConsentProviderMock(t)),
 		// Restrict to built-in executors that only depend on FlowFactory; the others assume
 		// non-nil typed provider dependencies (e.g. the GitHub/Google/OIDC auth executors) that
 		// this minimal test setup does not wire up.
