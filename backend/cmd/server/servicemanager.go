@@ -454,9 +454,11 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		runtimeStoreProvider, transactioner, oauthCfg)
 	fatalOnError(ctx, logger, err, "Failed to initialize OAuth services")
 
-	// Register OAuth2 DCR service.
-	err = dcr.Initialize(mux, applicationService, ouService, i18nService, oauthCfg)
-	fatalOnError(ctx, logger, err, "Failed to initialize OAuth2 DCR service")
+	if oauthCfg.OAuth.DCR.IsEnabled() {
+		// Register OAuth2 DCR service.
+		err = dcr.Initialize(mux, applicationService, ouService, i18nService, oauthCfg)
+		fatalOnError(ctx, logger, err, "Failed to initialize OAuth2 DCR service")
+	}
 
 	// Register the health service.
 	healthSvc := healthcheckservice.Initialize(dbprovider.GetDBProvider(), dbprovider.GetRedisProvider())

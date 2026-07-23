@@ -179,7 +179,14 @@ type AuthorizationCodeConfig struct {
 
 // DCRConfig holds the Dynamic Client Registration configuration.
 type DCRConfig struct {
-	Insecure bool `yaml:"insecure" json:"insecure"`
+	Enabled  *bool `yaml:"enabled" json:"enabled"`
+	Insecure bool  `yaml:"insecure" json:"insecure"`
+}
+
+// IsEnabled returns whether DCR is enabled, defaulting to false if unset
+// (an explicit default lives in default.json).
+func (c DCRConfig) IsEnabled() bool {
+	return c.Enabled != nil && *c.Enabled
 }
 
 // PARConfig holds the Pushed Authorization Request (RFC 9126) configuration.
@@ -214,6 +221,27 @@ type OAuthConfig struct {
 	// AllowWildcardRedirectURI enables wildcard pattern matching for redirect URIs.
 	// When false (default), only exact redirect URI matching is performed.
 	AllowWildcardRedirectURI bool `yaml:"allow_wildcard_redirect_uri" json:"allow_wildcard_redirect_uri"`
+	// AllowedGrantTypes enables registering of only the configured grant types
+	AllowedGrantTypes []string `yaml:"allowed_grant_types" json:"allowed_grant_types"`
+	// AllowedResponseTypes enables registering of only the configured response types
+	AllowedResponseTypes []string `yaml:"allowed_response_types" json:"allowed_response_types"`
+	// AllowedAuthMethods lists allowed client token endpoint auth methods
+	AllowedAuthMethods []string `yaml:"allowed_auth_methods" json:"allowed_auth_methods"`
+
+	TokenRevocation OAuthTokenRevocationConfig `yaml:"token_revocation" json:"token_revocation"`
+	Logout          LogoutConfig               `yaml:"logout" json:"logout"`
+}
+
+// OAuthTokenRevocationConfig holds the configuration details for the token revocation feature
+type OAuthTokenRevocationConfig struct {
+	// Enabled controls whether the OAuth token revocation endpoint is active.
+	Enabled bool `yaml:"enabled" json:"enabled"`
+}
+
+// LogoutConfig holds the configuration details for the logout endpoint
+type LogoutConfig struct {
+	// Enabled controls whether the OAuth logout endpoint is active.
+	Enabled bool `yaml:"enabled" json:"enabled"`
 }
 
 // FlowConfig holds the configuration details for the flow service.

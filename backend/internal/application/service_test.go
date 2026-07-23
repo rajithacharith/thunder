@@ -1132,6 +1132,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_NilOAut
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDefaults() {
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", &config.Config{}))
+	defer config.ResetServerRuntime()
+
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
@@ -1162,6 +1166,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDef
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithResponseTypeDefault() {
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", &config.Config{}))
+	defer config.ResetServerRuntime()
+
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
@@ -1187,6 +1195,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithRes
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGrantTypeButNoResponseType() {
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", &config.Config{}))
+	defer config.ResetServerRuntime()
+
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
@@ -1276,6 +1288,10 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicClientSuccess() {
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", &config.Config{}))
+	defer config.ResetServerRuntime()
+
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
@@ -3323,14 +3339,16 @@ func (suite *ServiceTestSuite) TestTranslateOAuthValidationError() {
 			wantDescKey: "error.applicationservice.auth_code_requires_redirect_uris_description",
 		},
 		{
-			name:     "InvalidGrantType",
-			err:      inboundclient.ErrOAuthInvalidGrantType,
-			wantCode: ErrorInvalidGrantType.Code,
+			name:        "InvalidGrantType",
+			err:         inboundclient.ErrOAuthInvalidGrantType,
+			wantCode:    ErrorInvalidGrantType.Code,
+			wantDescKey: "error.applicationservice.invalid_grant_type_description",
 		},
 		{
-			name:     "InvalidResponseType",
-			err:      inboundclient.ErrOAuthInvalidResponseType,
-			wantCode: ErrorInvalidResponseType.Code,
+			name:        "InvalidResponseType",
+			err:         inboundclient.ErrOAuthInvalidResponseType,
+			wantCode:    ErrorInvalidResponseType.Code,
+			wantDescKey: "error.applicationservice.invalid_response_type_description",
 		},
 		{
 			name:        "ClientCredentialsCannotUseResponseTypes",
@@ -3363,9 +3381,10 @@ func (suite *ServiceTestSuite) TestTranslateOAuthValidationError() {
 			wantDescKey: "error.applicationservice.response_types_require_authorization_code_description",
 		},
 		{
-			name:     "InvalidTokenEndpointAuthMethod",
-			err:      inboundclient.ErrOAuthInvalidTokenEndpointAuthMethod,
-			wantCode: ErrorInvalidTokenEndpointAuthMethod.Code,
+			name:        "InvalidTokenEndpointAuthMethod",
+			err:         inboundclient.ErrOAuthInvalidTokenEndpointAuthMethod,
+			wantCode:    ErrorInvalidTokenEndpointAuthMethod.Code,
+			wantDescKey: "error.applicationservice.invalid_token_endpoint_auth_method_description",
 		},
 		{
 			name:        "PrivateKeyJWTRequiresCertificate",

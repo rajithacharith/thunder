@@ -1794,6 +1794,113 @@ func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_Ha
 	assert.NoError(suite.T(), validateGrantAndResponseTypes(p))
 }
 
+// ----- allow-list enforcement (validateWithAllowed*) -----
+
+func (suite *InboundClientServiceTestSuite) configureAllowedGrantTypes(allowed []string) {
+	sysconfig.ResetServerRuntime()
+	cfg := &sysconfig.Config{}
+	cfg.OAuth.AllowedGrantTypes = allowed
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
+}
+
+func (suite *InboundClientServiceTestSuite) configureAllowedResponseTypes(allowed []string) {
+	sysconfig.ResetServerRuntime()
+	cfg := &sysconfig.Config{}
+	cfg.OAuth.AllowedResponseTypes = allowed
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
+}
+
+func (suite *InboundClientServiceTestSuite) configureAllowedAuthMethods(allowed []string) {
+	sysconfig.ResetServerRuntime()
+	cfg := &sysconfig.Config{}
+	cfg.OAuth.AllowedAuthMethods = allowed
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedGrantTypes_EmptyAllowList_PermitsAny() {
+	err := validateWithAllowedGrantTypes([]string{"authorization_code", "client_credentials"})
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedGrantTypes_NotInAllowList_Rejected() {
+	suite.configureAllowedGrantTypes([]string{"client_credentials"})
+	err := validateWithAllowedGrantTypes([]string{"authorization_code"})
+	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidGrantType)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedGrantTypes_InAllowList_Allowed() {
+	suite.configureAllowedGrantTypes([]string{"authorization_code", "refresh_token"})
+	err := validateWithAllowedGrantTypes([]string{"authorization_code"})
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedGrantTypes_InvalidGrantTypeStillRejected() {
+	// An allow-list entry does not bypass the underlying IsValid() check.
+	suite.configureAllowedGrantTypes([]string{"bogus_grant"})
+	err := validateWithAllowedGrantTypes([]string{"bogus_grant"})
+	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidGrantType)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedResponseTypes_EmptyAllowList_PermitsAny() {
+	err := validateWithAllowedResponseTypes([]string{"code"})
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedResponseTypes_NotInAllowList_Rejected() {
+	suite.configureAllowedResponseTypes([]string{"code"})
+	err := validateWithAllowedResponseTypes([]string{"id_token"})
+	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidResponseType)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedResponseTypes_InAllowList_Allowed() {
+	suite.configureAllowedResponseTypes([]string{"code"})
+	err := validateWithAllowedResponseTypes([]string{"code"})
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedTokenEndpointAuthMethod_EmptyAllowList_PermitsAny() {
+	err := validateWithAllowedTokenEndpointAuthMethod("client_secret_basic")
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedTokenEndpointAuthMethod_NotInAllowList_Rejected() {
+	suite.configureAllowedAuthMethods([]string{"client_secret_basic"})
+	err := validateWithAllowedTokenEndpointAuthMethod("none")
+	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidTokenEndpointAuthMethod)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateWithAllowedTokenEndpointAuthMethod_InAllowList_Allowed() {
+	suite.configureAllowedAuthMethods([]string{"client_secret_basic"})
+	err := validateWithAllowedTokenEndpointAuthMethod("client_secret_basic")
+	assert.NoError(suite.T(), err)
+}
+
+// ----- allow-list enforcement wired into the higher-level validators -----
+
+func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_GrantTypeNotAllowed() {
+	suite.configureAllowedGrantTypes([]string{"client_credentials"})
+	p := &providers.OAuthProfile{
+		GrantTypes: []string{"authorization_code"},
+	}
+	assert.ErrorIs(suite.T(), validateGrantAndResponseTypes(p), ErrOAuthInvalidGrantType)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateGrantAndResponseTypes_ResponseTypeNotAllowed() {
+	suite.configureAllowedResponseTypes([]string{"code"})
+	p := &providers.OAuthProfile{
+		GrantTypes:    []string{"authorization_code"},
+		ResponseTypes: []string{"id_token"},
+	}
+	assert.ErrorIs(suite.T(), validateGrantAndResponseTypes(p), ErrOAuthInvalidResponseType)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateTokenEndpointAuthMethod_NotAllowed() {
+	suite.configureAllowedAuthMethods([]string{"client_secret_basic"})
+	p := &providers.OAuthProfile{TokenEndpointAuthMethod: "private_key_jwt"}
+	err := validateTokenEndpointAuthMethod(p, false)
+	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidTokenEndpointAuthMethod)
+}
+
 // ----- validatePublicClient branch coverage -----
 
 func (suite *InboundClientServiceTestSuite) TestValidatePublicClient_NonNoneAuthMethod() {
