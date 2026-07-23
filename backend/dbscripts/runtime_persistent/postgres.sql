@@ -119,20 +119,3 @@ CREATE INDEX idx_consent_authz_user ON "CONSENT_AUTHORIZATION" (DEPLOYMENT_ID, U
 
 -- Index for loading a consent's authorization records.
 CREATE INDEX idx_consent_authz_consent ON "CONSENT_AUTHORIZATION" (CONSENT_ID, DEPLOYMENT_ID);
-
--- Table to store consent audit records.
-CREATE TABLE "CONSENT_AUDIT" (
-    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    ID VARCHAR(36) NOT NULL PRIMARY KEY,
-    ACTION VARCHAR(30) NOT NULL,
-    CONSENT_ID VARCHAR(36) NOT NULL,
-    GROUP_ID VARCHAR(36) NOT NULL,
-    SUBJECT_USER_IDS JSONB,
-    ACTOR_ID VARCHAR(36),
-    TRACE_ID VARCHAR(255),
-    DETAILS JSONB,
-    CREATED_AT TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Index for retrieving the audit trail of a consent.
-CREATE INDEX idx_consent_audit_consent ON "CONSENT_AUDIT" (DEPLOYMENT_ID, CONSENT_ID);
