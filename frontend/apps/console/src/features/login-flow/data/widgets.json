@@ -2098,7 +2098,7 @@
                     "ref": "action_signup",
                     "onSuccess": "{{SELF_SIGN_UP_CALL_STEP_ID}}"
                   },
-                  "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"#\" data-action-ref=\"action_signup\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>"
+                  "label": "<p data-component-ref=\"self-sign-up-link\" class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"#\" data-action-ref=\"action_signup\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>"
                 }
               ]
             }
@@ -2166,7 +2166,7 @@
                     "ref": "action_signin",
                     "onSuccess": "{{SIGN_IN_CALL_STEP_ID}}"
                   },
-                  "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Already have an account? </span><a href=\"#\" data-action-ref=\"action_signin\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign in</span></a></p>"
+                  "label": "<p data-component-ref=\"sign-in-link\" class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Already have an account? </span><a href=\"#\" data-action-ref=\"action_signin\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign in</span></a></p>"
                 }
               ]
             }
@@ -2234,7 +2234,7 @@
                     "ref": "action_recovery",
                     "onSuccess": "{{RECOVERY_CALL_STEP_ID}}"
                   },
-                  "label": "<p class=\"rich-text-paragraph\"><a href=\"#\" data-action-ref=\"action_recovery\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Forgot password?</span></a></p>"
+                  "label": "<p data-component-ref=\"recovery-link\" class=\"rich-text-paragraph\"><a href=\"#\" data-action-ref=\"action_recovery\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Forgot password?</span></a></p>"
                 }
               ]
             }

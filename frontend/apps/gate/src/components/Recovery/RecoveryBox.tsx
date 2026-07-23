@@ -139,7 +139,6 @@ export default function RecoveryBox(): JSX.Element {
                             action.eventType === EmbeddedFlowEventType.Trigger || action.eventType === 'TRIGGER';
                           void handleSubmit(action, inputs, isTrigger);
                         }}
-                        signInFallbackUrl={signInUrl}
                       />
                     ))}
                   </Box>
