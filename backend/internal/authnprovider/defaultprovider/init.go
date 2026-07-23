@@ -27,7 +27,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	"github.com/thunder-id/thunderid/internal/authnprovider/provider"
 	"github.com/thunder-id/thunderid/internal/entity"
 )
 
@@ -40,6 +39,6 @@ func Initialize(entitySvc entity.EntityServiceInterface,
 	passkeySvc passkey.PasskeyServiceInterface, otpSvc otp.OTPAuthnServiceInterface,
 	magicLinkSvc magiclink.MagicLinkAuthnServiceInterface,
 	openid4vpSvc openid4vp.OpenID4VPServiceInterface,
-	federatedAuths map[providers.IDPType]authncommon.FederatedAuthenticator) provider.AuthnProviderInterface {
+	federatedAuths map[providers.IDPType]authncommon.FederatedAuthenticator) providers.AuthnProviderInterface {
 	return newDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc, magicLinkSvc, openid4vpSvc, federatedAuths)
 }

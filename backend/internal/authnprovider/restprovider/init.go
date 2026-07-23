@@ -23,10 +23,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/thunder-id/thunderid/internal/authnprovider/provider"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	systemhttp "github.com/thunder-id/thunderid/internal/system/http"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // Name is the name of the built-in REST authn provider.
@@ -35,7 +35,7 @@ const Name = "rest"
 // Initialize builds the REST authentication provider from its config block. It
 // validates that base_url is set and applies defaults for the request timeout and
 // correlation-ID header. Enablement is the caller's concern.
-func Initialize(cfg config.RestConfig) (provider.AuthnProviderInterface, error) {
+func Initialize(cfg config.RestConfig) (providers.AuthnProviderInterface, error) {
 	if cfg.BaseURL == "" {
 		return nil, errors.New("base_url is required when the rest authn provider is enabled")
 	}

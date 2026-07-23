@@ -271,12 +271,12 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	defaultProvider := defaultprovider.Initialize(entityService, passkeyService,
 		otpCoreService, magicLinkService, openid4vpSvc, federatedAuths)
 
-	customProviders := map[string]authnprovidermgr.AuthnProvider{}
+	customProviders := map[string]providers.CustomAuthnProvider{}
 	restCfg := runtime.Config.AuthnProvider.Rest
 	if restCfg.Enabled {
 		restProvider, err := restprovider.Initialize(restCfg)
 		fatalOnError(ctx, logger, err, "Failed to initialize REST authn provider")
-		customProviders[restprovider.Name] = authnprovidermgr.AuthnProvider{
+		customProviders[restprovider.Name] = providers.CustomAuthnProvider{
 			Instance: restProvider,
 			Creds:    restCfg.CredentialTypes,
 		}

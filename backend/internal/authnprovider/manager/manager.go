@@ -30,7 +30,6 @@ import (
 
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/authnprovider/defaultprovider"
-	"github.com/thunder-id/thunderid/internal/authnprovider/provider"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -41,20 +40,20 @@ const defaultProviderName = defaultprovider.Name
 // registered providers, choosing the provider for a given request based on the
 // credential key supplied.
 type authnProviderManager struct {
-	providers             map[string]provider.AuthnProviderInterface
+	authnProviders        map[string]providers.AuthnProviderInterface
 	logger                *log.Logger
 	credToProviderMapping map[string]string
 }
 
 // newAuthnProviderManager creates a new authnProviderManager from the default provider
 // and the optional custom providers.
-func newAuthnProviderManager(defaultProvider provider.AuthnProviderInterface,
-	customProviders map[string]AuthnProvider) (providers.AuthnProviderManager, error) {
+func newAuthnProviderManager(defaultProvider providers.AuthnProviderInterface,
+	customProviders map[string]providers.CustomAuthnProvider) (providers.AuthnProviderManager, error) {
 	if defaultProvider == nil {
 		return nil, fmt.Errorf("authn provider manager: default provider must not be nil")
 	}
 
-	providerMap := make(map[string]provider.AuthnProviderInterface, len(customProviders)+1)
+	providerMap := make(map[string]providers.AuthnProviderInterface, len(customProviders)+1)
 	providerMap[defaultProviderName] = defaultProvider
 	for name, ap := range customProviders {
 		if name == defaultProviderName {
@@ -74,7 +73,7 @@ func newAuthnProviderManager(defaultProvider provider.AuthnProviderInterface,
 	}
 
 	return &authnProviderManager{
-		providers:             providerMap,
+		authnProviders:        providerMap,
 		logger:                logger,
 		credToProviderMapping: credMap,
 	}, nil
@@ -84,7 +83,7 @@ func newAuthnProviderManager(defaultProvider provider.AuthnProviderInterface,
 // the custom providers' declared credential keys. Keys not present in the table are routed
 // to the default provider at request time. Two custom providers claiming the same key is
 // an error.
-func buildCredentialRouting(customProviders map[string]AuthnProvider) (map[string]string, error) {
+func buildCredentialRouting(customProviders map[string]providers.CustomAuthnProvider) (map[string]string, error) {
 	routing := map[string]string{}
 	for name, p := range customProviders {
 		for _, credKey := range p.Creds {
@@ -237,7 +236,7 @@ func (m *authnProviderManager) GetEntityReference(ctx context.Context, authUser 
 		if state.EntityReferenceToken == nil {
 			providerEntityRef = state.EntityReference
 		} else {
-			p, ok := m.providers[name]
+			p, ok := m.authnProviders[name]
 			if !ok || p == nil {
 				m.logger.Error(ctx, "no provider registered for authUser state entry",
 					log.String("providerName", name))
@@ -321,7 +320,7 @@ func (m *authnProviderManager) GetUserAttributes(ctx context.Context,
 			mergeAttributes(attributes, state.Attributes)
 			continue
 		}
-		p, ok := m.providers[name]
+		p, ok := m.authnProviders[name]
 		if !ok || p == nil {
 			m.logger.Error(ctx, "no provider registered for authUser state entry",
 				log.String("providerName", name))
@@ -427,7 +426,7 @@ func (m *authnProviderManager) updateAuthUser(ctx context.Context, authResult *p
 // default provider for keys not claimed by a custom provider. Callers must supply exactly one
 // credential key; zero or multiple keys indicates an internal fault and is treated as a server error.
 func (m *authnProviderManager) selectProvider(ctx context.Context, credentialTypes []string) (
-	string, provider.AuthnProviderInterface, *tidcommon.ServiceError) {
+	string, providers.AuthnProviderInterface, *tidcommon.ServiceError) {
 	if len(credentialTypes) != 1 {
 		m.logger.Error(ctx, "expected exactly one credential key; rejecting ambiguous request",
 			log.Any("credentialKeys", credentialTypes))
@@ -439,7 +438,7 @@ func (m *authnProviderManager) selectProvider(ctx context.Context, credentialTyp
 		// Credentials not claimed by a custom provider fall through to the default provider.
 		selectedProviderName = defaultProviderName
 	}
-	selectedProvider, ok := m.providers[selectedProviderName]
+	selectedProvider, ok := m.authnProviders[selectedProviderName]
 	if !ok || selectedProvider == nil {
 		m.logger.Error(ctx, "credential key mapped to a provider that is not registered",
 			log.String("credentialType", credentialType), log.String("providerName", selectedProviderName))
