@@ -407,6 +407,26 @@ Executors do not collect inputs directly. All required inputs must already be av
 Use the **Add Input** option in the executor's properties to specify which inputs the executor expects. The execution validates that each declared input is available from a preceding View or executor output.
 :::
 
+### Input Types
+
+Each executor input has a `type` field that tells the client how to render the field and what client-side validation to apply.
+
+When an executor forwards inputs dynamically to a PROMPT node via its `onIncomplete` edge, the default type is `TEXT_INPUT` for non-credential inputs and `PASSWORD_INPUT` for credential inputs. To apply stricter client-side validation for a specific attribute (for example, email format validation), declare the input explicitly in the executor's `inputs` array with the appropriate type. The executor preserves the configured `type` when forwarding the input to the prompt node.
+
+| Type | Description |
+|---|---|
+| `TEXT_INPUT` | A single-line text field. Default for non-credential inputs. |
+| `EMAIL_INPUT` | An email address field with email format validation. |
+| `PASSWORD_INPUT` | A masked password field. Default for credential inputs. |
+| `OTP_INPUT` | A one-time password input field. |
+| `PHONE_INPUT` | A phone number field with phone format validation. |
+| `NUMBER_INPUT` | A numeric input field. |
+| `DATE_INPUT` | A date picker field. |
+| `CONSENT_INPUT` | A consent checkbox field. |
+| `HIDDEN` | A hidden field not rendered to the user. |
+| `SELECT` | A dropdown selection field. |
+| `OU_SELECT` | An organization unit selection field. |
+
 ### View and Executor Pairings
 
 Each View node (Step or Widget) collects user input that must be read by a specific Executor. If you place a View on the canvas without connecting its required Executor, the flow will stall at the yellow incomplete dot. The table below shows which Executor is required or recommended for each View, and any prerequisites that must be satisfied first.
@@ -1123,7 +1143,7 @@ Creates a new user record in the user store. This executor persists the user's i
 | `includeOptionalCredentials` | Include Optional Credentials | No | `false` | Whether to prompt for optional credential attributes |
 | `maxPerPrompt` | - | No | `0` (all at once) | Maximum number of missing inputs to forward per prompt cycle |
 
-**Input Configuration:** None. Required user attributes are dynamically determined from the user type schema, not registered as fixed node input defaults.
+**Input Configuration:** Required user attributes are dynamically determined from the user type schema, so no fixed input defaults are needed. However, you may optionally declare entries in the executor's `inputs` array to set a specific input type for an attribute (e.g., `EMAIL_INPUT` for an email field). Without an explicit override, non-credential inputs default to `TEXT_INPUT`. See [Input Types](#input-types) for valid types.
 
 **Example:**
 
@@ -1137,7 +1157,13 @@ Creates a new user record in the user store. This executor persists the user's i
     "assignRole": ""
   },
   "executor": {
-    "name": "ProvisioningExecutor"
+    "name": "ProvisioningExecutor",
+    "inputs": [
+      {
+        "identifier": "email",
+        "type": "EMAIL_INPUT"
+      }
+    ]
   },
   "onSuccess": "set_credentials",
   "onFailure": "error_prompt",
