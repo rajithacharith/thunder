@@ -119,6 +119,10 @@ export const ExecutionTypes = {
   HTTPRequestExecutor: 'HTTPRequestExecutor',
   OUExecutor: 'OUExecutor',
   UserTypeResolver: 'UserTypeResolver',
+  SSOCheck: 'SSOCheckExecutor',
+  Session: 'SessionExecutor',
+  AuthAssert: 'AuthAssertExecutor',
+  Authorization: 'AuthorizationExecutor',
 } as const;
 
 export const ExecutionStepViewTypes = {

@@ -161,12 +161,17 @@ const {mockToObject, mockGetNodes, mockGetEdges, mockUpdateNodeData, mockFitView
 );
 
 vi.mock('@xyflow/react', () => ({
+  Position: {Bottom: 'bottom', Left: 'left', Right: 'right', Top: 'top'},
   useReactFlow: () => ({
     toObject: mockToObject,
     getNodes: mockGetNodes,
     getEdges: mockGetEdges,
     updateNodeData: mockUpdateNodeData,
     fitView: mockFitView,
+  }),
+  useStore: (selector: (state: {nodes: never[]; edges: never[]}) => unknown) => selector({edges: [], nodes: []}),
+  useStoreApi: () => ({
+    getState: () => ({edges: [], nodeLookup: new Map(), nodes: []}),
   }),
   useUpdateNodeInternals: () => mockUpdateNodeInternals,
 }));

@@ -3454,6 +3454,14 @@ const translations = {
     'core.validation.fields.form.noSubmitButton':
       'Form <code>{{id}}</code> has input fields but no submit button. Add a button with type "Submit" so that users can submit the form.',
 
+    // Validation messages - SSO pairing
+    'core.validation.sso.missingCheckpointRef':
+      'SSO check <code>{{id}}</code> does not reference a session checkpoint. Select one in its properties, or remove the step.',
+    'core.validation.sso.invalidCheckpointRef':
+      'SSO check <code>{{id}}</code> references a session step that no longer exists. Select a valid session checkpoint in its properties.',
+    'core.validation.sso.orphanSession':
+      'Session step <code>{{id}}</code> is not referenced by any SSO check. Add an SSO check that uses it, or remove the step.',
+
     // Elements - rich text
     'core.elements.richText.placeholder': 'Enter text here...',
     'core.elements.richText.resolvedI18nValue': 'Resolved i18n value',
@@ -3567,6 +3575,31 @@ const translations = {
       'Would you like to create a View and add the Widget inside it?',
     'core.dialogs.formRequiresView.widgetOnCanvas.confirmButton': 'Add View with Widget',
     'core.dialogs.formRequiresView.cancelButton': 'Cancel',
+
+    // SSO toggle (login flows)
+    'sso.toggleLabel': 'Enable SSO',
+    'sso.toggleDescription': 'Reuse an active session to skip sign-in',
+    'sso.toggleTooltipOn': 'Single sign-on is active for this flow. Turn off to remove the SSO wiring.',
+    'sso.disabledNoEntry': 'Connect the Start step to a view step to enable SSO.',
+    'sso.disabledEntryNotPrompt':
+      'To enable SSO, the flow must start with a view step. The SSO check needs a login screen to fall back to.',
+    'sso.disabledNoAssert': 'Add an authentication completion step to the flow before enabling SSO.',
+    'sso.disabledReadOnly': 'This flow is read-only and cannot be modified.',
+    'sso.enabledSnackbar':
+      'SSO enabled. A session check now runs after Start, and sessions are saved before the flow completes.',
+    'sso.disabledSnackbar_one': 'SSO disabled. {{count}} checkpoint was removed and the flow reconnected.',
+    'sso.disabledSnackbar_other': 'SSO disabled. {{count}} checkpoints were removed and the flow reconnected.',
+    'sso.placementHint': 'Click a highlighted connection to choose where the session checkpoint joins the flow.',
+    'sso.placementCancel': 'Cancel',
+    'sso.confirmDialog.title': 'Remove single sign-on?',
+    'sso.confirmDialog.description_one':
+      'This removes {{count}} SSO checkpoint and its session step, and reconnects the flow. Users will authenticate with their credentials every time.',
+    'sso.confirmDialog.description_other':
+      'This removes {{count}} SSO checkpoints and their session steps, and reconnects the flow. Users will authenticate with their credentials every time.',
+    'sso.confirmDialog.confirmButton': 'Remove SSO',
+    'sso.confirmDialog.cancelButton': 'Cancel',
+    'sso.properties.checkpointLabel': 'Session checkpoint',
+    'sso.properties.checkpointDangling': 'The referenced session step no longer exists. Select a valid session step.',
 
     // Form adapter
     'core.adapters.form.badgeLabel': 'Form',

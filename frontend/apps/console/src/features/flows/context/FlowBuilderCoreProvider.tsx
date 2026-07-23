@@ -47,6 +47,7 @@ import type {FlowCompletionConfigsInterface} from '../models/flows';
 import type {Claim} from '../models/metadata';
 import {type Resource, ResourceTypes} from '../models/resources';
 import {StepTypes, EdgeStyleTypes, type EdgeStyleTypes as EdgeStyleTypesType} from '../models/steps';
+import type {GraphValidationRule} from '../validation/validation-rules';
 
 /**
  * Props interface for ElementFactory component
@@ -135,6 +136,7 @@ function FlowContextWrapper({
   const [isVerboseMode, setIsVerboseMode] = useState<boolean>(true);
   const [edgeStyle, setEdgeStyle] = useState<EdgeStyleTypesType>(EdgeStyleTypes.SmoothStep);
   const [flowNodes, setFlowNodes] = useState<Node[]>([]);
+  const [graphValidationRules, setGraphValidationRules] = useState<GraphValidationRule[]>([]);
 
   // ── I18n State ──
   const [language, setLanguage] = useState<string>(I18nDefaultConstants.FALLBACK_LANGUAGE);
@@ -327,6 +329,8 @@ function FlowContextWrapper({
       publishFlow: undefined as (() => Promise<boolean>) | undefined,
       flowNodes,
       setFlowNodes,
+      graphValidationRules,
+      setGraphValidationRules,
     }),
     [
       ElementFactory,
@@ -339,6 +343,7 @@ function FlowContextWrapper({
       flowNodeTypes,
       flowEdgeTypes,
       flowNodes,
+      graphValidationRules,
     ],
   );
 

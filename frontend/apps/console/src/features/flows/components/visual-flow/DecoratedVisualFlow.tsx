@@ -40,6 +40,7 @@ import {
   useRef,
   useState,
   type ReactElement,
+  type ReactNode,
   type SetStateAction,
 } from 'react';
 import {useTranslation} from 'react-i18next';
@@ -87,6 +88,7 @@ import {
 import {findContainingComponent} from '../../utils/updateNestedComponent';
 import {widgetNeedsViewContainer} from '../../utils/widgetUtils';
 import Droppable from '../dnd/Droppable';
+import EdgePathsProvider from '../react-flow-overrides/EdgePathsProvider';
 import ResourcePanel from '../resource-panel/ResourcePanel';
 import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPanel';
 import ValidationPanel from '../validation-panel/ValidationPanel';
@@ -125,6 +127,10 @@ export interface DecoratedVisualFlowPropsInterface extends Omit<VisualFlowPropsI
    * This is useful when loading flows that don't have saved canvas positions.
    */
   triggerAutoLayoutOnLoad?: boolean;
+  /**
+   * Extra controls rendered at the bottom of the resource panel, below the resource sections.
+   */
+  resourcePanelFooter?: ReactNode;
 }
 
 /**
@@ -152,6 +158,7 @@ function DecoratedVisualFlow({
   flowHandle,
   onFlowTitleChange,
   triggerAutoLayoutOnLoad = false,
+  resourcePanelFooter = undefined,
   ...rest
 }: DecoratedVisualFlowPropsInterface): ReactElement {
   useDeleteExecutionResource();
@@ -370,11 +377,18 @@ function DecoratedVisualFlow({
     }
   }, [isSimulatingNow, setIsResourcePanelOpen, setIsOpenResourcePropertiesPanel]);
 
+  // Edge under the pointer, tracked so the edge and the node it leads into can
+  // be spotlighted (same visual language as the preview's option highlight).
+  // Styled via data-id selectors so no node/edge objects change on hover.
+  const [hoveredEdge, setHoveredEdge] = useState<{id: string; targetId: string} | null>(null);
+
   const {isSimulating: isSimulationActive, start: startSimulation, stop: stopSimulation} = simulation;
   const handleToggleSimulation = useCallback((): void => {
     if (isSimulationActive) {
       stopSimulation();
     } else {
+      // Drop any hover highlight so it doesn't resurface when the preview ends.
+      setHoveredEdge(null);
       startSimulation();
     }
   }, [isSimulationActive, stopSimulation, startSimulation]);
@@ -439,6 +453,21 @@ function DecoratedVisualFlow({
     },
     [fitView, simulation.isSimulating, simulation.followCamera],
   );
+
+  const handleEdgeMouseEnter = useCallback(
+    (_event: unknown, edge: Edge): void => {
+      // The preview mode has its own path decoration; don't fight it.
+      if (simulation.isSimulating) {
+        return;
+      }
+      setHoveredEdge({id: edge.id, targetId: edge.target});
+    },
+    [simulation.isSimulating],
+  );
+
+  const handleEdgeMouseLeave = useCallback((): void => {
+    setHoveredEdge(null);
+  }, []);
 
   const handleNodeDragStop = useCallback((): void => {
     const currentNodes = stripSimulationNodeClasses(getNodes());
@@ -769,6 +798,33 @@ function DecoratedVisualFlow({
           '70%': {boxShadow: '0 0 0 15px transparent'},
           '100%': {boxShadow: '0 0 0 0 transparent'},
         },
+        // Each edge renders in its own svg layer; lift the hovered one so its
+        // highlight stays visible where edges overlap or run close together.
+        '& .react-flow__edges svg:has(.react-flow__edge:hover)': {zIndex: '1000 !important'},
+        // Spotlight the hovered edge and the node it leads into, mirroring the
+        // preview's option highlight. Targeted via data-id so hovering never
+        // mutates node/edge objects (React Flow's memoization stays intact).
+        // Suppressed while previewing — the simulation owns path decoration.
+        ...(hoveredEdge && !simulation.isSimulating
+          ? {
+              [`& .react-flow__edge[data-id="${hoveredEdge.id}"] .react-flow__edge-path`]: {
+                stroke: `${theme.palette.primary.main} !important`,
+              },
+              [`& .react-flow__node[data-id="${hoveredEdge.targetId}"] .flow-builder-step, ` +
+              `& .react-flow__node[data-id="${hoveredEdge.targetId}"] .execution-minimal-step, ` +
+              `& .react-flow__node[data-id="${hoveredEdge.targetId}"] .flow-builder-rule, ` +
+              `& .react-flow__node[data-id="${hoveredEdge.targetId}"] .MuiFab-root`]: {
+                outline: `2px solid ${theme.palette.primary.main}`,
+                outlineOffset: '4px',
+                animation: 'edge-hover-target-pulse 1s infinite',
+              },
+              '@keyframes edge-hover-target-pulse': {
+                '0%': {boxShadow: `0 0 0 0 ${theme.palette.primary.main}`},
+                '70%': {boxShadow: '0 0 0 15px transparent'},
+                '100%': {boxShadow: '0 0 0 0 transparent'},
+              },
+            }
+          : {}),
       })}
     >
       {/* ── Top bar: back button | toolbar | save button ── */}
@@ -840,6 +896,7 @@ function DecoratedVisualFlow({
               flowHandle={flowHandle}
               onFlowTitleChange={onFlowTitleChange}
               rightPanel={rightPanel}
+              footer={resourcePanelFooter}
             >
               <Droppable
                 id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)}
@@ -848,19 +905,23 @@ function DecoratedVisualFlow({
                 hideDropZones
                 collisionPriority={CollisionPriority.Low}
               >
-                <VisualFlow
-                  nodes={displayNodes}
-                  onNodesChange={onNodesChange}
-                  edges={displayEdges}
-                  edgeTypes={edgeTypes}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={handleConnect}
-                  onNodesDelete={handleNodesDelete}
-                  onEdgesDelete={handleEdgesDelete}
-                  onNodeDragStop={handleNodeDragStop}
-                  onNodeClick={handleNodeClick}
-                  {...rest}
-                />
+                <EdgePathsProvider>
+                  <VisualFlow
+                    nodes={displayNodes}
+                    onNodesChange={onNodesChange}
+                    edges={displayEdges}
+                    edgeTypes={edgeTypes}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={handleConnect}
+                    onNodesDelete={handleNodesDelete}
+                    onEdgesDelete={handleEdgesDelete}
+                    onNodeDragStop={handleNodeDragStop}
+                    onNodeClick={handleNodeClick}
+                    onEdgeMouseEnter={handleEdgeMouseEnter}
+                    onEdgeMouseLeave={handleEdgeMouseLeave}
+                    {...rest}
+                  />
+                </EdgePathsProvider>
               </Droppable>
             </ResourcePanel>
             <DragOverlay>
