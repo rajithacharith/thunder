@@ -556,6 +556,12 @@ packages:
           structname: '{{.InterfaceName}}Mock'
           pkgname: managermock
           filename: "{{.InterfaceName}}_mock.go"
+      AuthnProviderInterface:
+        config:
+          dir: tests/mocks/authnprovider/providermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: providermock
+          filename: "{{.InterfaceName}}_mock.go"
       ActorProvider:
         config:
           dir: tests/mocks/actorprovidermock
@@ -640,14 +646,6 @@ packages:
           structname: '{{.InterfaceName}}Mock'
           pkgname: runtimestoreprovidermock
           filename: "{{.InterfaceName}}_mock.go"
-
-  github.com/thunder-id/thunderid/internal/authnprovider/provider:
-    config:
-      all: true
-      dir: tests/mocks/authnprovider/providermock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: providermock
-      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/system/sysauthz:
     interfaces:

@@ -49,6 +49,23 @@ type AuthnProviderManager interface {
 		authUser AuthUser) (AuthUser, *AttributesResponse, *common.ServiceError)
 }
 
+// AuthnProviderInterface defines the interface for authentication providers.
+type AuthnProviderInterface interface {
+	InitiateAuthentication(ctx context.Context, credentialType string, initData any,
+		metadata *AuthnMetadata) (any, *common.ServiceError)
+	Authenticate(ctx context.Context, identifiers, credentials map[string]interface{},
+		metadata *AuthnMetadata) (*AuthnResult, *common.ServiceError)
+	GetEntityReference(ctx context.Context, entityReferenceToken any) (*EntityReference,
+		*common.ServiceError)
+	GetAttributes(ctx context.Context, attributeToken any, consentedAttributes *RequestedAttributes,
+		metadata *GetAttributesMetadata) (
+		*AttributesResponse, *common.ServiceError)
+	InitiateEnrollment(ctx context.Context, credentialType string, initData any,
+		metadata *AuthnMetadata) (any, *common.ServiceError)
+	Enroll(ctx context.Context, identifiers, credentials map[string]interface{},
+		metadata *AuthnMetadata) (*AuthnResult, *common.ServiceError)
+}
+
 // ActorProvider resolves inbound actors and exposes their OAuth and membership data.
 type ActorProvider interface {
 	GetOAuthClientByClientID(

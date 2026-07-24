@@ -1303,3 +1303,9 @@ type CaptchaVerificationResult struct {
 	// Success reports whether the provider accepted the token as valid.
 	Success bool
 }
+
+// CustomAuthnProvider pairs a provider instance with the credential keys it handles.
+type CustomAuthnProvider struct {
+	Instance AuthnProviderInterface
+	Creds    []string
+}

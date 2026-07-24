@@ -34,7 +34,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovider "github.com/thunder-id/thunderid/internal/authnprovider/provider"
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/commonmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/magiclinkmock"
@@ -48,7 +47,7 @@ type DefaultAuthnProviderTestSuite struct {
 	mockService   *entitymock.EntityServiceInterfaceMock
 	mockPasskey   *passkeymock.PasskeyServiceInterfaceMock
 	mockFederated *commonmock.FederatedAuthenticatorMock
-	provider      authnprovider.AuthnProviderInterface
+	provider      providers.AuthnProviderInterface
 }
 
 func (suite *DefaultAuthnProviderTestSuite) SetupTest() {
@@ -981,7 +980,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_MissingTo
 // --- Tokenized credential authentication tests (OTP + MagicLink) ---
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_EntityFound() {
-	setupOTP := func() (authnprovider.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
+	setupOTP := func() (providers.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
 		mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
 		token := map[string]interface{}{"mobile_number": "+1234567890"}
 		mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
@@ -998,7 +997,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_Entit
 		return Initialize(suite.mockService, nil, mockOTP, nil, nil, nil), creds, token
 	}
 
-	setupMagicLink := func() (authnprovider.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
+	setupMagicLink := func() (providers.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
 		mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
 		token := map[string]interface{}{"email": "test@example.com"}
 		mockML.On("Authenticate", mock.Anything, "valid-jwt-token", "").
@@ -1017,7 +1016,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_Entit
 
 	tests := []struct {
 		name  string
-		setup func() (authnprovider.AuthnProviderInterface, map[string]interface{}, map[string]interface{})
+		setup func() (providers.AuthnProviderInterface, map[string]interface{}, map[string]interface{})
 	}{
 		{name: "OTP", setup: setupOTP},
 		{name: "MagicLink", setup: setupMagicLink},
@@ -1050,7 +1049,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_Entit
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_IdentifyEntityErrorReturnsTokens() {
-	setupOTP := func() (authnprovider.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
+	setupOTP := func() (providers.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
 		mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
 		token := map[string]interface{}{"mobile_number": "+1234567890"}
 		mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
@@ -1067,7 +1066,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_Ident
 		return Initialize(suite.mockService, nil, mockOTP, nil, nil, nil), creds, token
 	}
 
-	setupMagicLink := func() (authnprovider.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
+	setupMagicLink := func() (providers.AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
 		mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
 		token := map[string]interface{}{"email": "test@example.com"}
 		mockML.On("Authenticate", mock.Anything, "valid-jwt-token", "email").
@@ -1086,7 +1085,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_Ident
 
 	tests := []struct {
 		name        string
-		setup       func() (authnprovider.AuthnProviderInterface, map[string]interface{}, map[string]interface{})
+		setup       func() (providers.AuthnProviderInterface, map[string]interface{}, map[string]interface{})
 		identifyErr error
 	}{
 		{name: "OTP_EntityNotFound", setup: setupOTP, identifyErr: entity.ErrEntityNotFound},

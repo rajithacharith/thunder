@@ -20,18 +20,10 @@ package manager
 
 import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
-
-	"github.com/thunder-id/thunderid/internal/authnprovider/provider"
 )
 
-// AuthnProvider pairs a provider instance with the credential keys it handles.
-type AuthnProvider struct {
-	Instance provider.AuthnProviderInterface
-	Creds    []string
-}
-
 // Initialize creates a new AuthnProviderManager. defaultProvider is required.
-func Initialize(defaultProvider provider.AuthnProviderInterface,
-	others map[string]AuthnProvider) (providers.AuthnProviderManager, error) {
+func Initialize(defaultProvider providers.AuthnProviderInterface,
+	others map[string]providers.CustomAuthnProvider) (providers.AuthnProviderManager, error) {
 	return newAuthnProviderManager(defaultProvider, others)
 }

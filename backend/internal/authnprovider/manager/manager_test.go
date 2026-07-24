@@ -759,7 +759,7 @@ func TestNewAuthnProviderManager_NilDefaultProvider(t *testing.T) {
 
 func TestNewAuthnProviderManager_NilProvider(t *testing.T) {
 	defaultMock := providermock.NewAuthnProviderInterfaceMock(t)
-	_, err := Initialize(defaultMock, map[string]AuthnProvider{
+	_, err := Initialize(defaultMock, map[string]providers.CustomAuthnProvider{
 		"acme": {Instance: nil, Creds: []string{"password"}},
 	})
 	if err == nil {
@@ -770,7 +770,7 @@ func TestNewAuthnProviderManager_NilProvider(t *testing.T) {
 func TestNewAuthnProviderManager_ReservedDefaultName(t *testing.T) {
 	defaultMock := providermock.NewAuthnProviderInterfaceMock(t)
 	acmeMock := providermock.NewAuthnProviderInterfaceMock(t)
-	_, err := Initialize(defaultMock, map[string]AuthnProvider{
+	_, err := Initialize(defaultMock, map[string]providers.CustomAuthnProvider{
 		defaultProviderName: {Instance: acmeMock, Creds: []string{"password"}},
 	})
 	if err == nil {
@@ -783,7 +783,7 @@ func TestNewAuthnProviderManager_DuplicateCredentialClaim(t *testing.T) {
 	defaultMock := providermock.NewAuthnProviderInterfaceMock(t)
 	acmeMock := providermock.NewAuthnProviderInterfaceMock(t)
 	betaMock := providermock.NewAuthnProviderInterfaceMock(t)
-	_, err := Initialize(defaultMock, map[string]AuthnProvider{
+	_, err := Initialize(defaultMock, map[string]providers.CustomAuthnProvider{
 		"acme": {Instance: acmeMock, Creds: []string{"password"}},
 		"beta": {Instance: betaMock, Creds: []string{"password"}},
 	})
@@ -807,7 +807,7 @@ func TestNewAuthnProviderManager_NamedProviderHandlesClaimedCredential(t *testin
 			AttributeToken:       map[string]interface{}{"token": "tok"},
 		}, (*tidcommon.ServiceError)(nil))
 
-	mgr, err := Initialize(defaultMock, map[string]AuthnProvider{
+	mgr, err := Initialize(defaultMock, map[string]providers.CustomAuthnProvider{
 		"acme": {Instance: acmeMock, Creds: []string{"password"}},
 	})
 	if err != nil {
@@ -1011,7 +1011,7 @@ func TestGetEntityReference_MultipleProvidersMismatch(t *testing.T) {
 		Return(&providers.EntityReference{EntityID: "user-2", EntityType: "default", OUID: "ou-1"},
 			(*tidcommon.ServiceError)(nil))
 
-	mgr, err := Initialize(defaultMock, map[string]AuthnProvider{
+	mgr, err := Initialize(defaultMock, map[string]providers.CustomAuthnProvider{
 		"acme": {Instance: acmeMock, Creds: nil},
 	})
 	if err != nil {

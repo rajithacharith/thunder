@@ -40,7 +40,7 @@ import (
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/actorprovidermock"
-	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
+	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/providermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
 	"github.com/thunder-id/thunderid/tests/mocks/consentprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/designprovidermock"
@@ -73,6 +73,10 @@ func newTestAuthzProvider(t *testing.T) providers.AuthorizationProvider {
 	return authzmock.NewAuthorizationProviderMock(t)
 }
 
+func newTestDefaultAuthnProvider(t *testing.T) providers.AuthnProviderInterface {
+	return providermock.NewAuthnProviderInterfaceMock(t)
+}
+
 func newTestExecutor(t *testing.T, name string) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(name).Maybe()
@@ -95,7 +99,6 @@ func validEngineContext(t *testing.T) *engineContext {
 		observabilitySvc:      newTestObservabilityProvider(t),
 		authzProvider:         newTestAuthzProvider(t),
 		actorProvider:         actorprovidermock.NewActorProviderMock(t),
-		authnProvider:         managermock.NewAuthnProviderManagerMock(t),
 		resourceProvider:      resourceserverprovidermock.NewResourceServerProviderMock(t),
 		ouProvider:            ouprovidermock.NewOrganizationUnitProviderMock(t),
 		designResolveProvider: designprovidermock.NewDesignProviderMock(t),
@@ -103,6 +106,7 @@ func validEngineContext(t *testing.T) *engineContext {
 		i18nProvider:          i18nprovidermock.NewI18nProviderMock(t),
 		idpProvider:           idpprovidermock.NewIDPProviderMock(t),
 		consentProvider:       consentprovidermock.NewConsentProviderMock(t),
+		defaultAuthnProvider:  newTestDefaultAuthnProvider(t),
 	}
 }
 
@@ -139,12 +143,6 @@ func (suite *EngineTestSuite) TestValidateEngineContext() {
 		ctx := validEngineContext(t)
 		ctx.actorProvider = nil
 		assert.ErrorContains(t, validateEngineContext(ctx), "actor provider")
-	})
-
-	suite.T().Run("missing authn provider", func(t *testing.T) {
-		ctx := validEngineContext(t)
-		ctx.authnProvider = nil
-		assert.ErrorContains(t, validateEngineContext(ctx), "authn provider")
 	})
 
 	suite.T().Run("missing resource provider", func(t *testing.T) {
@@ -187,6 +185,12 @@ func (suite *EngineTestSuite) TestValidateEngineContext() {
 		ctx := validEngineContext(t)
 		ctx.consentProvider = nil
 		assert.ErrorContains(t, validateEngineContext(ctx), "consent provider")
+	})
+
+	suite.T().Run("missing default authn provider", func(t *testing.T) {
+		ctx := validEngineContext(t)
+		ctx.defaultAuthnProvider = nil
+		assert.ErrorContains(t, validateEngineContext(ctx), "default authentication provider")
 	})
 }
 
@@ -248,7 +252,6 @@ func (suite *EngineTestSuite) TestEngineOptions() {
 		WithKeyConfigs(keyConfigs),
 		WithEncryptionConfig(encryptionCfg),
 		WithActorProvider(nil),
-		WithAuthnProvider(nil),
 		WithResourceProvider(nil),
 		WithOUProvider(nil),
 		WithDesignResolveProvider(nil),
@@ -260,6 +263,7 @@ func (suite *EngineTestSuite) TestEngineOptions() {
 		WithObservabilityProvider(newTestObservabilityProvider(suite.T())),
 		WithAuthorizationProvider(newTestAuthzProvider(suite.T())),
 		WithRuntimeStoreProvider(runtimeStoreProvider),
+		WithDefaultAuthnProvider(newTestDefaultAuthnProvider(suite.T())),
 	}
 	for _, opt := range opts {
 		opt(&ctx)
@@ -282,6 +286,7 @@ func (suite *EngineTestSuite) TestEngineOptions() {
 	assert.Equal(suite.T(), customExec["custom"], ctx.customExecutors["custom"])
 	assert.NotNil(suite.T(), ctx.observabilitySvc)
 	assert.NotNil(suite.T(), ctx.authzProvider)
+	assert.NotNil(suite.T(), ctx.defaultAuthnProvider)
 }
 
 func (suite *EngineTestSuite) TestJOSEConfig() {
@@ -403,7 +408,7 @@ func (suite *EngineTestSuite) TestNew_HappyPath() {
 		WithLogConfig(engineconfig.LogConfig{Level: "info", Format: "json"}),
 		WithIDPProvider(newTestIDPProvider(t)),
 		WithActorProvider(actorprovidermock.NewActorProviderMock(t)),
-		WithAuthnProvider(managermock.NewAuthnProviderManagerMock(t)),
+		WithDefaultAuthnProvider(newTestDefaultAuthnProvider(t)),
 		WithResourceProvider(resourceserverprovidermock.NewResourceServerProviderMock(t)),
 		WithOUProvider(ouprovidermock.NewOrganizationUnitProviderMock(t)),
 		WithDesignResolveProvider(designprovidermock.NewDesignProviderMock(t)),
@@ -476,7 +481,7 @@ func (suite *EngineTestSuite) TestNew_InitializesRuntimeStoreWhenNotInjected() {
 		WithCacheConfig(engineconfig.CacheConfig{Disabled: true}),
 		WithIDPProvider(newTestIDPProvider(t)),
 		WithActorProvider(actorprovidermock.NewActorProviderMock(t)),
-		WithAuthnProvider(managermock.NewAuthnProviderManagerMock(t)),
+		WithDefaultAuthnProvider(newTestDefaultAuthnProvider(t)),
 		WithResourceProvider(resourceserverprovidermock.NewResourceServerProviderMock(t)),
 		WithOUProvider(ouprovidermock.NewOrganizationUnitProviderMock(t)),
 		WithDesignResolveProvider(designprovidermock.NewDesignProviderMock(t)),
@@ -493,4 +498,22 @@ func (suite *EngineTestSuite) TestNew_InitializesRuntimeStoreWhenNotInjected() {
 	require.NotNil(t, eng.engineCtx)
 	assert.NotNil(t, eng.engineCtx.runtimeStoreProvider)
 	assert.NotNil(t, eng.engineCtx.transactioner)
+}
+
+func (suite *EngineTestSuite) TestWithCustomAuthnProvider_AccumulatesByName() {
+	var ctx engineContext
+
+	WithCustomAuthnProvider("acme", providers.CustomAuthnProvider{
+		Instance: newTestDefaultAuthnProvider(suite.T()),
+		Creds:    []string{"password"},
+	})(&ctx)
+	WithCustomAuthnProvider("beta", providers.CustomAuthnProvider{
+		Instance: newTestDefaultAuthnProvider(suite.T()),
+		Creds:    []string{"otp"},
+	})(&ctx)
+
+	require.Len(suite.T(), ctx.customAuthnProviders, 2)
+	assert.Equal(suite.T(), []string{"password"}, ctx.customAuthnProviders["acme"].Creds)
+	assert.Equal(suite.T(), []string{"otp"}, ctx.customAuthnProviders["beta"].Creds)
+	assert.NotNil(suite.T(), ctx.customAuthnProviders["acme"].Instance)
 }
