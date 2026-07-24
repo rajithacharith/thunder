@@ -168,7 +168,7 @@ type themeAdapter interface {
 
 type layoutAdapter interface {
 	CreateLayout(ctx context.Context,
-		layout layoutmgt.CreateLayoutRequest) (*layoutmgt.Layout, *tidcommon.ServiceError)
+		layout layoutmgt.CreateLayoutRequestWithID) (*layoutmgt.Layout, *tidcommon.ServiceError)
 	GetLayout(ctx context.Context, id string) (*layoutmgt.Layout, *tidcommon.ServiceError)
 	UpdateLayout(ctx context.Context,
 		id string, layout layoutmgt.UpdateLayoutRequest) (*layoutmgt.Layout, *tidcommon.ServiceError)
