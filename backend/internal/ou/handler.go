@@ -287,6 +287,7 @@ func (ouh *organizationUnitHandler) sanitizeOrganizationUnitRequest(
 		RecoveryFlowID:            request.RecoveryFlowID,
 		IsRecoveryFlowEnabled:     request.IsRecoveryFlowEnabled,
 		SignOutFlowID:             request.SignOutFlowID,
+		UserOnboardingFlowID:      request.UserOnboardingFlowID,
 		LogoURL:                   request.LogoURL,
 		TosURI:                    request.TosURI,
 		PolicyURI:                 request.PolicyURI,

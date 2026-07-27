@@ -1560,79 +1560,103 @@ func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_RecoveryFlow
 	assert.Equal(suite.T(), "recovery-1", c.RecoveryFlowID)
 }
 
-func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_AppliesDefaultSignOutFlowWhenEmpty() {
-	originalSignOutHandle := sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle
-	suite.T().Cleanup(func() {
-		sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle = originalSignOutHandle
-	})
-	sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle = testDefaultSignOutFlowHandle
+// All four flow types use the same explicit -> OU -> server default chain via ResolveEffectiveFlowID.
+func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_ResolvesAllFlowTypes() {
 	flowMgt := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, testDefaultSignOutFlowHandle, providers.FlowTypeSignOut).
-		Return(&providers.CompleteFlowDefinition{ID: "signout-default"}, nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "auth-1", "", providers.FlowTypeAuthentication).Return("auth-1", nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "reg-1", "", providers.FlowTypeRegistration).Return("reg-1", nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "rec-1", "", providers.FlowTypeRecovery).Return("rec-1", nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "so-1", "", providers.FlowTypeSignOut).Return("so-1", nil).Once()
+	svc := &inboundClientService{flowMgt: flowMgt}
+	c := &inboundmodel.InboundClient{
+		ID:                        "p1",
+		AuthFlowID:                "auth-1",
+		RegistrationFlowID:        "reg-1",
+		IsRegistrationFlowEnabled: true,
+		RecoveryFlowID:            "rec-1",
+		IsRecoveryFlowEnabled:     true,
+		SignOutFlowID:             "so-1",
+	}
+	err := svc.resolveFlowDefaults(context.Background(), c)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "auth-1", c.AuthFlowID)
+	assert.Equal(suite.T(), "reg-1", c.RegistrationFlowID)
+	assert.True(suite.T(), c.IsRegistrationFlowEnabled)
+	assert.Equal(suite.T(), "rec-1", c.RecoveryFlowID)
+	assert.True(suite.T(), c.IsRecoveryFlowEnabled)
+	assert.Equal(suite.T(), "so-1", c.SignOutFlowID)
+}
+
+// Registration/recovery/signout resolve to empty when no explicit or OU override exists
+// (their server-default handles are intentionally unconfigured).
+func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_NonAuthFlowsEmptyWhenNoOverride() {
+	flowMgt := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "auth-1", "", providers.FlowTypeAuthentication).Return("auth-1", nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "", "", providers.FlowTypeRegistration).Return("", nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "", "", providers.FlowTypeRecovery).Return("", nil).Once()
+	flowMgt.EXPECT().ResolveEffectiveFlowID(
+		mock.Anything, "", "", providers.FlowTypeSignOut).Return("", nil).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
 	c := &inboundmodel.InboundClient{ID: "p1", AuthFlowID: "auth-1"}
 	err := svc.resolveFlowDefaults(context.Background(), c)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "signout-default", c.SignOutFlowID)
+	assert.Empty(suite.T(), c.RegistrationFlowID)
+	assert.False(suite.T(), c.IsRegistrationFlowEnabled)
+	assert.Empty(suite.T(), c.RecoveryFlowID)
+	assert.False(suite.T(), c.IsRecoveryFlowEnabled)
+	assert.Empty(suite.T(), c.SignOutFlowID)
 }
 
-func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_KeepsConfiguredSignOutFlow() {
-	svc := &inboundClientService{flowMgt: flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())}
-	c := &inboundmodel.InboundClient{ID: "p1", AuthFlowID: "auth-1", SignOutFlowID: "signout-1"}
-	err := svc.resolveFlowDefaults(context.Background(), c)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "signout-1", c.SignOutFlowID)
-}
-
-// The default sign-out flow lookup maps a server error to ErrFKFlowServerError, treats a
-// not-found flow as optional (skipped), and surfaces any other retrieval error.
-func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_DefaultSignOutFlowLookupErrors() {
-	originalSignOutHandle := sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle
-	suite.T().Cleanup(func() {
-		sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle = originalSignOutHandle
-	})
-	sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle = testDefaultSignOutFlowHandle
-
+// ResolveEffectiveFlowID errors are mapped to the correct sentinel errors for each flow type.
+func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_ResolveErrors() {
 	tests := []struct {
 		name        string
-		lookupErr   *tidcommon.ServiceError
+		flowType    providers.FlowType
+		resolveErr  *tidcommon.ServiceError
 		expectedErr error
 	}{
-		{"server error", &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "SRV"}, ErrFKFlowServerError},
-		{"not found is skipped", &flowmgt.ErrorFlowNotFound, nil},
-		{
-			"other retrieval error",
+		{"auth server error", providers.FlowTypeAuthentication,
+			&tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "SRV"}, ErrFKFlowServerError},
+		{"auth other error", providers.FlowTypeAuthentication,
 			&tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: "OTHER"},
-			ErrFKFlowDefinitionRetrievalFailed,
-		},
+			ErrFKFlowDefinitionRetrievalFailed},
+		{"reg server error", providers.FlowTypeRegistration,
+			&tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "SRV"}, ErrFKFlowServerError},
+		{"rec server error", providers.FlowTypeRecovery,
+			&tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "SRV"}, ErrFKFlowServerError},
+		{"signout server error", providers.FlowTypeSignOut,
+			&tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "SRV"}, ErrFKFlowServerError},
 	}
-
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			flowMgt := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-			flowMgt.EXPECT().GetFlowByHandle(mock.Anything, testDefaultSignOutFlowHandle, providers.FlowTypeSignOut).
-				Return(nil, tt.lookupErr).Once()
+			if tt.flowType != providers.FlowTypeAuthentication {
+				flowMgt.EXPECT().ResolveEffectiveFlowID(
+					mock.Anything, mock.Anything, "", providers.FlowTypeAuthentication).Return("auth-1", nil).Once()
+			}
+			if tt.flowType == providers.FlowTypeRecovery || tt.flowType == providers.FlowTypeSignOut {
+				flowMgt.EXPECT().ResolveEffectiveFlowID(
+					mock.Anything, mock.Anything, "", providers.FlowTypeRegistration).Return("", nil).Once()
+			}
+			if tt.flowType == providers.FlowTypeSignOut {
+				flowMgt.EXPECT().ResolveEffectiveFlowID(
+					mock.Anything, mock.Anything, "", providers.FlowTypeRecovery).Return("", nil).Once()
+			}
+			flowMgt.EXPECT().ResolveEffectiveFlowID(
+				mock.Anything, mock.Anything, "", tt.flowType).Return("", tt.resolveErr).Once()
 			svc := &inboundClientService{flowMgt: flowMgt}
 			c := &inboundmodel.InboundClient{ID: "p1", AuthFlowID: "auth-1"}
 			err := svc.resolveFlowDefaults(context.Background(), c)
-			if tt.expectedErr != nil {
-				assert.ErrorIs(suite.T(), err, tt.expectedErr)
-			} else {
-				assert.NoError(suite.T(), err)
-			}
-			assert.Empty(suite.T(), c.SignOutFlowID)
+			assert.ErrorIs(suite.T(), err, tt.expectedErr)
 		})
 	}
-}
-
-// When no default sign-out flow handle is configured, resolution does not attempt a lookup.
-func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_NoDefaultSignOutFlowHandleConfigured() {
-	sysconfig.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle = ""
-	svc := &inboundClientService{flowMgt: flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())}
-	c := &inboundmodel.InboundClient{ID: "p1", AuthFlowID: "auth-1"}
-	err := svc.resolveFlowDefaults(context.Background(), c)
-	assert.NoError(suite.T(), err)
-	assert.Empty(suite.T(), c.SignOutFlowID)
 }
 
 // ----- ResolveInboundAuthProfileHandles -----
@@ -2136,8 +2160,6 @@ func (suite *InboundClientServiceTestSuite) TestGetOAuthClientByClientID_NilEnti
 }
 
 const testServiceEntityID = "ent-1"
-
-const testDefaultSignOutFlowHandle = "default-flow"
 
 func (suite *InboundClientServiceTestSuite) TestGetOAuthClientByClientID_GetEntityNotFound() {
 	id := testServiceEntityID

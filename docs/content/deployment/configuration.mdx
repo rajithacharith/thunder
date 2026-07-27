@@ -469,9 +469,6 @@ Authentication and registration flow settings.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `flow.default_auth_flow_handle` | `default-flow` | Handle of the default authentication flow |
-| `flow.default_signout_flow_handle` | `default-flow` | Handle of the default sign-out flow applied when an application does not pin its own |
-| `flow.user_onboarding_flow_handle` | `default-flow` | Handle of the default user onboarding flow |
 | `flow.max_version_history` | `10` | Maximum number of flow versions to retain |
 | `flow.auto_infer_registration` | `true` | If `true`, automatically infers registration from authentication flows |
 | `flow.executors` | *(all built-in executors)* | Whitelist of built-in executor names to register at startup. Omit the key or leave the list empty to register every built-in executor. When set, only the listed executors are available; flows that reference other executors fail validation at startup. Unknown names cause startup to fail. Duplicate names are ignored. |
@@ -902,6 +899,62 @@ Set it in either of these ways:
 
 :::note
 A declarative default takes precedence and locks the setting: while `defaultResourceServer.yaml` sets a value, runtime `PUT /server-config/defaultResourceServer` requests are rejected. Remove the declarative value to manage the default at runtime.
+:::
+
+## Flow Defaults
+
+Controls server-wide default flows and context expiry times for each flow type. These settings are stored in the server-config `flow` section, not in `deployment.yaml`.
+
+Each flow type has two fields:
+
+| Field | Description |
+|-------|-------------|
+| `<type>.defaultHandle` | Handle of the flow to use when the application and the organization unit do not pin a specific flow. Empty string means no server default, and the flow type is treated as not configured at the server level. |
+| `<type>.expirySeconds` | How long (in seconds) a started flow context remains valid before it expires. Must be a positive integer. |
+
+Supported flow types are `authFlow`, `registrationFlow`, `userOnboardingFlow`, `recoveryFlow`, and `signOutFlow`.
+
+**Resolution order:** When an inbound request starts a flow, the effective flow is resolved as follows:
+
+1. Application-level override (the flow ID pinned on the application or agent)
+2. Organization unit default (the flow ID configured on the owning OU)
+3. Server default from this section (the handle is looked up to find the flow ID)
+
+If none of the layers supplies a value, registration, recovery, user-onboarding, and sign-out are left not configured (the feature is treated as disabled for that client). Authentication has no such fallback: a missing auth flow causes startup validation to fail.
+
+Configure flow defaults in either of these ways:
+
+- **Declarative** - create `config/resources/server_configs/flow.yaml`, then restart:
+  ```yaml
+  name: flow
+  value:
+    authFlow:
+      defaultHandle: default-flow
+      expirySeconds: 1800
+    registrationFlow:
+      expirySeconds: 3600
+    recoveryFlow:
+      expirySeconds: 1800
+    signOutFlow:
+      expirySeconds: 1800
+  ```
+- **Runtime** - send the new value to `PUT /server-config/flow`; it is applied immediately and merged with any declarative file:
+  ```http
+  PUT /server-config/flow
+  Content-Type: application/json
+
+  {
+    "authFlow": { "defaultHandle": "default-flow", "expirySeconds": 1800 },
+    "registrationFlow": { "expirySeconds": 3600 }
+  }
+  ```
+
+:::note
+Set `defaultHandle` only for flow types that have a corresponding flow in your deployment. The handle is validated when the configuration is written. An unknown handle or a handle belonging to a different flow type is rejected with `SCF-1003`. For optional types (registration, recovery, user-onboarding, sign-out), omit `defaultHandle` to leave the server-level default empty.
+:::
+
+:::note
+`deployment.yaml` previously held `flow.default_auth_flow_handle`, `flow.default_signout_flow_handle`, and `flow.user_onboarding_flow_handle`. These keys are no longer read. Move any values you relied on into the `flow` server-config section using one of the methods above.
 :::
 
 ## Passkey Configuration

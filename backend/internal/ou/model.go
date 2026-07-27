@@ -39,6 +39,7 @@ type OrganizationUnitRequest struct {
 	RecoveryFlowID            string  `json:"recoveryFlowId,omitempty"`
 	IsRecoveryFlowEnabled     bool    `json:"isRecoveryFlowEnabled"`
 	SignOutFlowID             string  `json:"signOutFlowId,omitempty"`
+	UserOnboardingFlowID      string  `json:"userOnboardingFlowId,omitempty"`
 	LogoURL                   string  `json:"logoUrl,omitempty"         native:"omitempty,url,max=2048"`
 	TosURI                    string  `json:"tosUri,omitempty"          native:"omitempty,url,max=2048"`
 	PolicyURI                 string  `json:"policyUri,omitempty"       native:"omitempty,url,max=2048"`

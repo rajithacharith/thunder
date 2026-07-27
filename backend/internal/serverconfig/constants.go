@@ -29,6 +29,8 @@ const (
 	ConfigNameDefaultResourceServer ConfigName = "defaultResourceServer"
 	// ConfigNameSession is the configuration key for the SSO session lifetime timeouts.
 	ConfigNameSession ConfigName = "session"
+	// ConfigNameFlow is the configuration key for the flow defaults.
+	ConfigNameFlow ConfigName = "flow"
 )
 
 // supportedConfigNames lists all the supported server configuration names.
@@ -36,6 +38,7 @@ var supportedConfigNames = []ConfigName{
 	ConfigNameCORS,
 	ConfigNameDefaultResourceServer,
 	ConfigNameSession,
+	ConfigNameFlow,
 }
 
 // IsValid reports whether the config name is one of the supported values.

@@ -36,6 +36,22 @@ type Config struct {
 	Session flowsession.Config
 }
 
+// FlowTypeConfig holds the server-level defaults for one flow type.
+type FlowTypeConfig struct {
+	DefaultHandle string `json:"defaultHandle,omitempty"`
+	ExpirySeconds int64  `json:"expirySeconds,omitempty"`
+}
+
+// FlowSectionConfig is the value of the server-config "flow" section. It carries per-type default
+// handles and context TTLs. A zero ExpirySeconds falls back to the built-in default for that type.
+type FlowSectionConfig struct {
+	AuthFlow           FlowTypeConfig `json:"authFlow"`
+	RegistrationFlow   FlowTypeConfig `json:"registrationFlow"`
+	UserOnboardingFlow FlowTypeConfig `json:"userOnboardingFlow"`
+	RecoveryFlow       FlowTypeConfig `json:"recoveryFlow"`
+	SignOutFlow        FlowTypeConfig `json:"signOutFlow"`
+}
+
 // FromServerRuntime builds flow configuration from the global server runtime.
 func FromServerRuntime() Config {
 	runtime := config.GetServerRuntime()

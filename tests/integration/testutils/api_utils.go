@@ -1516,6 +1516,45 @@ func CreateIsolatedAuthFlow(handle string) (string, error) {
 	})
 }
 
+// CreateIsolatedRegistrationFlow creates a minimal REGISTRATION flow suitable for tests that need
+// an app with IsRegistrationFlowEnabled set without triggering cross-type reference validation.
+// The handle is caller-supplied so tests can craft unique values per suite and clean up
+// deterministically.
+func CreateIsolatedRegistrationFlow(handle string) (string, error) {
+	return CreateFlow(Flow{
+		Name:     "Isolated Registration Flow " + handle,
+		FlowType: "REGISTRATION",
+		Handle:   handle,
+		Nodes: []map[string]interface{}{
+			{
+				"id":        "start",
+				"type":      "START",
+				"onSuccess": "user_type_resolver",
+			},
+			{
+				"id":   "user_type_resolver",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "UserTypeResolver",
+				},
+				"onSuccess": "provisioning",
+			},
+			{
+				"id":   "provisioning",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "ProvisioningExecutor",
+				},
+				"onSuccess": "end",
+			},
+			{
+				"id":   "end",
+				"type": "END",
+			},
+		},
+	})
+}
+
 // DeleteFlow deletes a flow by ID
 func DeleteFlow(flowID string) error {
 	req, err := http.NewRequest("DELETE", TestServerURL+"/flows/"+flowID, nil)

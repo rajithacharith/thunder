@@ -19,9 +19,11 @@
 package flowmgt
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -38,6 +40,11 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 )
 
+// serverConfigProvider is the minimal subset of serverconfig.ServerConfigService consumed by flowmgt.
+type serverConfigProvider interface {
+	GetMergedConfig(ctx context.Context, name string) (any, *tidcommon.ServiceError)
+}
+
 // Initialize initializes the flow management service and registers HTTP routes.
 func Initialize(
 	mux *http.ServeMux,
@@ -47,6 +54,9 @@ func Initialize(
 	executorRegistry executor.ExecutorRegistryInterface,
 	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	graphBuilder graphbuilder.GraphBuilderInterface,
+	serverConfigSvc serverConfigProvider,
+	ouSvc ouProvider,
+	configHandler *FlowConfigHandler,
 ) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
 	flowValidator := newFlowValidator(executorRegistry, interceptorRegistry, graphBuilder)
 	store, compositeStore, transactioner, err := initializeStore(cacheManager, flowValidator)
@@ -57,8 +67,16 @@ func Initialize(
 	inferenceService := newFlowInferenceService()
 	service := newFlowMgtService(
 		store, inferenceService, graphBuilder, executorRegistry,
-		interceptorRegistry, flowValidator, compositeStore, transactioner,
+		interceptorRegistry, flowValidator, compositeStore, transactioner, serverConfigSvc, ouSvc,
 	)
+
+	// TODO: Check whether this can be improved to avoid injecting configHandler to flow mgt service
+	if configHandler != nil {
+		configHandler.SetHandleValidator(func(ctx context.Context, handle string, flowType providers.FlowType) bool {
+			_, svcErr := service.GetFlowByHandle(ctx, handle, flowType)
+			return svcErr == nil
+		})
+	}
 
 	handler := newFlowMgtHandler(service)
 	registerRoutes(mux, handler)

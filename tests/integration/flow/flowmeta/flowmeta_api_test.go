@@ -25,8 +25,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 )
 
 const (
@@ -61,6 +61,7 @@ type FlowMetaAPITestSuite struct {
 	appID              string
 	ouID               string
 	isolatedAuthFlowID string
+	isolatedRegFlowID  string
 }
 
 func TestFlowMetaAPITestSuite(t *testing.T) {
@@ -78,6 +79,12 @@ func (suite *FlowMetaAPITestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create isolated auth flow")
 	suite.isolatedAuthFlowID = isolatedAuthID
 	testApp.AuthFlowID = isolatedAuthID
+
+	// Create isolated registration flow so IsRegistrationFlowEnabled is preserved after resolveFlowDefaults.
+	isolatedRegID, err := testutils.CreateIsolatedRegistrationFlow("flowmeta-api-isolated-reg")
+	suite.Require().NoError(err, "Failed to create isolated registration flow")
+	suite.isolatedRegFlowID = isolatedRegID
+	testApp.RegistrationFlowID = isolatedRegID
 
 	// Create Application
 	testApp.OUID = suite.ouID
@@ -97,6 +104,12 @@ func (suite *FlowMetaAPITestSuite) TearDownSuite() {
 	if suite.isolatedAuthFlowID != "" {
 		if err := testutils.DeleteFlow(suite.isolatedAuthFlowID); err != nil {
 			suite.T().Logf("Failed to delete isolated auth flow during teardown: %v", err)
+		}
+	}
+
+	if suite.isolatedRegFlowID != "" {
+		if err := testutils.DeleteFlow(suite.isolatedRegFlowID); err != nil {
+			suite.T().Logf("Failed to delete isolated registration flow during teardown: %v", err)
 		}
 	}
 

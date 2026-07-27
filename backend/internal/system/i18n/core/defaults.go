@@ -897,6 +897,8 @@ var defaultMessages = map[string]string{
 	"error.ouservice.invalid_request_format_description": "The request body is malformed, contains invalid data, or required fields are missing/empty",
 	"error.ouservice.invalid_signout_flow_id": "Invalid default sign-out flow ID",
 	"error.ouservice.invalid_signout_flow_id_description": "The signOutFlowId does not reference an existing sign-out flow",
+	"error.ouservice.invalid_user_onboarding_flow_id": "Invalid default user onboarding flow ID",
+	"error.ouservice.invalid_user_onboarding_flow_id_description": "The userOnboardingFlowId does not reference an existing user onboarding flow",
 	"error.ouservice.missing_ou_id": "Invalid request format",
 	"error.ouservice.missing_ou_id_description": "Organization unit ID is required",
 	"error.ouservice.organization_unit_handle_conflict": "Organization unit handle conflict",

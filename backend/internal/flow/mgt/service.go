@@ -29,6 +29,7 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
@@ -73,6 +74,15 @@ type FlowMgtServiceInterface interface {
 		*resourcedependency.DependenciesResponse, *tidcommon.ServiceError)
 	GetResourceDependencies(
 		ctx context.Context, resourceType, id string) ([]resourcedependency.ResourceDependency, error)
+	ResolveEffectiveFlowID(ctx context.Context, overriddenFlowID, ouID string, flowType providers.FlowType) (
+		string, *tidcommon.ServiceError)
+}
+
+// ouProvider is the minimal subset of the OU service consumed by flowmgt for OU-level default
+// flow resolution. Defined locally so flowmgt does not import internal/ou (avoids an import cycle
+// since ou already depends on flowmgt via SetOUFlowResolver).
+type ouProvider interface {
+	GetOrganizationUnit(ctx context.Context, id string) (providers.OrganizationUnit, *tidcommon.ServiceError)
 }
 
 // flowMgtService is the default implementation of the FlowMgtServiceInterface.
@@ -86,6 +96,8 @@ type flowMgtService struct {
 	compositeStore      *compositeFlowStore
 	transactioner       providers.Transactioner
 	dependencyRegistry  resourcedependency.Registry
+	serverConfigSvc     serverConfigProvider
+	ouSvc               ouProvider
 	logger              *log.Logger
 }
 
@@ -99,6 +111,8 @@ func newFlowMgtService(
 	flowValidator FlowValidatorInterface,
 	compositeStore *compositeFlowStore,
 	transactioner providers.Transactioner,
+	serverConfigSvc serverConfigProvider,
+	ouSvc ouProvider,
 ) FlowMgtServiceInterface {
 	return &flowMgtService{
 		store:               store,
@@ -109,6 +123,8 @@ func newFlowMgtService(
 		flowValidator:       flowValidator,
 		compositeStore:      compositeStore,
 		transactioner:       transactioner,
+		serverConfigSvc:     serverConfigSvc,
+		ouSvc:               ouSvc,
 		logger:              log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
@@ -668,6 +684,95 @@ func (s *flowMgtService) IsValidFlow(
 	}
 
 	return flow.FlowType == flowType, nil
+}
+
+// ResolveEffectiveFlowID resolves the effective flow ID to use based on the provided overridden flow ID,
+// organization unit ID, and flow type.
+func (s *flowMgtService) ResolveEffectiveFlowID(ctx context.Context, overriddenFlowID, ouID string,
+	flowType providers.FlowType) (string, *tidcommon.ServiceError) {
+	if overriddenFlowID != "" {
+		return overriddenFlowID, nil
+	}
+
+	if ouID != "" && s.ouSvc != nil {
+		ou, ouErr := s.ouSvc.GetOrganizationUnit(ctx, ouID)
+		if ouErr != nil {
+			s.logger.Warn(ctx, "Failed to look up OU for flow resolution; falling back to server default",
+				log.String("ouID", ouID), log.String("error", ouErr.Error.DefaultValue))
+		} else if id := ouFlowIDForType(ou, flowType); id != "" {
+			return id, nil
+		}
+	}
+
+	handle := s.resolveDefaultFlowHandle(ctx, flowType)
+	if handle == "" {
+		return "", nil
+	}
+
+	flow, svcErr := s.GetFlowByHandle(ctx, handle, flowType)
+	if svcErr != nil {
+		return "", svcErr
+	}
+
+	return flow.ID, nil
+}
+
+// ouFlowIDForType returns the flow ID for the given flow type from the organization unit.
+func ouFlowIDForType(ou providers.OrganizationUnit, flowType providers.FlowType) string {
+	switch flowType {
+	case providers.FlowTypeAuthentication:
+		return ou.AuthFlowID
+	case providers.FlowTypeRegistration:
+		return ou.RegistrationFlowID
+	case providers.FlowTypeUserOnboarding:
+		return ou.UserOnboardingFlowID
+	case providers.FlowTypeRecovery:
+		return ou.RecoveryFlowID
+	case providers.FlowTypeSignOut:
+		return ou.SignOutFlowID
+	}
+	return ""
+}
+
+// getFlowSectionConfig returns the merged FlowSectionConfig from the server-config "flow" section.
+func (s *flowMgtService) getFlowSectionConfig(ctx context.Context) flowconfig.FlowSectionConfig {
+	if s.serverConfigSvc == nil {
+		return flowconfig.FlowSectionConfig{}
+	}
+
+	merged, svcErr := s.serverConfigSvc.GetMergedConfig(ctx, "flow")
+	if svcErr != nil {
+		s.logger.Warn(ctx, "Failed to read flow server config; using empty section defaults")
+		return flowconfig.FlowSectionConfig{}
+	}
+
+	cfg, ok := merged.(flowconfig.FlowSectionConfig)
+	if !ok {
+		return flowconfig.FlowSectionConfig{}
+	}
+
+	return cfg
+}
+
+// resolveDefaultFlowHandle returns the server-level default handle configured for the given flow
+// type, or "" when no default is configured.
+func (s *flowMgtService) resolveDefaultFlowHandle(ctx context.Context, flowType providers.FlowType) string {
+	cfg := s.getFlowSectionConfig(ctx)
+
+	switch flowType {
+	case providers.FlowTypeAuthentication:
+		return cfg.AuthFlow.DefaultHandle
+	case providers.FlowTypeRegistration:
+		return cfg.RegistrationFlow.DefaultHandle
+	case providers.FlowTypeUserOnboarding:
+		return cfg.UserOnboardingFlow.DefaultHandle
+	case providers.FlowTypeRecovery:
+		return cfg.RecoveryFlow.DefaultHandle
+	case providers.FlowTypeSignOut:
+		return cfg.SignOutFlow.DefaultHandle
+	default:
+		return ""
+	}
 }
 
 // buildPaginationLinks constructs pagination links for the flow list response.

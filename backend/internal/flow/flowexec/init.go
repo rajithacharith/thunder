@@ -44,6 +44,7 @@ func Initialize(
 	graphBuilder graphbuilder.GraphBuilderInterface,
 	storeProvider providers.RuntimeStoreProvider,
 	transactioner providers.Transactioner,
+	serverConfigSvc serverConfigProvider,
 	cfg flowconfig.Config,
 ) (FlowExecServiceInterface, error) {
 	flowStore := newFlowStore(storeProvider)
@@ -52,7 +53,7 @@ func Initialize(
 		flowProvider, graphBuilder)
 	flowExecService := newFlowExecService(flowProvider, flowStore, flowEngine,
 		actorProvider, observabilitySvc, transactioner, cryptoSvc, attestationVerifier,
-		graphBuilder, cfg)
+		graphBuilder, serverConfigSvc, cfg)
 
 	// Mark the SSO cookie Secure unless the deployment is configured to serve over plain HTTP, and
 	// bound its lifetime to the session's configured absolute timeout (same fallback as the session

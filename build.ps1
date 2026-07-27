@@ -656,7 +656,7 @@ function Prepare-Backend-For-Packaging {
     Write-Host "Copying bootstrap scripts..."
     Copy-Item -Path (Join-Path $BACKEND_DIR "bootstrap") -Destination $package_folder -Recurse -Force
     # Never ship the dev-only CORS seed that Run stages into the source bootstrap dir.
-    Remove-Item -Path (Join-Path $package_folder "bootstrap/02-server-configurations.yaml") -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $package_folder "bootstrap/03-dev-server-configurations.yaml") -Force -ErrorAction SilentlyContinue
 
     # Key material is not generated into the distribution; setup.ps1 generates it per deployment.
 }
@@ -1561,7 +1561,7 @@ value:
     - "https://localhost:$GATE_APP_DEFAULT_PORT"
     - "https://localhost:$CONSOLE_APP_DEFAULT_PORT"
 "@
-    Set-Content -Path (Join-Path $BACKEND_DIR "bootstrap/02-server-configurations.yaml") -Value $devServerConfig
+    Set-Content -Path (Join-Path $BACKEND_DIR "bootstrap/03-dev-server-configurations.yaml") -Value $devServerConfig
 
     # Local dev only: default to admin/admin if not supplied. This path never produces a
     # shared or distributed artifact, so a fixed default here is acceptable.

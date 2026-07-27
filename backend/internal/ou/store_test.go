@@ -723,7 +723,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						`{"auth_flow_id":"","cookie_policy_uri":"","is_recovery_flow_enabled":false,`+
 							`"is_registration_flow_enabled":false,"layout_id":"","logo_url":"",`+
 							`"policy_uri":"","recovery_flow_id":"","registration_flow_id":"",`+
-							`"signout_flow_id":"","theme_id":"","tos_uri":""}`,
+							`"signout_flow_id":"","theme_id":"","tos_uri":"","user_onboarding_flow_id":""}`,
 						mock.Anything,
 						testDeploymentID,
 					).
@@ -768,7 +768,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 							`"layout_id":"layout-456","logo_url":"https://example.com/logo.png",`+
 							`"policy_uri":"","recovery_flow_id":"recovery-flow-123",`+
 							`"registration_flow_id":"registration-flow-123",`+
-							`"signout_flow_id":"signout-flow-123","theme_id":"theme-123","tos_uri":""}`,
+							`"signout_flow_id":"signout-flow-123","theme_id":"theme-123",`+
+							`"tos_uri":"","user_onboarding_flow_id":""}`,
 						mock.Anything,
 						testDeploymentID,
 					).
@@ -793,7 +794,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						`{"auth_flow_id":"","cookie_policy_uri":"","is_recovery_flow_enabled":false,`+
 							`"is_registration_flow_enabled":false,"layout_id":"","logo_url":"",`+
 							`"policy_uri":"","recovery_flow_id":"","registration_flow_id":"",`+
-							`"signout_flow_id":"","theme_id":"","tos_uri":""}`,
+							`"signout_flow_id":"","theme_id":"","tos_uri":"","user_onboarding_flow_id":""}`,
 						mock.Anything,
 						testDeploymentID,
 					).
@@ -1403,7 +1404,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						`{"auth_flow_id":"","cookie_policy_uri":"","is_recovery_flow_enabled":false,`+
 							`"is_registration_flow_enabled":false,"layout_id":"","logo_url":"",`+
 							`"policy_uri":"","recovery_flow_id":"","registration_flow_id":"",`+
-							`"signout_flow_id":"","theme_id":"","tos_uri":""}`,
+							`"signout_flow_id":"","theme_id":"","tos_uri":"","user_onboarding_flow_id":""}`,
 						testDeploymentID,
 						mock.Anything,
 						mock.Anything,
@@ -1445,7 +1446,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 							`"layout_id":"layout-456","logo_url":"https://example.com/logo.png",`+
 							`"policy_uri":"","recovery_flow_id":"recovery-flow-123",`+
 							`"registration_flow_id":"registration-flow-123",`+
-							`"signout_flow_id":"signout-flow-123","theme_id":"theme-123","tos_uri":""}`,
+							`"signout_flow_id":"signout-flow-123","theme_id":"theme-123",`+
+							`"tos_uri":"","user_onboarding_flow_id":""}`,
 						testDeploymentID,
 						mock.Anything,
 						mock.Anything,
@@ -1476,7 +1478,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						`{"auth_flow_id":"","cookie_policy_uri":"","is_recovery_flow_enabled":false,`+
 							`"is_registration_flow_enabled":false,"layout_id":"","logo_url":"",`+
 							`"policy_uri":"","recovery_flow_id":"","registration_flow_id":"",`+
-							`"signout_flow_id":"","theme_id":"","tos_uri":""}`,
+							`"signout_flow_id":"","theme_id":"","tos_uri":"","user_onboarding_flow_id":""}`,
 						testDeploymentID,
 						mock.Anything,
 						mock.Anything,

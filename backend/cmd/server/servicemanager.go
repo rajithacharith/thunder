@@ -304,11 +304,17 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	emailClient := initEmailClient(ctx, logger)
 
+	// Create the flow server-config handler early so it can be registered before serverconfig is
+	// initialized. The handle-existence validator is injected in a second phase after flowMgtService
+	// is available.
+	flowConfigHandler := flowmgt.NewFlowConfigHandler()
+
 	// Initialize server-wide configuration after its handler dependencies.
 	serverConfigHandlers := map[serverconfig.ConfigName]serverconfig.ServerConfigHandlerInterface{
 		serverconfig.ConfigNameCORS:                  cors.OriginHandler{},
 		serverconfig.ConfigNameDefaultResourceServer: resource.NewDefaultResourceServerConfigHandler(resourceService),
 		serverconfig.ConfigNameSession:               flowsession.ConfigHandler{},
+		serverconfig.ConfigNameFlow:                  flowConfigHandler,
 	}
 	serverConfigService, serverConfigExporter, err := serverconfig.Initialize(mux, cacheManager, serverConfigHandlers)
 	fatalOnError(ctx, logger, err, "Failed to initialize server config service")
@@ -367,7 +373,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
-		mux, mcpServer, cacheManager, flowFactory, execRegistry, interceptorRegistry, graphBuilder)
+		mux, mcpServer, cacheManager, flowFactory, execRegistry, interceptorRegistry, graphBuilder,
+		serverConfigService, ouService, flowConfigHandler)
 	fatalOnError(ctx, logger, err, "Failed to initialize FlowMgtService")
 
 	// Two-phase initialization: inject the flow resolver into the OU service.
@@ -463,7 +470,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	attestationProvider := initAttestationProvider(ctx, logger, runtimeCryptoSvc)
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
 		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, attestationProvider,
-		graphBuilder, runtimeStoreProvider, transactioner, flowConfig)
+		graphBuilder, runtimeStoreProvider, transactioner, serverConfigService, flowConfig)
 	fatalOnError(ctx, logger, err, "Failed to initialize flow execution service")
 
 	// Initialize OAuth services.

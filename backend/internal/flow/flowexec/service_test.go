@@ -77,13 +77,23 @@ func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Co
 const testUserOnboardingFlowHandle = "onboarding-handle"
 const testDefaultAuthFlowHandle = "default-auth-handle"
 
-var testFlowConfig = engineconfig.FlowConfig{
-	UserOnboardingFlowHandle: testUserOnboardingFlowHandle,
-	DefaultAuthFlowHandle:    testDefaultAuthFlowHandle,
-}
+var testFlowConfig = engineconfig.FlowConfig{}
 
 var testFlowExecCfg = flowconfig.Config{
 	Flow: testFlowConfig,
+}
+
+// stubServerConfig is a test implementation of serverConfigProvider that returns
+// a pre-configured FlowSectionConfig for the "flow" section.
+type stubServerConfig struct {
+	cfg flowconfig.FlowSectionConfig
+}
+
+func (s stubServerConfig) GetMergedConfig(_ context.Context, name string) (any, *tidcommon.ServiceError) {
+	if name == "flow" {
+		return s.cfg, nil
+	}
+	return nil, nil
 }
 
 type ServiceTestSuite struct {
@@ -263,6 +273,10 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 				transactioner: &stubTransactioner{},
 				cryptoSvc:     mockCrypto,
 				cfg:           testFlowExecCfg,
+				serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+					AuthFlow:           flowconfig.FlowTypeConfig{DefaultHandle: testDefaultAuthFlowHandle},
+					UserOnboardingFlow: flowconfig.FlowTypeConfig{DefaultHandle: testUserOnboardingFlowHandle},
+				}},
 			}
 
 			initContext := &FlowInitContext{
@@ -451,6 +465,10 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 				transactioner: &stubTransactioner{},
 				cryptoSvc:     mockCrypto,
 				cfg:           testFlowExecCfg,
+				serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+					AuthFlow:           flowconfig.FlowTypeConfig{DefaultHandle: testDefaultAuthFlowHandle},
+					UserOnboardingFlow: flowconfig.FlowTypeConfig{DefaultHandle: testUserOnboardingFlowHandle},
+				}},
 			}
 
 			initContext := &FlowInitContext{
@@ -510,6 +528,9 @@ func TestInitiateFlowFallsBackToDefaultFlow(t *testing.T) {
 			transactioner: &stubTransactioner{},
 			cryptoSvc:     mockCrypto,
 			cfg:           testFlowExecCfg,
+			serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+				AuthFlow: flowconfig.FlowTypeConfig{DefaultHandle: testDefaultAuthFlowHandle},
+			}},
 		}
 
 		mockInboundClient.EXPECT().GetInboundClientByEntityID(mock.Anything, appID).
@@ -588,6 +609,9 @@ func TestInitiateFlowFallsBackToDefaultFlow(t *testing.T) {
 			actorProvider: actorprovider.Initialize(mockInboundClient, mockEntityProvider, noopAuthnMgr(), nil),
 			transactioner: &stubTransactioner{},
 			cfg:           testFlowExecCfg,
+			serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+				AuthFlow: flowconfig.FlowTypeConfig{DefaultHandle: testDefaultAuthFlowHandle},
+			}},
 		}
 
 		mockInboundClient.EXPECT().GetInboundClientByEntityID(mock.Anything, appID).
@@ -622,28 +646,28 @@ func TestGetFlowExpirySeconds(t *testing.T) {
 		{
 			name:     "Authentication flow",
 			flowType: providers.FlowTypeAuthentication,
-			expected: defaultAuthFlowExpiry,
+			expected: 1800,
 		},
 		{
 			name:     "Registration flow",
 			flowType: providers.FlowTypeRegistration,
-			expected: defaultRegistrationFlowExpiry,
+			expected: 3600,
 		},
 		{
 			name:     "User onboarding flow",
 			flowType: providers.FlowTypeUserOnboarding,
-			expected: defaultUserOnboardingFlowExpiry,
+			expected: 86400,
 		},
 		{
 			name:     "Unknown flow type (fallback)",
 			flowType: providers.FlowType("UNKNOWN_FLOW"),
-			expected: defaultAuthFlowExpiry,
+			expected: 1800,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := service.getFlowExpirySeconds(tt.flowType)
+			result := service.getFlowExpirySeconds(context.Background(), tt.flowType)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -1729,7 +1753,7 @@ func TestInitiateAndExecute_ZeroExpiryUsesDefault(t *testing.T) {
 	mockCrypto.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return([]byte("encrypted"), nil, nil)
 	mockStore.EXPECT().StoreFlowContext(mock.Anything, mock.Anything,
-		mock.MatchedBy(func(exp int64) bool { return exp == defaultAuthFlowExpiry })).
+		mock.MatchedBy(func(exp int64) bool { return exp == int64(1800) })).
 		Return(nil)
 	mockEngineInner.EXPECT().Execute(mock.Anything).
 		Return(FlowStep{Status: providers.FlowStatusIncomplete}, nil)
@@ -2304,7 +2328,7 @@ func (s *ServiceTestSuite) TestSetApplicationToContext_UserOnboardingSkipped() {
 
 func (s *ServiceTestSuite) TestGetFlowExpirySeconds_RecoveryFlow() {
 	service := &flowExecService{cfg: testFlowExecCfg}
-	s.Equal(defaultRecoveryFlowExpiry, service.getFlowExpirySeconds(providers.FlowTypeRecovery))
+	s.Equal(int64(1800), service.getFlowExpirySeconds(context.Background(), providers.FlowTypeRecovery))
 }
 
 func (s *ServiceTestSuite) TestLoadContextFromStore_EmptyExecutionID() {
@@ -2352,6 +2376,9 @@ func (s *ServiceTestSuite) TestGetSystemFlowGraph_GetFlowByHandleError() {
 		graphBuilder: mockGraphBuilder,
 		flowProvider: mockFlowProvider,
 		cfg:          testFlowExecCfg,
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			UserOnboardingFlow: flowconfig.FlowTypeConfig{DefaultHandle: testUserOnboardingFlowHandle},
+		}},
 	}
 
 	mockFlowProvider.EXPECT().GetFlowByHandle(mock.Anything, testUserOnboardingFlowHandle,
@@ -2994,6 +3021,134 @@ func (s *ServiceTestSuite) TestLoadContextFromStore_GetFlowGraphError() {
 	result, svcErr := service.loadContextFromStore(context.Background(), "exec-1", log.GetLogger())
 	s.Nil(result)
 	s.NotNil(svcErr)
+}
+
+// ----- firstPositiveExpiry -----
+
+func (s *ServiceTestSuite) TestFirstPositiveExpiry_PositiveVWins() {
+	s.Equal(int64(300), firstPositiveExpiry(300, 1800))
+}
+
+func (s *ServiceTestSuite) TestFirstPositiveExpiry_ZeroVFallsBack() {
+	s.Equal(int64(1800), firstPositiveExpiry(0, 1800))
+}
+
+func (s *ServiceTestSuite) TestFirstPositiveExpiry_NegativeVFallsBack() {
+	s.Equal(int64(1800), firstPositiveExpiry(-5, 1800))
+}
+
+// ----- resolveDefaultFlowHandle -----
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_Authentication() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			AuthFlow: flowconfig.FlowTypeConfig{DefaultHandle: "h-auth"},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal("h-auth", svc.resolveDefaultFlowHandle(context.Background(), providers.FlowTypeAuthentication))
+}
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_Registration() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			RegistrationFlow: flowconfig.FlowTypeConfig{DefaultHandle: "h-reg"},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal("h-reg", svc.resolveDefaultFlowHandle(context.Background(), providers.FlowTypeRegistration))
+}
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_UserOnboarding() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			UserOnboardingFlow: flowconfig.FlowTypeConfig{DefaultHandle: "h-onboard"},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal("h-onboard", svc.resolveDefaultFlowHandle(context.Background(), providers.FlowTypeUserOnboarding))
+}
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_Recovery() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			RecoveryFlow: flowconfig.FlowTypeConfig{DefaultHandle: "h-recovery"},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal("h-recovery", svc.resolveDefaultFlowHandle(context.Background(), providers.FlowTypeRecovery))
+}
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_SignOut() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			SignOutFlow: flowconfig.FlowTypeConfig{DefaultHandle: "h-signout"},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal("h-signout", svc.resolveDefaultFlowHandle(context.Background(), providers.FlowTypeSignOut))
+}
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_UnknownFlowTypeReturnsEmpty() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{}},
+		cfg:             testFlowExecCfg,
+	}
+	s.Empty(svc.resolveDefaultFlowHandle(context.Background(), providers.FlowType("UNKNOWN")))
+}
+
+func (s *ServiceTestSuite) TestResolveDefaultFlowHandle_NilServerConfig() {
+	svc := &flowExecService{cfg: testFlowExecCfg}
+	s.Empty(svc.resolveDefaultFlowHandle(context.Background(), providers.FlowTypeAuthentication))
+}
+
+// ----- getFlowExpirySeconds with serverconfig -----
+
+func (s *ServiceTestSuite) TestGetFlowExpirySeconds_AuthFlowServerConfigOverridesDefault() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			AuthFlow: flowconfig.FlowTypeConfig{ExpirySeconds: 600},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal(int64(600), svc.getFlowExpirySeconds(context.Background(), providers.FlowTypeAuthentication))
+}
+
+func (s *ServiceTestSuite) TestGetFlowExpirySeconds_RegistrationFlowServerConfigOverridesDefault() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			RegistrationFlow: flowconfig.FlowTypeConfig{ExpirySeconds: 7200},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal(int64(7200), svc.getFlowExpirySeconds(context.Background(), providers.FlowTypeRegistration))
+}
+
+func (s *ServiceTestSuite) TestGetFlowExpirySeconds_UserOnboardingFlowServerConfigOverridesDefault() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			UserOnboardingFlow: flowconfig.FlowTypeConfig{ExpirySeconds: 43200},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal(int64(43200), svc.getFlowExpirySeconds(context.Background(), providers.FlowTypeUserOnboarding))
+}
+
+func (s *ServiceTestSuite) TestGetFlowExpirySeconds_SignOutFlowServerConfigOverridesDefault() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{
+			SignOutFlow: flowconfig.FlowTypeConfig{ExpirySeconds: 120},
+		}},
+		cfg: testFlowExecCfg,
+	}
+	s.Equal(int64(120), svc.getFlowExpirySeconds(context.Background(), providers.FlowTypeSignOut))
+}
+
+func (s *ServiceTestSuite) TestGetFlowExpirySeconds_SignOutFallsBackToDefault() {
+	svc := &flowExecService{
+		serverConfigSvc: stubServerConfig{cfg: flowconfig.FlowSectionConfig{}}, cfg: testFlowExecCfg,
+	}
+	s.Equal(defaultSignOutFlowExpiry, svc.getFlowExpirySeconds(context.Background(), providers.FlowTypeSignOut))
 }
 
 // noopAuthnMgr returns an authentication-provider mock with no expectations, for tests that

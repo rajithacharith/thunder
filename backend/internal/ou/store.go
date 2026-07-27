@@ -635,6 +635,11 @@ func buildOrganizationUnitFromResultRow(
 		return providers.OrganizationUnit{}, err
 	}
 
+	userOnboardingFlowID, err := extractStringFromOUMetadata(ouMetadataData, "user_onboarding_flow_id")
+	if err != nil {
+		return providers.OrganizationUnit{}, err
+	}
+
 	logoURL, err := extractStringFromOUMetadata(ouMetadataData, "logo_url")
 	if err != nil {
 		return providers.OrganizationUnit{}, err
@@ -679,6 +684,7 @@ func buildOrganizationUnitFromResultRow(
 		RecoveryFlowID:            recoveryFlowID,
 		IsRecoveryFlowEnabled:     isRecoveryFlowEnabled,
 		SignOutFlowID:             signOutFlowID,
+		UserOnboardingFlowID:      userOnboardingFlowID,
 		LogoURL:                   logoURL,
 		TosURI:                    tosURI,
 		PolicyURI:                 policyURI,
@@ -767,6 +773,7 @@ func getOUMetadataDataBytes(ou *providers.OrganizationUnit) ([]byte, error) {
 		"recovery_flow_id":             ou.RecoveryFlowID,
 		"is_recovery_flow_enabled":     ou.IsRecoveryFlowEnabled,
 		"signout_flow_id":              ou.SignOutFlowID,
+		"user_onboarding_flow_id":      ou.UserOnboardingFlowID,
 		"logo_url":                     ou.LogoURL,
 		"tos_uri":                      ou.TosURI,
 		"policy_uri":                   ou.PolicyURI,

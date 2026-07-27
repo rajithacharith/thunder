@@ -408,6 +408,7 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 			RecoveryFlowID:            request.RecoveryFlowID,
 			IsRecoveryFlowEnabled:     request.IsRecoveryFlowEnabled,
 			SignOutFlowID:             request.SignOutFlowID,
+			UserOnboardingFlowID:      request.UserOnboardingFlowID,
 			LogoURL:                   request.LogoURL,
 			TosURI:                    request.TosURI,
 			PolicyURI:                 request.PolicyURI,
@@ -724,6 +725,7 @@ func (ous *organizationUnitService) updateOUInternal(
 		RecoveryFlowID:            request.RecoveryFlowID,
 		IsRecoveryFlowEnabled:     request.IsRecoveryFlowEnabled,
 		SignOutFlowID:             request.SignOutFlowID,
+		UserOnboardingFlowID:      request.UserOnboardingFlowID,
 		LogoURL:                   request.LogoURL,
 		TosURI:                    request.TosURI,
 		PolicyURI:                 request.PolicyURI,
@@ -1295,6 +1297,11 @@ func (ous *organizationUnitService) validateDefaultFlows(
 	}
 	if svcErr := ous.validateDefaultFlowID(
 		ctx, request.SignOutFlowID, providers.FlowTypeSignOut, &ErrorInvalidSignOutFlowID); svcErr != nil {
+		return svcErr
+	}
+	if svcErr := ous.validateDefaultFlowID(
+		ctx, request.UserOnboardingFlowID, providers.FlowTypeUserOnboarding,
+		&ErrorInvalidUserOnboardingFlowID); svcErr != nil {
 		return svcErr
 	}
 	return nil

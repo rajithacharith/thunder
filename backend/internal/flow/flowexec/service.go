@@ -43,6 +43,13 @@ import (
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
+// serverConfigProvider is the narrow subset of serverconfig.ServerConfigService consumed by flowexec
+// for reading the "flow" section (per-type default handles and expiries). Defined locally so flowexec
+// does not import the serverconfig package.
+type serverConfigProvider interface {
+	GetMergedConfig(ctx context.Context, name string) (any, *tidcommon.ServiceError)
+}
+
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
 	flowEngine          flowEngineInterface
@@ -54,6 +61,7 @@ type flowExecService struct {
 	transactioner       providers.Transactioner
 	cryptoSvc           kmprovider.RuntimeCryptoProvider
 	attestationVerifier providers.AttestationProvider
+	serverConfigSvc     serverConfigProvider
 	cfg                 flowconfig.Config
 }
 
@@ -66,6 +74,7 @@ func newFlowExecService(flowProvider providers.FlowProvider,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	attestationVerifier providers.AttestationProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
+	serverConfigSvc serverConfigProvider,
 	cfg flowconfig.Config) FlowExecServiceInterface {
 	return &flowExecService{
 		flowProvider:        flowProvider,
@@ -77,6 +86,7 @@ func newFlowExecService(flowProvider providers.FlowProvider,
 		cryptoSvc:           cryptoSvc,
 		attestationVerifier: attestationVerifier,
 		graphBuilder:        graphBuilder,
+		serverConfigSvc:     serverConfigSvc,
 		cfg:                 cfg,
 	}
 }
@@ -404,7 +414,7 @@ func (s *flowExecService) fallbackToDefaultFlow(ctx context.Context, graphID str
 		return nil, &tidcommon.InternalServerError
 	}
 
-	handle := s.cfg.Flow.DefaultAuthFlowHandle
+	handle := s.resolveDefaultFlowHandle(ctx, providers.FlowTypeAuthentication)
 	logger.Warn(ctx, "Configured authentication flow not found; falling back to default flow",
 		log.String("graphID", graphID), log.String("defaultFlowHandle", handle))
 
@@ -415,23 +425,6 @@ func (s *flowExecService) fallbackToDefaultFlow(ctx context.Context, graphID str
 		return nil, &tidcommon.InternalServerError
 	}
 	return flow, nil
-}
-
-// getFlowExpirySeconds returns the expiry time for a flow in seconds.
-func (s *flowExecService) getFlowExpirySeconds(flowType providers.FlowType) int64 {
-	switch flowType {
-	case providers.FlowTypeAuthentication:
-		return defaultAuthFlowExpiry
-	case providers.FlowTypeRegistration:
-		return defaultRegistrationFlowExpiry
-	case providers.FlowTypeUserOnboarding:
-		return defaultUserOnboardingFlowExpiry
-	case providers.FlowTypeRecovery:
-		return defaultRecoveryFlowExpiry
-	default:
-		// Fallback to auth flow expiry
-		return defaultAuthFlowExpiry
-	}
 }
 
 // loadPrevContext retrieves the flow context from the store based on the given details.
@@ -594,7 +587,7 @@ func (s *flowExecService) storeContext(ctx context.Context, engineCtx *EngineCon
 	}
 
 	if expirySeconds <= 0 {
-		expirySeconds = s.getFlowExpirySeconds(engineCtx.FlowType)
+		expirySeconds = s.getFlowExpirySeconds(ctx, engineCtx.FlowType)
 	}
 
 	encryptedEngineCtx, err := s.encryptEngineContext(ctx, engineCtx)
@@ -717,13 +710,13 @@ func isNewFlow(executionID string) bool {
 // getSystemFlowGraph retrieves the flow graph for system flows by handle.
 func (s *flowExecService) getSystemFlowGraph(ctx context.Context, flowType providers.FlowType,
 	logger *log.Logger) (string, *tidcommon.ServiceError) {
-	handle := ""
 	switch flowType {
 	case providers.FlowTypeUserOnboarding:
-		handle = s.cfg.Flow.UserOnboardingFlowHandle
 	default:
 		return "", &ErrorInvalidFlowType
 	}
+
+	handle := s.resolveDefaultFlowHandle(ctx, flowType)
 
 	flow, err := s.flowProvider.GetFlowByHandle(ctx, handle, flowType)
 	if err != nil {
@@ -908,6 +901,82 @@ func (s *flowExecService) getFlowContext(ctx context.Context, executionID string
 	}
 
 	return dbModel, nil
+}
+
+// getFlowSectionConfig reads the "flow" section from serverconfig and returns the merged value.
+// Returns a zero FlowSectionConfig when the serverconfig service is not wired or the section is
+// absent, letting callers fall back to built-in defaults.
+func (s *flowExecService) getFlowSectionConfig(ctx context.Context) flowconfig.FlowSectionConfig {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
+
+	if s.serverConfigSvc == nil {
+		return flowconfig.FlowSectionConfig{}
+	}
+
+	merged, svcErr := s.serverConfigSvc.GetMergedConfig(ctx, "flow")
+	if svcErr != nil {
+		logger.Error(ctx, "Failed to retrieve merged flow section from serverconfig",
+			log.String("error", svcErr.Error.DefaultValue))
+		return flowconfig.FlowSectionConfig{}
+	}
+
+	cfg, ok := merged.(flowconfig.FlowSectionConfig)
+	if !ok {
+		logger.Error(ctx, "Unexpected type for merged flow server config; using built-in defaults",
+			log.String("type", fmt.Sprintf("%T", merged)))
+		return flowconfig.FlowSectionConfig{}
+	}
+
+	return cfg
+}
+
+// getFlowExpirySeconds returns the context TTL for the given flow type.
+func (s *flowExecService) getFlowExpirySeconds(ctx context.Context, flowType providers.FlowType) int64 {
+	cfg := s.getFlowSectionConfig(ctx)
+
+	switch flowType {
+	case providers.FlowTypeAuthentication:
+		return firstPositiveExpiry(cfg.AuthFlow.ExpirySeconds, defaultAuthFlowExpiry)
+	case providers.FlowTypeRegistration:
+		return firstPositiveExpiry(cfg.RegistrationFlow.ExpirySeconds, defaultRegistrationFlowExpiry)
+	case providers.FlowTypeUserOnboarding:
+		return firstPositiveExpiry(cfg.UserOnboardingFlow.ExpirySeconds, defaultUserOnboardingFlowExpiry)
+	case providers.FlowTypeRecovery:
+		return firstPositiveExpiry(cfg.RecoveryFlow.ExpirySeconds, defaultRecoveryFlowExpiry)
+	case providers.FlowTypeSignOut:
+		return firstPositiveExpiry(cfg.SignOutFlow.ExpirySeconds, defaultSignOutFlowExpiry)
+	default:
+		return defaultAuthFlowExpiry
+	}
+}
+
+// resolveDefaultFlowHandle returns the server-level default handle for the given flow type, or ""
+// when no default is configured.
+func (s *flowExecService) resolveDefaultFlowHandle(ctx context.Context, flowType providers.FlowType) string {
+	cfg := s.getFlowSectionConfig(ctx)
+
+	switch flowType {
+	case providers.FlowTypeAuthentication:
+		return cfg.AuthFlow.DefaultHandle
+	case providers.FlowTypeRegistration:
+		return cfg.RegistrationFlow.DefaultHandle
+	case providers.FlowTypeUserOnboarding:
+		return cfg.UserOnboardingFlow.DefaultHandle
+	case providers.FlowTypeRecovery:
+		return cfg.RecoveryFlow.DefaultHandle
+	case providers.FlowTypeSignOut:
+		return cfg.SignOutFlow.DefaultHandle
+	default:
+		return ""
+	}
+}
+
+// firstPositiveExpiry returns the first positive value between v and fallback, or fallback if v is non-positive.
+func firstPositiveExpiry(v, fallback int64) int64 {
+	if v > 0 {
+		return v
+	}
+	return fallback
 }
 
 // isContextEncrypted reports whether a context string is in encrypted form by checking for an alg field.

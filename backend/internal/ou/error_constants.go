@@ -266,6 +266,20 @@ var (
 			DefaultValue: "The signOutFlowId does not reference an existing sign-out flow",
 		},
 	}
+	// ErrorInvalidUserOnboardingFlowID is the error returned when userOnboardingFlowId does not
+	// reference an existing user onboarding flow.
+	ErrorInvalidUserOnboardingFlowID = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
+		Code: "OU-1019",
+		Error: tidcommon.I18nMessage{
+			Key:          "error.ouservice.invalid_user_onboarding_flow_id",
+			DefaultValue: "Invalid default user onboarding flow ID",
+		},
+		ErrorDescription: tidcommon.I18nMessage{
+			Key:          "error.ouservice.invalid_user_onboarding_flow_id_description",
+			DefaultValue: "The userOnboardingFlowId does not reference an existing user onboarding flow",
+		},
+	}
 )
 
 // Error variables

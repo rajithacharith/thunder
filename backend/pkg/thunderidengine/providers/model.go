@@ -64,8 +64,9 @@ type OrganizationUnit struct {
 	IsRegistrationFlowEnabled bool      `json:"isRegistrationFlowEnabled"    yaml:"isRegistrationFlowEnabled"`
 	RecoveryFlowID            string    `json:"recoveryFlowId,omitempty"     yaml:"recoveryFlowId,omitempty"`
 	IsRecoveryFlowEnabled     bool      `json:"isRecoveryFlowEnabled"        yaml:"isRecoveryFlowEnabled"`
-	SignOutFlowID             string    `json:"signOutFlowId,omitempty"      yaml:"signOutFlowId,omitempty"`
-	LogoURL                   string    `json:"logoUrl,omitempty"            yaml:"logoUrl,omitempty"`
+	SignOutFlowID             string    `json:"signOutFlowId,omitempty"           yaml:"signOutFlowId,omitempty"`
+	UserOnboardingFlowID      string    `json:"userOnboardingFlowId,omitempty"    yaml:"userOnboardingFlowId,omitempty"`
+	LogoURL                   string    `json:"logoUrl,omitempty"                 yaml:"logoUrl,omitempty"`
 	TosURI                    string    `json:"tosUri,omitempty"             yaml:"tosUri,omitempty"`
 	PolicyURI                 string    `json:"policyUri,omitempty"          yaml:"policyUri,omitempty"`
 	CookiePolicyURI           string    `json:"cookiePolicyUri,omitempty"    yaml:"cookiePolicyUri,omitempty"`
@@ -88,8 +89,9 @@ type OrganizationUnitRequestWithID struct {
 	IsRegistrationFlowEnabled bool    `json:"isRegistrationFlowEnabled"    yaml:"isRegistrationFlowEnabled"`
 	RecoveryFlowID            string  `json:"recoveryFlowId,omitempty"     yaml:"recoveryFlowId,omitempty"`
 	IsRecoveryFlowEnabled     bool    `json:"isRecoveryFlowEnabled"        yaml:"isRecoveryFlowEnabled"`
-	SignOutFlowID             string  `json:"signOutFlowId,omitempty"      yaml:"signOutFlowId,omitempty"`
-	LogoURL                   string  `json:"logoUrl,omitempty"            yaml:"logoUrl,omitempty"            native:"omitempty,url,max=2048"`
+	SignOutFlowID             string  `json:"signOutFlowId,omitempty"         yaml:"signOutFlowId,omitempty"`
+	UserOnboardingFlowID      string  `json:"userOnboardingFlowId,omitempty"  yaml:"userOnboardingFlowId,omitempty"`
+	LogoURL                   string  `json:"logoUrl,omitempty"               yaml:"logoUrl,omitempty"               native:"omitempty,url,max=2048"`
 	TosURI                    string  `json:"tosUri,omitempty"             yaml:"tosUri,omitempty"             native:"omitempty,url,max=2048"`
 	PolicyURI                 string  `json:"policyUri,omitempty"          yaml:"policyUri,omitempty"          native:"omitempty,url,max=2048"`
 	CookiePolicyURI           string  `json:"cookiePolicyUri,omitempty"    yaml:"cookiePolicyUri,omitempty"    native:"url,max=2048"`

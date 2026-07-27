@@ -134,11 +134,10 @@ docs/static/api/next/postman/
 !.claude/skills
 
 # Dev-only CORS seed staged by `build.sh run` / `build.ps1 run` for the bootstrap one-shot (never committed or packaged)
-backend/cmd/server/bootstrap/02-server-configurations.yaml
+backend/cmd/server/bootstrap/03-dev-server-configurations.yaml
 
 # Nx build cache (generated, never committed)
 .nx/
 
 # Development internals guide (not intended for commit)
 THUNDERID_INTERNALS_GUIDE.md
-

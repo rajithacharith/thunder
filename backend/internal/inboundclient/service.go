@@ -585,61 +585,71 @@ func BuildOAuthClient(
 	return client
 }
 
-// resolveFlowDefaults fills AuthFlowID, RegistrationFlowID, RecoveryFlowID, and SignOutFlowID with system
-// defaults when empty, using the auth flow's handle to locate matching flows of each type.
+// resolveFlowDefaults fills AuthFlowID, RegistrationFlowID, RecoveryFlowID, and SignOutFlowID
+// using a uniform chain: explicit override → OU default → server default (only auth has a
+// server-level default configured; registration/recovery/signout server defaults are intentionally
+// left empty to prevent CALL-node mismatches across independently configured flows).
 func (s *inboundClientService) resolveFlowDefaults(ctx context.Context, c *inboundmodel.InboundClient) error {
 	if s.flowMgt == nil || c == nil {
 		return nil
 	}
-	if c.AuthFlowID == "" {
-		defaultHandle := config.GetServerRuntime().Config.Flow.DefaultAuthFlowHandle
-		flow, svcErr := s.flowMgt.GetFlowByHandle(ctx, defaultHandle, providers.FlowTypeAuthentication)
-		if svcErr != nil {
-			if svcErr.Type == tidcommon.ServerErrorType {
-				return ErrFKFlowServerError
-			}
-			return ErrFKFlowDefinitionRetrievalFailed
+
+	ouID := ""
+	if s.entityProvider != nil && c.ID != "" {
+		if e, epErr := s.entityProvider.GetEntity(c.ID); epErr == nil && e != nil {
+			ouID = e.OUID
 		}
-		c.AuthFlowID = flow.ID
 	}
-	if c.RegistrationFlowID == "" && c.AuthFlowID != "" && config.GetServerRuntime().Config.Flow.AutoInferRegistration {
-		authFlow, svcErr := s.flowMgt.GetFlow(ctx, c.AuthFlowID)
+
+	resolve := func(flowID string, flowType providers.FlowType) (string, error) {
+		id, svcErr := s.flowMgt.ResolveEffectiveFlowID(ctx, flowID, ouID, flowType)
 		if svcErr != nil {
 			if svcErr.Type == tidcommon.ServerErrorType {
-				return ErrFKFlowServerError
+				return "", ErrFKFlowServerError
 			}
-			return ErrFKFlowDefinitionRetrievalFailed
-		}
-		regFlow, svcErr := s.flowMgt.GetFlowByHandle(ctx, authFlow.Handle, providers.FlowTypeRegistration)
-		if svcErr != nil {
-			if svcErr.Type == tidcommon.ServerErrorType {
-				return ErrFKFlowServerError
+			if svcErr.Code == flowmgt.ErrorFlowNotFound.Code {
+				switch flowType {
+				case providers.FlowTypeSignOut, providers.FlowTypeRegistration,
+					providers.FlowTypeRecovery, providers.FlowTypeUserOnboarding:
+					// Optional flows: leave unconfigured rather than failing.
+					return "", nil
+				}
 			}
-			return ErrFKFlowDefinitionRetrievalFailed
+			return "", ErrFKFlowDefinitionRetrievalFailed
 		}
-		c.RegistrationFlowID = regFlow.ID
+		return id, nil
 	}
+
+	authID, err := resolve(c.AuthFlowID, providers.FlowTypeAuthentication)
+	if err != nil {
+		return err
+	}
+	c.AuthFlowID = authID
+
+	regID, err := resolve(c.RegistrationFlowID, providers.FlowTypeRegistration)
+	if err != nil {
+		return err
+	}
+	c.RegistrationFlowID = regID
+	if c.RegistrationFlowID == "" {
+		c.IsRegistrationFlowEnabled = false
+	}
+
+	recID, err := resolve(c.RecoveryFlowID, providers.FlowTypeRecovery)
+	if err != nil {
+		return err
+	}
+	c.RecoveryFlowID = recID
 	if c.RecoveryFlowID == "" {
-		// If a recovery flow is not defined, disable recovery flow for the application.
 		c.IsRecoveryFlowEnabled = false
 	}
-	if c.SignOutFlowID == "" {
-		defaultHandle := config.GetServerRuntime().Config.Flow.DefaultSignOutFlowHandle
-		if defaultHandle != "" {
-			flow, svcErr := s.flowMgt.GetFlowByHandle(ctx, defaultHandle, providers.FlowTypeSignOut)
-			switch {
-			case svcErr == nil:
-				c.SignOutFlowID = flow.ID
-			case svcErr.Type == tidcommon.ServerErrorType:
-				return ErrFKFlowServerError
-			case svcErr.Code == flowmgt.ErrorFlowNotFound.Code:
-				// Sign-out is optional; if the default sign-out flow does not exist, leave it
-				// unconfigured rather than failing.
-			default:
-				return ErrFKFlowDefinitionRetrievalFailed
-			}
-		}
+
+	signOutID, err := resolve(c.SignOutFlowID, providers.FlowTypeSignOut)
+	if err != nil {
+		return err
 	}
+	c.SignOutFlowID = signOutID
+
 	return nil
 }
 
