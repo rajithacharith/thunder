@@ -349,7 +349,6 @@ A second `HTTPRoute` is rendered for that hostname and the Console's
 | `runtime.tls.verifyBackend` | Verify the backend certificate at the gateway against the `ca.crt` property at `runtime.certs.storeKey` (publish `ca.crt` there when enabling this); off skips verification (encrypted, unverified) | `false` |
 | `runtime.certs.storeKey` | Optional separate store entry for the certificate/key files. Empty (default): read them from `secretStore.key` alongside the environment values. Set: materialize them from this entry into a dedicated `-certs` Secret. Either way the JWT signing pairs are always mounted over `config/certs/`, plus the serving pair when `tls.enabled` | `""` (use `secretStore.key`) |
 | `runtime.certs.extraFiles` | Additional properties to project over `config/certs/` beyond the always-mounted signing (and, with TLS, serving) pairs | `[]` |
-| `runtime.defaultAuthFlowHandle` | Flow handle used when an application does not pin its own `authFlowId`; empty inherits the server default | `""` |
 | `runtime.dbType` | Database engine — `sqlite` (bundled files, ephemeral pod-local storage, development only) or `postgres` (externally hosted, production) | `sqlite` |
 | `runtime.imagePullPolicy` | `Always` / `IfNotPresent` / `Never` | `Always` |
 | `runtime.port` | Port the ThunderID server listens on | `8090` |

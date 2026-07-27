@@ -261,8 +261,6 @@ oauth:
   {{- end }}
 
 flow:
-  default_auth_flow_handle: {{ .Values.configuration.flow.defaultAuthFlowHandle | quote }}
-  default_signout_flow_handle: {{ .Values.configuration.flow.defaultSignOutFlowHandle | quote }}
   max_version_history: {{ .Values.configuration.flow.maxVersionHistory }}
   auto_infer_registration: {{ .Values.configuration.flow.autoInferRegistration }}
 {{- if .Values.configuration.flow.executors }}

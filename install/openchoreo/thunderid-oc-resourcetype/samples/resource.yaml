@@ -121,8 +121,6 @@ spec:
     #   # the DB_* properties at secretStore.key, for production.
     #   dbType: sqlite                     # sqlite | postgres
     #   port: 8090                         # server port (container, Service, route, probe)
-    #   defaultAuthFlowHandle: ""          # flow used when an application pins no authFlowId
-    #   defaultSignOutFlowHandle: ""       # flow used when an application pins no signOutFlowId
     #   declarativeResourcesEnabled: true  # false: services default to database-backed stores
     #   gate:
     #     clientBase: "/gate"

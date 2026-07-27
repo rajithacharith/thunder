@@ -183,16 +183,6 @@ spec:
                   items:
                     type: string
                     pattern: "^[A-Za-z0-9._-]+$"
-            # Handle of the flow used when an application does not pin its
-            # own authFlowId. Empty inherits the server default.
-            defaultAuthFlowHandle:
-              type: string
-              default: ""
-            # Handle of the flow used when an application does not pin its
-            # own signOutFlowId. Empty inherits the server default.
-            defaultSignOutFlowHandle:
-              type: string
-              default: ""
             # Global declarative mode: services without an explicit
             # stores.* override behave as "declarative" when true. Set to
             # false to opt services back to database-backed stores by
@@ -470,8 +460,6 @@ spec:
                 validity_period: ${parameters.runtime.oauth.refreshTokenValidityPeriod}
 
             flow:
-              default_auth_flow_handle: "${parameters.runtime.defaultAuthFlowHandle}"
-              default_signout_flow_handle: "${parameters.runtime.defaultSignOutFlowHandle}"
               max_version_history: 3
               auto_infer_registration: true
               store: "${parameters.runtime.stores.flow}"
@@ -590,8 +578,6 @@ spec:
                 validity_period: ${parameters.runtime.oauth.refreshTokenValidityPeriod}
 
             flow:
-              default_auth_flow_handle: "${parameters.runtime.defaultAuthFlowHandle}"
-              default_signout_flow_handle: "${parameters.runtime.defaultSignOutFlowHandle}"
               max_version_history: 3
               auto_infer_registration: true
               store: "${parameters.runtime.stores.flow}"

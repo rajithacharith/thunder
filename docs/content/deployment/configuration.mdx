@@ -953,10 +953,6 @@ Configure flow defaults in either of these ways:
 Set `defaultHandle` only for flow types that have a corresponding flow in your deployment. The handle is validated when the configuration is written. An unknown handle or a handle belonging to a different flow type is rejected with `SCF-1003`. For optional types (registration, recovery, user-onboarding, sign-out), omit `defaultHandle` to leave the server-level default empty.
 :::
 
-:::note
-`deployment.yaml` previously held `flow.default_auth_flow_handle`, `flow.default_signout_flow_handle`, and `flow.user_onboarding_flow_handle`. These keys are no longer read. Move any values you relied on into the `flow` server-config section using one of the methods above.
-:::
-
 ## Passkey Configuration
 
 WebAuthn/Passkey settings (typically defined in `deployment.yaml`).
