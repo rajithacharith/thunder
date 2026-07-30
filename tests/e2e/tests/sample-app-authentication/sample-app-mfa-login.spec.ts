@@ -339,9 +339,12 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     await sampleAppLoginPage.fillOTP("000000");
     await sampleAppLoginPage.clickVerifyOTP();
 
-    // Step 5: Verify error is shown
+    // Step 5: Verify error is shown. Scoped to the MUI Alert class specifically - a bare
+    // [role="alert"] also matches Next.js's own hidden route-change announcer
+    // (#__next-route-announcer__), which is present on every page and would make this locator
+    // ambiguous.
     console.log("\nStep 5: Verifying incorrect OTP is rejected...");
-    const errorLocator = page.locator('.MuiAlert-colorError, [role="alert"]');
+    const errorLocator = page.locator(".MuiAlert-colorError");
     await expect(errorLocator, "an error must be shown for an incorrect OTP").toBeVisible();
     console.log("✓ Incorrect OTP rejected - user cannot login");
 
@@ -390,7 +393,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
 
     // Step 4: Verify registration page - credentials form
     console.log("\n[REGISTRATION] Step 4: Verifying registration credentials page...");
-    await expect(page.locator('h2:has-text("Sign Up")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h5:has-text("Create Account")')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('input[name="username"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     console.log("✓ Registration credentials form displayed");
@@ -402,11 +405,11 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log(`  Username: ${regUsername}`);
     console.log("  Password: ********");
 
-    // Step 6: Click Continue button
-    console.log("\n[REGISTRATION] Step 6: Clicking Continue button...");
-    const continueButton = page.locator('button[type="submit"]:has-text("Continue")');
+    // Step 6: Click Create Account button
+    console.log("\n[REGISTRATION] Step 6: Clicking Create Account button...");
+    const continueButton = page.locator('button[type="submit"]:has-text("Create Account")');
     await continueButton.click();
-    console.log("✓ Continue button clicked");
+    console.log("✓ Create Account button clicked");
 
     // Step 7: Verify user info form (with mobile number field)
     console.log("\n[REGISTRATION] Step 7: Verifying user information form...");
@@ -427,11 +430,13 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log(`  Email: ${regEmail}`);
     console.log(`  Mobile Number: ${regMobile}`);
 
-    // Step 9: Submit registration, capturing the flow/execute response the click triggers
+    // Step 9: Submit registration, capturing the response the click triggers. The browser only
+    // ever calls this app's own /api/flow proxy (its BFF); /flow/execute is the server-to-server
+    // call the proxy makes and is never visible to the browser.
     console.log("\n[REGISTRATION] Step 9: Submitting registration...");
-    const signUpButton = page.locator('button[type="submit"]:has-text("Sign Up")');
+    const signUpButton = page.locator('button[type="submit"]:has-text("Continue")');
     const [registrationResponse] = await Promise.all([
-      page.waitForResponse(resp => resp.url().includes("/flow/execute") && resp.request().method() === "POST", {
+      page.waitForResponse(resp => resp.url().includes("/api/flow") && resp.request().method() === "POST", {
         timeout: Timeouts.PAGE_LOAD,
       }),
       signUpButton.click(),

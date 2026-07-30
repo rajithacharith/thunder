@@ -192,11 +192,11 @@ fi
 
 # 5. Import declarative resources for sample apps.
 echo "Importing declarative resources..."
-for sample in react-vanilla-sample react-sdk-sample; do
+for sample in vanilla-sample react-sdk-sample; do
     config="$PROJECT_ROOT/samples/apps/$sample/thunderid-config/thunderid-config.yaml"
     vars_file="$PROJECT_ROOT/samples/apps/$sample/thunderid-config/thunderid.env"
 
-    # react-vanilla-sample keeps its default config under a 'basic/' subdirectory.
+    # vanilla-sample keeps its default config under a 'basic/' subdirectory.
     if [ ! -f "$config" ]; then
         config="$PROJECT_ROOT/samples/apps/$sample/thunderid-config/basic/thunderid-config.yaml"
         vars_file="$PROJECT_ROOT/samples/apps/$sample/thunderid-config/basic/thunderid.env"

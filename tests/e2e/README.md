@@ -67,7 +67,7 @@ Extract both sample packages and start the React SDK sample app, which the e2e t
 cd <REPO_ROOT>
 mkdir -p tests/e2e/sample-app-vanilla tests/e2e/sample-app-sdk
 
-unzip "target/dist/sample-app-react-vanilla-*.zip" -d tests/e2e/sample-app-vanilla
+unzip "target/dist/sample-app-vanilla-*.zip"      -d tests/e2e/sample-app-vanilla
 unzip "target/dist/sample-app-react-sdk-*.zip"    -d tests/e2e/sample-app-sdk
 
 cd tests/e2e/sample-app-sdk && ./start.sh &

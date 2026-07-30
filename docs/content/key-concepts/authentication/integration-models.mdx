@@ -84,6 +84,25 @@ Whether an application may initiate one of these flows directly depends on its [
 
 See the [API Reference](../../../apis#tag/flow-execution) for endpoint specifications.
 
+### Flow Secret
+
+A confidential server-side application (one with no OAuth 2.0 configuration, or one that is confidential and does not use the `authorization_code` grant) authenticates at flow initiation with a **Flow Secret**. <ProductName /> issues this secret once, when the application is created, and never returns it again; the [Console](../../guides/applications/application-settings.mdx) can regenerate it if it's lost. Keep it server-side only, since a browser SPA has nowhere safe to hold it, which is why the `browser` application type is never issued one (see [Direct Initiation Restriction](#direct-initiation-restriction) above).
+
+To initiate a new authentication or sign-out flow, the application presents the secret in the `Flow-Secret` request header:
+
+```http
+POST /flow/execute
+Content-Type: application/json
+Flow-Secret: <flow-secret>
+
+{
+  "applicationId": "<application-id>",
+  "flowType": "AUTHENTICATION"
+}
+```
+
+An application eligible for a Flow Secret that omits the header is rejected with `401 Unauthorized`, and an incorrect value is also rejected with `401 Unauthorized`. Flow **continuation** requests (those carrying an `executionId`) do not require the header.
+
 ### Attestation
 
 A confidential server-side application authenticates at flow initiation with a Flow Secret, but a mobile application cannot safely hold one. Instead, a **Mobile** [application type](../../guides/applications/manage-applications.mdx#application-types) proves its identity through platform attestation. <ProductName /> supports Google [Play Integrity](https://developer.android.com/google/play/integrity) for Android clients and Apple [App Attest](https://developer.apple.com/documentation/devicecheck/validating-apps-that-connect-to-your-server) for iOS clients. A Mobile application must configure attestation and present a valid attestation token to initiate a sign-in flow directly; <ProductName /> verifies the token against the registered identity before starting the flow.

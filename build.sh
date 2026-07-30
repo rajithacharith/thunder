@@ -61,9 +61,9 @@ BINARY_NAME="${PRODUCT_NAME_LOWERCASE}"
 PRODUCT_FOLDER=${BINARY_NAME}-${PRODUCT_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}
 
 # --- Sample App Distribution details ---
-# React Vanilla Sample
-VANILLA_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/react-vanilla-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
-VANILLA_SAMPLE_APP_FOLDER="sample-app-react-vanilla-${VANILLA_SAMPLE_APP_VERSION}"
+# Vanilla Sample
+VANILLA_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/vanilla-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
+VANILLA_SAMPLE_APP_FOLDER="sample-app-vanilla-${VANILLA_SAMPLE_APP_VERSION}"
 
 # React SDK Sample
 REACT_SDK_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/react-sdk-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
@@ -97,8 +97,7 @@ CONSOLE_APP_DIST_DIR=apps/console
 FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/gate
 FRONTEND_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console
 SAMPLE_BASE_DIR=samples
-VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
-VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
+VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/vanilla-sample
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 WAYFINDER_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/wayfinder-sample
@@ -219,14 +218,6 @@ function clean() {
 
     echo "Removing runtime secrets in the $BACKEND_DIR/config/secrets"
     rm -rf "$BACKEND_DIR/config/secrets"
-
-    echo "Removing certificates in the $VANILLA_SAMPLE_APP_DIR"
-    rm -f "$VANILLA_SAMPLE_APP_DIR/server.cert"
-    rm -f "$VANILLA_SAMPLE_APP_DIR/server.key"
-
-    echo "Removing certificates in the $VANILLA_SAMPLE_APP_SERVER_DIR"
-    rm -f "$VANILLA_SAMPLE_APP_SERVER_DIR/server.cert"
-    rm -f "$VANILLA_SAMPLE_APP_SERVER_DIR/server.key"
 
     echo "Removing certificates in the $REACT_SDK_SAMPLE_APP_DIR"
     rm -f "$REACT_SDK_SAMPLE_APP_DIR/server.cert"
@@ -568,12 +559,13 @@ function package_sample_app() {
 
     # Samples are packaged from source; ship certificates for the samples that
     # expect them at the package root (react-api-based ignores them via .gitignore).
+    # vanilla-sample uses `next dev --experimental-https`, which manages its own
+    # self-signed cert, so it needs none of these.
     echo "=== Ensuring sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
     ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR" "server"
 
-    # Package React Vanilla sample
-    echo "=== Packaging React Vanilla sample app ==="
+    # Package Vanilla Sample
+    echo "=== Packaging Vanilla Sample app ==="
     package_vanilla_sample
 
     # Package React SDK sample
@@ -594,22 +586,32 @@ function package_sample_app() {
 function package_vanilla_sample() {
     local tgz
 
+    rm -f "$DIST_DIR"/thunderid-vanilla-sample-*.tgz
+
     cd "$VANILLA_SAMPLE_APP_DIR" || exit 1
     pnpm pack --pack-destination "$SCRIPT_DIR/$DIST_DIR"
     cd "$SCRIPT_DIR" || exit 1
 
-    tgz=$(ls "$DIST_DIR"/thunderid-react-vanilla-sample-*.tgz 2>/dev/null | head -1)
+    tgz=$(ls "$DIST_DIR"/thunderid-vanilla-sample-*.tgz 2>/dev/null | head -1)
     if [ -z "$tgz" ]; then
-        echo "Error: pnpm pack did not produce a tgz for react-vanilla-sample"
+        echo "Error: pnpm pack did not produce a tgz for vanilla-sample"
         exit 1
     fi
 
     tar xzf "$tgz" -C "$DIST_DIR"
     mv "$DIST_DIR/package" "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER"
+
+    # Ship the bundled distribution's own server certificate so the sample trusts it out of the
+    # box. Only the public certificate is needed here (the sample only needs to trust the server,
+    # not serve as it), so the private key is not copied.
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
+    mkdir -p "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER/certificates"
+    cp "$BACKEND_DIR/$SECURITY_DIR/server.cert" "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER/certificates/server.cert"
+
     (cd "$DIST_DIR" && find "$VANILLA_SAMPLE_APP_FOLDER" | sort | zip "$VANILLA_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$VANILLA_SAMPLE_APP_FOLDER" "$tgz"
 
-    echo "✅ React Vanilla sample app packaged successfully as $DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER.zip"
+    echo "✅ Vanilla Sample app packaged successfully as $DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER.zip"
 }
 
 function package_react_sdk_sample() {
@@ -1019,7 +1021,6 @@ function run() {
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "ecdsa-signing"
 
     echo "=== Ensuring sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
     ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
@@ -1087,7 +1088,6 @@ function run_backend() {
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "ecdsa-signing"
 
     echo "=== Ensuring sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
     ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"

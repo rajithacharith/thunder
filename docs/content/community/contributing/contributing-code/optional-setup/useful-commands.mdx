@@ -141,13 +141,13 @@ cd tests/e2e/server && ./setup.sh
 
 **3. Extract sample apps and start the SDK sample**
 
-Extract the React Vanilla and React SDK sample packages and start the SDK sample app, which the e2e tests interact with:
+Extract the Vanilla and React SDK sample packages and start the SDK sample app, which the e2e tests interact with:
 
 ```bash
 cd <REPO_ROOT>
 mkdir -p tests/e2e/sample-app-vanilla tests/e2e/sample-app-sdk
 
-unzip "target/dist/sample-app-react-vanilla-*.zip" -d tests/e2e/sample-app-vanilla
+unzip "target/dist/sample-app-vanilla-*.zip"      -d tests/e2e/sample-app-vanilla
 unzip "target/dist/sample-app-react-sdk-*.zip"    -d tests/e2e/sample-app-sdk
 
 cd tests/e2e/sample-app-sdk && ./start.sh &

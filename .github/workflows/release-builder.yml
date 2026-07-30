@@ -174,10 +174,7 @@ jobs:
           cd "$GITHUB_WORKSPACE/samples/apps/react-sdk-sample"
           npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
 
-          cd "$GITHUB_WORKSPACE/samples/apps/react-vanilla-sample"
-          npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
-
-          cd server
+          cd "$GITHUB_WORKSPACE/samples/apps/vanilla-sample"
           npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
 
           cd "$GITHUB_WORKSPACE/samples/apps/wayfinder-sample"
@@ -204,8 +201,7 @@ jobs:
             install/openchoreo/${PRODUCT_NAME_LOWER}-oc-resourcetype/Chart.yaml \
             samples/apps/react-api-based-sample/package.json \
             samples/apps/react-sdk-sample/package.json \
-            samples/apps/react-vanilla-sample/package.json \
-            samples/apps/react-vanilla-sample/server/package.json \
+            samples/apps/vanilla-sample/package.json \
             samples/apps/wayfinder-sample/package.json
 
           if git diff --cached --quiet; then
@@ -587,13 +583,10 @@ jobs:
           NEXT_VERSION="${{ steps.next_version.outputs.next_version }}"
           echo "📝 Setting sample apps version to $NEXT_VERSION"
 
-          for sample in react-vanilla-sample react-sdk-sample react-api-based-sample wayfinder-sample; do
+          for sample in vanilla-sample react-sdk-sample react-api-based-sample wayfinder-sample; do
             cd "$GITHUB_WORKSPACE/samples/apps/$sample"
             pnpm version "$NEXT_VERSION" --no-git-tag-version --no-git-checks --allow-same-version
           done
-
-          cd "$GITHUB_WORKSPACE/samples/apps/react-vanilla-sample/server"
-          npm version "$NEXT_VERSION" --no-git-tag-version --allow-same-version
 
           cd "$GITHUB_WORKSPACE"
           echo "✅ Updated sample apps version to $NEXT_VERSION"
@@ -816,14 +809,14 @@ jobs:
           QUICKSTART=$(echo "$QUICKSTART" | sed '/For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `'"${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}"'-macos-arm64\.zip`\./d')
           
           # Build single download links for each sample (arch-agnostic)
-          VANILLA_SAMPLE_LINK="[sample-app-react-vanilla-${RELEASE_VERSION}.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-react-vanilla-${RELEASE_VERSION}.zip)"
+          VANILLA_SAMPLE_LINK="[sample-app-vanilla-${RELEASE_VERSION}.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-vanilla-${RELEASE_VERSION}.zip)"
           SDK_SAMPLE_LINK="[sample-app-react-sdk-${RELEASE_VERSION}.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-react-sdk-${RELEASE_VERSION}.zip)"
           API_SAMPLE_LINK="[sample-app-react-api-based-${RELEASE_VERSION}.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-react-api-based-${RELEASE_VERSION}.zip)"
           WAYFINDER_SAMPLE_LINK="[sample-app-wayfinder-${RELEASE_VERSION}.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-wayfinder-${RELEASE_VERSION}.zip)"
 
           # Replace per-arch sample download instructions with single download links
           QUICKSTART=$(echo "$QUICKSTART" | awk -v link="$VANILLA_SAMPLE_LINK" '
-            /Download `sample-app-react-vanilla-.*` from the \[.*release\]/ {
+            /Download `sample-app-vanilla-.*` from the \[.*release\]/ {
               print "   " link
               next
             }

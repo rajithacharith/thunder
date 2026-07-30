@@ -535,26 +535,10 @@ export class MFASetup {
       throw new Error(`Cannot update application flows: missing ${!authFlowId ? "authFlowId" : "registrationFlowId"}`);
     }
 
-    // First, get all applications and find the one with clientId = "REACT_SDK_SAMPLE"
-    const listResponse = await this.request.get(`${this.config.serverUrl}/applications`, {
-      headers: {
-        Authorization: `Bearer ${adminToken}`,
-      },
-      ignoreHTTPSErrors: true,
-    });
-
-    if (!listResponse.ok()) {
-      throw new Error(`Failed to fetch applications: ${await listResponse.text()}`);
-    }
-
-    const listData = await listResponse.json();
-    const targetApp = listData.applications?.find((app: any) => app.clientId === "REACT_SDK_SAMPLE");
-
-    if (!targetApp) {
-      throw new Error(`Application with clientId "REACT_SDK_SAMPLE" not found`);
-    }
-
-    const actualAppId = targetApp.id;
+    // The application under test (vanilla-sample's embedded "Sample App") has no clientId -
+    // it authenticates via Flow Secret, not OAuth - so it's targeted by the id already resolved
+    // from the "Sample App" application name, not looked up again here.
+    const actualAppId = this.config.applicationId;
 
     // Get current application details
     const getResponse = await this.request.get(`${this.config.serverUrl}/applications/${actualAppId}`, {

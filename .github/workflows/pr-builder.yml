@@ -748,8 +748,8 @@ jobs:
       - name: 📦 Upload Built Sample App
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: sample-app-react-sdk
-          path: target/dist/sample-app-react-sdk-*.zip
+          name: sample-app-vanilla
+          path: target/dist/sample-app-vanilla-*.zip
 
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
@@ -924,7 +924,7 @@ jobs:
       - name: 📥 Download Built Sample App
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: sample-app-react-sdk
+          name: sample-app-vanilla
           path: target/dist/
 
       - name: 📂 Extract Server to E2E
@@ -1069,8 +1069,8 @@ jobs:
 
       - name: 📦 Import Sample App Resources
         run: |
-          echo "Importing React Vanilla Sample declarative resources..."
-          YAML_CONTENT=$(cat samples/apps/react-vanilla-sample/thunderid-config/basic/thunderid-config.yaml)
+          echo "Importing Vanilla Sample declarative resources..."
+          YAML_CONTENT=$(cat samples/apps/vanilla-sample/thunderid-config/basic/thunderid-config.yaml)
           HTTP_STATUS=$(curl -k -s -o /tmp/import_response.json -w "%{http_code}" \
             -X POST https://localhost:8090/import \
             -H 'Content-Type: application/json' \
@@ -1078,8 +1078,7 @@ jobs:
             -d "{
               \"content\": $(echo "$YAML_CONTENT" | jq -Rs .),
               \"variables\": {
-                \"SAMPLE_APP_CLIENT_ID\": \"sample_app_client\",
-                \"SAMPLE_APP_REDIRECT_URIS\": [\"https://localhost:3000\"],
+                \"SAMPLE_APP_FLOW_SECRET\": \"sample-app-flow-secret\",
                 \"SAMPLE_APP_GOOGLE_CLIENT_ID\": \"test-google-client-id\",
                 \"SAMPLE_APP_GOOGLE_CLIENT_SECRET\": \"test-google-client-secret\",
                 \"SAMPLE_APP_GOOGLE_REDIRECT_URI\": \"https://localhost:3000/\",
@@ -1094,10 +1093,10 @@ jobs:
           echo "Import HTTP status: $HTTP_STATUS"
           cat /tmp/import_response.json | jq . || cat /tmp/import_response.json
           if [ "$HTTP_STATUS" != "200" ]; then
-            echo "❌ Failed to import React Vanilla Sample resources (HTTP $HTTP_STATUS)"
+            echo "❌ Failed to import Vanilla Sample resources (HTTP $HTTP_STATUS)"
             exit 1
           fi
-          echo "✅ React Vanilla Sample resources imported successfully"
+          echo "✅ Vanilla Sample resources imported successfully"
 
           echo "Importing React SDK Sample declarative resources..."
           YAML_CONTENT=$(cat samples/apps/react-sdk-sample/thunderid-config/thunderid-config.yaml)
@@ -1148,7 +1147,7 @@ jobs:
           # Get applications list
           APPS_RESPONSE=$(curl -s -k -H "Authorization: Bearer $ADMIN_TOKEN" https://localhost:8090/applications)
 
-          # Extract Sample App ID using jq (uses "Sample App" from vanilla sample,
+          # Extract Sample App ID using jq (uses "Sample App" from the vanilla sample,
           # which is unaffected by MFA test setup/teardown)
           SAMPLE_APP_ID=$(echo "$APPS_RESPONSE" | jq -r '(.applications // [])[] | select(.name == "Sample App") | .id')
 
@@ -1210,44 +1209,49 @@ jobs:
           echo "Server restarted successfully with security enabled!"
       
       - name: 📱 Extract and Start Sample App
+        env:
+          THUNDERID_APPLICATION_ID: ${{ steps.extract-app-id.outputs.sample_app_id }}
+          THUNDERID_FLOW_SECRET: sample-app-flow-secret
+          THUNDERID_SERVER_URL: https://localhost:8090
+          THUNDERID_SERVER_CA_CERT: ${{ github.workspace }}/tests/e2e/server/config/certs/server.cert
         run: |
           echo "Extracting Sample App..."
           mkdir -p tests/e2e/sample-app
-          
+
           # Find the sample app zip file (platform-specific)
-          SAMPLE_APP_ZIP=$(find target/dist -name "sample-app-react-sdk-*.zip" | head -n 1)
-          
+          SAMPLE_APP_ZIP=$(find target/dist -name "sample-app-vanilla-*.zip" | head -n 1)
+
           if [ -z "$SAMPLE_APP_ZIP" ]; then
             echo "⚠️  Warning: Sample app zip not found in target/dist"
             echo "Available files:"
             ls -la target/dist/
             exit 1
           fi
-          
+
           echo "Found sample app: $SAMPLE_APP_ZIP"
           unzip -q "$SAMPLE_APP_ZIP" -d tests/e2e/sample-app
-          
+
           cd tests/e2e/sample-app
-          
-          # Find the extracted folder and move its contents
+
+          # Find the extracted folder and move its contents. dotglob is enabled so dotfiles
+          # (e.g. .env.example) move too; otherwise they're left behind and rmdir fails.
           EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "sample-app-*" | head -n 1)
           if [ -n "$EXTRACTED_DIR" ]; then
+            shopt -s dotglob
             mv "$EXTRACTED_DIR"/* .
+            shopt -u dotglob
             rmdir "$EXTRACTED_DIR"
           fi
-          
+
           echo "Installing dependencies..."
           npm install
 
-          echo "Generating SSL certificates..."
-          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-              -keyout server.key \
-              -out server.cert \
-              -subj "/O=ThunderID/OU=${{ env.PRODUCT_NAME }}/CN=localhost" \
-              > /dev/null 2>&1
-
           echo "Starting Sample App..."
-          # See "Start the Server" step for why setsid is needed inside container jobs.
+          # next dev --experimental-https generates its own local certificate; no server.key/server.cert
+          # needed. THUNDERID_SERVER_CA_CERT (set above) lets this server's own outbound fetch() calls
+          # trust the backend's self-signed cert (started with "Start the Server", above); this is
+          # unrelated to Playwright's ignoreHTTPSErrors, which only covers the browser's navigation to
+          # this app. See "Start the Server" step for why setsid is needed inside container jobs.
           SAMPLE_PID=$(setsid bash -c 'npm run dev > "$GITHUB_WORKSPACE/sample-app.log" 2>&1 < /dev/null & echo $!' | tail -1)
           echo "SAMPLE_APP_PID=$SAMPLE_PID" >> $GITHUB_ENV
           disown $SAMPLE_PID 2>/dev/null || true

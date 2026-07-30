@@ -4,7 +4,7 @@
 /**
  * Sample App Login Page Object
  *
- * Page Object Model for the React Vanilla Sample App login functionality.
+ * Page Object Model for the Vanilla Sample App login functionality.
  * Provides methods to interact with login form and verify authentication.
  */
 
@@ -27,19 +27,21 @@ export class SampleAppLoginPage extends BasePage {
 
   /**
    * Verify the login page is loaded
+   *
+   * Unlike a redirect-based sample, this app renders its login form directly at "/" - there's no
+   * separate landing page with a "Sign In" button, so this just waits for the form itself.
    */
   async verifyHomePageLoaded() {
-    // Wait for login form to be visible
-    await this.page.waitForSelector('span.thunderid-button__content:has-text("Sign In")', {
-      timeout: Timeouts.NETWORK_IDLE,
-      state: "visible",
-    });
+    await this.verifyLoginPageLoaded();
   }
 
+  /**
+   * No-op: kept so existing call sites (goto -> verifyHomePageLoaded -> clickSignInButton ->
+   * verifyLoginPageLoaded) don't need restructuring. This app has no separate landing page to
+   * navigate away from - the login form is already visible after verifyHomePageLoaded.
+   */
   async clickSignInButton() {
-    const signInButton = this.page.locator('span.thunderid-button__content:has-text("Sign In")').first();
-    await signInButton.waitFor({ state: "visible", timeout: Timeouts.DEFAULT_ACTION });
-    await signInButton.click();
+    // Intentionally empty.
   }
 
   async verifyLoginPageLoaded() {
@@ -228,16 +230,13 @@ export class SampleAppLoginPage extends BasePage {
       console.log(`  Filling ${digitCount} separate OTP digit inputs...`);
       const digits = otp.split("");
 
+      // Each digit is filled via its own locator, which focuses it as part of Playwright's own
+      // actionability checks, so this doesn't depend on the app's auto-advance-on-input JS having
+      // already run by the time the next iteration starts.
       for (let i = 0; i < Math.min(digits.length, digitCount); i++) {
         const input = digitInputs.nth(i);
         await input.waitFor({ state: "visible", timeout: Timeouts.DEFAULT_ACTION });
         await input.fill(digits[i]);
-        // Small delay to allow auto-focus to next field
-        const hasNextDigit = i + 1 < Math.min(digits.length, digitCount);
-        if (hasNextDigit) {
-          const nextInput = digitInputs.nth(i + 1);
-          await expect(nextInput).toBeFocused({ timeout: Timeouts.DEFAULT_ACTION });
-        }
       }
     } else {
       // Single OTP input field

@@ -102,7 +102,7 @@ Response fields:
 - `publicKeyCredentialCreationOptions`: pass directly to `navigator.credentials.create()` (after Base64URL→ArrayBuffer conversion).
 - `sessionToken`: required for the finish call.
 
-2) **Run the WebAuthn ceremony in the browser.** Call `navigator.credentials.create()` with the returned options. See the sample implementation in `samples/apps/react-vanilla-sample/src/services/authService.ts`.
+2) **Run the WebAuthn ceremony in the browser.** Call `navigator.credentials.create()` with the returned options. See the sample implementation in `samples/apps/vanilla-sample/src/services/authService.ts`.
 
 3) **Finish registration.** Send the attestation result with the session token.
 
