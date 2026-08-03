@@ -83,6 +83,30 @@ By default the SDK fetches `{baseUrl}/.well-known/openid-configuration` to resol
 | `endpoints.userInfo` | `string` | - | Override the userinfo endpoint |
 | `endpoints.jwks` | `string` | - | Override the JWKS endpoint |
 | `endpoints.introspection` | `string` | - | Override the token introspection endpoint |
+| `endpoints.flowExecute` | `string` | `{baseUrl}/flow/execute` | Override the flow execution endpoint (embedded sign-in, sign-up, recovery, and user onboarding flows) |
+| `endpoints.flowMeta` | `string` | `{baseUrl}/flow/meta` | Override the flow metadata endpoint |
+| `endpoints.usersMe` | `string` | `{baseUrl}/users/me` | Override the current-user profile endpoint |
+
+The `endpoints.authorization`, `endpoints.token`, `endpoints.userInfo`, `endpoints.jwks`, `endpoints.introspection`,
+and `endpoints.endSession` overrides address OIDC/OAuth endpoints, which are otherwise resolved from the discovery
+document. The `endpoints.flowExecute`, `endpoints.flowMeta`, and `endpoints.usersMe` overrides address resource-server
+endpoints, which are otherwise derived by concatenating `baseUrl` with a fixed path.
+
+Split these two groups when the OAuth authorization server and the <ProductName /> resource server are different hosts,
+for example when two <ProductName /> instances are connected as trusted issuers. Point `baseUrl` (and hence the
+OAuth/discovery endpoints) at the authorization server, and override the resource-server endpoints to target the
+resource server that owns the users and flows:
+
+```ts
+{
+  baseUrl: 'https://idp.example.com',
+  endpoints: {
+    flowExecute: 'https://rs.example.com/flow/execute',
+    flowMeta: 'https://rs.example.com/flow/meta',
+    usersMe: 'https://rs.example.com/users/me',
+  },
+}
+```
 
 ### Application Parameters
 

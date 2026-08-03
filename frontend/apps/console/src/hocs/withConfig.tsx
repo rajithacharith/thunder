@@ -26,11 +26,26 @@ export default function withConfig<P extends object>(WrappedComponent: Component
     // configured resource identifier.
     const resourceIdentifier = config.trusted_issuer ? getServerUrl() : getResourceIdentifier();
 
+    // In the trusted-issuer (federated) model `baseUrl` points at the authorization server (IdP),
+    // so the SDK would otherwise send resource-server calls (flow execution, flow metadata, and the
+    // user profile) to the IdP instead of the resource server that owns the users and flows. Point
+    // those endpoints back at the resource server URL.
+    const resourceServerUrl = config.trusted_issuer ? getServerUrl().replace(/\/+$/, '') : undefined;
+
     // Behavioral defaults derived from app config and runtime heuristics.
     // config.sdk values are deep-merged on top, so operators can override any of these.
     const sdkDefaults: Partial<ThunderIDProviderProps> = {
       discovery: {wellKnown: {enabled: true}},
       ...(resourceIdentifier ? {signInOptions: {resource: resourceIdentifier}} : {}),
+      ...(resourceServerUrl
+        ? {
+            endpoints: {
+              flowExecute: `${resourceServerUrl}/flow/execute`,
+              flowMeta: `${resourceServerUrl}/flow/meta`,
+              usersMe: `${resourceServerUrl}/users/me`,
+            },
+          }
+        : {}),
       sendIdTokenInLogoutRequest: false,
       // When the trusted issuer is a generic OIDC provider, suppress the SDK's
       // product-specific bootstrap calls that would otherwise 404 / be CORS-blocked
