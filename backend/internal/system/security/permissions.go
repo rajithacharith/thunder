@@ -151,6 +151,11 @@ type SystemPermissions struct {
 // sysPerms holds the active system permissions, initialized by InitSystemPermissions.
 var sysPerms *SystemPermissions
 
+// systemPermissionHandle holds the prefix applied to system permission strings, initialized by
+// InitSystemPermissions. It is used to qualify permission scopes declared in the canonical
+// unprefixed form (e.g. flow definitions) against the deployment's prefix.
+var systemPermissionHandle string
+
 // buildPermission constructs a permission string by joining non-empty parts with ":".
 func buildPermission(parts ...string) string {
 	var nonEmpty []string
@@ -167,6 +172,7 @@ func buildPermission(parts ...string) string {
 // When handle is non-empty (e.g. "mgmt"), permissions are prefixed ("mgmt:system", "mgmt:system:ou", etc.).
 // This function must be called once at startup before any service or middleware uses permissions.
 func InitSystemPermissions(handle string) {
+	systemPermissionHandle = handle
 	p := &SystemPermissions{
 		Root:          buildPermission(handle, "system"),
 		OU:            buildPermission(handle, "system", "ou"),
@@ -350,6 +356,31 @@ func HasSufficientPermission(userPermissions []string, required string) bool {
 		}
 	}
 	return false
+}
+
+// QualifySystemScopes rewrites system-family scopes ("system" and "system:...") so they carry the
+// configured system permission handle, matching how InitSystemPermissions names the server's own
+// system permissions. This lets statically authored scope requirements (e.g. a flow definition's
+// requiredScopes) be declared in the canonical unprefixed form and resolved against the
+// deployment's prefix at runtime. The fixed "system" segment is the anchor: any prefix before it is
+// replaced with the configured handle. Scopes with no "system" segment, and the no-handle case, are
+// returned unchanged. The result is idempotent for already-qualified scopes.
+func QualifySystemScopes(scopes []string) []string {
+	if systemPermissionHandle == "" {
+		return scopes
+	}
+	result := make([]string, len(scopes))
+	for i, s := range scopes {
+		result[i] = s
+		segments := strings.Split(s, ":")
+		for j, seg := range segments {
+			if seg == "system" {
+				result[i] = systemPermissionHandle + ":" + strings.Join(segments[j:], ":")
+				break
+			}
+		}
+	}
+	return result
 }
 
 // ResolveActionPermission returns the minimum permission required to perform the given

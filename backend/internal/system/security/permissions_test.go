@@ -312,6 +312,51 @@ func TestHasSystemPermission_WithCustomHandle(t *testing.T) {
 	assert.False(t, HasSystemPermission([]string{"system"}))
 }
 
+func TestQualifySystemScopes_NoHandle(t *testing.T) {
+	InitSystemPermissions("")
+
+	scopes := []string{"system", "system:user", "openid"}
+	assert.Equal(t, scopes, QualifySystemScopes(scopes))
+}
+
+func TestQualifySystemScopes_WithHandle(t *testing.T) {
+	InitSystemPermissions("mgmt")
+	defer InitSystemPermissions("")
+
+	tests := []struct {
+		name     string
+		scopes   []string
+		expected []string
+	}{
+		{
+			name:     "PrefixesUnprefixedSystemScopes",
+			scopes:   []string{"system", "system:user", "openid"},
+			expected: []string{"mgmt:system", "mgmt:system:user", "openid"},
+		},
+		{
+			name:     "ReplacesForeignPrefixWithConfiguredHandle",
+			scopes:   []string{"B:system", "B:system:user"},
+			expected: []string{"mgmt:system", "mgmt:system:user"},
+		},
+		{
+			name:     "IsIdempotentForConfiguredHandle",
+			scopes:   []string{"mgmt:system", "mgmt:system:user"},
+			expected: []string{"mgmt:system", "mgmt:system:user"},
+		},
+		{
+			name:     "DoesNotTouchLookalikeScopes",
+			scopes:   []string{"systemic", "systemuser"},
+			expected: []string{"systemic", "systemuser"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, QualifySystemScopes(tt.scopes))
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // GetRequiredPermissionForAPI
 // ---------------------------------------------------------------------------

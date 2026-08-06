@@ -110,5 +110,9 @@ func (e *permissionValidator) getRequiredScopes(ctx *providers.NodeContext) []st
 		}
 	}
 
-	return requiredScopes
+	// Flow definitions declare requiredScopes in the canonical unprefixed form (e.g. "system:user").
+	// Qualify them with the deployment's system permission prefix so they align with how this server
+	// (and tokens from a trusted issuer sharing that prefix) name system permissions. Without this, a
+	// prefixed token would satisfy the prefix-aware management APIs but fail this validator.
+	return security.QualifySystemScopes(requiredScopes)
 }
