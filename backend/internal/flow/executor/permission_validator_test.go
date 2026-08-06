@@ -259,6 +259,35 @@ func (suite *PermissionValidatorTestSuite) TestExecute_HierarchicalScopeCheck_Su
 	}
 }
 
+func (suite *PermissionValidatorTestSuite) TestExecute_PrefixedDeployment_QualifiesRequiredScopes() {
+	// Federated scenario: this server runs with a system_permission_prefix ("B") so its permissions
+	// align with tokens minted by trusted issuer B. Flow definitions declare requiredScopes in the
+	// canonical unprefixed form ("system:user"); the validator must qualify them with the prefix so a
+	// "B:system" token satisfies the requirement, matching the prefix-aware management APIs.
+	security.InitSystemPermissions("B")
+	defer security.InitSystemPermissions("")
+
+	httpCtx := context.Background()
+	authCtx := security.NewSecurityContextForTest(
+		"user1", "ou1", "token",
+		[]string{"B:system"}, nil,
+	)
+	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
+
+	ctx := &providers.NodeContext{
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
+		NodeProperties: map[string]interface{}{
+			propertyKeyRequiredScopes: []interface{}{"system:user"},
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
+}
+
 func (suite *PermissionValidatorTestSuite) TestExecute_HierarchicalScopeCheck_Failure() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
