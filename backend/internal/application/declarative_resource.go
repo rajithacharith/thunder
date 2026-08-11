@@ -299,7 +299,7 @@ func makeAppEntityParser(
 			clientSecret = inboundAuthConfig.OAuthConfig.ClientSecret
 		}
 
-		sysAttrsJSON, err := buildSystemAttributes(appDTO, clientID)
+		sysAttrsJSON, err := buildSystemAttributes(appDTO, clientID, nil)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to build system attributes: %w", err)
 		}

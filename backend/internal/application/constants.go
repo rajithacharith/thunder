@@ -9,11 +9,12 @@ import (
 
 // Field keys for entity system attributes.
 const (
-	fieldName         = "name"
-	fieldDescription  = "description"
-	fieldClientID     = "clientId"
-	fieldClientSecret = authnprovidercm.CredentialTypeClientSecret
-	fieldFlowSecret   = authnprovidercm.CredentialTypeFlowSecret
+	fieldName                = "name"
+	fieldDescription         = "description"
+	fieldClientID            = "clientId"
+	fieldClientSecret        = authnprovidercm.CredentialTypeClientSecret
+	fieldFlowSecret          = authnprovidercm.CredentialTypeFlowSecret
+	fieldCredentialUpdatedAt = authnprovidercm.SystemAttrCredentialUpdatedAt
 )
 
 // Field keys for application config properties.

@@ -123,7 +123,7 @@ Client secrets are only present on confidential clients: Full-stack App and Back
 If you need to invalidate the current client secret, open the General tab and click **Regenerate Client Secret** in the **Danger Zone**.
 
 :::warning
-The current client secret is immediately invalidated. Any running clients using the old secret will lose access. Update your application configuration right away.
+The current client secret is immediately invalidated. Any running clients using the old secret will lose access. Refresh tokens issued before the rotation are rejected, so their users must sign in again. Update your application configuration right away.
 :::
 
 ## Review OAuth 2.0 Configuration

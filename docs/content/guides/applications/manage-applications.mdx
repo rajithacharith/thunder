@@ -117,7 +117,7 @@ To update an application:
 2. Update the relevant settings. Learn more about each setting in [Application Settings](../application-settings).
 3. Click **Save**.
 
-Changes take effect immediately for new authentication requests. Active sessions and issued tokens are not affected until they expire.
+Changes take effect immediately for new authentication requests. Active sessions and issued access tokens are not affected until they expire. Rotating the client secret is the exception: it also rejects refresh tokens issued before the rotation.
 
 ## Delete an Application
 

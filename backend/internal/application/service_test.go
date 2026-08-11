@@ -4167,11 +4167,50 @@ func (suite *ServiceTestSuite) TestGetApplicationList_EntityWithoutInboundClient
 	assert.Equal(suite.T(), 0, result.Count)
 }
 
+// stubEntityForSystemAttributes makes GetEntity return a bare entity for the application under test,
+// which updateEntityDataForApplicationUpdate reads to carry the credential-change marker across the
+// system-attribute rewrite.
+func stubEntityForSystemAttributes(
+	service *applicationService, systemAttributes json.RawMessage,
+) *entityprovidermock.EntityProviderInterfaceMock {
+	ep := resetEntityProviderMethod(service, "GetEntity")
+	ep.On("GetEntity", testServiceAppID).
+		Return(&providers.Entity{ID: testServiceAppID, SystemAttributes: systemAttributes}, nil).Maybe()
+	return ep
+}
+
+// An application rename rebuilds the whole system-attribute blob, so the credential-change marker
+// written by a client secret rotation has to survive it. Losing it would revive refresh tokens the
+// rotation invalidated.
+func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_CarriesCredentialMarker() {
+	service, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{Name: "Renamed App", OUID: testOUID}
+	existing := json.RawMessage(`{"name":"Old App","credentialUpdatedAt":"2026-08-11T10:00:00Z"}`)
+
+	stubEntityForSystemAttributes(service, existing)
+	ep := resetEntityProviderMethod(service, "UpdateSystemAttributes")
+	var written json.RawMessage
+	ep.On("UpdateSystemAttributes", testServiceAppID, mock.Anything).
+		Run(func(args mock.Arguments) {
+			written, _ = args.Get(1).(json.RawMessage)
+		}).Return((*entityprovider.EntityProviderError)(nil))
+
+	svcErr := service.updateEntityDataForApplicationUpdate(context.Background(), testServiceAppID, app, nil)
+
+	assert.Nil(suite.T(), svcErr)
+	var attrs map[string]interface{}
+	suite.Require().NoError(json.Unmarshal(written, &attrs))
+	assert.Equal(suite.T(), "2026-08-11T10:00:00Z", attrs[fieldCredentialUpdatedAt])
+	assert.Equal(suite.T(), "Renamed App", attrs[fieldName])
+}
+
 func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateSystemAttributesError() {
 	service, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{Name: "Test App", OUID: testOUID}
 
+	stubEntityForSystemAttributes(service, nil)
 	ep := resetEntityProviderMethod(service, "UpdateSystemAttributes")
 	ep.On("UpdateSystemAttributes", mock.Anything, mock.Anything).
 		Return(entityprovider.NewEntityProviderError(
@@ -4187,6 +4226,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_FlowSecr
 
 	app := &model.ApplicationDTO{Name: "Test App", OUID: testOUID, FlowSecret: "new-app-secret"}
 
+	stubEntityForSystemAttributes(service, nil)
 	ep := resetEntityProviderMethod(service, "UpdateSystemCredentials")
 	ep.On("UpdateSystemCredentials", mock.Anything, mock.Anything).
 		Return(entityprovider.NewEntityProviderError(
@@ -4212,7 +4252,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_NoFlowSe
 		},
 	}
 
-	ep := service.entityProvider.(*entityprovidermock.EntityProviderInterfaceMock)
+	ep := stubEntityForSystemAttributes(service, nil)
 
 	svcErr := service.updateEntityDataForApplicationUpdate(
 		context.Background(), testServiceAppID, app, inboundAuthConfig)
@@ -4233,6 +4273,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateCr
 		},
 	}
 
+	stubEntityForSystemAttributes(service, nil)
 	ep := resetEntityProviderMethod(service, "UpdateSystemCredentials")
 	ep.On("UpdateSystemCredentials", mock.Anything, mock.Anything).
 		Return(entityprovider.NewEntityProviderError(
@@ -4456,4 +4497,25 @@ func (suite *ServiceTestSuite) TestSyncPasskeyOriginsToCORS_SkipsInvalidOrigins(
 	// SetConfig must NOT be called because all origins are invalid
 
 	svc.syncPasskeyOriginsToCORS(context.Background(), invalidOrigins)
+}
+
+// A blob the server cannot parse yields no marker rather than failing the rebuild: the application
+// record is still writable, and the credential path rewrites the marker on its next change.
+func (suite *ServiceTestSuite) TestCredentialUpdatedAtOf_CorruptBlobYieldsEmpty() {
+	assert.Empty(suite.T(), credentialUpdatedAtOf(json.RawMessage(`not json`)))
+	assert.Empty(suite.T(), credentialUpdatedAtOf(nil))
+	assert.Empty(suite.T(), credentialUpdatedAtOf(json.RawMessage(`{"name":"x"}`)))
+}
+
+// The optional description is carried into the blob only when set.
+func (suite *ServiceTestSuite) TestBuildSystemAttributes_IncludesDescriptionWhenSet() {
+	raw, err := buildSystemAttributes(
+		&model.ApplicationDTO{Name: "App", Description: "A description"}, testClientID, nil)
+	suite.Require().NoError(err)
+
+	var attrs map[string]interface{}
+	suite.Require().NoError(json.Unmarshal(raw, &attrs))
+	assert.Equal(suite.T(), "A description", attrs[fieldDescription])
+	assert.Equal(suite.T(), testClientID, attrs[fieldClientID])
+	assert.NotContains(suite.T(), attrs, fieldCredentialUpdatedAt)
 }

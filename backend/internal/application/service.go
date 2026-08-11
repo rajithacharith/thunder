@@ -463,7 +463,19 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(ctx context.C
 		clientID = inboundAuthConfig.OAuthConfig.ClientID
 	}
 
-	sysAttrsJSON, marshalErr := buildSystemAttributes(app, clientID)
+	// buildSystemAttributes rebuilds the whole blob, so the credential-change marker has to be carried
+	// across: a rename would otherwise erase it and revive the tokens the last rotation invalidated.
+	existingEntity, epErr := as.entityProvider.GetEntity(appID)
+	if epErr != nil {
+		if svcErr := mapEntityProviderError(epErr); svcErr != nil {
+			return svcErr
+		}
+		as.logger.Error(ctx, "Failed to get entity for system attribute update",
+			log.String("appID", appID), log.Error(epErr))
+		return &tidcommon.InternalServerError
+	}
+
+	sysAttrsJSON, marshalErr := buildSystemAttributes(app, clientID, existingEntity.SystemAttributes)
 	if marshalErr != nil {
 		as.logger.Error(ctx, "Failed to build entity system attributes for update", log.Error(marshalErr))
 		return &tidcommon.InternalServerError
@@ -993,8 +1005,12 @@ func buildOAuthProfileFromProcessed(inboundAuth inboundmodel.InboundAuthConfigPr
 	}
 }
 
-// buildSystemAttributes builds the system attributes JSON for the entity.
-func buildSystemAttributes(app *model.ApplicationDTO, clientID string) (json.RawMessage, error) {
+// buildSystemAttributes builds the system attributes JSON for the entity, replacing whatever is
+// stored. existing is the entity's current blob, nil on creation: the credential-change marker in it
+// is owned by the credential path rather than by the application record, so it is carried across
+// rather than dropped. Its value is opaque here and parsed only where tokens are validated.
+func buildSystemAttributes(app *model.ApplicationDTO, clientID string,
+	existing json.RawMessage) (json.RawMessage, error) {
 	sysAttrs := map[string]interface{}{
 		fieldName: app.Name,
 	}
@@ -1004,13 +1020,30 @@ func buildSystemAttributes(app *model.ApplicationDTO, clientID string) (json.Raw
 	if clientID != "" {
 		sysAttrs[fieldClientID] = clientID
 	}
+	if marker := credentialUpdatedAtOf(existing); marker != "" {
+		sysAttrs[fieldCredentialUpdatedAt] = marker
+	}
 	return json.Marshal(sysAttrs)
+}
+
+// credentialUpdatedAtOf returns the credential-change marker stored in the given system attributes,
+// or empty when none is recorded or the blob cannot be read.
+func credentialUpdatedAtOf(systemAttributes json.RawMessage) string {
+	if len(systemAttributes) == 0 {
+		return ""
+	}
+	var sysAttrs map[string]interface{}
+	if err := json.Unmarshal(systemAttributes, &sysAttrs); err != nil {
+		return ""
+	}
+	marker, _ := sysAttrs[fieldCredentialUpdatedAt].(string)
+	return marker
 }
 
 // buildAppEntity constructs an entity and system credentials for entity creation.
 func buildAppEntity(appID string, app *model.ApplicationDTO, clientID string, plaintextSecret string,
 	flowSecret string) (*providers.Entity, json.RawMessage, error) {
-	sysAttrsJSON, err := buildSystemAttributes(app, clientID)
+	sysAttrsJSON, err := buildSystemAttributes(app, clientID, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to build entity system attributes: %w", err)
 	}

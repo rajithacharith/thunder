@@ -268,7 +268,7 @@ func (suite *AgentServiceTestSuite) TestReadSystemAttributes_AllFields() {
 }
 
 func (suite *AgentServiceTestSuite) TestBuildSystemAttributesJSON_AllFields() {
-	raw, err := buildSystemAttributesJSON("n", "d", "o", "c")
+	raw, err := buildSystemAttributesJSON("n", "d", "o", "c", nil)
 	suite.Require().NoError(err)
 	suite.Require().NotNil(raw)
 	name, desc, owner, clientID := readSystemAttributes(raw)
@@ -278,8 +278,23 @@ func (suite *AgentServiceTestSuite) TestBuildSystemAttributesJSON_AllFields() {
 	assert.Equal(suite.T(), "c", clientID)
 }
 
+// An agent rename rebuilds the whole system-attribute blob, so the credential-change marker written
+// by a client secret rotation has to survive it. Losing it would revive refresh tokens the rotation
+// invalidated.
+func (suite *AgentServiceTestSuite) TestBuildSystemAttributesJSON_CarriesCredentialMarker() {
+	existing := json.RawMessage(`{"name":"old","credentialUpdatedAt":"2026-08-11T10:00:00Z"}`)
+
+	raw, err := buildSystemAttributesJSON("new", "d", "o", "c", existing)
+
+	suite.Require().NoError(err)
+	var attrs map[string]interface{}
+	suite.Require().NoError(json.Unmarshal(raw, &attrs))
+	assert.Equal(suite.T(), "2026-08-11T10:00:00Z", attrs[fieldCredentialUpdatedAt])
+	assert.Equal(suite.T(), "new", attrs[fieldName])
+}
+
 func (suite *AgentServiceTestSuite) TestBuildSystemAttributesJSON_EmptyFields() {
-	raw, err := buildSystemAttributesJSON("", "", "", "")
+	raw, err := buildSystemAttributesJSON("", "", "", "", nil)
 	suite.Require().NoError(err)
 	assert.Nil(suite.T(), raw)
 }
@@ -2892,4 +2907,11 @@ func (suite *AgentServiceTestSuite) TestDeleteAgent_AbortedWhenCascadeFails() {
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
 	mockInbound.AssertNotCalled(suite.T(), "DeleteInboundClient", mock.Anything, mock.Anything)
+}
+
+// A blob the server cannot parse yields no marker rather than failing the rebuild.
+func (suite *AgentServiceTestSuite) TestCredentialUpdatedAtOf_CorruptBlobYieldsEmpty() {
+	assert.Empty(suite.T(), credentialUpdatedAtOf(json.RawMessage(`not json`)))
+	assert.Empty(suite.T(), credentialUpdatedAtOf(nil))
+	assert.Empty(suite.T(), credentialUpdatedAtOf(json.RawMessage(`{"name":"x"}`)))
 }

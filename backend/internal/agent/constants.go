@@ -13,11 +13,12 @@ const (
 
 // Field keys stored in the entity SystemAttributes JSON blob.
 const (
-	fieldName         = "name"
-	fieldDescription  = "description"
-	fieldOwner        = "owner"
-	fieldClientID     = "clientId"
-	fieldClientSecret = authnprovidercm.CredentialTypeClientSecret
+	fieldName                = "name"
+	fieldDescription         = "description"
+	fieldOwner               = "owner"
+	fieldClientID            = "clientId"
+	fieldClientSecret        = authnprovidercm.CredentialTypeClientSecret
+	fieldCredentialUpdatedAt = authnprovidercm.SystemAttrCredentialUpdatedAt
 )
 
 // propLogoURL is the inbound-client PROPERTIES key holding the agent logo.

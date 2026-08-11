@@ -2075,3 +2075,95 @@ func GetAgent(agentID string) (*Agent, error) {
 	}
 	return &a, nil
 }
+
+// UpdateRole replaces a role by ID. Used to change a role's permissions or assignments after tokens
+// have been issued against them.
+func UpdateRole(roleID string, role Role) error {
+	roleJSON, err := json.Marshal(role)
+	if err != nil {
+		return fmt.Errorf("failed to marshal role: %w", err)
+	}
+
+	req, err := http.NewRequest("PUT", TestServerURL+"/roles/"+roleID, bytes.NewReader(roleJSON))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := GetHTTPClient().Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update role: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to update role, status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// UpdateUserCredentials sets new credentials (e.g. a password) for a user, the way an administrative
+// password reset does.
+func UpdateUserCredentials(userID string, credentials map[string]string) error {
+	credsJSON, err := json.Marshal(credentials)
+	if err != nil {
+		return fmt.Errorf("failed to marshal credentials: %w", err)
+	}
+	payload, err := json.Marshal(map[string]json.RawMessage{"credentials": credsJSON})
+	if err != nil {
+		return fmt.Errorf("failed to marshal credential update request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST",
+		TestServerURL+"/users/"+userID+"/update-credentials", bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := GetHTTPClient().Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update user credentials: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to update user credentials, status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// UpdateApplication replaces an application by ID. Supplying a new client secret on the OAuth inbound
+// auth config rotates it.
+func UpdateApplication(appID string, app Application) error {
+	appJSON, err := json.Marshal(app)
+	if err != nil {
+		return fmt.Errorf("failed to marshal application: %w", err)
+	}
+
+	req, err := http.NewRequest("PUT", TestServerURL+"/applications/"+appID, bytes.NewReader(appJSON))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := GetHTTPClient().Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update application: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to update application, status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// RemoveRoleAssignments unassigns the given subjects from a role, the way an administrator revoking a
+// user's role does. Assignments are a sub-resource of the role, so a role update does not carry them.
+func RemoveRoleAssignments(roleID string, assignments []Assignment) error {
+	return removeRoleAssignments(roleID, assignments, GetHTTPClient())
+}

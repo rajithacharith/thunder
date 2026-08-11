@@ -9,7 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
@@ -643,7 +645,18 @@ func (s *entityService) UpdateCredentials(ctx context.Context, entityID string,
 			return fmt.Errorf("failed to marshal merged credentials: %w", err)
 		}
 
-		return s.store.UpdateCredentials(txCtx, entityID, mergedJSON)
+		if err := s.store.UpdateCredentials(txCtx, entityID, mergedJSON); err != nil {
+			return err
+		}
+
+		// Record the change so the refresh grant can reject tokens established before it. Every
+		// password change lands here, and the marker shares this transaction with the write.
+		markedAttrs, err := setCredentialUpdatedAt(
+			existingWithCreds.Entity.SystemAttributes, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		return s.store.UpdateSystemAttributes(txCtx, entityID, markedAttrs)
 	})
 }
 
@@ -789,7 +802,20 @@ func (s *entityService) UpdateSystemCredentials(ctx context.Context, entityID st
 			return fmt.Errorf("failed to marshal merged credentials: %w", err)
 		}
 
-		return s.store.UpdateSystemCredentials(txCtx, entityID, mergedJSON)
+		if err := s.store.UpdateSystemCredentials(txCtx, entityID, mergedJSON); err != nil {
+			return err
+		}
+
+		// Only a client secret rotation marks the entity. A passkey adds an authentication option
+		// rather than replacing one, and the flow secret does not authenticate the client.
+		if _, rotatesClientSecret := updates[authnprovidercm.CredentialTypeClientSecret]; !rotatesClientSecret {
+			return nil
+		}
+		markedAttrs, err := setCredentialUpdatedAt(existing.Entity.SystemAttributes, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		return s.store.UpdateSystemAttributes(txCtx, entityID, markedAttrs)
 	})
 }
 
@@ -876,6 +902,26 @@ func (s *entityService) validateEntityType(
 	}
 
 	return nil
+}
+
+// setCredentialUpdatedAt returns systemAttributes with the credential-change marker set to at. The
+// marker is merged in rather than replacing the blob, whose other keys belong to the service that
+// owns the entity. Unlike mergeCredentialJSON, an unparsable blob is an error rather than a silent
+// overwrite, since dropping those keys would go unnoticed.
+func setCredentialUpdatedAt(systemAttributes json.RawMessage, at time.Time) (json.RawMessage, error) {
+	attrs := map[string]interface{}{}
+	if len(systemAttributes) > 0 {
+		if err := json.Unmarshal(systemAttributes, &attrs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal system attributes: %w", err)
+		}
+	}
+	attrs[authnprovidercm.SystemAttrCredentialUpdatedAt] = at.UTC().Format(time.RFC3339)
+
+	marked, err := json.Marshal(attrs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal system attributes: %w", err)
+	}
+	return marked, nil
 }
 
 // mergeCredentialJSON merges new credential JSON into existing credential JSON.

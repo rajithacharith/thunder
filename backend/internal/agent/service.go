@@ -297,7 +297,8 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		OUID:       ouID,
 		Attributes: req.Attributes,
 	}
-	sysAttrsJSON, marshalErr := buildSystemAttributesJSON(req.Name, req.Description, owner, clientID)
+	sysAttrsJSON, marshalErr := buildSystemAttributesJSON(req.Name, req.Description, owner, clientID,
+		existing.SystemAttributes)
 	if marshalErr != nil {
 		s.logger.Error(ctx, "Failed to build system attributes for update", log.Error(marshalErr))
 		return nil, &tidcommon.InternalServerError
@@ -1255,7 +1256,7 @@ func requiresClientSecret(cfg *providers.OAuthConfigWithSecret) bool {
 // buildAgentEntity constructs the entity row and system credentials JSON for a new or updated agent.
 func buildAgentEntity(agentID, agentType, ouID string, attributes json.RawMessage,
 	name, description, owner, clientID, clientSecret string) (*providers.Entity, json.RawMessage, error) {
-	sysAttrsJSON, err := buildSystemAttributesJSON(name, description, owner, clientID)
+	sysAttrsJSON, err := buildSystemAttributesJSON(name, description, owner, clientID, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to build agent system attributes: %w", err)
 	}
@@ -1277,8 +1278,11 @@ func buildAgentEntity(agentID, agentType, ouID string, attributes json.RawMessag
 	return e, sysCredsJSON, nil
 }
 
-// buildSystemAttributesJSON serializes agent name, description, owner, and clientID into the systemAttributes blob.
-func buildSystemAttributesJSON(name, description, owner, clientID string) (json.RawMessage, error) {
+// buildSystemAttributesJSON serializes agent name, description, owner, and clientID into the
+// systemAttributes blob, replacing whatever is stored. existing is the current blob, nil on creation,
+// and carries the credential-change marker across so an unrelated update does not drop it.
+func buildSystemAttributesJSON(name, description, owner, clientID string,
+	existing json.RawMessage) (json.RawMessage, error) {
 	attrs := map[string]interface{}{}
 	if name != "" {
 		attrs[fieldName] = name
@@ -1292,10 +1296,27 @@ func buildSystemAttributesJSON(name, description, owner, clientID string) (json.
 	if clientID != "" {
 		attrs[fieldClientID] = clientID
 	}
+	if marker := credentialUpdatedAtOf(existing); marker != "" {
+		attrs[fieldCredentialUpdatedAt] = marker
+	}
 	if len(attrs) == 0 {
 		return nil, nil
 	}
 	return json.Marshal(attrs)
+}
+
+// credentialUpdatedAtOf returns the credential-change marker stored in the given system attributes,
+// or empty when none is recorded or the blob cannot be read.
+func credentialUpdatedAtOf(systemAttributes json.RawMessage) string {
+	if len(systemAttributes) == 0 {
+		return ""
+	}
+	var attrs map[string]interface{}
+	if err := json.Unmarshal(systemAttributes, &attrs); err != nil {
+		return ""
+	}
+	marker, _ := attrs[fieldCredentialUpdatedAt].(string)
+	return marker
 }
 
 // buildSystemCredentialsJSON serializes the client secret into the systemCredentials JSON blob; returns nil when empty.
