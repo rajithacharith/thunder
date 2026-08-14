@@ -11,6 +11,11 @@ on:
   #   - cron: '30 6 * * 5'
   workflow_dispatch:
     inputs:
+      branch:
+        description: 'Branch to build the release from'
+        required: false
+        type: string
+        default: 'release'
       version:
         description: 'Release version to build (e.g. v1.0.0-beta3). Overrides bump_type and use_existing_version.'
         required: false
@@ -55,7 +60,7 @@ env:
   GOFLAGS: "-mod=readonly"
   PRODUCT_NAME: "ThunderID"
   PRODUCT_NAME_LOWER: "thunderid"
-  RELEASE_BRANCH: "release"
+  RELEASE_BRANCH: ${{ inputs.branch || 'release' }}
   RELEASE_GIT_USER_NAME: "thunderid-automation-bot"
   RELEASE_GIT_USER_EMAIL: "thunderid-bot@thunderid.dev"
   NODE_VERSION: "lts/*"
@@ -221,8 +226,8 @@ jobs:
             echo "✅ No changes to commit (files already at $VERSION)"
           else
             git commit -m "[Release] Bump version to ${VERSION}"
-            git push origin HEAD:release
-            echo "✅ Pushed version bump commit to release branch"
+            git push origin "HEAD:${{ env.RELEASE_BRANCH }}"
+            echo "✅ Pushed version bump commit to ${{ env.RELEASE_BRANCH }} branch"
           fi
 
       - name: ⚙️ Set up Go Environment  
