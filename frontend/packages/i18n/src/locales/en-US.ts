@@ -1420,7 +1420,7 @@ const translations = {
       'Deleting this organization unit is permanent and cannot be undone.',
     'edit.general.ou.id.label': 'Organization Unit ID',
     'edit.general.ou.parent.label': 'Parent Organization Unit',
-    'edit.general.ou.noParent.label': 'Root Organization Unit',
+    'edit.general.ou.noParent.label': 'This is a root organization unit.',
     'edit.general.dangerZone.delete.button.label': 'Delete Organization Unit',
     // Form fields
     'edit.general.handle.label': 'Handle',

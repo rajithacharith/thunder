@@ -4,7 +4,7 @@ title: Android Quickstart
 docType: quickstart
 sidebar_position: 8.5
 persona: app
-description: Add {{ProductName}} authentication to an Android application using the ThunderID Android SDK for Jetpack Compose.
+description: Add {{ProductName}} authentication to an Android application using the `com.github.thunder-id:android-sdks`.
 ---
 
 import {
@@ -19,7 +19,9 @@ import {
 
 # Android Quickstart
 
-Use this guide to add <ProductName /> authentication to an Android application using the <ProductName /> Android SDK for Jetpack Compose.
+Use this guide to add <ProductName /> authentication to an Android application using the `com.github.thunder-id:android-sdks`.
+
+<SdkQuickstartDownload packageId="android" icon={<AndroidLogo size={22} />} promptFlow="redirect-based" />
 
 <TutorialHero>
 
@@ -37,10 +39,6 @@ Use this guide to add <ProductName /> authentication to an Android application u
 <TutorialHeroItem icon={<FileCode />}>API 26 (Android 8.0) deployment target</TutorialHeroItem>
 
 </TutorialHero>
-
-:::tip Example Source Code
-Check out the complete <RepoLink path="/tree/main/sdks/android/samples/quickstart">Android Quickstart Sample</RepoLink> in the <ProductName /> repository.
-:::
 
 <Stepper stepNode="h2" as="h2">
 
@@ -291,19 +289,7 @@ You should see the sign-in form. Enter your test user credentials and tap **Subm
 
 ## What's Next
 
-<div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1.5rem'}}>
-  <a href="../../../guides/flows/what-are-flows" style={{textDecoration: 'none', color: 'inherit'}}>
-    <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
-      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Upgrade the sign-in flow</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add MFA, passkeys, or social login to your flow, no app code changes required.</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>Flow Designer →</div>
-    </div>
-  </a>
-  <a href="../../../../sdks/android/overview" style={{textDecoration: 'none', color: 'inherit'}}>
-    <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
-      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Android SDK Reference</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Explore the full API reference for the <ProductName /> Android SDK.</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>API Reference →</div>
-    </div>
-  </a>
-</div>
+<NextSteps>
+  <NextStepsCard title="Upgrade the sign-in flow" href="../../../guides/flows/what-are-flows" description="Add MFA, passkeys, or social login to your flow, no app code changes required." cta="Flow Designer" />
+  <NextStepsCard title="Android SDK Reference" href="../../../sdks/android/overview" description="Explore the full API reference for the Android SDK." cta="API Reference" />
+</NextSteps>

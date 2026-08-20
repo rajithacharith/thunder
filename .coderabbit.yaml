@@ -69,6 +69,78 @@ reviews:
         - <item 2>: <what needs to be documented and which file to update or create>
         - ..."
 
+    - path: "**/*_test.go"
+      instructions: |
+        Intermittent test failure detection. Scrutinize every changed test, helper, or setup
+        function for patterns that can cause non-deterministic (flaky) outcomes. Common patterns
+        include but are not limited to:
+
+        - **Encoding/decoding equivalence**: mutating a base64 (or hex, URL-encoding, etc.)
+          string in a position where the change does not alter the decoded bytes (e.g., flipping
+          the last character of a `base64.RawURLEncoding` string may produce identical decoded
+          output depending on input length and padding alignment).
+        - **Map iteration order**: relying on the order of `range` over a Go map, which is
+          randomized per iteration.
+        - **Time-dependent assertions**: comparing timestamps with `time.Now()` or fixed
+          durations without tolerance, sleeping for a fixed duration and asserting state, or
+          assuming wall-clock ordering across goroutines.
+        - **Port/resource conflicts**: hardcoded ports, temp file paths, or shared resources
+          that collide when tests run in parallel.
+        - **Goroutine races**: shared mutable state accessed from test goroutines without
+          synchronization, or `t.Parallel()` tests closing over loop variables.
+        - **Random/non-deterministic input**: using `rand` without a fixed seed, or generating
+          values that can collide (e.g., UUID-based names that are later asserted by position).
+        - **External service timing**: assertions that depend on an external server, database,
+          or network call completing within an implicit timeout.
+        - **Flaky cleanup**: `defer` cleanup that races with asynchronous operations, or
+          teardown that depends on creation having fully completed.
+
+        When any of these patterns is detected, flag it as a **critical issue** (not major,
+        not a suggestion) using this format:
+
+        "🔴 **Intermittent test failure**: <description of the non-deterministic pattern>.
+        This will pass most of the time but fail unpredictably in CI, wasting maintainer time
+        and eroding trust in the test suite."
+
+        Provide a concrete explanation of the failure scenario (inputs/state that trigger the
+        flake) and suggest a deterministic fix.
+
+    - path: "tests/**"
+      instructions: |
+        Intermittent test failure detection. Scrutinize every changed test, helper, or setup
+        function for patterns that can cause non-deterministic (flaky) outcomes. Common patterns
+        include but are not limited to:
+
+        - **Encoding/decoding equivalence**: mutating a base64 (or hex, URL-encoding, etc.)
+          string in a position where the change does not alter the decoded bytes (e.g., flipping
+          the last character of a `base64.RawURLEncoding` string may produce identical decoded
+          output depending on input length and padding alignment).
+        - **Map iteration order**: relying on the order of `range` over a Go map, which is
+          randomized per iteration.
+        - **Time-dependent assertions**: comparing timestamps with `time.Now()` or fixed
+          durations without tolerance, sleeping for a fixed duration and asserting state, or
+          assuming wall-clock ordering across goroutines.
+        - **Port/resource conflicts**: hardcoded ports, temp file paths, or shared resources
+          that collide when tests run in parallel.
+        - **Goroutine races**: shared mutable state accessed from test goroutines without
+          synchronization, or `t.Parallel()` tests closing over loop variables.
+        - **Random/non-deterministic input**: using `rand` without a fixed seed, or generating
+          values that can collide (e.g., UUID-based names that are later asserted by position).
+        - **External service timing**: assertions that depend on an external server, database,
+          or network call completing within an implicit timeout.
+        - **Flaky cleanup**: `defer` cleanup that races with asynchronous operations, or
+          teardown that depends on creation having fully completed.
+
+        When any of these patterns is detected, flag it as a **critical issue** (not major,
+        not a suggestion) using this format:
+
+        "🔴 **Intermittent test failure**: <description of the non-deterministic pattern>.
+        This will pass most of the time but fail unpredictably in CI, wasting maintainer time
+        and eroding trust in the test suite."
+
+        Provide a concrete explanation of the failure scenario (inputs/state that trigger the
+        flake) and suggest a deterministic fix.
+
     - path: "**/*.ts"
       instructions: |
         Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in this file.
@@ -258,6 +330,18 @@ reviews:
         - Flag any new CSS added to `docs/src/css/custom.css` unless it targets Scalar API reference
           elements or other third-party components where `sx`/`styled()` cannot reach. Ask:
           **"Can this style be applied via `sx` or `styled()` instead?"**
+        - For any component rendered inside actual doc content (an `.mdx` page under `docs/content/`
+          or `docs/versioned_docs/`) that builds a URL to `fetch()` a versioned static asset (e.g. a
+          file mirrored per-version under `static/docs/<versionPath>/...` or `static/api/<versionPath>/...`):
+          flag as a **major issue** if it derives the version by hardcoding a `/docs/next/...` literal
+          and rewriting it with `useDocsUrl()` (from `@site/src/hooks/useDocsUrl`). That hook is for
+          version-*less* contexts (footer links, homepage, custom pages) that fall back through the
+          site's global active/preferred/latest version state — it is the wrong tool for a component
+          embedded in a specific doc page, since that page already has its own authoritative version.
+          Require `useDocsVersion()` (from `@docusaurus/plugin-content-docs/client`) instead, mapping
+          `version === 'current' ? 'next' : version` to get the versionPath, matching the pattern in
+          `docs/src/components/ApiVersionReference.tsx`. `useDocsUrl()` remains correct for rewriting
+          `<Link>`/`href` navigation targets; this only applies to runtime `fetch()` URLs.
 
         Review documentation changes for:
         - Technical accuracy: do code examples and parameter descriptions match the actual implementation in this PR?

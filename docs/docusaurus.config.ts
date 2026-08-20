@@ -106,6 +106,19 @@ const config: Config = {
 
   headTags: [
     {
+      tagName: 'script',
+      attributes: {},
+      // Reads the same "theme" localStorage key as Docusaurus' own no-flash script, but
+      // stamps the attribute the MUI/Oxygen-UI theme reads (colorSchemeSelector:
+      // "data-color-scheme"). Without this, a hard refresh paints MUI-styled surfaces with
+      // their light-scheme fallback for one frame before OxygenUIThemeProvider mounts and
+      // syncs to the already-correct Docusaurus theme. Docusaurus' stored value can be the
+      // literal string "system" (its tri-state toggle), which must resolve through
+      // prefers-color-scheme here rather than being stamped as-is, since Oxygen-UI's CSS
+      // only defines variables for "dark"/"light".
+      innerHTML: `(function(){try{var t=new URLSearchParams(window.location.search).get("docusaurus-theme")||window.localStorage.getItem("theme");var dark=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-color-scheme",dark?"dark":"light");}catch(e){}})();`,
+    },
+    {
       tagName: 'link',
       attributes: {
         rel: 'icon',

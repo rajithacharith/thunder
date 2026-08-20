@@ -28,21 +28,23 @@ const (
 	formatYAML = "yaml"
 	formatJSON = "json"
 
-	resourceTypeApplication    = "application"
-	resourceTypeConnection     = "connection"
-	resourceTypeUserType       = "user_type"
-	resourceTypeAgentType      = "agent_type"
-	resourceTypeOU             = "organization_unit"
-	resourceTypeUser           = "user"
-	resourceTypeGroup          = "group"
-	resourceTypeResourceServer = "resource_server"
-	resourceTypeRole           = "role"
-	resourceTypeFlow           = "flow"
-	resourceTypeTranslation    = "translation"
-	resourceTypeLayout         = "layout"
-	resourceTypeTheme          = "theme"
-	resourceTypeAgent          = "agent"
-	resourceTypeServerConfig   = "server_config"
+	resourceTypeApplication             = "application"
+	resourceTypeConnection              = "connection"
+	resourceTypeUserType                = "user_type"
+	resourceTypeAgentType               = "agent_type"
+	resourceTypeOU                      = "organization_unit"
+	resourceTypeUser                    = "user"
+	resourceTypeGroup                   = "group"
+	resourceTypeResourceServer          = "resource_server"
+	resourceTypeRole                    = "role"
+	resourceTypeFlow                    = "flow"
+	resourceTypeTranslation             = "translation"
+	resourceTypeLayout                  = "layout"
+	resourceTypeTheme                   = "theme"
+	resourceTypeAgent                   = "agent"
+	resourceTypeServerConfig            = "server_config"
+	resourceTypeCredentialConfiguration = "credential_configuration" //nolint:gosec
+	resourceTypePresentationDefinition  = "presentation_definition"
 )
 
 // parameterizerInterface defines the interface for template parameterization.
@@ -137,21 +139,23 @@ func (es *exportService) ExportResources(
 
 	// Map resource types to their IDs from the request
 	resourceMap := map[string][]string{
-		resourceTypeApplication:    request.Applications,
-		resourceTypeConnection:     request.Connections,
-		resourceTypeUserType:       request.UserTypes,
-		resourceTypeAgentType:      request.AgentTypes,
-		resourceTypeOU:             request.OrganizationUnits,
-		resourceTypeUser:           request.Users,
-		resourceTypeGroup:          request.Groups,
-		resourceTypeResourceServer: request.ResourceServers,
-		resourceTypeRole:           request.Roles,
-		resourceTypeFlow:           request.Flows,
-		resourceTypeTranslation:    request.Translations,
-		resourceTypeLayout:         request.Layouts,
-		resourceTypeTheme:          request.Themes,
-		resourceTypeAgent:          request.Agents,
-		resourceTypeServerConfig:   request.ServerConfigs,
+		resourceTypeApplication:             request.Applications,
+		resourceTypeConnection:              request.Connections,
+		resourceTypeUserType:                request.UserTypes,
+		resourceTypeAgentType:               request.AgentTypes,
+		resourceTypeOU:                      request.OrganizationUnits,
+		resourceTypeUser:                    request.Users,
+		resourceTypeGroup:                   request.Groups,
+		resourceTypeResourceServer:          request.ResourceServers,
+		resourceTypeRole:                    request.Roles,
+		resourceTypeFlow:                    request.Flows,
+		resourceTypeTranslation:             request.Translations,
+		resourceTypeLayout:                  request.Layouts,
+		resourceTypeTheme:                   request.Themes,
+		resourceTypeAgent:                   request.Agents,
+		resourceTypeServerConfig:            request.ServerConfigs,
+		resourceTypeCredentialConfiguration: request.CredentialConfigurations,
+		resourceTypePresentationDefinition:  request.PresentationDefinitions,
 	}
 
 	// Export resources using the registry

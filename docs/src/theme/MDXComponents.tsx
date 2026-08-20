@@ -19,6 +19,7 @@ import {
 import {AgentInteractionsDiagram} from '@site/src/components/AgentInteractionsDiagram';
 import {LangTabs, Lang} from '@site/src/components/AgentLang';
 import {AgentModeSelector, Mode} from '@site/src/components/AgentMode';
+import {DelegationMethodSelector, DelegationContent} from '@site/src/components/AgentDelegationMode';
 import {AgentOwnTokenFlow, AgentOboFlow} from '@site/src/components/AgentQuickstartFlow';
 import {
   AIAgentIdentityRoadmap as AIAgentIdentityExplorer,
@@ -73,6 +74,7 @@ import RepoLink from '@site/src/components/RepoLink';
 import RunThunderID from '@site/src/components/RunThunderID';
 import SampleDownload from '@site/src/components/SampleDownload';
 import SDKCard from '@site/src/components/SDKCard';
+import SdkQuickstartDownload from '@site/src/components/SdkQuickstartDownload';
 import {SolutionArchitectureDiagram} from '@site/src/components/SolutionArchitectureDiagram';
 import Stepper from '@site/src/components/Stepper';
 import TutorialHero, {TutorialHeroItem} from '@site/src/components/TutorialHero';
@@ -159,6 +161,8 @@ export default {
   Lang,
   AgentModeSelector,
   Mode,
+  DelegationMethodSelector,
+  DelegationContent,
   AgentInteractionsDiagram,
   BuildAFlowDiagram,
   FlowNodeTypesRoadmap,
@@ -169,6 +173,7 @@ export default {
   DeveloperShortcut,
   GettingStartedJourney,
   SampleDownload,
+  SdkQuickstartDownload,
   SolutionArchitectureDiagram,
   UseCaseBranchCards,
   UseCaseStepper,

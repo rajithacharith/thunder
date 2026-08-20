@@ -134,6 +134,37 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_Success() {
 	suite.Equal("Test Role", response.Name)
 }
 
+func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_WithoutPermissions_ReturnsEmptyArray() {
+	request := CreateRoleRequest{
+		Name: "Test Role",
+		OUID: "ou1",
+	}
+
+	expectedRole := &RoleWithPermissionsAndAssignments{
+		ID:   "role1",
+		Name: "Test Role",
+		OUID: "ou1",
+	}
+
+	suite.mockService.On("CreateRole", mock.Anything, mock.AnythingOfType("RoleCreationDetail")).
+		Return(expectedRole, nil)
+
+	body, _ := json.Marshal(request)
+	req := httptest.NewRequest(http.MethodPost, "/roles", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleRolePostRequest(w, req)
+
+	suite.Equal(http.StatusCreated, w.Code)
+
+	var response CreateRoleResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	suite.NoError(err)
+	suite.NotNil(response.Permissions)
+	suite.Empty(response.Permissions)
+}
+
 func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_InvalidJSON() {
 	req := httptest.NewRequest(http.MethodPost, "/roles", bytes.NewBufferString("invalid json"))
 	req.Header.Set("Content-Type", "application/json")

@@ -209,16 +209,17 @@ describe('FlowsListView', () => {
 
     it('should call onClearSelection when selection is cleared', async () => {
       const user = userEvent.setup();
-      renderExpanded({
+      // The card is already expanded because selectedAuthFlow is set, so use renderComponent
+      // directly; renderExpanded would toggle it back closed.
+      renderComponent({
         selectedAuthFlow: mockFlows[0],
       });
 
       const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const clearButton = autocomplete.parentElement?.querySelector('[aria-label="Clear"]');
 
-      // Clear the selection by clicking outside or selecting null
-      await user.clear(autocomplete);
-      await user.tab(); // blur to trigger onChange with null
+      expect(clearButton).not.toBeNull();
+      await user.click(clearButton!);
 
       expect(mockOnClearSelection).toHaveBeenCalled();
     });

@@ -1,7 +1,7 @@
 {
   "private": false,
   "name": "thunderid",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ThunderID: Auth for Modern Apps and Agents — instantly via npx",
   "keywords": [
     "thunderid",
@@ -16,6 +16,9 @@
   "license": "Apache-2.0",
   "bin": {
     "thunderid": "./bin/thunderid.js"
+  },
+  "engines": {
+    "node": ">=22.23.1"
   },
   "files": [
     "bin",

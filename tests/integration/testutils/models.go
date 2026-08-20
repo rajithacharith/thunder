@@ -10,11 +10,18 @@ import (
 
 // UserType represents a user type definition
 type UserType struct {
-	ID                    string                 `json:"id,omitempty"`
-	Name                  string                 `json:"name"`
-	OUID                  string                 `json:"ouId"`
-	AllowSelfRegistration bool                   `json:"allowSelfRegistration,omitempty"`
-	Schema                map[string]interface{} `json:"schema"`
+	ID                    string                    `json:"id,omitempty"`
+	Name                  string                    `json:"name"`
+	OUID                  string                    `json:"ouId"`
+	AllowSelfRegistration bool                      `json:"allowSelfRegistration,omitempty"`
+	SystemAttributes      *UserTypeSystemAttributes `json:"systemAttributes,omitempty"`
+	Schema                map[string]interface{}    `json:"schema"`
+}
+
+// UserTypeSystemAttributes carries the system-level settings of a user type, such as the
+// attribute used to render a human-readable display name.
+type UserTypeSystemAttributes struct {
+	Display string `json:"display,omitempty"`
 }
 
 // User represents a user in the system
@@ -43,8 +50,11 @@ type Application struct {
 	AllowedUserTypes          []string                 `json:"allowedUserTypes,omitempty"`
 	SubjectAttribute          map[string]string        `json:"subjectAttribute,omitempty"`
 	Certificate               map[string]interface{}   `json:"certificate,omitempty"`
+	PasskeyAllowedOrigins     []string                 `json:"passkeyAllowedOrigins,omitempty"`
 	InboundAuthConfig         []map[string]interface{} `json:"inboundAuthConfig,omitempty"`
 	AssertionConfig           map[string]interface{}   `json:"assertion,omitempty"`
+	// LoginConsent is the login consent configuration (e.g. validityPeriod in seconds).
+	LoginConsent map[string]interface{} `json:"loginConsent,omitempty"`
 	// Attestation is the client-level platform attestation config, set at the top level of the
 	// application independent of any OAuth profile.
 	Attestation map[string]interface{} `json:"attestation,omitempty"`
@@ -74,13 +84,49 @@ type IDPProperty struct {
 	IsSecret bool   `json:"isSecret"`
 }
 
+// AttributeMapping maps a single external IDP claim to a local user attribute. The external name may
+// be a dot-notation path into a nested claim.
+type AttributeMapping struct {
+	ExternalAttribute string `json:"externalAttribute"`
+	LocalAttribute    string `json:"localAttribute"`
+}
+
+// UserTypeAttributeMapping holds the external-to-local mappings for one local user type.
+type UserTypeAttributeMapping struct {
+	UserType   string             `json:"userType,omitempty"`
+	Attributes []AttributeMapping `json:"attributes,omitempty"`
+}
+
+// UserTypeResolution selects the local user type for an incoming identity. Default applies when
+// claim-driven resolution is absent or does not match.
+type UserTypeResolution struct {
+	Default           string            `json:"default,omitempty"`
+	ExternalAttribute string            `json:"externalAttribute,omitempty"`
+	ValueMapping      map[string]string `json:"valueMapping,omitempty"`
+}
+
+// AccountLinking lists the external claims used to resolve a local user when the subject does not.
+type AccountLinking struct {
+	Attributes []string `json:"attributes,omitempty"`
+}
+
+// AttributeConfiguration is the connection's user-type resolution, per-user-type attribute mappings
+// and account-linking configuration. Mirrors the /connections wire format; pointers so a nil section
+// stays distinguishable from an empty one.
+type AttributeConfiguration struct {
+	UserTypeResolution        *UserTypeResolution        `json:"userTypeResolution,omitempty"`
+	UserTypeAttributeMappings []UserTypeAttributeMapping `json:"userTypeAttributeMappings,omitempty"`
+	AccountLinking            *AccountLinking            `json:"accountLinking,omitempty"`
+}
+
 // IDP represents an identity provider in the system
 type IDP struct {
-	ID          string        `json:"id,omitempty"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Type        string        `json:"type"`
-	Properties  []IDPProperty `json:"properties"`
+	ID                     string                  `json:"id,omitempty"`
+	Name                   string                  `json:"name"`
+	Description            string                  `json:"description"`
+	Type                   string                  `json:"type"`
+	Properties             []IDPProperty           `json:"properties"`
+	AttributeConfiguration *AttributeConfiguration `json:"attributeConfiguration,omitempty"`
 }
 
 // Link represents a pagination link.

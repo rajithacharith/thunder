@@ -103,9 +103,10 @@ describe('useDeleteRole', () => {
   });
 
   it('should set pending state during deletion', async () => {
+    let resolveRequest: () => void;
     mockHttpRequest.mockReturnValue(
       new Promise((resolve) => {
-        setTimeout(() => resolve(undefined), 100);
+        resolveRequest = () => resolve(undefined);
       }),
     );
 
@@ -117,12 +118,11 @@ describe('useDeleteRole', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
-      () => {
-        expect(result.current.isSuccess).toBe(true);
-      },
-      {timeout: 200},
-    );
+    resolveRequest();
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
 
     expect(result.current.isPending).toBe(false);
   });

@@ -284,6 +284,83 @@ func CreateUser(user User) (string, error) {
 	return userID, nil
 }
 
+// ListUserTypes returns every user type visible to the caller, each with its schema.
+//
+// The listing endpoint omits the schema, so each type is fetched individually. Seeding reads every user
+// type in the deployment, so tests asserting seeded defaults use this to check the precondition their
+// expectation depends on rather than assuming no other suite left a type behind.
+func ListUserTypes() ([]UserType, error) {
+	body, err := getJSON(TestServerURL + "/user-types?limit=100")
+	if err != nil {
+		return nil, err
+	}
+
+	var listing struct {
+		TotalResults int `json:"totalResults"`
+		Types        []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"types"`
+	}
+	if err := json.Unmarshal(body, &listing); err != nil {
+		return nil, fmt.Errorf("failed to parse user type listing: %w. Response: %s", err, string(body))
+	}
+	// Callers use this as a deployment-wide precondition, so a truncated page must not read as the whole
+	// deployment.
+	if listing.TotalResults > len(listing.Types) {
+		return nil, fmt.Errorf("user type listing is truncated: %d of %d returned; raise the limit",
+			len(listing.Types), listing.TotalResults)
+	}
+
+	userTypes := make([]UserType, 0, len(listing.Types))
+	for _, item := range listing.Types {
+		detail, err := getJSON(fmt.Sprintf("%s/user-types/%s", TestServerURL, item.ID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to read user type %q: %w", item.Name, err)
+		}
+		var userType UserType
+		if err := json.Unmarshal(detail, &userType); err != nil {
+			return nil, fmt.Errorf("failed to parse user type %q: %w. Response: %s", item.Name, err, string(detail))
+		}
+		userTypes = append(userTypes, userType)
+	}
+	return userTypes, nil
+}
+
+// IsAttributeUnique reports whether the named schema attribute is declared unique on this user type.
+func (u UserType) IsAttributeUnique(attribute string) bool {
+	definition, ok := u.Schema[attribute].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	unique, _ := definition["unique"].(bool)
+	return unique
+}
+
+// getJSON performs an authenticated GET and returns the raw body, failing on any non-200 status.
+func getJSON(url string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(body))
+	}
+	return body, nil
+}
+
 // DeleteUserType deletes a user type by ID
 func DeleteUserType(schemaID string) error {
 	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/user-types/%s", TestServerURL, schemaID), nil)
@@ -426,6 +503,11 @@ func CreateApplication(app Application) (string, error) {
 	// Add assertion config if provided
 	if app.AssertionConfig != nil {
 		appData["assertion"] = app.AssertionConfig
+	}
+
+	// Add login consent config if provided
+	if app.LoginConsent != nil {
+		appData["loginConsent"] = app.LoginConsent
 	}
 
 	// Add the application type (explicit, or defaulted to full-stack above).
@@ -681,6 +763,9 @@ func idpToConnectionBody(idp IDP) map[string]interface{} {
 			}
 		}
 	}
+	if idp.AttributeConfiguration != nil {
+		body["attributeConfiguration"] = idp.AttributeConfiguration
+	}
 	return body
 }
 
@@ -710,6 +795,16 @@ func connectionBodyToIDP(idpType string, resp map[string]interface{}) *IDP {
 			}
 		}
 		idp.Properties = append(idp.Properties, IDPProperty{Name: "scopes", Value: strings.Join(parts, ",")})
+	}
+	// Round-tripped through JSON because the response arrives as a generic map. A malformed section is
+	// left nil rather than failing the conversion, so callers assert on it instead of on a parse error.
+	if raw, ok := resp["attributeConfiguration"]; ok && raw != nil {
+		if encoded, err := json.Marshal(raw); err == nil {
+			var config AttributeConfiguration
+			if err := json.Unmarshal(encoded, &config); err == nil {
+				idp.AttributeConfiguration = &config
+			}
+		}
 	}
 	return idp
 }
@@ -1473,6 +1568,101 @@ func PutDefaultResourceServer(resourceServerID string) error {
 		return fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 	return nil
+}
+
+// GetWritableServerConfig returns the writable layer of the named server-config section, so a
+// caller can restore exactly what was there rather than guessing at a default. An absent layer is
+// reported as an empty object.
+func GetWritableServerConfig(section string) (json.RawMessage, error) {
+	url := fmt.Sprintf("%s/server-config/%s", TestServerURL, section)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create %s server config request: %w", section, err)
+	}
+
+	resp, err := GetHTTPClient().Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s server config: %w", section, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s server config response: %w", section, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("expected status 200 reading %s server config, got %d. Response: %s",
+			section, resp.StatusCode, string(body))
+	}
+
+	var layers struct {
+		Writable json.RawMessage `json:"writable"`
+	}
+	if err := json.Unmarshal(body, &layers); err != nil {
+		return nil, fmt.Errorf("failed to parse %s server config: %w", section, err)
+	}
+
+	if len(layers.Writable) == 0 {
+		return json.RawMessage("{}"), nil
+	}
+	return layers.Writable, nil
+}
+
+// PutWritableServerConfig replaces the writable layer of the named server-config section.
+func PutWritableServerConfig(section string, body []byte) error {
+	url := fmt.Sprintf("%s/server-config/%s", TestServerURL, section)
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("failed to create %s server config request: %w", section, err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := GetHTTPClient().Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update %s server config: %w", section, err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read %s server config response: %w", section, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("expected status 200 updating %s server config with %s, got %d. Response: %s",
+			section, string(body), resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
+// MergeWritableServerConfig applies the given top-level keys over the current writable layer of the
+// section and writes the result back, returning the layer as it was beforehand.
+//
+// Merging rather than replacing keeps sibling keys that the caller did not set, which a bare PUT
+// would drop. The returned value is what the caller restores when it is done.
+func MergeWritableServerConfig(section string, patch map[string]interface{}) (json.RawMessage, error) {
+	original, err := GetWritableServerConfig(section)
+	if err != nil {
+		return nil, err
+	}
+
+	merged := make(map[string]interface{})
+	if err := json.Unmarshal(original, &merged); err != nil {
+		return nil, fmt.Errorf("failed to parse writable %s server config: %w", section, err)
+	}
+	for key, value := range patch {
+		merged[key] = value
+	}
+
+	body, err := json.Marshal(merged)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal %s server config: %w", section, err)
+	}
+	if err := PutWritableServerConfig(section, body); err != nil {
+		return nil, err
+	}
+	return original, nil
 }
 
 // createAction creates an action on a resource server via API and returns the action ID
