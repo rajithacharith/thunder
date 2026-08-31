@@ -7,12 +7,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/thunder-id/thunderid/tools/cli/internal/cli"
 	"github.com/thunder-id/thunderid/tools/cli/internal/commands/sample"
 	"github.com/thunder-id/thunderid/tools/cli/internal/commands/upgrade"
 	"github.com/thunder-id/thunderid/tools/cli/internal/product"
 	"github.com/thunder-id/thunderid/tools/cli/internal/services/config"
+	"github.com/thunder-id/thunderid/tools/cli/internal/services/release"
 	"github.com/thunder-id/thunderid/tools/cli/internal/ui"
 )
 
@@ -30,8 +32,28 @@ func main() {
 		return
 	}
 
+	// --product-version selects which release to install and where to fetch it from, so it has to
+	// be applied before any command reaches the release service.
+	if err := configureReleaseSource(args); err != nil {
+		ui.Fatal(err.Error())
+		os.Exit(1)
+	}
+
+	// --help can follow a flag, so it is matched anywhere rather than only in first position.
+	if hasFlag(args, "--help", "-h") {
+		printUsage()
+		return
+	}
+
 	// upgrade — stop the running version, install the latest, restart on the same port.
 	if len(args) > 0 && args[0] == "upgrade" {
+		// Upgrading to the latest while pinned to a version contradicts itself, and silently
+		// dropping the pin would move an operator off the release they asked for.
+		if release.Pinned() != "" {
+			ui.Fatal("`upgrade` cannot run with a pinned --product-version. " +
+				"Drop the pin to upgrade, or pass the version you want directly.")
+			os.Exit(1)
+		}
 		verbose, _ := parseFlags(args[1:])
 		_, notice, err := upgrade.Run(cli.BaseDir(), upgrade.Opts{Verbose: verbose})
 		if err != nil {
@@ -68,11 +90,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		printUsage()
-		return
-	}
-
 	verbose, forceSetup := parseFlags(args)
 	cli.Run(verbose, forceSetup)
 }
@@ -104,8 +121,69 @@ Flags:
   --verbose, -v        Show detailed output
   --setup              Force re-run setup
   --version, -V        Show the CLI version
+  --product-version    Release to install, or the manifest to read releases from.
+                       Takes a version (1.0.1) or a URL (https://example.com/releases.json).
+                       Pass it twice to combine the two. Also read from
+                       THUNDERID_PRODUCT_VERSION.
   --help, -h           Show this help message
-`, product.Slug, product.Name)
+
+Examples:
+  %s --product-version 1.0.1
+  %s --product-version https://releases.example.com/releases.json
+  %s --product-version https://releases.example.com/releases.json --product-version 1.0.1
+`, product.Slug, product.Name, product.Slug, product.Slug, product.Slug)
+}
+
+// configureReleaseSource applies --product-version, falling back to THUNDERID_PRODUCT_VERSION so
+// scripted runs can set it without rewriting their command lines. Flags win over the environment.
+func configureReleaseSource(args []string) error {
+	values := productVersionFlags(args)
+	if len(values) == 0 {
+		if env := strings.TrimSpace(os.Getenv("THUNDERID_PRODUCT_VERSION")); env != "" {
+			values = strings.Fields(env)
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	client, err := release.Configure(values)
+	if err != nil {
+		return err
+	}
+	release.Default = client
+	return nil
+}
+
+// productVersionFlags collects every --product-version value, accepting both "--flag value" and
+// "--flag=value".
+func productVersionFlags(args []string) []string {
+	var values []string
+	for i := 0; i < len(args); i++ {
+		switch {
+		case args[i] == productVersionFlag:
+			if i+1 < len(args) {
+				values = append(values, args[i+1])
+				i++
+			}
+		case strings.HasPrefix(args[i], productVersionFlag+"="):
+			values = append(values, strings.TrimPrefix(args[i], productVersionFlag+"="))
+		}
+	}
+	return values
+}
+
+const productVersionFlag = "--product-version"
+
+// hasFlag reports whether any of names appears in args.
+func hasFlag(args []string, names ...string) bool {
+	for _, a := range args {
+		for _, name := range names {
+			if a == name {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func parseFlags(args []string) (verbose, forceSetup bool) {
