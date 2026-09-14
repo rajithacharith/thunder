@@ -87,7 +87,7 @@ func (a *authorizationExecutor) Execute(ctx *providers.NodeContext) (*providers.
 	execResp.AuthUser = authUser
 	if svcErr != nil {
 		execResp.Status = providers.ExecFailure
-		execResp.Error = &ErrFailedToIdentifyUser
+		execResp.Error = errForEntityCategory(ErrFailedToIdentifyEntity, categoryUnscoped)
 		return execResp, nil
 	}
 

@@ -24,8 +24,12 @@ var catalog = map[string]providers.ExecutorMeta{
 	ExecutorNameApplicationDelete: {
 		SupportedFlowTypes: []providers.FlowType{"ADMINISTRATION"},
 	},
-	ExecutorNameAttributeCollect:             {},
-	ExecutorNameAttributeUniquenessValidator: {},
+	ExecutorNameAttributeCollect: {},
+	ExecutorNameAttributeUniquenessValidator: {
+		SupportedProperties: []providers.ExecutorSupportedProperties{
+			{Property: "mode"},
+		},
+	},
 	ExecutorNameAuthAssert: {
 		SupportedProperties: []providers.ExecutorSupportedProperties{
 			{Property: "callbackType"},
@@ -157,8 +161,11 @@ var catalog = map[string]providers.ExecutorMeta{
 		SupportedFlowTypes: []providers.FlowType{"ADMINISTRATION"},
 	},
 	ExecutorNameProvisioning: {
-		SupportedFlowTypes: []providers.FlowType{"AUTHENTICATION", "REGISTRATION", "USER_ONBOARDING"},
+		SupportedFlowTypes: []providers.FlowType{
+			"AUTHENTICATION", "REGISTRATION", "USER_ONBOARDING", "ADMINISTRATION",
+		},
 		SupportedProperties: []providers.ExecutorSupportedProperties{
+			{Property: "mode"},
 			{Property: "includeOptional"},
 			{Property: "includeOptionalCredentials"},
 			{Property: "maxPerPrompt"},
@@ -197,6 +204,15 @@ var catalog = map[string]providers.ExecutorMeta{
 		SupportedProperties: []providers.ExecutorSupportedProperties{
 			{Property: "allowedUserTypes"},
 		},
+	},
+	ExecutorNameAgentTypeResolver: {
+		SupportedFlowTypes: []providers.FlowType{"ADMINISTRATION", "AUTHENTICATION"},
+		SupportedProperties: []providers.ExecutorSupportedProperties{
+			{Property: "allowedAgentTypes"},
+		},
+	},
+	ExecutorNameOwnerResolver: {
+		SupportedFlowTypes: []providers.FlowType{"ADMINISTRATION", "REGISTRATION"},
 	},
 }
 

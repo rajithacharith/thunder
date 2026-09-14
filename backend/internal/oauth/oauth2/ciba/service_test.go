@@ -548,7 +548,8 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowInitiationFails() {
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorMapsToUnknownUser() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
 		&flowexec.FlowStep{Status: providers.FlowStatusError, Error: &tidcommon.ServiceError{
-			Error: tidcommon.I18nMessage{DefaultValue: "User not found"},
+			Code:  flowErrCodeEntityNotFound,
+			Error: tidcommon.I18nMessage{DefaultValue: "The user could not be found"},
 		}}, nil)
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -564,7 +565,8 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorMapsToUnknownUser() {
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorAmbiguousUserMapsToUnknownUser() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
 		&flowexec.FlowStep{Status: providers.FlowStatusError, Error: &tidcommon.ServiceError{
-			Error: tidcommon.I18nMessage{DefaultValue: "User identity is ambiguous"},
+			Code:  flowErrCodeAmbiguousEntityIdentity,
+			Error: tidcommon.I18nMessage{DefaultValue: "Ambiguous user identity"},
 		}}, nil)
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
