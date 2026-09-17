@@ -88,12 +88,21 @@ jobs:
           # Remove `--ignore-registry-errors` once pnpm 11 is generally available. Tracker: https://github.com/pnpm/pnpm/issues/11265
           pnpm audit --ignore-registry-errors --audit-level=high
 
+      # allow-licenses is the org-approved OSS license list. Two entries are
+      # given as-is even though the dependency graph will never report them
+      # verbatim: the Go PATENTS grant isn't a distinct SPDX id (Go modules
+      # under it are already reported as BSD-3-Clause, which is on the list),
+      # and "public domain" isn't a detectable SPDX license.
       - name: 🔎 Dependency Review
         if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-          deny-licenses: GPL-3.0-only,GPL-3.0-or-later,AGPL-3.0-only,AGPL-3.0-or-later
+          allow-licenses: >
+            Apache-2.0, BSD-2-Clause, BSD-2-Clause-FreeBSD, BSD-3-Clause, MIT,
+            ISC, Python-2.0, BSL-1.0, bzip2-1.0.6, OLDAP-2.7, OLDAP-2.8,
+            PostgreSQL, TCL, W3C, X11, Zlib, Unlicense,
+            OFL-1.0, OFL-1.1, CC-BY-1.0, CC-BY-2.0, CC-BY-2.5, CC-BY-3.0
           comment-summary-in-pr: always
           base-ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
           head-ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
