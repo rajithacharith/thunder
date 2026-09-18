@@ -25,7 +25,7 @@ allowBuilds:
   vue-demi: false
 
 catalog:
-  '@axe-core/playwright': 4.3.0
+  '@axe-core/playwright': 4.13.0
   '@docsearch/docusaurus-adapter': ^4.6.3
   '@codecov/vite-plugin': 2.0.1
   '@hookform/resolvers': 5.2.2

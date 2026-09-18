@@ -206,8 +206,8 @@ settings:
 catalogs:
   default:
     '@axe-core/playwright':
-      specifier: 4.3.0
-      version: 4.3.0
+      specifier: 4.13.0
+      version: 4.13.0
     '@codecov/vite-plugin':
       specifier: 2.0.1
       version: 2.0.1
@@ -583,7 +583,7 @@ importers:
     devDependencies:
       '@axe-core/playwright':
         specifier: 'catalog:'
-        version: 4.3.0(playwright@1.60.0)
+        version: 4.13.0(playwright-core@1.60.0)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.60.0
@@ -3570,7 +3570,7 @@ importers:
     devDependencies:
       '@axe-core/playwright':
         specifier: 'catalog:'
-        version: 4.3.0(playwright@1.60.0)
+        version: 4.13.0(playwright-core@1.60.0)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.60.0
@@ -3743,10 +3743,10 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@axe-core/playwright@4.3.0':
-    resolution: {integrity: sha512-prkC9IyH19nOpZxnehnzFWBl+3e+gqg9/I11xOD1yPazMx89jLfDYFVANVZBdXoncQPYIDc/Avi/3PgU/mlyYw==}
+  '@axe-core/playwright@4.13.0':
+    resolution: {integrity: sha512-6YLx+kxXu5GJceG4ozFg+33a2EMTdjYwWGloJ3sb9Kta5pp+ZNS53uxGVog5JetIY8s++P5UrtX+cri+u0VAVg==}
     peerDependencies:
-      playwright: '>= 1.0.0'
+      playwright-core: '>= 1.0.0'
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -8345,6 +8345,10 @@ packages:
 
   axe-core@4.11.4:
     resolution: {integrity: sha512-KunSNx+TVpkAw/6ULfhnx+HWRecjqZGTOyquAoWHYLRSdK1tB5Ihce1ZW+UY3fj33bYAFWPu7W/GRSmmrCGuxA==}
+    engines: {node: '>=4'}
+
+  axe-core@4.13.0:
+    resolution: {integrity: sha512-UzGt8zg7Ny8djbYMhxl2zuEevVa7r2gJjYY5Lwr1xM7+XU2nd6CkIWFTVcCIbAP63vSz71NaVyyuSk9lHKcy0A==}
     engines: {node: '>=4'}
 
   axobject-query@4.1.0:
@@ -13990,7 +13994,7 @@ packages:
       '@vitest/ui': 4.1.10
       happy-dom: '*'
       jsdom: '*'
-      vite: '>=8.0.16'
+      vite: 8.0.16
     peerDependenciesMeta:
       '@edge-runtime/vm':
         optional: true
@@ -14556,10 +14560,10 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@axe-core/playwright@4.3.0(playwright@1.60.0)':
+  '@axe-core/playwright@4.13.0(playwright-core@1.60.0)':
     dependencies:
-      axe-core: 4.11.4
-      playwright: 1.60.0
+      axe-core: 4.13.0
+      playwright-core: 1.60.0
 
   '@babel/code-frame@7.29.0':
     dependencies:
@@ -20849,6 +20853,8 @@ snapshots:
       possible-typed-array-names: 1.1.0
 
   axe-core@4.11.4: {}
+
+  axe-core@4.13.0: {}
 
   axobject-query@4.1.0: {}
 
