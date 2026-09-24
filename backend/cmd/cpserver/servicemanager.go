@@ -191,7 +191,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	ouAuthzService.SetPermissionResolver(
 		role.NewEffectivePermissionResolver(roleService, groupService, entityService))
 
-	idpService, err := idp.Initialize(cacheManager, entityTypeService)
+	idpService, err := idp.Initialize(cacheManager, entityTypeService, roleService, groupService, resourceService)
 	fatalOnError(ctx, logger, err, "Failed to initialize IDPService")
 
 	// Notification: only the sender-management (CRUD) service is kept. The OTP and sender runtime
