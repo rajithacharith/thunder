@@ -33,6 +33,8 @@ const (
 	ExecutorNameCredentialSetter             = "CredentialSetter"
 	ExecutorNameConsent                      = "ConsentExecutor"
 	ExecutorNameOUResolver                   = "OUResolverExecutor"
+	ExecutorNameOwnerResolver                = "OwnerResolver"
+	ExecutorNameAgentTypeResolver            = "AgentTypeResolver"
 	ExecutorNameAttributeUniquenessValidator = "AttributeUniquenessValidator"
 	ExecutorNameSMSExecutor                  = "SMSExecutor"
 	ExecutorNameFederatedAuthResolver        = "FederatedAuthResolverExecutor"

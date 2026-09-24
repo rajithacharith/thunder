@@ -440,6 +440,7 @@ type Agent struct {
 	Type        string      `json:"type,omitempty"`
 	Name        string      `json:"name,omitempty"`
 	Description string      `json:"description,omitempty"`
+	LogoURL     string      `json:"logoUrl,omitempty"`
 	Owner       string      `json:"owner,omitempty"`
 	Attributes  interface{} `json:"attributes,omitempty"`
 	IsReadOnly  bool        `json:"isReadOnly"`
@@ -465,6 +466,7 @@ type AgentOAuthConfig struct {
 	ClientSecret            string   `json:"clientSecret,omitempty"`
 	GrantTypes              []string `json:"grantTypes,omitempty"`
 	ResponseTypes           []string `json:"responseTypes,omitempty"`
+	RedirectURIs            []string `json:"redirectUris,omitempty"`
 	TokenEndpointAuthMethod string   `json:"tokenEndpointAuthMethod,omitempty"`
 	PKCERequired            bool     `json:"pkceRequired,omitempty"`
 	PublicClient            bool     `json:"publicClient,omitempty"`
