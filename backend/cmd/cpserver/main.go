@@ -305,7 +305,8 @@ func createSecurityMiddleware(ctx context.Context, logger *log.Logger, cfg *conf
 		logger.Info(ctx, "REST API audience validation not enabled, accepting tokens for any audience")
 	}
 
-	middlewareFunc, err := security.Initialize(jwtService, revocationEnforcer, expectedAud)
+	middlewareFunc, err := security.Initialize(jwtService, revocationEnforcer, expectedAud,
+		cfg.Server.SecurityConfig.ManagementAPIKeyHash)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize security middleware", log.Error(err))
 	}

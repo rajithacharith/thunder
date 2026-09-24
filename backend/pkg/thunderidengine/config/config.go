@@ -46,6 +46,20 @@ type SecurityConfig struct {
 	TrustedIssuer          TrustedIssuerConfig   `yaml:"trusted_issuer"           json:"trusted_issuer"`
 	SystemPermissionPrefix string                `yaml:"system_permission_prefix" json:"system_permission_prefix"`
 	TokenRevocation        TokenRevocationConfig `yaml:"token_revocation"         json:"token_revocation"`
+	// ManagementAPIKeyHash is the SHA-256 hex digest of a key presented as `API-Key: <key>`, which
+	// authenticates a caller on these APIs and no others:
+	//
+	//     /import, /import/**
+	//     /variables, /variables/**
+	//     /secrets, /secrets/**
+	//
+	// Everything else stays behind OAuth. This is the digest, not the key, so a leaked configuration
+	// file yields nothing a caller can present. Empty disables it, which is the default.
+	//
+	// It is one long-lived key that cannot be scoped per caller or revoked without a restart, so
+	// prefer an OAuth client wherever one can be obtained. See the deployment configuration guide.
+	ManagementAPIKeyHash string `yaml:"management_api_key_hash" json:"management_api_key_hash"`
+
 	// DirectAuthSecret gates the Direct API endpoints (/auth/**, /register/passkey/**, /access/**).
 	// When set, callers must present this value in the Direct-Auth-Secret header; when empty, those
 	// endpoints are blocked (secure by default).
