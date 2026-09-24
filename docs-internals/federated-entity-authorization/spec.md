@@ -1,7 +1,7 @@
 # Authorization support for federated entities
 
 - **Status:** Final
-- **Version:** 1.0
+- **Version:** 1.1
 - **Related documents:** [Discussion #5197: Authorization support for federated entities](https://github.com/thunder-id/thunderid/discussions/5197), Issue #5192
 
 ## Summary
@@ -115,7 +115,7 @@ sequenceDiagram
 
 Resolving the issuer to a connection and applying its mapping already happens as part of validating the incoming token, so this adds no additional lookup beyond the shared evaluate-and-combine step. This path needs no local record; it is where authorization for externally managed entities without a ThunderID record works end to end. For ID-JAG, the assertion is minted at issuance with the client's requested scopes, unfiltered by mapping at that point; mapping is what determines the granted access at consumption, when the assertion is presented on the jwt-bearer grant and its own claims are resolved fresh against the connection's mapping.
 
-A renewed token has no external claims to re-read: mapped role/group identifiers are carried on the renewal credential and re-resolved against the RBAC engine, so a change to a role's own permissions is picked up, while a change to the entity's memberships at the provider only applies at the next federated login.
+Neither token exchange nor the jwt-bearer grant issues a refresh token, so mapping is never re-consulted this way. A refresh token issued from the federated login path carries only its granted scopes forward, not the mapping decision that produced them: on renewal, those scopes are re-checked against the subject's own current group memberships, not against the connection's mapping. A scope granted only through mapping (with no matching direct role or group assignment) is therefore dropped on the next refresh, the same as a scope backed by a real assignment that has since been revoked.
 
 Exchanging an external identity token for a ThunderID access token, against a connection configured with `tokenExchangeEnabled: true` and a matching `trustedTokenAudience`:
 
@@ -303,3 +303,4 @@ Not covered by this specification. Tracked separately in [Discussion #5126](http
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-09-07 | Initial specification, covering rule-based mapping, direct name-based mapping, and their combination across federated login, token exchange, and ID-JAG. |
+| 1.1 | 2026-09-24 | Corrected the refresh token renewal behavior: mapping is never re-consulted on refresh, and neither token exchange nor the jwt-bearer grant issues a refresh token. |
