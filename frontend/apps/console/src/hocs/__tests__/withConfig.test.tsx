@@ -379,7 +379,10 @@ describe('withConfig (console)', () => {
       expect(capturedProviderProps.signInOptions).toEqual({resource: 'https://localhost:8090/mcp'});
     });
 
-    it('uses the server URL over the resource identifier in the trusted_issuer model', () => {
+    it('prefers an explicit resource identifier over the server URL in the trusted_issuer model', () => {
+      // The resource server a trusted issuer protects is not necessarily this app's own origin
+      // (e.g. a control plane whose trusted issuer protects a resource living on a different
+      // backend entirely), so an explicitly configured resource identifier must win.
       mockConfig.trusted_issuer = {hostname: 'localhost', port: 8090, http_only: true};
       mockGetResourceIdentifier.mockReturnValue('https://localhost:8090/mcp');
       mockGetServerUrl.mockReturnValue('http://localhost:9443');
@@ -388,7 +391,7 @@ describe('withConfig (console)', () => {
       mockGetClientUrl.mockReturnValue('http://localhost:9443/console');
 
       render(<WithConfigComponent />);
-      expect(capturedProviderProps.signInOptions).toEqual({resource: 'http://localhost:9443'});
+      expect(capturedProviderProps.signInOptions).toEqual({resource: 'https://localhost:8090/mcp'});
     });
   });
 

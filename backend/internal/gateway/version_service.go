@@ -64,7 +64,9 @@ type versionService struct {
 	// secretFields names, by resource type, the fields a secret reference may stand in.
 	secretFields map[string][]string
 	names        actorNamer
-	logger       *log.Logger
+	// autoApply makes a capture of the current version apply it to the default gateway.
+	autoApply bool
+	logger    *log.Logger
 }
 
 func newVersionService(gateways storeInterface, versions versionStoreInterface,

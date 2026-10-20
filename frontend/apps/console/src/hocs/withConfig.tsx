@@ -21,10 +21,13 @@ export default function withConfig<P extends object>(WrappedComponent: Component
     } = useConfig();
 
     const genericOidc = isTrustedIssuerGenericOidc();
-    // Bind the client's tokens to a resource server via the RFC 8707 `resource` indicator.
-    // In the trusted-issuer (federated) model, target the resource server URL; otherwise use the
-    // configured resource identifier.
-    const resourceIdentifier = config.trusted_issuer ? getServerUrl() : getResourceIdentifier();
+    // Bind the client's tokens to a resource server via the RFC 8707 `resource` indicator. An
+    // explicitly configured resource identifier always wins: it names the actual resource server,
+    // which in the trusted-issuer (federated) model is not necessarily this app's own origin —
+    // e.g. a control plane whose trusted issuer protects a resource that lives on a different
+    // backend entirely. Only when none is configured does trusted-issuer mode fall back to
+    // assuming this server's own origin is the resource being protected.
+    const resourceIdentifier = getResourceIdentifier() ?? (config.trusted_issuer ? getServerUrl() : undefined);
 
     // In the trusted-issuer (federated) model `baseUrl` points at the authorization server (IdP),
     // so the SDK would otherwise send resource-server calls (flow execution, flow metadata, the user
