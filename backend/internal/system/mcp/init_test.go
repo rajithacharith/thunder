@@ -31,6 +31,7 @@ const (
 	// testConfiguredIdentifier is deliberately unrelated to the server's own URL, so a test using
 	// it cannot pass by accidentally falling back to the derived value.
 	testConfiguredIdentifier = "https://id.example.com/mcp"
+	testTrustedIssuer        = "https://trusted.example.com"
 )
 
 // fakeRevocationEnforcer accepts every identity; security.RevocationEnforcerInterface has no
@@ -122,4 +123,49 @@ func (suite *DefaultGuardTestSuite) TestDefaultGuard_ConfiguredAudienceDrivesGua
 
 	suite.Equal(testConfiguredIdentifier, metadata.Resource)
 	suite.Equal(testConfiguredIdentifier, suite.audienceReachingVerification(guard, accessToken()))
+}
+
+// trustedIssuerToken builds a token from the configured trusted issuer.
+func trustedIssuerToken() string {
+	header, _ := json.Marshal(map[string]any{"alg": "RS256", "typ": jwt.TokenTypeAccessToken})
+	payload, _ := json.Marshal(map[string]any{
+		"sub":   "user123",
+		"iss":   testTrustedIssuer,
+		"exp":   float64(time.Now().Add(time.Hour).Unix()),
+		"scope": security.GetSystemRootPermission(),
+	})
+	return base64.RawURLEncoding.EncodeToString(header) + "." +
+		base64.RawURLEncoding.EncodeToString(payload) + ".signature"
+}
+
+// TestDefaultGuard_TrustedIssuerTokenIsCheckedAgainstTheMCPIdentifier locks in that, with a trusted
+// issuer configured, the audience required of its tokens is the advertised MCP resource identifier
+// and not trusted_issuer.audience, which belongs to the REST API.
+func (suite *DefaultGuardTestSuite) TestDefaultGuard_TrustedIssuerTokenIsCheckedAgainstTheMCPIdentifier() {
+	config.ResetServerRuntime()
+	cfg := &config.Config{}
+	cfg.Server.Hostname = testHostname
+	cfg.Server.Port = testPort
+	cfg.Server.SecurityConfig.TrustedIssuer = engineconfig.TrustedIssuerConfig{
+		Issuer:   testTrustedIssuer,
+		JWKSURL:  testTrustedIssuer + "/oauth2/jwks",
+		Audience: "https://localhost:8090",
+	}
+	suite.Require().NoError(config.InitializeServerRuntime("", cfg))
+
+	guard, metadata := DefaultGuard(suite.mockJWT, &fakeRevocationEnforcer{})
+	token := trustedIssuerToken()
+	var observed string
+	suite.mockJWT.On("VerifyJWTWithJWKS", mock.Anything, token, cfg.Server.SecurityConfig.TrustedIssuer.JWKSURL,
+		mock.Anything, testTrustedIssuer).
+		Run(func(args mock.Arguments) { observed = args.String(3) }).Return(nil)
+
+	req := httptest.NewRequest(http.MethodPost, MCPEndpointPath, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	guard(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).
+		ServeHTTP(httptest.NewRecorder(), req)
+
+	suite.Equal([]string{testTrustedIssuer}, metadata.AuthorizationServers)
+	suite.Equal(testDerivedIdentifier, metadata.Resource)
+	suite.Equal(testDerivedIdentifier, observed)
 }

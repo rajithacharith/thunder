@@ -128,6 +128,36 @@ func (suite *BearerAuthenticatorTestSuite) TestRejectsScopedTokenWithMalformedAu
 	suite.mockEnforcer.AssertNotCalled(suite.T(), "EnsureNotRevoked", mock.Anything, mock.Anything)
 }
 
+// TestAuthenticate_ChecksTrustedIssuerTokenAgainstTheAuthenticatorAudience locks in that the
+// audience a BearerAuthenticator is built with reaches the trusted-issuer verification, in place of
+// trusted_issuer.audience, which is the REST API's audience.
+func (suite *BearerAuthenticatorTestSuite) TestAuthenticate_ChecksTrustedIssuerTokenAgainstTheAuthenticatorAudience() {
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("", &config.Config{
+		JWT: engineconfig.JWTConfig{Issuer: testLocalIssuer},
+		Server: engineconfig.ServerConfig{SecurityConfig: engineconfig.SecurityConfig{
+			TrustedIssuer: engineconfig.TrustedIssuerConfig{
+				Issuer:   testFederatedIssuer,
+				JWKSURL:  testFederatedJWKSURL,
+				Audience: testResourceServerAudURL,
+			},
+		}},
+	})
+	token := buildFakeJWT(
+		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
+		map[string]interface{}{"sub": "user-1", "iss": testFederatedIssuer, "jti": "jti-2"},
+	)
+	suite.mockJWT.On("VerifyJWTWithJWKS", mock.Anything, token, testFederatedJWKSURL,
+		testResourceIdentifier, testFederatedIssuer).Return(nil).Once()
+	suite.mockEnforcer.On("EnsureNotRevoked", mock.Anything, mock.Anything).Return(nil).Once()
+
+	securityCtx, err := NewBearerAuthenticator(suite.mockJWT, suite.mockEnforcer, testResourceIdentifier).
+		Authenticate(context.Background(), token)
+
+	suite.NoError(err)
+	suite.NotNil(securityCtx)
+}
+
 // selfIssuedBearerToken returns a self-issued access token carrying every revocation claim.
 func selfIssuedBearerToken(issuedAt time.Time, audience interface{}) string {
 	return buildFakeJWT(accessTokenHeader(), map[string]interface{}{
