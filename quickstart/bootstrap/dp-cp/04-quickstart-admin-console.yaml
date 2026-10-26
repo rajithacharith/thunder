@@ -21,11 +21,6 @@ isRegistrationFlowEnabled: false
 signOutFlowId: 01900000-0000-7000-8000-00000000006a
 recoveryFlowId: 01900000-0000-7000-8000-000000000070
 isRecoveryFlowEnabled: false
-# Sign-in page styling for this application: the default bootstrap's "Acrylic Orange" theme and
-# "Centered" layout (see 01-default-resources.yaml), so the Admin Console's login matches its orange
-# look.
-themeId: 01900000-0000-7000-8000-000000000071
-layoutId: 01900000-0000-7000-8000-000000000078
 allowedUserTypes:
   - person
 inboundAuthConfig:

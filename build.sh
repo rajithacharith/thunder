@@ -109,9 +109,10 @@ FRONTEND_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console
 # prepare_cp_frontend_for_packaging): it runs every administration operation as a direct API call,
 # since a Control Plane executes no flows.
 FRONTEND_CONSOLE_CP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console-cp
-# The Data Plane's own admin app (Users, Agents, Groups, Roles). Only the quickstart's managed Data
-# Plane ships it, in place of the full console, in the same apps/console slot (see
-# prepare_admin_console_for_packaging); every other distribution ships the full console.
+# The Data Plane's own admin app (Users, Agents, Groups, Roles). Every Data Plane distribution ships
+# it, in place of the full console, in the same apps/console slot (see
+# prepare_admin_console_for_packaging). Applications, connections and flows are authored on a
+# Control Plane.
 FRONTEND_ADMIN_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/admin-console
 SAMPLE_BASE_DIR=samples
 VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/vanilla-sample
@@ -650,8 +651,8 @@ function prepare_frontend_for_packaging() {
 
 # prepare_admin_console_for_packaging replaces the full console in the Data Plane folder named by
 # $1 with the admin console (Users, Agents, Groups, Roles). Applications, connections, flows and
-# roles are authored on a Control Plane in the quickstart, so its Data Plane only needs what
-# manages its own local identity data.
+# roles are authored on a Control Plane, so a Data Plane only needs what manages its own local
+# identity data.
 function prepare_admin_console_for_packaging() {
     local pack_dir="$1"
     echo "Replacing the Console with the Admin Console in $pack_dir..."
@@ -715,6 +716,7 @@ function package() {
 
     prepare_frontend_for_packaging
     prepare_backend_for_packaging
+    prepare_admin_console_for_packaging "$DIST_DIR/$PRODUCT_FOLDER"
 
     # Copy the appropriate startup and setup scripts based on the target OS
     if [ "$GO_OS" = "windows" ]; then

@@ -814,6 +814,7 @@ function Package {
 
     Prepare-Frontend-For-Packaging
     Prepare-Backend-For-Packaging
+    Prepare-Admin-Console-For-Packaging -PackDir $package_folder
 
     # Copy the appropriate startup and setup scripts based on the target OS
     if ($GO_OS -eq "windows") {
@@ -910,8 +911,8 @@ function Prepare-Cp-Frontend-For-Packaging {
 
 # Prepare-Admin-Console-For-Packaging replaces the full console in the Data Plane folder named by
 # $PackDir with the admin console (Users, Agents, Groups, Roles). Applications, connections, flows
-# and roles are authored on a Control Plane in the quickstart, so its Data Plane only needs what
-# manages its own local identity data.
+# and roles are authored on a Control Plane, so a Data Plane only needs what manages its own local
+# identity data.
 function Prepare-Admin-Console-For-Packaging {
     param([string]$PackDir)
 

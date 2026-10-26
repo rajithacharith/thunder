@@ -64,7 +64,7 @@ The result is `target/dist/thunderid-quickstart-<version>-<os>-<arch>.zip`.
 | Directory | Layered onto | Contents |
 |---|---|---|
 | [bootstrap/auth-dp](bootstrap/auth-dp) | auth-dp | CORS allowlist for the CP console origin; the `CP_CONSOLE` application |
-| [bootstrap/dp-cp](bootstrap/dp-cp) | dp and cp | The `ADMIN_CONSOLE` application, same fixed ID on both so the Control Plane's copy replaces dp's on sync. Its sign-in page uses the bootstrap's "Acrylic Orange" theme and "Centered" layout (`themeId` and `layoutId`). |
+| [bootstrap/dp-cp](bootstrap/dp-cp) | dp and cp | The `ADMIN_CONSOLE` application, same fixed ID on both so the Control Plane's copy replaces dp's on sync. |
 | [bootstrap/cp](bootstrap/cp) | cp | Registers dp as a gateway (`00-` prefix so it exists before other resources are written) |
 
 [bootstrap.sh](bootstrap.sh) holds what these templates need from the environment: the console URLs, the dp certificate, and the values seeded on dp so auto-apply is not blocked (see Run).
