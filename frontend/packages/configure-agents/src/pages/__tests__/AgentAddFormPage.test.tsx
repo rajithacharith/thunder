@@ -61,6 +61,13 @@ const agentTypes = {
   types: [{id: 'type-1', handle: 'default', displayName: 'Default', ouId: 'ou-root'}],
 };
 
+const users = {
+  totalResults: 1,
+  startIndex: 1,
+  count: 1,
+  users: [{id: 'user-1', ouId: 'ou-root', type: 'person', display: 'alice'}],
+};
+
 const defaultType = {
   id: 'type-1',
   handle: 'default',
@@ -82,9 +89,14 @@ function requests(): RecordedRequest[] {
   return h.http.request.mock.calls.map(([config]) => config as RecordedRequest);
 }
 
+// The agent type select comes first in the form and the owner select second.
+async function chooseOption(user: ReturnType<typeof userEvent.setup>, index: number, label: string): Promise<void> {
+  await user.click((await screen.findAllByRole('combobox'))[index]);
+  await user.click(within(await screen.findByRole('listbox')).getByText(label));
+}
+
 async function fillRequired(user: ReturnType<typeof userEvent.setup>): Promise<void> {
-  await user.click(await screen.findByRole('combobox'));
-  await user.click(within(await screen.findByRole('listbox')).getByText('Default'));
+  await chooseOption(user, 0, 'Default');
   await user.click(await screen.findByTestId('ou-picker'));
   await user.type(await screen.findByRole('textbox', {name: /^name/}), 'Calendar Agent');
 }
@@ -98,6 +110,9 @@ describe('AgentAddFormPage', () => {
       const {url, method} = config as RecordedRequest;
       if (method === 'POST' && url.endsWith('/agents')) {
         return Promise.resolve({data: h.created.current});
+      }
+      if (url.includes('/users')) {
+        return Promise.resolve({data: users});
       }
       if (url.includes('/agent-types/type-1')) {
         return Promise.resolve({data: defaultType});
@@ -142,6 +157,20 @@ describe('AgentAddFormPage', () => {
     // No flow is involved anywhere along the way.
     expect(requests().some((request) => request.url.includes('/flow/execute'))).toBe(false);
     expect(requests().some((request) => request.url.includes('/server-config/flow'))).toBe(false);
+  });
+
+  it('posts the chosen owner, and none when no owner is chosen', async () => {
+    const user = userEvent.setup();
+    render(<AgentAddFormPage />);
+
+    await fillRequired(user);
+    await user.type(await screen.findByRole('textbox', {name: /llmModel/}), 'claude');
+    await chooseOption(user, 1, 'alice');
+    await user.click(screen.getByRole('button', {name: 'agents:addForm.submit'}));
+
+    await waitFor(() => {
+      expect(requests().find((request) => request.method === 'POST')?.data).toMatchObject({owner: 'user-1'});
+    });
   });
 
   it('shows the issued client secret once, then opens the agent', async () => {
@@ -228,11 +257,8 @@ describe('AgentAddFormPage', () => {
     const user = userEvent.setup();
     render(<AgentAddFormPage />);
 
-    const choose = async (type: string): Promise<void> => {
-      await user.click(screen.getByRole('combobox'));
-      await user.click(within(await screen.findByRole('listbox')).getByText(type));
-    };
-    await screen.findByRole('combobox');
+    const choose = (type: string): Promise<void> => chooseOption(user, 0, type);
+    await screen.findAllByRole('combobox');
     await choose('Default');
     await screen.findByRole('textbox', {name: /environment/});
     await choose('Assistant');
@@ -263,8 +289,7 @@ describe('AgentAddFormPage', () => {
     const submit = await screen.findByRole('button', {name: 'agents:addForm.submit'});
     expect(submit).toBeDisabled();
 
-    await user.click(await screen.findByRole('combobox'));
-    await user.click(within(await screen.findByRole('listbox')).getByText('Default'));
+    await chooseOption(user, 0, 'Default');
     await user.click(await screen.findByTestId('ou-picker'));
     await screen.findByRole('textbox', {name: /llmModel/});
     expect(submit).toBeEnabled();

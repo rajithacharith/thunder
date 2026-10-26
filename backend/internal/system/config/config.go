@@ -359,6 +359,12 @@ type GatewayConfig struct {
 	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
 	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
 	Store string `yaml:"store" json:"store"`
+	// AutoApply controls whether a write on this control plane automatically captures and applies
+	// the resulting configuration to the default gateway. Off by default: Capture and Apply are
+	// otherwise a deliberate, operator-driven action, and a control plane administering several
+	// gateways generally wants to keep reviewing and applying a version itself rather than having
+	// every write push one out immediately.
+	AutoApply *bool `yaml:"auto_apply" json:"auto_apply"`
 }
 
 // MaxGatewayCount reports how many gateways a deployment may register, defaulting to none when
@@ -378,6 +384,12 @@ func (c GatewayConfig) RemovalConfirmationLimit() int {
 // below one, because a capture that kept nothing could not be applied.
 func (c GatewayConfig) MaxVersionCount() int {
 	return max(derefInt(c.MaxVersions, 1), 1)
+}
+
+// IsAutoApplyEnabled reports whether a written resource should be automatically captured and
+// applied to the default gateway, defaulting to off when unset.
+func (c GatewayConfig) IsAutoApplyEnabled() bool {
+	return derefBool(c.AutoApply)
 }
 
 // DeclarativeResources holds the configuration details for the declarative resources.
