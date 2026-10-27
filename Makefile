@@ -222,7 +222,6 @@ format_check:
 test_frontend:
 	pnpm install --frozen-lockfile
 	cd frontend && pnpm build:packages
-	cd frontend/apps/console && pnpm test
 	cd frontend/apps/gate && pnpm test
 
 security_audit:
@@ -284,7 +283,7 @@ help:
 	@echo "  mockery                       - Generate mocks for unit tests using mockery."
 	@echo "  verify_mocks                  - Regenerate and verify mock files are in sync with interfaces."
 	@echo "  format_check                  - Check frontend code formatting with Prettier."
-	@echo "  test_frontend                 - Run frontend unit tests (console + gate apps)."
+	@echo "  test_frontend                 - Run frontend unit tests (gate app)."
 	@echo "  security_audit                - Run dependency security audit on frontend and E2E deps (simplified; CI applies additional ignore rules)."
 	@echo "  test_e2e                      - Start server, import declarative resources, start sample app, and run Playwright E2E tests."
 	@echo "  pr_checks                     - Run all checks that CI performs on pull requests."

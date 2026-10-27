@@ -136,4 +136,4 @@ The three deployments keep their state in their own SQLite databases and key mat
 
 ## Local development without packaging
 
-`./build.sh run` starts one backend with the gate, console and admin-console dev servers (ports 5190, 5191 and 5192). It does not start the Control Plane or the sync, so use the packaged pack to test anything that crosses planes.
+`./build.sh run` starts one backend with the gate and admin-console dev servers (ports 5190 and 5192). It does not start the Control Plane or the sync, so use the packaged pack to test anything that crosses planes.

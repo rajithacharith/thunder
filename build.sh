@@ -104,13 +104,12 @@ FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
 CONSOLE_APP_DIST_DIR=apps/console
 FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/gate
-FRONTEND_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console
-# The console the Control Plane serves, packaged into the same apps/console slot (see
+# The console the Control Plane serves, packaged into the apps/console slot (see
 # prepare_cp_frontend_for_packaging): it runs every administration operation as a direct API call,
 # since a Control Plane executes no flows.
 FRONTEND_CONSOLE_CP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console-cp
 # The Data Plane's own admin app (Users, Agents, Groups, Roles). Every Data Plane distribution ships
-# it, in place of the full console, in the same apps/console slot (see
+# it in the apps/console slot (see
 # prepare_admin_console_for_packaging). Applications, connections and flows are authored on a
 # Control Plane.
 FRONTEND_ADMIN_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/admin-console
@@ -121,18 +120,8 @@ REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 WAYFINDER_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/wayfinder-sample
 
 
-# Quick start declarative bundles staged into the console's welcome feature so they're inlined
-# into the console JS bundle at build time.
-# Add a new bundle as a single line: "<dest-name>:<source-dir>".
-# <dest-name> may include "/" for grouping (e.g. "wayfinder/redirect-based").
-QUICKSTART_SAMPLE_BUNDLES=(
-    "wayfinder:$WAYFINDER_SAMPLE_APP_DIR/thunderid-config"
-)
-QUICKSTART_BUNDLE_STAGE_DIR="$FRONTEND_CONSOLE_APP_SOURCE_DIR/src/data/sample-bundles"
-
 # Default ports
 GATE_APP_DEFAULT_PORT=5190
-CONSOLE_APP_DEFAULT_PORT=5191
 ADMIN_CONSOLE_APP_DEFAULT_PORT=5192
 DOCS_DEFAULT_PORT=3000
 
@@ -431,8 +420,6 @@ function build_frontend() {
     echo "Building frontend apps..."
     ensure_pnpm
 
-    sync_quickstart_bundles
-
     # Install dependencies
     echo "Installing frontend dependencies..."
     pnpm install --frozen-lockfile
@@ -624,8 +611,6 @@ function prepare_frontend_for_packaging() {
     echo "Copying frontend artifacts..."
 
     mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$GATE_APP_DIST_DIR"
-    mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$CONSOLE_APP_DIST_DIR"
-
     # Copy gate app build output
     if [ -d "$FRONTEND_GATE_APP_SOURCE_DIR/dist" ]; then
         echo "Copying Gate app build output..."
@@ -635,28 +620,17 @@ function prepare_frontend_for_packaging() {
     else
         echo "Warning: Gate app build output not found at $FRONTEND_GATE_APP_SOURCE_DIR/dist"
     fi
-    
-    # Copy console app build output
-    if [ -d "$FRONTEND_CONSOLE_APP_SOURCE_DIR/dist" ]; then
-        echo "Copying Console app build output..."
-        shopt -s dotglob
-        cp -r "$FRONTEND_CONSOLE_APP_SOURCE_DIR/dist/"* "$DIST_DIR/$PRODUCT_FOLDER/$CONSOLE_APP_DIST_DIR"
-        shopt -u dotglob
-    else
-        echo "Warning: Console app build output not found at $FRONTEND_CONSOLE_APP_SOURCE_DIR/dist"
-    fi
 
     echo "================================================================"
 }
 
-# prepare_admin_console_for_packaging replaces the full console in the Data Plane folder named by
-# $1 with the admin console (Users, Agents, Groups, Roles). Applications, connections, flows and
+# prepare_admin_console_for_packaging copies the admin console into the Data Plane folder named by
+# $1 (Users, Agents, Groups, Roles). Applications, connections, flows and
 # roles are authored on a Control Plane, so a Data Plane only needs what manages its own local
 # identity data.
 function prepare_admin_console_for_packaging() {
     local pack_dir="$1"
-    echo "Replacing the Console with the Admin Console in $pack_dir..."
-    rm -rf "${pack_dir:?}/$CONSOLE_APP_DIST_DIR"
+    echo "Copying the Admin Console into $pack_dir..."
     mkdir -p "$pack_dir/$CONSOLE_APP_DIST_DIR"
     if [ -d "$FRONTEND_ADMIN_CONSOLE_APP_SOURCE_DIR/dist" ]; then
         shopt -s dotglob
@@ -686,26 +660,6 @@ function prepare_cp_frontend_for_packaging() {
     fi
 
     echo "================================================================"
-}
-
-function sync_quickstart_bundles() {
-    # Stage Quick start declarative bundles into the console's public dir.
-    echo "Syncing quick start sample bundles to console welcome data dir..."
-    rm -rf "$QUICKSTART_BUNDLE_STAGE_DIR"
-    for entry in "${QUICKSTART_SAMPLE_BUNDLES[@]}"; do
-        local dest_name="${entry%%:*}"
-        local src_dir="${entry#*:}"
-        local dest_dir="$QUICKSTART_BUNDLE_STAGE_DIR/$dest_name"
-        if [ -d "$src_dir" ]; then
-            echo "  Staging '$dest_name' from $src_dir"
-            mkdir -p "$dest_dir"
-            shopt -s dotglob
-            cp -r "$src_dir/"* "$dest_dir"
-            shopt -u dotglob
-        else
-            echo "  Warning: quick start bundle source not found at $src_dir (dest '$dest_name')"
-        fi
-    done
 }
 
 function package() {
@@ -1524,7 +1478,7 @@ function run() {
     echo "⚙️  Creating default resources..."
     echo ""
 
-    # Dev-only: seed CORS allowed origins for the Gate, Console and Admin Console apps so
+    # Dev-only: seed CORS allowed origins for the Gate and Admin Console apps so
     # they can call the backend without manual configuration. Regenerated on every run and
     # picked up by the bootstrap one-shot; it is git-ignored and never packaged (see build()).
     cat > "$BACKEND_DIR/bootstrap/03-dev-server-configurations.yaml" <<EOF
@@ -1533,21 +1487,20 @@ name: cors
 value:
   allowedOrigins:
     - "https://localhost:$GATE_APP_DEFAULT_PORT"
-    - "https://localhost:$CONSOLE_APP_DEFAULT_PORT"
     - "https://localhost:$ADMIN_CONSOLE_APP_DEFAULT_PORT"
 EOF
 
     # Local dev only: default to admin/admin if not supplied. This path never produces a
     # shared or distributed artifact, so a fixed default here is acceptable.
     #
-    # Both the Console and Admin Console dev servers use the same CONSOLE OAuth2 client, each
-    # on its own origin, so both need a registered redirect URI here.
+    # The Admin Console dev server uses the CONSOLE OAuth2 client, so its origin needs a
+    # registered redirect URI here.
     if ! ( cd "$BACKEND_DIR" && \
         ADMIN_USERNAME="${ADMIN_USERNAME:-admin}" \
         ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}" \
         PUBLIC_URL="$PUBLIC_URL" \
         go run . bootstrap --console-redirect-uris \
-            "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console,https://localhost:$ADMIN_CONSOLE_APP_DEFAULT_PORT/console" ); then
+            "https://localhost:$ADMIN_CONSOLE_APP_DEFAULT_PORT/console" ); then
         echo "❌ Initial data setup failed"
         echo "💡 Check the logs above for more details"
         exit 1
@@ -1561,7 +1514,6 @@ EOF
     echo "  👉 Backend : $BASE_URL"
     echo "  📱 Frontend :"
     echo "      🚪 Gate (Login/Register): https://localhost:$GATE_APP_DEFAULT_PORT/gate"
-    echo "      🛠️  Console (System Management): https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
     echo "      🛠️  Admin Console (Users, Agents, Groups, Roles): https://localhost:$ADMIN_CONSOLE_APP_DEFAULT_PORT/console"
     echo ""
 
@@ -1637,8 +1589,6 @@ function run_frontend() {
     echo "Running frontend apps..."
     ensure_pnpm
 
-    sync_quickstart_bundles
-
     # Install dependencies
     echo "Installing frontend dependencies..."
     pnpm install --frozen-lockfile
@@ -1650,7 +1600,7 @@ function run_frontend() {
     # In dev the apps are served on their own origins, so point them at the backend via
     # THUNDERID_DEV_SERVER_URL (injected into __DEV_SERVER_URL__; applied only in dev builds).
     THUNDERID_DEV_SERVER_URL="$PUBLIC_URL" \
-        pnpm -r --parallel --filter "@thunderid/console" --filter "@thunderid/gate" --filter "@thunderid/admin-console" dev &
+        pnpm -r --parallel --filter "@thunderid/gate" --filter "@thunderid/admin-console" dev &
     FRONTEND_PID=$!
     
     # Return to script directory
