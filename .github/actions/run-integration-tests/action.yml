@@ -10,6 +10,10 @@ inputs:
     description: 'Whether to enable coverage collection'
     required: false
     default: false
+  shard:
+    description: 'Run only one shard of the suites, written as index/total (for example 2/3). Empty runs every suite.'
+    required: false
+    default: ''
 
 runs:
   using: "composite"
@@ -82,3 +86,4 @@ runs:
       env:
         DB_TYPE: ${{ inputs.database-type }}
         GOCOVERDIR: ${{ inputs.coverage-enabled == 'true' && 'target/out/.test/integration' || '' }}
+        INTEGRATION_SHARD: ${{ inputs.shard }}

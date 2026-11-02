@@ -895,7 +895,7 @@ jobs:
           name: cli-compatibility-report
 
   test-integration:
-    name: 🧪 Integration Tests (${{ matrix.database }})
+    name: 🧪 Integration Tests (${{ matrix.database }}, shard ${{ matrix.shard }}/3)
     needs: [build, build_samples]
     if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
@@ -906,6 +906,9 @@ jobs:
     strategy:
       matrix:
         database: [sqlite, postgres, redis]
+        # The suites run one package at a time against one server, so each database's run is split
+        # across runners. The shard count must match the /3 in the job name and the shard input below.
+        shard: [1, 2, 3]
       fail-fast: false
     services:
       postgres:
@@ -951,16 +954,17 @@ jobs:
         env:
           DB_TYPE: ${{ matrix.database }}
 
-      - name: 🧪 Run Integration Tests (${{ matrix.database }})
+      - name: 🧪 Run Integration Tests (${{ matrix.database }}, shard ${{ matrix.shard }}/3)
         uses: ./.github/actions/run-integration-tests
         with:
           database-type: ${{ matrix.database }}
           coverage-enabled: true
+          shard: ${{ matrix.shard }}/3
 
       - name: 📦 Archive Integration Coverage Report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: integration-coverage-${{ matrix.database }}
+          name: integration-coverage-${{ matrix.database }}-${{ matrix.shard }}
           path: target/coverage_integration.out
           if-no-files-found: error
 
@@ -974,7 +978,7 @@ jobs:
           files: target/coverage_integration.out
           disable_search: true
           flags: backend-integration-${{ matrix.database }}
-          name: Backend Integration Tests (${{ matrix.database }})
+          name: Backend Integration Tests (${{ matrix.database }}, shard ${{ matrix.shard }}/3)
           fail_ci_if_error: false
 
       # - name: 🧩 Generate Combined Coverage Report

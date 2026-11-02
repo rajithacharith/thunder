@@ -275,7 +275,8 @@ func runTests() error {
 }
 
 // packagesToTest resolves the default of every package to the suites of the plane under test. A
-// package named explicitly is tested as given.
+// package named explicitly is tested as given. INTEGRATION_SHARD=index/total narrows the all-in-one
+// server's suites to one shard so the shards can run on separate runners.
 func packagesToTest() ([]string, error) {
 	if testPackage != "./..." {
 		return []string{testPackage}, nil
@@ -294,6 +295,14 @@ func packagesToTest() ([]string, error) {
 			continue
 		}
 		packages = append(packages, pkg)
+	}
+	if spec := os.Getenv("INTEGRATION_SHARD"); spec != "" {
+		index, total, err := parseShard(spec)
+		if err != nil {
+			return nil, err
+		}
+		packages = shardPackages(packages, index, total)
+		fmt.Printf("Running shard %d of %d\n", index, total)
 	}
 	return packages, nil
 }
